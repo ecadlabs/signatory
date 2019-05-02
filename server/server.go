@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/signatory"
 )
 
+// Server struct containing the information necessary to run a tezos remote signers
 type Server struct {
 	signatory *signatory.Signatory
 }
