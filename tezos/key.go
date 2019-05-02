@@ -135,7 +135,7 @@ func (k *KeyPair) Y() []byte {
 // CurveName returns the curveName used by this keypair
 func (k *KeyPair) CurveName() string {
 	hash, _ := k.PubKeyHash()
-	return hashCurveMap[hash]
+	return hashCurveMap[hash[:3]]
 }
 
 // D return the D parameter of the elliptic curve
