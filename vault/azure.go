@@ -198,7 +198,7 @@ func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, er
 		Value string `json:"value"`
 	}{
 		Alg:   alg,
-		Value: base64.StdEncoding.EncodeToString(digest[:]),
+		Value: base64.RawURLEncoding.EncodeToString(digest[:]),
 	}
 
 	req, err := json.Marshal(request)
