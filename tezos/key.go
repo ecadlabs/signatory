@@ -23,6 +23,9 @@ type KeyPair struct {
 }
 
 func (k *KeyPair) getPubKeyPrefix() string {
+	if len(k.publicKey) < 4 {
+		return ""
+	}
 	// Tezos pubkey prefix are composed of a 4 char string
 	return k.publicKey[0:4]
 }
@@ -38,6 +41,9 @@ func (k *KeyPair) getPubKeyHashPrefix() string {
 }
 
 func (k *KeyPair) getSecretKeyPrefix() string {
+	if len(k.secretKey) < 4 {
+		return ""
+	}
 	// Tezos secretkey prefix are composed of a 4 char string
 	return k.secretKey[0:4]
 }
@@ -134,8 +140,13 @@ func (k *KeyPair) Y() []byte {
 
 // CurveName returns the curveName used by this keypair
 func (k *KeyPair) CurveName() string {
-	hash, _ := k.PubKeyHash()
-	return hashCurveMap[hash[:3]]
+	hash, err := k.PubKeyHash()
+
+	if err != nil {
+		return ""
+	}
+
+	return getCurveFromPubkeyHash(hash)
 }
 
 // D return the D parameter of the elliptic curve

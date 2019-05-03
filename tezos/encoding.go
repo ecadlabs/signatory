@@ -69,19 +69,39 @@ func base58CheckEncodePrefix(prefix []byte, msg []byte) string {
 	return base58.Encode(sig)
 }
 
+func getCurveFromPubkeyHash(pubKeyHash string) string {
+	prefix := getPubkeyHashPrefix(pubKeyHash)
+	curveName, ok := hashCurveMap[prefix]
+
+	if !ok {
+		return ""
+	}
+
+	return curveName
+}
+
 // EncodeSig encode a signature according to the tezos format
 func EncodeSig(pubKeyHash string, sig []byte) string {
-	prefix := pubKeyHash[0:3]
-	curveName := hashCurveMap[prefix]
-	sigPrefix := curveSigMap[curveName]
+	curveName := getCurveFromPubkeyHash(pubKeyHash)
+	sigPrefix, ok := curveSigMap[curveName]
+
+	if !ok {
+		return ""
+	}
+
 	return base58CheckEncodePrefix(prefixMap[sigPrefix], sig)
 }
 
 // EncodePubKey encode a public key according to the tezos format
 func EncodePubKey(pubKeyHash string, pubKey []byte) string {
-	prefix := pubKeyHash[0:3]
-	curveName := hashCurveMap[prefix]
-	pubKeyPrefix := curvePubKeyPrefixMap[curveName]
+	curveName := getCurveFromPubkeyHash(pubKeyHash)
+
+	pubKeyPrefix, ok := curvePubKeyPrefixMap[curveName]
+
+	if !ok {
+		return ""
+	}
+
 	return base58CheckEncodePrefix(prefixMap[pubKeyPrefix], pubKey)
 }
 
@@ -95,7 +115,26 @@ func decodeKey(prefix []byte, key string) ([]byte, error) {
 
 // GetSigAlg return the correct signature algorithm according to the public key hash
 func GetSigAlg(pubkeyHash string) string {
-	prefix := pubkeyHash[0:3]
-	curveName := hashCurveMap[prefix]
-	return curveSigAlgMap[curveName]
+	prefix := getPubkeyHashPrefix(pubkeyHash)
+	curveName, ok := hashCurveMap[prefix]
+
+	if !ok {
+		return ""
+	}
+
+	sigAlg, ok := curveSigAlgMap[curveName]
+
+	if !ok {
+		return ""
+	}
+
+	return sigAlg
+}
+
+func getPubkeyHashPrefix(pubkeyHash string) string {
+	if len(pubkeyHash) < 3 {
+		return ""
+	}
+
+	return pubkeyHash[:3]
 }
