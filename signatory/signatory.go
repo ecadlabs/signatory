@@ -121,7 +121,11 @@ func (s *Signatory) Import(pubkey string, secretKey string, vault Vault) (*Impor
 	if err != nil {
 		panic(err.Error())
 	}
-	jwk, _ := s.ToJWK(keyPair)
+	jwk, err := s.ToJWK(keyPair)
+
+	if err != nil {
+		return nil, err
+	}
 
 	keyID, err := vault.Import(jwk)
 
