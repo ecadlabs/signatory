@@ -2,7 +2,10 @@ package signatory
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/tezos"
 )
@@ -68,6 +71,9 @@ func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
+	log.Debugf("Signing for key: %s\n", keyHash)
+	log.Debugf("About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
+
 	vault := s.getVaultFromKeyHash(keyHash)
 
 	if vault == nil {
@@ -78,11 +84,17 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	digest := tezos.DigestFunc(message)
 	sig, err := vault.Sign(digest[:], keyHash, alg)
 
+	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s\n", hex.EncodeToString(sig))
+
 	if err != nil {
 		return "", err
 	}
 
-	return tezos.EncodeSig(keyHash, sig), nil
+	encodedSig := tezos.EncodeSig(keyHash, sig)
+
+	log.Debugf("Encoded signature: %s\n", encodedSig)
+
+	return encodedSig, nil
 }
 
 // GetPublicKey retrieve the public key from a vault
