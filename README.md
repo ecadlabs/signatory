@@ -13,13 +13,15 @@ systems.
 It receives signing requests from either a baker or an endorser, signs the data
 using one of its backends, and then returns a signature.
 
-Signatory currently supports [Azure Key Valut][0], and other backend signing
+Signatory currently supports [Azure Key Vault][0], and other backend signing
 services are either in planning phase, or being added.
 
-The Signatory service's goal is to make key management as secure as possible in a
-Cloud and on premise HSM context. Security and convenience are typically
-diametrically opposed, but we hope to at least make it easier for the community
-to manage their keys in an adequately secure manner.
+The goal of the Signatory service is to make key management as secure as
+possible in a Cloud and on premise HSM context.
+
+Security and convenience are typically diametrically opposed, but we hope to at
+least make it easier for the community to manage their keys in an adequately
+secure manner.
 
 Signatory is also focused on observability. Meaning that it exposes metrics
 about its operations. Allowing operators to see historic trends, signing
@@ -33,11 +35,11 @@ AWS is a superb provider, but having a concentration of nodes on one cloud
 vendor centralizes the underlying infrastructure of the network which is not
 desirable.
 
-The service supports, or will support a variety of back-end Key Management
+The service supports, or will support a variety of backend Key Management
 Systems (KMS) for secure handling of private keys. Most cloud based KMS systems
 offer a HSM backed mode, which is strongly recommended.
 
-## Back-end KMS/HSM support status
+## Backend KMS/HSM support status
 
 |                  | Status      |
 |------------------|-------------|
@@ -46,10 +48,10 @@ offer a HSM backed mode, which is strongly recommended.
 | AWS KMS          | Planned     |
 | YubiHSM2         | Evaluating  |
 
-## Signing Algorithm support from various back-ends
+## Signing Algorithm support from various backends
 
 In Tezos, the signing algorithm can be inferred from the address type. For
-example, an address beginning with `tz3` uses the P-256 algorithm. Various HSMs
+example, an address beginning with `tz3` uses the P-256 algorithm. Various HSM's
 and Cloud based HSM's support different algorithms. 
 
 |                  | tz1 address (Ed25519) | tz2 address (Secp256k1) | tz3 address (p-256) |
@@ -65,7 +67,7 @@ and Cloud based HSM's support different algorithms.
 ## Key import capabilities
 
 Key import is an important security consideration when choosing a Cloud HSM
-offering. Some HSM's allows you to generate the secret key internally, and the
+offering. Some HSM's allow you to generate the secret key internally, and the
 secret key can never be exported. Others allow for key import with different
 levels of security. The trade-offs in this setting are important.
 
