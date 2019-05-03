@@ -7,6 +7,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// ServerConfig contains the information necessary to the tezos signing server
+type ServerConfig struct {
+	Port int `yaml:"port"`
+}
+
 // AzureConfig contains the information necessary to use the Azure Key Vault backend
 type AzureConfig struct {
 	ClientID       string `yaml:"client_id"`
@@ -25,8 +30,9 @@ type TezosConfig struct {
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
-	Azure AzureConfig `yaml:"azure"`
-	Tezos TezosConfig `yaml:"tezos"`
+	Azure  AzureConfig  `yaml:"azure"`
+	Tezos  TezosConfig  `yaml:"tezos"`
+	Server ServerConfig `yaml:"server"`
 }
 
 // Read read the config from a file

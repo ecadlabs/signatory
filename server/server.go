@@ -12,17 +12,19 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/signatory"
 )
 
 // Server struct containing the information necessary to run a tezos remote signers
 type Server struct {
 	signatory *signatory.Signatory
+	config    *config.ServerConfig
 }
 
 // NewServer create a new server struct
-func NewServer(signatory *signatory.Signatory) *Server {
-	return &Server{signatory: signatory}
+func NewServer(signatory *signatory.Signatory, config *config.ServerConfig) *Server {
+	return &Server{signatory: signatory, config: config}
 }
 
 // RouteKeys validates a /key/ request and routes based on HTTP Method
@@ -132,6 +134,9 @@ func (server *Server) Serve() {
 	// Routes
 	http.HandleFunc("/authorized_keys", server.RouteAuthorizedKeys)
 	http.HandleFunc("/keys/", server.RouteKeys)
-	log.Info("Server listening on port: 80")
-	log.Error(http.ListenAndServe(":80", nil))
+	log.Infof("Server listening on port: %d", server.config.Port)
+
+	binding := fmt.Sprintf(":%d", server.config.Port)
+
+	log.Error(http.ListenAndServe(binding, nil))
 }

@@ -11,6 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	defaultPort = 80
+)
+
 func main() {
 	log.SetLevel(log.DebugLevel)
 
@@ -19,12 +23,16 @@ func main() {
 
 	flag.Parse()
 
-	c := &config.Config{}
+	c := &config.Config{
+		Server: config.ServerConfig{
+			Port: defaultPort,
+		},
+	}
 	c.Read(configFile)
 
 	vault := vault.NewAzureVault(&c.Azure, nil)
 	signatory := signatory.NewSignatory([]signatory.Vault{vault})
 
-	server := server.NewServer(signatory)
+	server := server.NewServer(signatory, &c.Server)
 	server.Serve()
 }
