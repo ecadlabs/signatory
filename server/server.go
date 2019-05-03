@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -26,6 +27,7 @@ func NewServer(signatory *signatory.Signatory) *Server {
 
 // RouteKeys validates a /key/ request and routes based on HTTP Method
 func (server *Server) RouteKeys(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case "GET":
 		server.RouteKeysGET(w, r)
@@ -49,6 +51,20 @@ func (server *Server) RouteKeysPOST(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
+
+	// Must begin and end with quotes
+	opString := strings.TrimSpace(string(body))
+	if !strings.HasPrefix(opString, "\"") || !strings.HasSuffix(opString, "\"") {
+		return
+	}
+	opString = strings.Trim(opString, "\"")
+
+	// Must be valid hex chars
+	parsedHex, err := hex.DecodeString(opString)
+	if err != nil {
+		return
+	}
+
 	if err != nil {
 		log.Error("Error reading POST content: ", err)
 
@@ -56,7 +72,7 @@ func (server *Server) RouteKeysPOST(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "{\"error\":\"%s\"}", "error reading the request")
 		return
 	}
-	signed, err := server.signatory.Sign(requestedKeyHash, body)
+	signed, err := server.signatory.Sign(requestedKeyHash, parsedHex)
 
 	if err != nil {
 		log.Error("Error signing request:", err)
@@ -66,7 +82,6 @@ func (server *Server) RouteKeysPOST(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response := fmt.Sprintf("{\"signature\":\"%s\"}", signed)
 		log.Info("Returning signed message: ", response)
-
 		fmt.Fprintf(w, response)
 	}
 }
@@ -96,6 +111,7 @@ func (server *Server) RouteAuthorizedKeys(w http.ResponseWriter, r *http.Request
 	// Response Body: `{}`
 	// Status: 200
 	// mimetype: "application/json"
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "{}")
 }
 
