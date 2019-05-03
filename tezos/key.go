@@ -7,6 +7,10 @@ import (
 	"github.com/ecadlabs/signatory/crypto"
 )
 
+const (
+	publicKeyHashLenght = 20
+)
+
 func newUnkownPrefixErr(prefix string) error {
 	return fmt.Errorf("Unkown prefix: %s", prefix)
 }
@@ -23,11 +27,10 @@ type KeyPair struct {
 }
 
 func (k *KeyPair) getPubKeyPrefix() string {
-	if len(k.publicKey) < 4 {
+	if len(k.publicKey) < pubKeyPrefixLength {
 		return ""
 	}
-	// Tezos pubkey prefix are composed of a 4 char string
-	return k.publicKey[0:4]
+	return k.publicKey[0:pubKeyPrefixLength]
 }
 
 func (k *KeyPair) getPubKeyHashPrefix() string {
@@ -41,11 +44,10 @@ func (k *KeyPair) getPubKeyHashPrefix() string {
 }
 
 func (k *KeyPair) getSecretKeyPrefix() string {
-	if len(k.secretKey) < 4 {
+	if len(k.secretKey) < secretKeyPrefixLength {
 		return ""
 	}
-	// Tezos secretkey prefix are composed of a 4 char string
-	return k.secretKey[0:4]
+	return k.secretKey[0:secretKeyPrefixLength]
 }
 
 // PubKeyHash returns the pubkey hash for given keypair
@@ -56,9 +58,9 @@ func (k *KeyPair) PubKeyHash() (string, error) {
 		return "", err
 	}
 
-	hash := blake2b.SumX(20, publicKey)
+	hash := blake2b.SumX(publicKeyHashLenght, publicKey)
 	prefix := prefixMap[k.getPubKeyHashPrefix()]
-	return base58CheckEncodePrefix(prefix, hash[:20]), nil
+	return base58CheckEncodePrefix(prefix, hash[:publicKeyHashLenght]), nil
 }
 
 // Validate return an error if the keypair is invalid

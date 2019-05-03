@@ -12,6 +12,12 @@ import (
 var DigestFunc = blake2b.Sum256
 
 const (
+	pubKeyPrefixLength     = 4
+	secretKeyPrefixLength  = 4
+	pubKeyHashPrefixLength = 3
+)
+
+const (
 	p256PubKeyPrefix    = "p2pk"
 	p256SecretKeyPrefix = "p2sk"
 	p256SigPrefix       = "p2sig"
@@ -132,9 +138,9 @@ func GetSigAlg(pubkeyHash string) string {
 }
 
 func getPubkeyHashPrefix(pubkeyHash string) string {
-	if len(pubkeyHash) < 3 {
+	if len(pubkeyHash) < pubKeyHashPrefixLength {
 		return ""
 	}
 
-	return pubkeyHash[:3]
+	return pubkeyHash[:pubKeyHashPrefixLength]
 }
