@@ -18,12 +18,36 @@
   revision = "43f5da33474d31ff27b76cc653db76fc8ff90afe"
 
 [[projects]]
+  digest = "1:be60b0d02c14243add46b34085d0c1e61d2e90e88b78ff76e64d9f63d66af4ac"
+  name = "github.com/decred/dcrd"
+  packages = ["dcrec/secp256k1"]
+  pruneopts = "UT"
+  revision = "0fe564967f03160b9dbe0a147420d8aa13371d12"
+  version = "v1.3.0"
+
+[[projects]]
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
   name = "github.com/satori/go.uuid"
   packages = ["."]
   pruneopts = "UT"
   revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
   version = "v1.2.0"
+
+[[projects]]
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -50,7 +74,9 @@
   input-imports = [
     "github.com/btcsuite/btcutil/base58",
     "github.com/carte7000/crypto/blake2b",
+    "github.com/decred/dcrd/dcrec/secp256k1",
     "github.com/satori/go.uuid",
+    "github.com/sirupsen/logrus",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

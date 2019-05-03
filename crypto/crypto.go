@@ -3,7 +3,7 @@ package crypto
 import (
 	"crypto/elliptic"
 
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/decred/dcrd/dcrec/secp256k1"
 )
 
 const (
