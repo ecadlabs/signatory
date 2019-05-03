@@ -71,6 +71,12 @@ func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
+	err := tezos.ValidateMessage(message)
+
+	if err != nil {
+		return "", err
+	}
+
 	log.Debugf("Signing for key: %s\n", keyHash)
 	log.Debugf("About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
 
