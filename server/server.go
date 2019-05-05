@@ -27,28 +27,20 @@ func NewServer(signatory *signatory.Signatory, config *config.ServerConfig) *Ser
 	return &Server{signatory: signatory, config: config}
 }
 
-// RouteKeys validates a /key/ request and routes based on HTTP Method
-func (server *Server) RouteKeys(w http.ResponseWriter, r *http.Request) {
+func (server *Server) routeKeys(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case "GET":
-		server.RouteKeysGET(w, r)
+		server.getKey(w, r)
 	case "POST":
-		server.RouteKeysPOST(w, r)
+		server.sign(w, r)
 	default:
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{\"error\":\"bad_verb\"}")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, "{\"error\":\"not_allowed\"}")
 	}
 }
 
-// RouteKeysPOST attempts to sign the provided message from the provided keys
-func (server *Server) RouteKeysPOST(w http.ResponseWriter, r *http.Request) {
-	// Route: /keys/<key>
-	// Method: POST
-	// Response Body: `{"signature": "p2sig....."}`
-	// Status: 200
-	// mimetype: "application/json"
-
+func (server *Server) sign(w http.ResponseWriter, r *http.Request) {
 	requestedKeyHash := strings.Split(r.URL.Path, "/")[2]
 
 	defer r.Body.Close()
@@ -88,12 +80,7 @@ func (server *Server) RouteKeysPOST(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// RouteKeysGET returns the corresponding public key to this public key *hash*
-func (server *Server) RouteKeysGET(w http.ResponseWriter, r *http.Request) {
-	// Route: /keys/<key>
-	// Response Body: `{"public_key": "<key>"}`
-	// Status: 200
-	// mimetype: "application/json"
+func (server *Server) getKey(w http.ResponseWriter, r *http.Request) {
 	requestedKeyHash := strings.Split(r.URL.Path, "/")[2]
 	pubKey, err := server.signatory.GetPublicKey(requestedKeyHash)
 	if err != nil {
@@ -106,34 +93,33 @@ func (server *Server) RouteKeysGET(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// RouteAuthorizedKeys list all of they keys that we currently support.  We choose to
-// return an empty set to obscure our secrets.
-func (server *Server) RouteAuthorizedKeys(w http.ResponseWriter, r *http.Request) {
-	// Route: /authorized_keys
-	// Response Body: `{}`
-	// Status: 200
-	// mimetype: "application/json"
+func (server *Server) authorizedKeys(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "{}")
 }
 
-// shutdown gracefully
 func shutdown(c chan os.Signal) {
 	<-c
 	log.Info("Shutting down")
 	os.Exit(0)
 }
 
-// Serve start the server and register route
-func (server *Server) Serve() {
-	// Handle Sigterm
+func (server *Server) registerRoutes() {
+	http.HandleFunc("/keys/", server.routeKeys)
+	http.HandleFunc("/authorized_keys", server.authorizedKeys)
+}
+
+func (server *Server) regsiterSigterm() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go shutdown(c)
+}
 
-	// Routes
-	http.HandleFunc("/authorized_keys", server.RouteAuthorizedKeys)
-	http.HandleFunc("/keys/", server.RouteKeys)
+// Serve start the server and register route
+func (server *Server) Serve() {
+	server.regsiterSigterm()
+	server.registerRoutes()
+
 	log.Infof("Server listening on port: %d", server.config.Port)
 
 	binding := fmt.Sprintf(":%d", server.config.Port)
