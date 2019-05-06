@@ -2,6 +2,8 @@
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/maintainability)](https://codeclimate.com/github/ecadlabs/signatory/maintainability)
 
+[![Test Coverage](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/test_coverage)](https://codeclimate.com/github/ecadlabs/signatory/test_coverage)
+
 __WARNING: This project is in active development, while we welcome users and
 feedback, please be warned that this project is a work in progress and users
 should proceed with judicious caution.__
@@ -42,7 +44,7 @@ offer a HSM backed mode, which is strongly recommended.
 ## Backend KMS/HSM support status
 
 |                  | Status      |
-|------------------|-------------|
+| ---------------- | ----------- |
 | Azure KMS        | In Progress |
 | Google Cloud KMS | Planned     |
 | AWS KMS          | Planned     |
@@ -55,7 +57,7 @@ example, an address beginning with `tz3` uses the P-256 algorithm. Various HSM's
 and Cloud based HSM's support different algorithms. 
 
 |                  | tz1 address (Ed25519) | tz2 address (Secp256k1) | tz3 address (p-256) |
-|------------------|-----------------------|-------------------------|---------------------|
+| ---------------- | --------------------- | ----------------------- | ------------------- |
 | Google Cloud KMS | no                    | no                      | yes                 |
 | AWS KMS          | no                    | no                      | yes                 |
 | Azure KMS        | no                    | yes*                    | yes                 |
