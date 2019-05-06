@@ -1,0 +1,21 @@
+version: 2
+
+jobs:
+  test:
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/ecadlabs/signatory
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && dep ensure
+      - run:
+          name: Unit tests
+          command: go test ./...
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
