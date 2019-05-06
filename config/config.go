@@ -26,6 +26,7 @@ type AzureConfig struct {
 
 // TezosConfig contains the configuration related to tezos network
 type TezosConfig struct {
+	AllowedOperations []string `yaml:"allowed_operations"`
 }
 
 // Config contains all the configuration necessary to run the signatory
