@@ -14,7 +14,8 @@ type VaultMock struct{}
 func (v *VaultMock) Contains(keyHash string) bool                { return true }
 func (v *VaultMock) GetPublicKey(keyHash string) ([]byte, error) { return []byte{}, nil }
 func (v *VaultMock) ListPublicKeys() ([][]byte, error)           { return [][]byte{}, nil }
-func (v *VaultMock) Sign(message []byte, hashFunc signatory.HashFunc, key string, alg string) ([]byte, error) {
+func (v *VaultMock) Import(jwk *signatory.JWK) (string, error)   { return "", nil }
+func (v *VaultMock) Sign(message []byte, key string, alg string) ([]byte, error) {
 	return []byte{}, nil
 }
 
