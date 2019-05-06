@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/tezos"
 	"github.com/ecadlabs/signatory/vault"
 )
 
@@ -60,7 +59,7 @@ func TestAzureSign(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`{ "kid" : "test", "value": "123455"}`, 200))
 	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
-	sig, err := az.Sign(bytesToSign, tezos.DigestFunc, "", "ES256")
+	sig, err := az.Sign(bytesToSign, "", "ES256")
 
 	if err != nil {
 		t.Fail()
@@ -76,7 +75,7 @@ func TestAzureSignError(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`Key not found`, 404))
 	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
-	_, err := az.Sign(bytesToSign, tezos.DigestFunc, "", "ES256")
+	_, err := az.Sign(bytesToSign, "", "ES256")
 
 	if err == nil {
 		t.Fail()
