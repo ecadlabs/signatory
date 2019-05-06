@@ -95,6 +95,10 @@ func EncodeSig(pubKeyHash string, sig []byte) string {
 		return ""
 	}
 
+	if curveName == crypto.CurveP256K {
+		sig = crypto.CanonizeEncodeP256K(sig)
+	}
+
 	return base58CheckEncodePrefix(prefixMap[sigPrefix], sig)
 }
 

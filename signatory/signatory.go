@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/tezos"
 )
 
@@ -51,12 +52,14 @@ type KeyPair interface {
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
 	vaults []Vault
+	config *config.TezosConfig
 }
 
 // NewSignatory return a new signatory struct
-func NewSignatory(vaults []Vault) *Signatory {
+func NewSignatory(vaults []Vault, config *config.TezosConfig) *Signatory {
 	return &Signatory{
 		vaults: vaults,
+		config: config,
 	}
 }
 
@@ -72,6 +75,12 @@ func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	err := tezos.ValidateMessage(message)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = tezos.FilterMessage(message, s.config)
 
 	if err != nil {
 		return "", err
