@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/elliptic"
+	"math/big"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
 )
@@ -40,4 +41,26 @@ func ECCoordinateFromPrivateKey(d []byte, curveName string) (xBytes, yBytes []by
 	xBytes = x.Bytes()
 	yBytes = y.Bytes()
 	return
+}
+
+// CanonizeEncodeP256K returns the canonical versions of the signature
+// the canonical version enforce low S values
+// if S is above order / 2 it negating the S (modulo the order (N))
+func CanonizeEncodeP256K(sig []byte) []byte {
+	r := sig[:32]
+	s := sig[32:]
+	rInt := new(big.Int).SetBytes(r)
+	sInt := new(big.Int).SetBytes(s)
+
+	order := secp256k1.S256().N
+	two := new(big.Int).SetBytes([]byte{0x02})
+	quo := new(big.Int).Quo(order, two)
+	if sInt.Cmp(quo) > 0 {
+		sInt = sInt.Sub(order, sInt)
+	}
+
+	s = sInt.Bytes()
+	r = rInt.Bytes()
+	signature := append(r, s...)
+	return signature
 }

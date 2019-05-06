@@ -29,14 +29,6 @@
   branch = "master"
   name = "github.com/btcsuite/btcutil"
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/golang/crypto"
-
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  name = "github.com/Azure/azure-sdk-for-go"
-  version = "28.1.0"
