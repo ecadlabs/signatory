@@ -15,9 +15,12 @@ const (
 )
 
 const (
-	OpBlock       = "block"
+	// OpBlock config string for block operation
+	OpBlock = "block"
+	// OpEndorsement config string for endorsement operation
 	OpEndorsement = "endorsement"
-	OpGeneric     = "generic"
+	// OpGeneric config string for generic operation
+	OpGeneric = "generic"
 )
 
 var (
@@ -44,6 +47,7 @@ func ValidateMessage(message []byte) error {
 	return nil
 }
 
+// FilterMessage filter a message according to a Tezos Configuration
 func FilterMessage(message []byte, conf *config.TezosConfig) error {
 	if len(message) == 0 {
 		return ErrDoNotMatchFilter
