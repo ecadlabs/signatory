@@ -2,6 +2,8 @@ version: 2
 
 jobs:
   test:
+    environment:
+      CC_TEST_REPORTER_ID: CODE_CLIMATE_COVERAGE
     docker:
       - image: circleci/golang:latest
     working_directory: /go/src/github.com/ecadlabs/signatory
@@ -11,8 +13,22 @@ jobs:
           name: Install dependencies
           command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && dep ensure
       - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            # download test reporter as a static binary
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run:
           name: Unit tests
-          command: go test ./...
+          command: |
+            ./cc-test-reporter before-build
+            for pkg in $(go list ./... | grep -v vendor); do
+              go test -coverprofile=$(echo $pkg | tr / -).cover $pkg
+            done
+            echo "mode: set" > c.out
+            grep -h -v "^mode:" ./*.cover >> c.out
+            rm -f *.cover
+            ./cc-test-reporter after-build
 
 workflows:
   version: 2
