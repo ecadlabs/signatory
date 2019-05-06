@@ -27,9 +27,42 @@ jobs:
             grep -h -v "^mode:" ./*.cover >> c.out
             rm -f *.cover
             ./cc-test-reporter after-build
-
+  publish:
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker Image
+          command: docker build -t ecadlabs/signatory:$CIRCLE_TAG .
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
+          name: Publish image to Docker Hub
+          command: docker push ecadlabs/signatory:$CIRCLE_TAG
+      - run:
+          name: Add latest tag to docker image
+          command: docker tag ecadlabs/signatory:$CIRCLE_TAG ecadlabs/signatory:latest && docker push ecadlabs/signatory:latest
 workflows:
   version: 2
   test:
     jobs:
       - test
+  publish:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
