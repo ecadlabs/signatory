@@ -142,6 +142,7 @@
     "github.com/btcsuite/btcutil/base58",
     "github.com/carte7000/crypto/blake2b",
     "github.com/decred/dcrd/dcrec/secp256k1",
+    "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
