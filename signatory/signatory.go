@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
+	"github.com/ecadlabs/signatory/metrics"
 	"github.com/ecadlabs/signatory/tezos"
 )
 
@@ -39,6 +40,7 @@ type Vault interface {
 	ListPublicKeys() ([]PublicKey, error)
 	Sign(digest []byte, key string, alg string) ([]byte, error)
 	Import(jwk *JWK) (string, error)
+	Name() string
 }
 
 // KeyPair interface that represent an elliptic curve key pair
@@ -108,6 +110,8 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	encodedSig := tezos.EncodeSig(keyHash, sig)
 
 	log.Debugf("Encoded signature: %s\n", encodedSig)
+
+	metrics.IncNewSigningOp(keyHash, vault.Name(), alg)
 
 	return encodedSig, nil
 }
