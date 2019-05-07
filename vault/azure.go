@@ -43,6 +43,11 @@ func NewAzureVault(config *config.AzureConfig, client HTTPClient) *AzureVault {
 	}
 }
 
+// Name return the name of the vault
+func (s *AzureVault) Name() string {
+	return "Azure"
+}
+
 func (s *AzureVault) getToken() (string, error) {
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")

@@ -35,6 +35,30 @@ func TestValidateMessage(t *testing.T) {
 	}
 }
 
+func TestGetMessageType(t *testing.T) {
+	type Case struct {
+		Name    string
+		Message []byte
+		Type    string
+	}
+
+	cases := []Case{
+		Case{Name: "Generic operation", Message: []byte{0x03, 0x02}, Type: tezos.OpGeneric},
+		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02}, Type: tezos.OpEndorsement},
+		Case{Name: "Block operation", Message: []byte{0x01, 0x02}, Type: tezos.OpBlock},
+		Case{Name: "Unknown operation", Message: []byte{0x05, 0x02}, Type: tezos.OpUnknown},
+	}
+
+	for _, c := range cases {
+		msgType := tezos.GetMessageType(c.Message)
+
+		if msgType != c.Type {
+			fmt.Printf("%s: Expected %v but got %v\n", c.Name, c.Type, msgType)
+			t.Fail()
+		}
+	}
+}
+
 func TestFilterMessage(t *testing.T) {
 	type Case struct {
 		Name    string
