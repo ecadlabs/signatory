@@ -44,7 +44,7 @@ func NewAzureVault(config *config.AzureConfig, client HTTPClient) *AzureVault {
 }
 
 // Name return the name of the vault
-func Name() string {
+func (s *AzureVault) Name() string {
 	return "Azure"
 }
 
