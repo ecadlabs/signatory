@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/metrics"
 	"github.com/ecadlabs/signatory/tezos"
 )
 
@@ -21,8 +20,7 @@ type JWK struct {
 	Curve   string `json:"crv"`
 }
 
-// HashFunc interface for hashing function
-type HashFunc func(message []byte) [32]byte
+type NotifySigning func(address string, vault string, algorithm string, kind string)
 
 // PublicKey alias for an array of byte
 type PublicKey = []byte
@@ -53,15 +51,17 @@ type KeyPair interface {
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
-	vaults []Vault
-	config *config.TezosConfig
+	vaults        []Vault
+	config        *config.TezosConfig
+	notifySigning NotifySigning
 }
 
 // NewSignatory return a new signatory struct
-func NewSignatory(vaults []Vault, config *config.TezosConfig) *Signatory {
+func NewSignatory(vaults []Vault, config *config.TezosConfig, notify NotifySigning) *Signatory {
 	return &Signatory{
-		vaults: vaults,
-		config: config,
+		vaults:        vaults,
+		config:        config,
+		notifySigning: notify,
 	}
 }
 
@@ -111,7 +111,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	log.Debugf("Encoded signature: %s\n", encodedSig)
 
-	metrics.IncNewSigningOp(keyHash, vault.Name(), alg, tezos.GetMessageType(message))
+	s.notifySigning(keyHash, vault.Name(), alg, tezos.GetMessageType(message))
 
 	return encodedSig, nil
 }

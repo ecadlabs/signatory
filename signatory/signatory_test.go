@@ -22,7 +22,11 @@ func (v *VaultMock) Sign(message []byte, key string, alg string) ([]byte, error)
 }
 
 func TestToJWK(t *testing.T) {
-	s := signatory.NewSignatory([]signatory.Vault{&VaultMock{}}, &config.TezosConfig{})
+	s := signatory.NewSignatory(
+		[]signatory.Vault{&VaultMock{}},
+		&config.TezosConfig{},
+		func(address string, vault string, algorithm string, kind string) {},
+	)
 	keyPair := tezos.NewKeyPair("p2pk67PsiUBJZq9twKoFAWt8fSSVn53BR31dxKnTeLirLxHqB8gSnCq", "p2sk3LiJ6fU9Lvh8tdwar6tJ2Xg9bg3kQ9p4Sjmn83m29qJQdQPA5r")
 	jwk, err := s.ToJWK(keyPair)
 
