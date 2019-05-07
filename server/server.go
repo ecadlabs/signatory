@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
+	"github.com/ecadlabs/signatory/metrics"
 	"github.com/ecadlabs/signatory/signatory"
 )
 
@@ -119,6 +120,7 @@ func (server *Server) regsiterSigterm() {
 func (server *Server) Serve() {
 	server.regsiterSigterm()
 	server.registerRoutes()
+	metrics.RegisterHandler()
 
 	log.Infof("Server listening on port: %d", server.config.Port)
 
