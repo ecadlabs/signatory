@@ -9,7 +9,7 @@ import (
 
 var vaultSigningSummary = prometheus.NewSummaryVec(
 	prometheus.SummaryOpts{
-		Name: "vault_sign_request_duration_microsecond",
+		Name: "vault_sign_request_duration_microseconds",
 		Help: "Vaults signing requests latencies in microseconds",
 	}, []string{"vault"})
 
