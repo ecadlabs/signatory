@@ -111,7 +111,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	log.Debugf("Encoded signature: %s\n", encodedSig)
 
-	metrics.IncNewSigningOp(keyHash, vault.Name(), alg)
+	metrics.IncNewSigningOp(keyHash, vault.Name(), alg, tezos.GetMessageType(message))
 
 	return encodedSig, nil
 }

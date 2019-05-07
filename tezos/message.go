@@ -21,6 +21,8 @@ const (
 	OpEndorsement = "endorsement"
 	// OpGeneric config string for generic operation
 	OpGeneric = "generic"
+	// OpUnknown config string for unkown operation
+	OpUnknown = "unkown"
 )
 
 var (
@@ -38,37 +40,45 @@ func ValidateMessage(message []byte) error {
 		return ErrMessageEmpty
 	}
 
-	magicByte := message[0]
+	msgType := GetMessageType(message)
 
-	if magicByte == 0 || magicByte > opMagicByteGeneric {
+	if msgType == OpUnknown {
 		return ErrInvalidMagicByte
 	}
 
 	return nil
 }
 
-// FilterMessage filter a message according to a Tezos Configuration
-func FilterMessage(message []byte, conf *config.TezosConfig) error {
+// GetMessageType return the message type
+func GetMessageType(message []byte) string {
 	if len(message) == 0 {
-		return ErrDoNotMatchFilter
-	}
-
-	magicByteMap := map[byte]string{
-		opMagicByteBlock:       OpBlock,
-		opMagicByteEndorsement: OpEndorsement,
-		opMagicByteGeneric:     OpGeneric,
+		return OpUnknown
 	}
 
 	magicByte := message[0]
 
-	val, ok := magicByteMap[magicByte]
+	switch magicByte {
+	case opMagicByteBlock:
+		return OpBlock
+	case opMagicByteEndorsement:
+		return OpEndorsement
+	case opMagicByteGeneric:
+		return OpGeneric
+	}
 
-	if !ok {
+	return OpUnknown
+}
+
+// FilterMessage filter a message according to a Tezos Configuration
+func FilterMessage(message []byte, conf *config.TezosConfig) error {
+	msgType := GetMessageType(message)
+
+	if msgType == OpUnknown {
 		return ErrDoNotMatchFilter
 	}
 
 	for _, filter := range conf.AllowedOperations {
-		if val == filter {
+		if msgType == filter {
 			return nil
 		}
 	}
