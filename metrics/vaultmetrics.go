@@ -1,14 +1,16 @@
 package metrics
 
 import (
+	"time"
+
 	"github.com/ecadlabs/signatory/signatory"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 var vaultSigningSummary = prometheus.NewSummaryVec(
 	prometheus.SummaryOpts{
-		Name: "vault_sign_request_durations",
-		Help: "Vaults signing requests latencies in seconds",
+		Name: "vault_sign_request_duration_microsecond",
+		Help: "Vaults signing requests latencies in microseconds",
 	}, []string{"vault"})
 
 type metricVault struct {
@@ -22,7 +24,7 @@ func (v *metricVault) GetPublicKey(keyHash string) (signatory.PublicKey, error) 
 func (v *metricVault) ListPublicKeys() ([]signatory.PublicKey, error) { return v.vault.ListPublicKeys() }
 func (v *metricVault) Sign(digest []byte, key string, alg string) ([]byte, error) {
 	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(val float64) {
-		us := val * 1000000 // make microseconds
+		us := val * float64(time.Microsecond)
 		vaultSigningSummary.WithLabelValues(v.vault.Name()).Observe(us)
 	}))
 	defer timer.ObserveDuration()
