@@ -16,6 +16,7 @@ var signingOpCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 func RegisterHandler() {
 	http.Handle("/metrics", promhttp.Handler())
 	prometheus.MustRegister(signingOpCount)
+	prometheus.MustRegister(vaultSigningSummary)
 }
 
 // IncNewSigningOp register a new signing operation with vault
