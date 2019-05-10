@@ -87,12 +87,13 @@ func TestGetSigAlg(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			alg := tezos.GetSigAlg(c.PubkeyHash)
 
-		alg := tezos.GetSigAlg(c.PubkeyHash)
-
-		if alg != c.Alg {
-			fmt.Printf("%s: Expected %v but got %v\n", c.Name, c.Alg, alg)
-			t.Fail()
-		}
+			if alg != c.Alg {
+				fmt.Printf("Expected %v but got %v\n", c.Alg, alg)
+				t.Fail()
+			}
+		})
 	}
 }
