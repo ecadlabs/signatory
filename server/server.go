@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
+	"time"
 
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/metrics"
 	"github.com/ecadlabs/signatory/signatory"
 )
 
@@ -28,21 +26,11 @@ func NewServer(signatory *signatory.Signatory, config *config.ServerConfig) *Ser
 	return &Server{signatory: signatory, config: config}
 }
 
-func (server *Server) routeKeys(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	switch r.Method {
-	case "GET":
-		server.getKey(w, r)
-	case "POST":
-		server.sign(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "{\"error\":\"not_allowed\"}")
-	}
-}
-
 func (server *Server) sign(w http.ResponseWriter, r *http.Request) {
-	requestedKeyHash := strings.Split(r.URL.Path, "/")[2]
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	requestedKeyHash := params["key"]
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
@@ -82,7 +70,11 @@ func (server *Server) sign(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) getKey(w http.ResponseWriter, r *http.Request) {
-	requestedKeyHash := strings.Split(r.URL.Path, "/")[2]
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	requestedKeyHash := params["key"]
+
 	pubKey, err := server.signatory.GetPublicKey(requestedKeyHash)
 	if err != nil {
 		log.Println("Error fetching key:", err)
@@ -99,32 +91,28 @@ func (server *Server) authorizedKeys(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{}")
 }
 
-func shutdown(c chan os.Signal) {
-	<-c
-	log.Info("Shutting down")
-	os.Exit(0)
-}
-
-func (server *Server) registerRoutes() {
-	http.HandleFunc("/keys/", server.routeKeys)
-	http.HandleFunc("/authorized_keys", server.authorizedKeys)
-}
-
-func (server *Server) regsiterSigterm() {
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go shutdown(c)
+func (server *Server) createRootHandler() http.Handler {
+	r := mux.NewRouter()
+	r.HandleFunc("/keys/{key}", server.sign).Methods("POST")
+	r.HandleFunc("/keys/{key}", server.getKey).Methods("GET")
+	r.HandleFunc("/keys/{key}", server.authorizedKeys).Methods("GET")
+	return r
 }
 
 // Serve start the server and register route
 func (server *Server) Serve() {
-	server.regsiterSigterm()
-	server.registerRoutes()
-	metrics.RegisterHandler()
-
-	log.Infof("Server listening on port: %d", server.config.Port)
+	handlers := server.createRootHandler()
 
 	binding := fmt.Sprintf(":%d", server.config.Port)
 
-	log.Error(http.ListenAndServe(binding, nil))
+	srv := &http.Server{
+		Handler:      handlers,
+		Addr:         binding,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	log.Infof("Server listening on port: %d", server.config.Port)
+
+	log.Error(srv.ListenAndServe())
 }

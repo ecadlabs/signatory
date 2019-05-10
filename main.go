@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/metrics"
@@ -33,6 +36,18 @@ func createVaults(c *config.Config) []signatory.Vault {
 	return vaults
 }
 
+func shutdown(c chan os.Signal) {
+	<-c
+	log.Info("Shutting down")
+	os.Exit(0)
+}
+
+func registerSigterm() {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	shutdown(c)
+}
+
 func main() {
 	log.SetLevel(log.DebugLevel)
 
@@ -57,6 +72,11 @@ func main() {
 
 	signatory := signatory.NewSignatory(createVaults(c), &c.Tezos, metrics.IncNewSigningOp)
 
-	server := server.NewServer(signatory, &c.Server)
-	server.Serve()
+	srv := server.NewServer(signatory, &c.Server)
+	utilityServer := server.NewUtilityServer(&c.Server)
+
+	go utilityServer.Serve()
+	go srv.Serve()
+
+	registerSigterm()
 }
