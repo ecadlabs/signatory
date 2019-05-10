@@ -59,8 +59,7 @@ func main() {
 	}
 	err := c.Read(configFile)
 	if err != nil {
-		log.Error(err)
-		return
+		log.Fatal(err)
 	}
 
 	signatory := signatory.NewSignatory(createVaults(c), &c.Tezos, metrics.IncNewSigningOp)
@@ -98,10 +97,9 @@ func main() {
 	case <-done:
 		shutdown()
 		log.Info("Signatory shutted down gracefully")
-		os.Exit(0)
+		return
 	case err := <-errChan:
-		log.Error(err)
 		shutdown()
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
