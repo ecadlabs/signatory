@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,6 +15,7 @@ import (
 // UtilityServer struct containing the information necessary to run a utility endpoints
 type UtilityServer struct {
 	config *config.ServerConfig
+	srv    *http.Server
 }
 
 // NewUtilityServer create a new utility server struct
@@ -40,7 +42,17 @@ func (u *UtilityServer) Serve() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	u.srv = srv
+
 	log.Infof("Utility Server listening on port: %d", u.config.Port+1)
 
 	log.Error(srv.ListenAndServe())
+}
+
+// Shutdown the server
+func (u *UtilityServer) Shutdown(ctx context.Context) error {
+	if u.srv != nil {
+		return u.srv.Shutdown(ctx)
+	}
+	return nil
 }

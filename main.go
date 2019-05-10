@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
@@ -36,19 +37,10 @@ func createVaults(c *config.Config) []signatory.Vault {
 	return vaults
 }
 
-func shutdown(c chan os.Signal) {
-	<-c
-	log.Info("Shutting down")
-	os.Exit(0)
-}
-
-func registerSigterm() {
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	shutdown(c)
-}
-
 func main() {
+	done := make(chan os.Signal)
+	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+
 	log.SetLevel(log.DebugLevel)
 
 	var configFile string
@@ -78,5 +70,11 @@ func main() {
 	go utilityServer.Serve()
 	go srv.Serve()
 
-	registerSigterm()
+	<-done
+	log.Info("Shutting down...")
+	ctx := context.Background()
+	srv.Shutdown(ctx)
+	utilityServer.Shutdown(ctx)
+	log.Info("Signatory shutted down gracefully")
+	os.Exit(0)
 }

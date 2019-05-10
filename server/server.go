@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -19,6 +20,7 @@ import (
 type Server struct {
 	signatory *signatory.Signatory
 	config    *config.ServerConfig
+	srv       *http.Server
 }
 
 // NewServer create a new server struct
@@ -112,7 +114,17 @@ func (server *Server) Serve() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	server.srv = srv
+
 	log.Infof("Server listening on port: %d", server.config.Port)
 
 	log.Error(srv.ListenAndServe())
+}
+
+// Shutdown the server
+func (server *Server) Shutdown(ctx context.Context) error {
+	if server.srv != nil {
+		return server.srv.Shutdown(ctx)
+	}
+	return nil
 }
