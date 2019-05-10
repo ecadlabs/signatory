@@ -102,7 +102,7 @@ func (server *Server) createRootHandler() http.Handler {
 }
 
 // Serve start the server and register route
-func (server *Server) Serve() {
+func (server *Server) Serve() error {
 	handlers := server.createRootHandler()
 
 	binding := fmt.Sprintf(":%d", server.config.Port)
@@ -116,9 +116,7 @@ func (server *Server) Serve() {
 
 	server.srv = srv
 
-	log.Infof("Server listening on port: %d", server.config.Port)
-
-	log.Error(srv.ListenAndServe())
+	return srv.ListenAndServe()
 }
 
 // Shutdown the server

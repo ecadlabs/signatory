@@ -9,7 +9,6 @@ import (
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/metrics"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 )
 
 // HealthService interface for a service that had a ready func
@@ -46,7 +45,7 @@ func (u *UtilityServer) createRootHandler() http.Handler {
 }
 
 // Serve start the server and register route
-func (u *UtilityServer) Serve() {
+func (u *UtilityServer) Serve() error {
 	handlers := u.createRootHandler()
 	binding := fmt.Sprintf(":%d", u.config.Port+1)
 
@@ -59,9 +58,7 @@ func (u *UtilityServer) Serve() {
 
 	u.srv = srv
 
-	log.Infof("Utility Server listening on port: %d", u.config.Port+1)
-
-	log.Error(srv.ListenAndServe())
+	return srv.ListenAndServe()
 }
 
 // ShutdownAfter shutdown the server after executing afterFunc

@@ -39,6 +39,7 @@ func createVaults(c *config.Config) []signatory.Vault {
 
 func main() {
 	done := make(chan os.Signal)
+	errChan := make(chan error)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	log.SetLevel(log.DebugLevel)
@@ -67,15 +68,40 @@ func main() {
 	srv := server.NewServer(signatory, &c.Server)
 	utilityServer := server.NewUtilityServer(&c.Server)
 
-	go utilityServer.Serve()
-	go srv.Serve()
+	go func() {
+		err := utilityServer.Serve()
+		if err != nil {
+			errChan <- err
+		}
+	}()
 
-	<-done
-	log.Info("Shutting down...")
-	ctx := context.Background()
-	utilityServer.ShutdownAfter(ctx, func() {
-		srv.Shutdown(ctx)
-	})
-	log.Info("Signatory shutted down gracefully")
-	os.Exit(0)
+	log.Infof("Utility Server listening on port: %d", c.Server.Port+1)
+
+	go func() {
+		err := srv.Serve()
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	log.Infof("Server listening on port: %d", c.Server.Port)
+
+	shutdown := func() {
+		log.Info("Shutting down...")
+		ctx := context.Background()
+		utilityServer.ShutdownAfter(ctx, func() {
+			srv.Shutdown(ctx)
+		})
+	}
+
+	select {
+	case <-done:
+		shutdown()
+		log.Info("Signatory shutted down gracefully")
+		os.Exit(0)
+	case err := <-errChan:
+		log.Error(err)
+		shutdown()
+		os.Exit(1)
+	}
 }
