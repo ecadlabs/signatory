@@ -1,8 +1,8 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -37,15 +37,12 @@ type Config struct {
 }
 
 // Read read the config from a file
-func (c *Config) Read(file string) *Config {
-	yamlFile, err := ioutil.ReadFile(file)
+func (c *Config) Read(file string) error {
+	yamlFile, _ := ioutil.ReadFile(file)
+	err := yaml.Unmarshal(yamlFile, c)
 	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
-	}
-	err = yaml.Unmarshal(yamlFile, c)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
+		return fmt.Errorf("Unmarshal: %v", err)
 	}
 
-	return c
+	return nil
 }

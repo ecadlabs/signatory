@@ -49,7 +49,11 @@ func main() {
 			AllowedOperations: defaultOperations,
 		},
 	}
-	c.Read(configFile)
+	err := c.Read(configFile)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	signatory := signatory.NewSignatory(createVaults(c), &c.Tezos, metrics.IncNewSigningOp)
 
