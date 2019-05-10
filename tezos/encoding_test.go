@@ -55,19 +55,21 @@ func TestEncodePubKey(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		pubKey, err := hex.DecodeString(c.PubKey)
+		t.Run(c.Name, func(t *testing.T) {
+			pubKey, err := hex.DecodeString(c.PubKey)
 
-		if err != nil {
-			t.Fail()
-			return
-		}
+			if err != nil {
+				t.Fail()
+				return
+			}
 
-		encoded := tezos.EncodePubKey(c.PubkeyHash, pubKey)
+			encoded := tezos.EncodePubKey(c.PubkeyHash, pubKey)
 
-		if encoded != c.Encoded {
-			fmt.Printf("%s: Expected %v but got %v\n", c.Name, c.Encoded, encoded)
-			t.Fail()
-		}
+			if encoded != c.Encoded {
+				fmt.Printf("%s: Expected %v but got %v\n", c.Name, c.Encoded, encoded)
+				t.Fail()
+			}
+		})
 	}
 }
 
