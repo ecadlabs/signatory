@@ -11,6 +11,11 @@ import (
 	"github.com/ecadlabs/signatory/tezos"
 )
 
+var (
+	// ErrVaultNotFound error return when a vault is not found
+	ErrVaultNotFound = fmt.Errorf("This key not found in any vault")
+)
+
 // JWK struct containing a standard key format
 type JWK struct {
 	KeyType string `json:"kty"`
@@ -94,7 +99,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	vault := s.getVaultFromKeyHash(keyHash)
 
 	if vault == nil {
-		return "", fmt.Errorf("This key not found in any vault")
+		return "", ErrVaultNotFound
 	}
 
 	alg := tezos.GetSigAlg(keyHash)
@@ -119,6 +124,11 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 // GetPublicKey retrieve the public key from a vault
 func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
 	vault := s.getVaultFromKeyHash(keyHash)
+
+	if vault == nil {
+		return "", ErrVaultNotFound
+	}
+
 	pubKey, err := vault.GetPublicKey(keyHash)
 	if err != nil {
 		return "", err
