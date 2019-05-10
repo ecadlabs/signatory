@@ -12,6 +12,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// HealthService interface for a service that had a ready func
+type HealthService interface {
+	Ready() bool
+}
+
 // UtilityServer struct containing the information necessary to run a utility endpoints
 type UtilityServer struct {
 	config *config.ServerConfig
@@ -23,10 +28,20 @@ func NewUtilityServer(config *config.ServerConfig) *UtilityServer {
 	return &UtilityServer{config: config}
 }
 
+func (u *UtilityServer) live(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "ok")
+}
+
+func (u *UtilityServer) ready(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "ok")
+}
+
 func (u *UtilityServer) createRootHandler() http.Handler {
 	r := mux.NewRouter()
 	metricsHandler := metrics.RegisterHandler()
 	r.HandleFunc("/metrics", metricsHandler.ServeHTTP).Methods("GET")
+	r.HandleFunc("/healthz/live", u.live).Methods("GET")
+	r.HandleFunc("/healthz/ready", u.ready).Methods("GET")
 	return r
 }
 
@@ -49,8 +64,9 @@ func (u *UtilityServer) Serve() {
 	log.Error(srv.ListenAndServe())
 }
 
-// Shutdown the server
-func (u *UtilityServer) Shutdown(ctx context.Context) error {
+// ShutdownAfter shutdown the server after executing afterFunc
+func (u *UtilityServer) ShutdownAfter(ctx context.Context, afterFunc func()) error {
+	afterFunc()
 	if u.srv != nil {
 		return u.srv.Shutdown(ctx)
 	}

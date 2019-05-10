@@ -73,8 +73,9 @@ func main() {
 	<-done
 	log.Info("Shutting down...")
 	ctx := context.Background()
-	srv.Shutdown(ctx)
-	utilityServer.Shutdown(ctx)
+	utilityServer.ShutdownAfter(ctx, func() {
+		srv.Shutdown(ctx)
+	})
 	log.Info("Signatory shutted down gracefully")
 	os.Exit(0)
 }
