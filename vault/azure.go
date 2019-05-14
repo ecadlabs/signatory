@@ -265,6 +265,11 @@ func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, er
 	return val, nil
 }
 
+// Ready return true if the vault is ready
+func (s *AzureVault) Ready() bool {
+	return true
+}
+
 // Import use the azure key vault rest api to import a JWK
 func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 	log.Debug("Importing in Azure vault")
@@ -301,7 +306,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 		return "", err
 	}
 
-	keyID := fmt.Sprintf("https://tezos.vault.azure.net/keys/%v", id)
+	keyID := fmt.Sprintf("%s/keys/%v", s.config.VaultURI, id)
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("PUT", endpoint, bytes.NewReader(req))

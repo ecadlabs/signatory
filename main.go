@@ -25,16 +25,17 @@ var (
 	defaultOperations = []string{tezos.OpBlock, tezos.OpEndorsement}
 )
 
-func createVaults(c *config.Config) []signatory.Vault {
+func createVaults(c *config.Config) ([]signatory.Vault, []server.Health) {
 	azureVault := vault.NewAzureVault(&c.Azure, nil)
 	vaults := []signatory.Vault{azureVault}
+	healths := []server.Health{azureVault}
 	for i := range vaults {
 		vault := vaults[i]
 		wrapped := metrics.Wrap(vault)
 		vaults[i] = wrapped
 	}
 
-	return vaults
+	return vaults, healths
 }
 
 func main() {
@@ -62,10 +63,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	signatory := signatory.NewSignatory(createVaults(c), &c.Tezos, metrics.IncNewSigningOp)
+	vaults, healths := createVaults(c)
+	signatory := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp)
 
 	srv := server.NewServer(signatory, &c.Server)
-	utilityServer := server.NewUtilityServer(&c.Server)
+	utilityServer := server.NewUtilityServer(&c.Server, healths)
 
 	go func() {
 		err := utilityServer.Serve()

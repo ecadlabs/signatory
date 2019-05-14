@@ -17,6 +17,7 @@ type AzureConfig struct {
 	ClientID       string `yaml:"client_id"`
 	ClientSecret   string `yaml:"client_secret"`
 	SubscriptionID string `yaml:"subscription"`
+	VaultURI       string `yaml:"vault_uri"`
 	Keys           []struct {
 		KeyID string `yaml:"key_id"`
 		Hash  string `yaml:"hash"`

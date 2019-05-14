@@ -129,6 +129,8 @@ func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
 		return "", ErrVaultNotFound
 	}
 
+	log.Debugf("Fetching public key for: %s\n", keyHash)
+
 	pubKey, err := vault.GetPublicKey(keyHash)
 	if err != nil {
 		return "", err
@@ -142,8 +144,9 @@ func (s *Signatory) Import(pubkey string, secretKey string, vault Vault) (*Impor
 	err := keyPair.Validate()
 
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
+
 	jwk, err := s.ToJWK(keyPair)
 
 	if err != nil {
