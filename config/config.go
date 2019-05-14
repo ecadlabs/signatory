@@ -16,8 +16,11 @@ type ServerConfig struct {
 type AzureConfig struct {
 	ClientID       string `yaml:"client_id"`
 	ClientSecret   string `yaml:"client_secret"`
+	DirectoryID    string `yaml:"directory_id"`
 	SubscriptionID string `yaml:"subscription"`
 	VaultURI       string `yaml:"vault_uri"`
+	ResourceGroup  string `yaml:"resource_group"`
+	Vault          string `yaml:"vault"`
 	Keys           []struct {
 		KeyID string `yaml:"key_id"`
 		Hash  string `yaml:"hash"`

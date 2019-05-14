@@ -18,6 +18,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+const (
+	azResVault      = "https://vault.azure.net"
+	azResManagement = "https://management.azure.com/"
+)
+
 // AzureVault contains the necessary information to interact with azure key vault api
 type AzureVault struct {
 	config *config.AzureConfig
@@ -48,14 +53,14 @@ func (s *AzureVault) Name() string {
 	return "Azure"
 }
 
-func (s *AzureVault) getToken() (string, error) {
+func (s *AzureVault) getToken(resource string) (string, error) {
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", s.config.ClientID)
 	data.Set("client_secret", s.config.ClientSecret)
-	data.Set("resource", "https://vault.azure.net")
+	data.Set("resource", resource)
 
-	endpoint := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/token", s.config.SubscriptionID)
+	endpoint := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/token", s.config.DirectoryID)
 	httpReq, err := http.NewRequest("POST", endpoint, strings.NewReader(data.Encode()))
 
 	if err != nil {
@@ -125,7 +130,7 @@ func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
 
-	token, err := s.getToken()
+	token, err := s.getToken(azResVault)
 
 	if err != nil {
 		return nil, err
@@ -219,7 +224,7 @@ func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, er
 		return nil, err
 	}
 
-	token, err := s.getToken()
+	token, err := s.getToken(azResVault)
 
 	if err != nil {
 		return nil, err
@@ -267,6 +272,37 @@ func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, er
 
 // Ready return true if the vault is ready
 func (s *AzureVault) Ready() bool {
+	resourceURI := url.PathEscape(
+		fmt.Sprintf(
+			"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.KeyVault/vaults/%s",
+			s.config.SubscriptionID,
+			s.config.ResourceGroup,
+			s.config.Vault,
+		),
+	)
+	uri := fmt.Sprintf("https://management.azure.com/%s/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2018-08-01-preview", resourceURI)
+
+	httpReq, err := http.NewRequest("GET", uri, bytes.NewReader([]byte{}))
+
+	token, err := s.getToken(azResManagement)
+
+	if err != nil {
+		return false
+	}
+
+	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	response, err := s.client.Do(httpReq)
+	defer response.Body.Close()
+
+	if err != nil {
+		return false
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return false
+	}
+
 	return true
 }
 
@@ -315,7 +351,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 		return "", err
 	}
 
-	token, err := s.getToken()
+	token, err := s.getToken(azResVault)
 
 	if err != nil {
 		return "", err
