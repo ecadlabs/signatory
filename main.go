@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/tezos"
 	"github.com/ecadlabs/signatory/vault"
 
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,12 +44,17 @@ func main() {
 	errChan := make(chan error)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
-	log.SetLevel(log.DebugLevel)
-
 	var configFile string
+	var logLevelFlag string
 	flag.StringVar(&configFile, "config", "signatory.yaml", "Config file path")
-
+	flag.StringVar(&logLevelFlag, "log-level", "info", "Log level")
 	flag.Parse()
+
+	if lvl, err := logrus.ParseLevel(logLevelFlag); err == nil {
+		log.SetLevel(lvl)
+	} else {
+		log.Fatal(err.Error())
+	}
 
 	c := &config.Config{
 		Server: config.ServerConfig{
