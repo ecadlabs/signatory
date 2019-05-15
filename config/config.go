@@ -9,7 +9,8 @@ import (
 
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
-	Port int `yaml:"port"`
+	Port        int `yaml:"port"`
+	UtilityPort int `yaml:"utility_port"`
 }
 
 // AzureConfig contains the information necessary to use the Azure Key Vault backend

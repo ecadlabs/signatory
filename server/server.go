@@ -76,7 +76,7 @@ func (server *Server) validateOperation(op []byte) ([]byte, error) {
 	return parsedHex, nil
 }
 
-// Sign sign request handler
+// Sign is the HTTP request handler that signs operations
 func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -119,7 +119,7 @@ func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetKey is a handler to get the public key from a public key hash
+// GetKey s the HTTP request handler that get the public key from a public key hash
 func (server *Server) GetKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

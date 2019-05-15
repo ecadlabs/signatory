@@ -67,7 +67,7 @@ func (u *UtilityServer) createRootHandler() http.Handler {
 // Serve start the server and register route
 func (u *UtilityServer) Serve() error {
 	handlers := u.createRootHandler()
-	binding := fmt.Sprintf(":%d", u.config.Port+1)
+	binding := fmt.Sprintf(":%d", u.config.UtilityPort)
 
 	srv := &http.Server{
 		Handler:      handlers,

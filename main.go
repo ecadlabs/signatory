@@ -20,6 +20,8 @@ import (
 
 const (
 	defaultPort = 80
+	// Registered here https://github.com/prometheus/prometheus/wiki/Default-port-allocations
+	defaultUtilityPort = 9583
 )
 
 var (
@@ -58,7 +60,8 @@ func main() {
 
 	c := &config.Config{
 		Server: config.ServerConfig{
-			Port: defaultPort,
+			Port:        defaultPort,
+			UtilityPort: defaultUtilityPort,
 		},
 		Tezos: config.TezosConfig{
 			AllowedOperations: defaultOperations,
@@ -82,7 +85,7 @@ func main() {
 		}
 	}()
 
-	log.Infof("Utility Server listening on port: %d", c.Server.Port+1)
+	log.Infof("Utility Server listening on port: %d", c.Server.UtilityPort)
 
 	go func() {
 		err := srv.Serve()
@@ -104,7 +107,7 @@ func main() {
 	select {
 	case <-done:
 		shutdown()
-		log.Info("Signatory shutted down gracefully")
+		log.Info("Signatory shut down gracefully")
 		return
 	case err := <-errChan:
 		shutdown()
