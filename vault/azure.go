@@ -200,7 +200,7 @@ func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
 
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
 func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, error) {
-	log.Debug("Signing in Azure vault")
+	log.Info("Signing in Azure vault")
 	keyID := s.keyIDFromKeyHash(keyHash)
 
 	request := struct {
@@ -308,7 +308,7 @@ func (s *AzureVault) Ready() bool {
 
 // Import use the azure key vault rest api to import a JWK
 func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
-	log.Debug("Importing in Azure vault")
+	log.Info("Importing in Azure vault")
 	type Key struct {
 		signatory.JWK
 		KeyOps []string `json:"key_ops"`
