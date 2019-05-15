@@ -149,7 +149,7 @@ func (server *Server) createRootHandler() http.Handler {
 	r := mux.NewRouter()
 	r.HandleFunc("/keys/{key}", server.Sign).Methods("POST")
 	r.HandleFunc("/keys/{key}", server.GetKey).Methods("GET")
-	r.HandleFunc("/keys/{key}", server.authorizedKeys).Methods("GET")
+	r.HandleFunc("/authorized_keys", server.authorizedKeys).Methods("GET")
 	return r
 }
 
