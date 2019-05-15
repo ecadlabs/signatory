@@ -94,11 +94,19 @@ func (m *Message) Watermark(keyHash string) (string, *big.Int) {
 }
 
 func (m *Message) chainID() string {
+	if len(m.hex) < 6 {
+		return "unkown"
+	}
+
 	chainID := m.hex[1:5]
 	return base58CheckEncodePrefix(chainIDPrefix, chainID)
 }
 
 func (m *Message) level() *big.Int {
+	if len(m.hex) < 10 {
+		return nil
+	}
+
 	msgType := m.Type()
 	if msgType == OpBlock {
 		return new(big.Int).SetBytes(m.hex[5:9])
