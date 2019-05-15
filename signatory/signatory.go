@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 
 	log "github.com/sirupsen/logrus"
 
@@ -14,6 +15,8 @@ import (
 var (
 	// ErrVaultNotFound error return when a vault is not found
 	ErrVaultNotFound = fmt.Errorf("This key not found in any vault")
+	// ErrNotSafeToSign error returned when an operation is a potential duplicate
+	ErrNotSafeToSign = fmt.Errorf("Not safe to sign")
 )
 
 // JWK struct containing a standard key format
@@ -54,19 +57,31 @@ type KeyPair interface {
 	CurveName() string
 }
 
+// Watermark interface for service that allow double bake check
+type Watermark interface {
+	IsSafeToSign(msgID string, level *big.Int) bool
+}
+
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
 	vaults        []Vault
 	config        *config.TezosConfig
 	notifySigning NotifySigning
+	watermark     Watermark
 }
 
 // NewSignatory return a new signatory struct
-func NewSignatory(vaults []Vault, config *config.TezosConfig, notify NotifySigning) *Signatory {
+func NewSignatory(
+	vaults []Vault,
+	config *config.TezosConfig,
+	notify NotifySigning,
+	watermark Watermark,
+) *Signatory {
 	return &Signatory{
 		vaults:        vaults,
 		config:        config,
 		notifySigning: notify,
+		watermark:     watermark,
 	}
 }
 
@@ -79,21 +94,38 @@ func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
 	return nil
 }
 
+func (s *Signatory) validateMessage(msg *tezos.Message) error {
+	err := msg.Validate()
+
+	if err != nil {
+		return err
+	}
+
+	err = msg.MatchFilter(s.config)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	log.Infof("Signing for key: %s\n", keyHash)
 	log.Debugf("About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
 
-	err := tezos.ValidateMessage(message)
+	msg := tezos.ParseMessage(message)
 
-	if err != nil {
+	if err := s.validateMessage(msg); err != nil {
 		return "", err
 	}
 
-	err = tezos.FilterMessage(message, s.config)
-
-	if err != nil {
-		return "", err
+	if msg.RequireWatermark() {
+		watermark, level := msg.Watermark(keyHash)
+		if !s.watermark.IsSafeToSign(watermark, level) {
+			return "", ErrNotSafeToSign
+		}
 	}
 
 	vault := s.getVaultFromKeyHash(keyHash)
@@ -116,7 +148,9 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	log.Debugf("Encoded signature: %s\n", encodedSig)
 
-	s.notifySigning(keyHash, vault.Name(), alg, tezos.GetMessageType(message))
+	s.notifySigning(keyHash, vault.Name(), alg, msg.Type())
+
+	log.Infof("Signed %s successfully", msg.Type())
 
 	return encodedSig, nil
 }

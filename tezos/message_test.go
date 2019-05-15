@@ -27,7 +27,8 @@ func TestValidateMessage(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			err := tezos.ValidateMessage(c.Message)
+			msg := tezos.ParseMessage(c.Message)
+			err := msg.Validate()
 
 			if err != c.Error {
 				fmt.Printf("Expected %v but got %v\n", c.Error, err)
@@ -53,7 +54,8 @@ func TestGetMessageType(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			msgType := tezos.GetMessageType(c.Message)
+			msg := tezos.ParseMessage(c.Message)
+			msgType := msg.Type()
 
 			if msgType != c.Type {
 				fmt.Printf("Expected %v but got %v\n", c.Type, msgType)
@@ -91,7 +93,8 @@ func TestFilterMessage(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			err := tezos.FilterMessage(c.Message, c.Config)
+			msg := tezos.ParseMessage(c.Message)
+			err := msg.MatchFilter(c.Config)
 
 			if err != c.Error {
 				fmt.Printf("Expected %v but got %v\n", c.Error, err)

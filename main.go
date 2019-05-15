@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/signatory"
 	"github.com/ecadlabs/signatory/tezos"
 	"github.com/ecadlabs/signatory/vault"
+	"github.com/ecadlabs/signatory/watermark"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -73,7 +74,7 @@ func main() {
 	}
 
 	vaults, healths := createVaults(c)
-	signatory := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp)
+	signatory := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory())
 
 	srv := server.NewServer(signatory, &c.Server)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
