@@ -17,6 +17,13 @@ const (
 )
 
 const (
+	opKindUnknown     = 0xff
+	opKindProposals   = 0x05
+	opKindBallot      = 0x06
+	opKindTransaction = 0x08
+)
+
+const (
 	// OpBlock config string for block operation
 	OpBlock = "block"
 	// OpEndorsement config string for endorsement operation
@@ -25,6 +32,17 @@ const (
 	OpGeneric = "generic"
 	// OpUnknown config string for unkown operation
 	OpUnknown = "unkown"
+)
+
+const (
+	// OpGenTransaction config string for transaction operation
+	OpGenTransaction = "transaction"
+	// OpGenProposal config string for proposal operation
+	OpGenProposal = "proposal"
+	// OpGenBallot config string for ballot operation
+	OpGenBallot = "ballot"
+	// OpGenUnknown config string for unknown operation
+	OpGenUnknown = "unkown"
 )
 
 var (
@@ -108,6 +126,25 @@ func (m *Message) level() *big.Int {
 	return nil
 }
 
+func (m *Message) kind() string {
+	if len(m.hex) <= 33 {
+		return OpGenUnknown
+	}
+
+	kind := m.hex[33]
+
+	switch kind {
+	case opKindBallot:
+		return OpGenBallot
+	case opKindProposals:
+		return OpGenProposal
+	case opKindTransaction:
+		return OpGenTransaction
+	default:
+		return OpGenUnknown
+	}
+}
+
 // MatchFilter filter a message according to a Tezos Configuration
 func (m *Message) MatchFilter(conf *config.TezosConfig) error {
 	msgType := m.Type()
@@ -116,11 +153,28 @@ func (m *Message) MatchFilter(conf *config.TezosConfig) error {
 		return ErrDoNotMatchFilter
 	}
 
+	var allowed = false
+
 	for _, filter := range conf.AllowedOperations {
 		if msgType == filter {
-			return nil
+			allowed = true
 		}
 	}
 
-	return ErrDoNotMatchFilter
+	// Generic operations have an extra check
+	if msgType == OpGeneric {
+		allowed = false
+		kind := m.kind()
+		for _, filter := range conf.AllowedKinds {
+			if kind == filter {
+				allowed = true
+			}
+		}
+	}
+
+	if !allowed {
+		return ErrDoNotMatchFilter
+	}
+
+	return nil
 }
