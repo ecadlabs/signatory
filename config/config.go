@@ -23,9 +23,9 @@ type AzureConfig struct {
 	ResourceGroup  string `yaml:"resource_group"`
 	Vault          string `yaml:"vault"`
 	Keys           []struct {
-		KeyID string `yaml:"key_id"`
-		Hash  string `yaml:"hash"`
-		Alg   string `yaml:"alg"`
+		KeyID    string `yaml:"key_id"`
+		Hash     string `yaml:"hash"`
+		Imported bool   `yaml:"imported"`
 	}
 }
 

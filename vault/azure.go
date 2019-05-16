@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
+	"github.com/ecadlabs/signatory/crypto"
 	"github.com/ecadlabs/signatory/signatory"
 	uuid "github.com/satori/go.uuid"
 )
@@ -94,18 +95,18 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 	return azLoginResponse.AccessToken, nil
 }
 
-func (s *AzureVault) keyIDFromKeyHash(keyHash string) string {
+func (s *AzureVault) keyIDFromKeyHash(keyHash string) (string, bool) {
 	for _, key := range s.config.Keys {
 		if key.Hash == keyHash {
-			return key.KeyID
+			return key.KeyID, key.Imported
 		}
 	}
-	return ""
+	return "", false
 }
 
 // Contains return true if the keyHash was found in Azure Key Vault
 func (s *AzureVault) Contains(keyHash string) bool {
-	result := s.keyIDFromKeyHash(keyHash)
+	result, _ := s.keyIDFromKeyHash(keyHash)
 	return result != ""
 }
 
@@ -123,9 +124,8 @@ func (s *AzureVault) ListPublicKeys() ([][]byte, error) {
 	return keys, nil
 }
 
-// GetPublicKey retrieve the public key matching keyHash from the azure key vault rest api
-func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
-	keyID := s.keyIDFromKeyHash(keyHash)
+// GetPublicKeyFromID retrieve the public key matching keyID from the azure key vault rest api
+func (s *AzureVault) GetPublicKeyFromID(keyID string) ([]byte, error) {
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
@@ -198,10 +198,26 @@ func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
 	return pubKey, nil
 }
 
+// GetPublicKey retrieve the public key matching keyHash from the azure key vault rest api
+func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
+	keyID, _ := s.keyIDFromKeyHash(keyHash)
+
+	return s.GetPublicKeyFromID(keyID)
+}
+
+func (s *AzureVault) getAlg(alg string, imported bool) string {
+	if alg == crypto.SigP256K && imported {
+		return "ECDSA256"
+	}
+	return alg
+}
+
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
 func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, error) {
 	log.Info("Signing in Azure vault")
-	keyID := s.keyIDFromKeyHash(keyHash)
+	keyID, imported := s.keyIDFromKeyHash(keyHash)
+
+	alg = s.getAlg(alg, imported)
 
 	request := struct {
 		Alg   string `json:"alg"`
@@ -368,7 +384,8 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Error response from the API %v", response.StatusCode)
+		result, _ := ioutil.ReadAll(response.Body)
+		return "", fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
 	}
 
 	azImportResponse := struct {
