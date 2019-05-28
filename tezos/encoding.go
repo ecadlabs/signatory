@@ -30,6 +30,10 @@ const (
 	secp256k1PubKeyHashPrefix = "tz2"
 )
 
+var (
+	chainIDPrefix = []byte{0x57, 0x52, 0x00}
+)
+
 var prefixMap = map[string][]byte{
 	p256PubKeyPrefix:      []byte{3, 178, 139, 127},       // p2pk
 	p256SecretKeyPrefix:   []byte{0x10, 0x51, 0xee, 0xbd}, // p2sk

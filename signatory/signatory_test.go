@@ -8,6 +8,7 @@ import (
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/signatory"
 	"github.com/ecadlabs/signatory/tezos"
+	"github.com/ecadlabs/signatory/watermark"
 )
 
 type FakeVault struct {
@@ -28,6 +29,7 @@ func TestToJWK(t *testing.T) {
 		[]signatory.Vault{&FakeVault{}},
 		&config.TezosConfig{},
 		func(address string, vault string, algorithm string, kind string) {},
+		watermark.NewIgnore(),
 	)
 	keyPair := tezos.NewKeyPair("p2pk67PsiUBJZq9twKoFAWt8fSSVn53BR31dxKnTeLirLxHqB8gSnCq", "p2sk3LiJ6fU9Lvh8tdwar6tJ2Xg9bg3kQ9p4Sjmn83m29qJQdQPA5r")
 	jwk, err := s.ToJWK(keyPair)
@@ -58,6 +60,7 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 		}},
 		&config.TezosConfig{},
 		func(address string, vault string, algorithm string, kind string) {},
+		watermark.NewIgnore(),
 	)
 
 	_, err := s.GetPublicKey("Unkown address")

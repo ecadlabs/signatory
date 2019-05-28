@@ -2,6 +2,8 @@ package tezos
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
 
 	"github.com/ecadlabs/signatory/config"
 )
@@ -34,28 +36,36 @@ var (
 	ErrDoNotMatchFilter = errors.New("Do not match filter")
 )
 
-// ValidateMessage validate if a tezos operation is valid
-func ValidateMessage(message []byte) error {
-	if len(message) == 0 {
+// Message represent a tezos message
+type Message struct {
+	hex []byte
+}
+
+// ParseMessage parse a tezos message
+func ParseMessage(message []byte) *Message {
+	return &Message{message}
+}
+
+// Validate validate if a tezos operation is valid
+func (m *Message) Validate() error {
+	if len(m.hex) == 0 {
 		return ErrMessageEmpty
 	}
 
-	msgType := GetMessageType(message)
-
-	if msgType == OpUnknown {
+	if m.Type() == OpUnknown {
 		return ErrInvalidMagicByte
 	}
 
 	return nil
 }
 
-// GetMessageType return the message type
-func GetMessageType(message []byte) string {
-	if len(message) == 0 {
+// Type return the message type
+func (m *Message) Type() string {
+	if len(m.hex) == 0 {
 		return OpUnknown
 	}
 
-	magicByte := message[0]
+	magicByte := m.hex[0]
 
 	switch magicByte {
 	case opMagicByteBlock:
@@ -69,9 +79,46 @@ func GetMessageType(message []byte) string {
 	return OpUnknown
 }
 
-// FilterMessage filter a message according to a Tezos Configuration
-func FilterMessage(message []byte, conf *config.TezosConfig) error {
-	msgType := GetMessageType(message)
+// RequireWatermark return true if this message must be watermarked
+func (m *Message) RequireWatermark() bool {
+	if m.Type() == OpBlock || m.Type() == OpEndorsement {
+		return true
+	}
+	return false
+}
+
+// Watermark create a tezos watermark
+func (m *Message) Watermark(keyHash string) (string, *big.Int) {
+	msgID := fmt.Sprintf("%s:%s:%s", keyHash, m.chainID(), m.Type())
+	return msgID, m.level()
+}
+
+func (m *Message) chainID() string {
+	if len(m.hex) < 6 {
+		return "unkown"
+	}
+
+	chainID := m.hex[1:5]
+	return base58CheckEncodePrefix(chainIDPrefix, chainID)
+}
+
+func (m *Message) level() *big.Int {
+	if len(m.hex) < 10 {
+		return nil
+	}
+
+	msgType := m.Type()
+	if msgType == OpBlock {
+		return new(big.Int).SetBytes(m.hex[5:9])
+	} else if msgType == OpEndorsement {
+		return new(big.Int).SetBytes(m.hex[len(m.hex)-4:])
+	}
+	return nil
+}
+
+// MatchFilter filter a message according to a Tezos Configuration
+func (m *Message) MatchFilter(conf *config.TezosConfig) error {
+	msgType := m.Type()
 
 	if msgType == OpUnknown {
 		return ErrDoNotMatchFilter
