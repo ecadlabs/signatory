@@ -73,22 +73,36 @@ func TestFilterMessage(t *testing.T) {
 		Error   error
 	}
 
-	genTezosConfig := func(filters []string) *config.TezosConfig {
+	genTezosConfig := func(filters []string, kinds []string) *config.TezosConfig {
 		return &config.TezosConfig{
 			AllowedOperations: filters,
+			AllowedKinds:      kinds,
 		}
+	}
+
+	createGeneric := func(b byte) []byte {
+		generic := make([]byte, 50)
+		generic[0] = 0x03
+		generic[33] = b
+		return generic
 	}
 
 	cases := []Case{
 		Case{Name: "Nil message", Message: nil, Error: tezos.ErrDoNotMatchFilter},
 		Case{Name: "Empty message", Message: []byte{}, Error: tezos.ErrDoNotMatchFilter},
-		Case{Name: "Generic operation", Message: []byte{0x03, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric})},
-		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpEndorsement})},
-		Case{Name: "Block operation", Message: []byte{0x01, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpBlock})},
+		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpEndorsement}, nil)},
+		Case{Name: "Block operation", Message: []byte{0x01, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpBlock}, nil)},
 		Case{Name: "Invalid magic byte", Message: []byte{0x00, 0x02}, Error: tezos.ErrDoNotMatchFilter},
 		Case{Name: "Invalid magic byte", Message: []byte{0x04, 0x02}, Error: tezos.ErrDoNotMatchFilter},
-		Case{Name: "Unsupported operation", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpBlock, tezos.OpEndorsement})},
-		Case{Name: "Unsupported operation", Message: []byte{0x01, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric})},
+		Case{Name: "Unsupported operation", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpBlock, tezos.OpEndorsement}, nil)},
+		Case{Name: "Unsupported operation", Message: []byte{0x01, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
+
+		Case{Name: "Generic operation not configured", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
+		Case{Name: "Generic operation not long enough", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
+		Case{Name: "Generic operation unkown not long enough", Message: []byte{0x03, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenUnknown})},
+		Case{Name: "Generic operation ballot", Message: createGeneric(0x06), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
+		Case{Name: "Generic operation transaction", Message: createGeneric(0x08), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenTransaction})},
+		Case{Name: "Generic operation proposal", Message: createGeneric(0x05), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenProposal})},
 	}
 
 	for _, c := range cases {

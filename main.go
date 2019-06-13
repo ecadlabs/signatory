@@ -27,6 +27,7 @@ const (
 
 var (
 	defaultOperations = []string{tezos.OpBlock, tezos.OpEndorsement}
+	defaultKinds      = []string{}
 )
 
 func createVaults(c *config.Config) ([]signatory.Vault, []server.Health) {
@@ -66,6 +67,7 @@ func main() {
 		},
 		Tezos: config.TezosConfig{
 			AllowedOperations: defaultOperations,
+			AllowedKinds:      defaultKinds,
 		},
 	}
 	err := c.Read(configFile)
