@@ -1,4 +1,4 @@
-# Signatory :black_nib:
+![Signatory Logo](/docs/signatory-logo.png "Signatory Logo")
 #### A Tezos Remote Signer
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2778/badge)](https://bestpractices.coreinfrastructure.org/projects/2778)
@@ -70,9 +70,6 @@ network operation, there was anecdotal evidence that a lot of bakers run on AWS.
 AWS is a superb provider, but having a concentration of nodes on one cloud
 vendor centralizes the underlying infrastructure of the network, which is not
 desirable.
-
-### Choosing a Backend
-Coming soon
 
 ### Backend KMS/HSM Support Status
 
