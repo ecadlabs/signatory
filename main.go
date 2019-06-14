@@ -85,7 +85,7 @@ func main() {
 	pubKeys, err := signatory.ListPublicKeyHash()
 
 	if err != nil {
-		panic("Unable to reach vault")
+		log.Fatalf("Unable to reach vault: %s", err)
 	}
 
 	log.Info("Supported keys:")
