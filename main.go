@@ -48,6 +48,32 @@ func createVaults(c *config.Config) ([]signatory.Vault, []server.Health) {
 	return vaults, healths
 }
 
+func doImport(vaults []signatory.Vault) {
+	if len(flag.Args()) != 3 {
+		flag.Usage()
+		return
+	}
+
+	pk := flag.Arg(0)
+	sk := flag.Arg(1)
+	v := flag.Arg(2)
+
+	for _, vault := range vaults {
+		if vault.Name() == v {
+			importedKey, err := signatory.Import(pk, sk, vault)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
+			log.Infof("%s, %s", importedKey.Hash, importedKey.KeyID)
+
+			return
+		}
+	}
+	log.Fatalf("Unable to find vault: %s", v)
+}
+
 func main() {
 	done := make(chan os.Signal)
 	errChan := make(chan error)
@@ -55,8 +81,10 @@ func main() {
 
 	var configFile string
 	var logLevelFlag string
+	var importKey bool
 	flag.StringVar(&configFile, "config", "signatory.yaml", "Config file path")
 	flag.StringVar(&logLevelFlag, "log-level", "info", "Log level")
+	flag.BoolVar(&importKey, "import", false, "import [public key] [secret key] [vault]")
 	flag.Parse()
 
 	if lvl, err := logrus.ParseLevel(logLevelFlag); err == nil {
@@ -81,21 +109,26 @@ func main() {
 	}
 
 	vaults, healths := createVaults(c)
-	signatory := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory())
+	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory())
 
-	srv := server.NewServer(signatory, &c.Server)
+	srv := server.NewServer(s, &c.Server)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
 
+	if importKey {
+		doImport(vaults)
+		return
+	}
+
 	log.Info("Detecting supported keys...")
-	pubKeys, err := signatory.ListPublicKeyHash()
+	pubKeys, err := s.ListPublicKeyHash()
 
 	if err != nil {
-		panic("Unable to reach vault")
+		log.Fatal(err)
 	}
 
 	log.Info("Supported keys:\n\n")
 	for _, key := range pubKeys {
-		if signatory.IsAllowed(key) {
+		if s.IsAllowed(key) {
 			log.Infof("%s (Whitelisted) \n", key)
 		} else {
 			log.Infof("%s\n", key)

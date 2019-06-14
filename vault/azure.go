@@ -153,7 +153,7 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Error response from the API %v", response.StatusCode)
+		return "", fmt.Errorf("(Azure) Error response from the API %v", response.StatusCode)
 	}
 
 	azLoginResponse := struct {
@@ -208,7 +208,7 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
+		return nil, fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
 	}
 
 	azListResponse := struct {
@@ -266,7 +266,7 @@ func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error response from the API %v", response.StatusCode)
+		return nil, fmt.Errorf("(Azure) Error response from the API %v", response.StatusCode)
 	}
 
 	azKeyResponse := AzureKey{}
@@ -338,7 +338,7 @@ func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte,
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
+		return nil, fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
 	}
 
 	azSignResponse := struct {
@@ -466,7 +466,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return "", fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
+		return "", fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
 	}
 
 	azImportResponse := struct {
