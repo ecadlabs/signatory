@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,9 +32,13 @@ var (
 )
 
 func createVaults(c *config.Config) ([]signatory.Vault, []server.Health) {
-	azureVault := vault.NewAzureVault(&c.Azure, nil)
-	vaults := []signatory.Vault{azureVault}
-	healths := []server.Health{azureVault}
+	vaults := []signatory.Vault{}
+	healths := []server.Health{}
+	for _, azCfg := range c.Azure {
+		azureVault := vault.NewAzureVault(azCfg, nil)
+		vaults = append(vaults, azureVault)
+		healths = append(healths, azureVault)
+	}
 	for i := range vaults {
 		vault := vaults[i]
 		wrapped := metrics.Wrap(vault)
@@ -88,10 +93,18 @@ func main() {
 		panic("Unable to reach vault")
 	}
 
-	log.Info("Supported keys:")
+	log.Info("Supported keys:\n\n")
 	for _, key := range pubKeys {
-		log.Infof("%s\n", key)
+		if signatory.IsAllowed(key) {
+			log.Infof("%s (Whitelisted) \n", key)
+		} else {
+			log.Infof("%s\n", key)
+		}
 	}
+
+	fmt.Println()
+
+	log.Infof("Only whitelisted keys can sign. \n\n")
 
 	go func() {
 		err := utilityServer.Serve()

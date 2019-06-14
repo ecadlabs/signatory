@@ -109,20 +109,20 @@ func (az *AzureKey) PublicKey() []byte {
 
 // NewAzureVault create a new AzureVault struct according to the config
 // if client is nil it will use the default http client
-func NewAzureVault(config *config.AzureConfig, client HTTPClient) *AzureVault {
+func NewAzureVault(config config.AzureConfig, client HTTPClient) *AzureVault {
 	var c HTTPClient
 	c = http.DefaultClient
 	if client != nil {
 		c = client
 	}
 	return &AzureVault{
-		config: config,
+		config: &config,
 		client: c,
 	}
 }
 
 func (s *AzureVault) vaultURI() string {
-	return s.config.VaultURI
+	return fmt.Sprintf("https://%s.vault.azure.net", s.config.Vault)
 }
 
 // Name return the name of the vault
@@ -174,7 +174,7 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 // Contains return true if the keyHash was found in Azure Key Vault
 func (s *AzureVault) Contains(keyID string) bool {
 	for _, key := range s.config.Keys {
-		if strings.HasPrefix(key.KeyID, keyID) {
+		if key == keyID {
 			return true
 		}
 	}
@@ -439,7 +439,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 		return "", err
 	}
 
-	keyID := fmt.Sprintf("%s/keys/%v", s.config.VaultURI, id)
+	keyID := fmt.Sprintf("%s/keys/%v", s.vaultURI(), id)
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("PUT", endpoint, bytes.NewReader(req))
