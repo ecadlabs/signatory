@@ -81,6 +81,18 @@ func main() {
 	srv := server.NewServer(signatory, &c.Server)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
 
+	log.Info("Detecting supported keys...")
+	pubKeys, err := signatory.ListPublicKeyHash()
+
+	if err != nil {
+		panic("Unable to reach vault")
+	}
+
+	log.Info("Supported keys:")
+	for _, key := range pubKeys {
+		log.Infof("%s\n", key)
+	}
+
 	go func() {
 		err := utilityServer.Serve()
 		if err != nil {

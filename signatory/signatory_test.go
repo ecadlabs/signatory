@@ -15,12 +15,14 @@ type FakeVault struct {
 	ContainsFunc func(keyHash string) bool
 }
 
-func (v *FakeVault) Contains(keyHash string) bool                { return v.ContainsFunc(keyHash) }
-func (v *FakeVault) GetPublicKey(keyHash string) ([]byte, error) { return []byte{}, nil }
-func (v *FakeVault) ListPublicKeys() ([][]byte, error)           { return [][]byte{}, nil }
-func (v *FakeVault) Import(jwk *signatory.JWK) (string, error)   { return "", nil }
-func (v *FakeVault) Name() string                                { return "Mock" }
-func (v *FakeVault) Sign(message []byte, key string, alg string) ([]byte, error) {
+func (v *FakeVault) Contains(keyHash string) bool                             { return v.ContainsFunc(keyHash) }
+func (v *FakeVault) GetPublicKey(keyHash string) (signatory.StoredKey, error) { return nil, nil }
+func (v *FakeVault) ListPublicKeys() ([]signatory.StoredKey, error) {
+	return []signatory.StoredKey{}, nil
+}
+func (v *FakeVault) Import(jwk *signatory.JWK) (string, error) { return "", nil }
+func (v *FakeVault) Name() string                              { return "Mock" }
+func (v *FakeVault) Sign(message []byte, storedKey signatory.StoredKey) ([]byte, error) {
 	return []byte{}, nil
 }
 
@@ -28,7 +30,7 @@ func TestToJWK(t *testing.T) {
 	s := signatory.NewSignatory(
 		[]signatory.Vault{&FakeVault{}},
 		&config.TezosConfig{},
-		func(address string, vault string, algorithm string, kind string) {},
+		func(address string, vault string, kind string) {},
 		watermark.NewIgnore(),
 	)
 	keyPair := tezos.NewKeyPair("p2pk67PsiUBJZq9twKoFAWt8fSSVn53BR31dxKnTeLirLxHqB8gSnCq", "p2sk3LiJ6fU9Lvh8tdwar6tJ2Xg9bg3kQ9p4Sjmn83m29qJQdQPA5r")
@@ -59,7 +61,7 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 			ContainsFunc: func(keyHash string) bool { return false },
 		}},
 		&config.TezosConfig{},
-		func(address string, vault string, algorithm string, kind string) {},
+		func(address string, vault string, kind string) {},
 		watermark.NewIgnore(),
 	)
 

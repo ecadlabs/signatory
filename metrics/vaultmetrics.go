@@ -17,18 +17,17 @@ type metricVault struct {
 	vault signatory.Vault
 }
 
-func (v *metricVault) Contains(keyHash string) bool { return v.vault.Contains(keyHash) }
-func (v *metricVault) GetPublicKey(keyHash string) (signatory.PublicKey, error) {
+func (v *metricVault) GetPublicKey(keyHash string) (signatory.StoredKey, error) {
 	return v.vault.GetPublicKey(keyHash)
 }
-func (v *metricVault) ListPublicKeys() ([]signatory.PublicKey, error) { return v.vault.ListPublicKeys() }
-func (v *metricVault) Sign(digest []byte, key string, alg string) ([]byte, error) {
+func (v *metricVault) ListPublicKeys() ([]signatory.StoredKey, error) { return v.vault.ListPublicKeys() }
+func (v *metricVault) Sign(digest []byte, key signatory.StoredKey) ([]byte, error) {
 	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(val float64) {
 		us := val * float64(time.Microsecond)
 		vaultSigningSummary.WithLabelValues(v.vault.Name()).Observe(us)
 	}))
 	defer timer.ObserveDuration()
-	return v.vault.Sign(digest, key, alg)
+	return v.vault.Sign(digest, key)
 }
 func (v *metricVault) Import(jwk *signatory.JWK) (string, error) { return v.vault.Import(jwk) }
 func (v *metricVault) Name() string                              { return v.vault.Name() }
