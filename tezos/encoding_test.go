@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ecadlabs/signatory/crypto"
 	"github.com/ecadlabs/signatory/tezos"
 )
 
@@ -67,31 +66,6 @@ func TestEncodePubKey(t *testing.T) {
 
 			if encoded != c.Encoded {
 				fmt.Printf("%s: Expected %v but got %v\n", c.Name, c.Encoded, encoded)
-				t.Fail()
-			}
-		})
-	}
-}
-
-func TestGetSigAlg(t *testing.T) {
-	type Case struct {
-		Name       string
-		PubkeyHash string
-		Alg        string
-	}
-
-	cases := []Case{
-		Case{Name: "tz2 address", PubkeyHash: "tz2BFTyPeYRzxd5aiBchbXN3WCZhx7BqbMBq", Alg: crypto.SigP256K},
-		Case{Name: "tz3 address", PubkeyHash: "tz3jbFvkPL3asPSYFnCsFeCzciqmtGB2GSXF", Alg: crypto.SigP256},
-		Case{Name: "Invalid address", PubkeyHash: "tz4jbFvkPL3asPSYFnCsFeCzciqmtGB2GSXF", Alg: ""},
-	}
-
-	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-			alg := tezos.GetSigAlg(c.PubkeyHash)
-
-			if alg != c.Alg {
-				fmt.Printf("Expected %v but got %v\n", c.Alg, alg)
 				t.Fail()
 			}
 		})

@@ -51,11 +51,6 @@ var curveSigMap = map[string]string{
 	crypto.CurveP256K: secp256k1SigPrefix,
 }
 
-var curveSigAlgMap = map[string]string{
-	crypto.CurveP256:  crypto.SigP256,
-	crypto.CurveP256K: crypto.SigP256K,
-}
-
 var curvePubKeyPrefixMap = map[string]string{
 	crypto.CurveP256:  p256PubKeyPrefix,
 	crypto.CurveP256K: secp256k1PubKeyPrefix,
@@ -64,6 +59,11 @@ var curvePubKeyPrefixMap = map[string]string{
 var hashCurveMap = map[string]string{
 	pS256PubKeyHashPrefix:     crypto.CurveP256,
 	secp256k1PubKeyHashPrefix: crypto.CurveP256K,
+}
+
+var curveHashMap = map[string]string{
+	crypto.CurveP256:  pS256PubKeyHashPrefix,
+	crypto.CurveP256K: secp256k1PubKeyHashPrefix,
 }
 
 func base58CheckEncodePrefix(prefix []byte, msg []byte) string {
@@ -119,30 +119,23 @@ func EncodePubKey(pubKeyHash string, pubKey []byte) string {
 	return base58CheckEncodePrefix(prefixMap[pubKeyPrefix], pubKey)
 }
 
+// EncodePubKeyHash encode a pubkey to a Tezos public key hash base on a curve
+func EncodePubKeyHash(pubKey []byte, curve string) string {
+	if val, ok := curveHashMap[curve]; ok {
+		if prefix := prefixMap[val]; ok {
+			hash := blake2b.SumX(20, pubKey)
+			return base58CheckEncodePrefix(prefix, hash[:20])
+		}
+	}
+	return ""
+}
+
 func decodeKey(prefix []byte, key string) ([]byte, error) {
 	decoded, _, err := base58.CheckDecode(key)
 	if err != nil {
 		return nil, err
 	}
 	return decoded[len(prefix)-1:], nil
-}
-
-// GetSigAlg return the correct signature algorithm according to the public key hash
-func GetSigAlg(pubkeyHash string) string {
-	prefix := getPubkeyHashPrefix(pubkeyHash)
-	curveName, ok := hashCurveMap[prefix]
-
-	if !ok {
-		return ""
-	}
-
-	sigAlg, ok := curveSigAlgMap[curveName]
-
-	if !ok {
-		return ""
-	}
-
-	return sigAlg
 }
 
 func getPubkeyHashPrefix(pubkeyHash string) string {

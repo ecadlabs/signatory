@@ -35,6 +35,78 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// AzureKeyDetail data about azure key
+type AzureKeyDetail struct {
+	ID    string `json:"kid"`
+	Curve string `json:"crv"`
+	X     string `json:"x"`
+	Y     string `json:"y"`
+	KTY   string `json:"kty"`
+}
+
+// AzureKey struct that contains data about azure key and honor the StoredKey interface
+type AzureKey struct {
+	Key AzureKeyDetail `json:"key"`
+}
+
+// Curve retrieve the curve to be used with this key
+func (az *AzureKey) Curve() string {
+	if az.Key.Curve == crypto.CurveP256KAlternate {
+		return crypto.CurveP256K
+	}
+
+	return az.Key.Curve
+}
+
+func (az *AzureKey) alg() string {
+	switch az.Key.Curve {
+	case crypto.CurveP256KAlternate:
+		return crypto.SigP256KAlternate
+	case crypto.CurveP256K:
+		return crypto.SigP256K
+	case crypto.CurveP256:
+		return crypto.SigP256
+	default:
+		return ""
+	}
+}
+
+// ID retrive the id of this key
+func (az *AzureKey) ID() string {
+	return az.Key.ID
+}
+
+// PublicKey retrive the public key of this key in a compressed format
+func (az *AzureKey) PublicKey() []byte {
+	decodedX, err := base64.RawURLEncoding.DecodeString(az.Key.X)
+
+	if err != nil {
+		return nil
+	}
+
+	decodedY, err := base64.RawURLEncoding.DecodeString(az.Key.Y)
+
+	if err != nil {
+		return nil
+	}
+
+	// Convert the X and Y coordinate to a compress format
+	// By the nature of elliptic curve for a given X there is two Y possible
+	// The compressed for consist of a first byte indicating which Y was chosen
+	yInt := new(big.Int).SetBytes(decodedY)
+	two := new(big.Int).SetInt64(2)
+	even := new(big.Int).Mod(yInt, two).CmpAbs(new(big.Int).SetInt64(0)) == 0
+
+	pubKey := []byte{0x03} // Odd byte
+
+	if even {
+		pubKey = []byte{0x02} // Even byte
+	}
+
+	pubKey = append(pubKey, decodedX...)
+	return pubKey
+}
+
 // NewAzureVault create a new AzureVault struct according to the config
 // if client is nil it will use the default http client
 func NewAzureVault(config *config.AzureConfig, client HTTPClient) *AzureVault {
@@ -47,6 +119,10 @@ func NewAzureVault(config *config.AzureConfig, client HTTPClient) *AzureVault {
 		config: config,
 		client: c,
 	}
+}
+
+func (s *AzureVault) vaultURI() string {
+	return s.config.VaultURI
 }
 
 // Name return the name of the vault
@@ -95,37 +171,81 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 	return azLoginResponse.AccessToken, nil
 }
 
-func (s *AzureVault) keyIDFromKeyHash(keyHash string) (string, bool) {
+// Contains return true if the keyHash was found in Azure Key Vault
+func (s *AzureVault) Contains(keyID string) bool {
 	for _, key := range s.config.Keys {
-		if key.Hash == keyHash {
-			return key.KeyID, key.Imported
+		if strings.HasPrefix(key.KeyID, keyID) {
+			return true
 		}
 	}
-	return "", false
-}
-
-// Contains return true if the keyHash was found in Azure Key Vault
-func (s *AzureVault) Contains(keyHash string) bool {
-	result, _ := s.keyIDFromKeyHash(keyHash)
-	return result != ""
+	return false
 }
 
 // ListPublicKeys retrieve all the public keys matching keyHash from the azure key vault rest api
-func (s *AzureVault) ListPublicKeys() ([][]byte, error) {
-	keys := [][]byte{}
-	for _, key := range s.config.Keys {
-		pubKey, err := s.GetPublicKey(key.Hash)
-		if err != nil {
-			return nil, err
+func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
+	endpoint := fmt.Sprintf("%s/keys?api-version=7.0", s.vaultURI())
+	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
+
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := s.getToken(azResVault)
+
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	httpReq.Header.Add("Content-Type", "application/json")
+
+	response, err := s.client.Do(httpReq)
+	defer response.Body.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		result, _ := ioutil.ReadAll(response.Body)
+		return nil, fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
+	}
+
+	azListResponse := struct {
+		Values []struct {
+			ID string `json:"kid"`
+		} `json:"value"`
+	}{}
+
+	result, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(result, &azListResponse)
+
+	if err != nil {
+		return nil, err
+	}
+
+	keys := []signatory.StoredKey{}
+	for _, key := range azListResponse.Values {
+		if s.Contains(key.ID) {
+			pubKey, err := s.GetPublicKey(key.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			keys = append(keys, pubKey)
 		}
 
-		keys = append(keys, pubKey)
 	}
 	return keys, nil
 }
 
-// GetPublicKeyFromID retrieve the public key matching keyID from the azure key vault rest api
-func (s *AzureVault) GetPublicKeyFromID(keyID string) ([]byte, error) {
+// GetPublicKey retrieve the public key matching keyID from the azure key vault rest api
+func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
@@ -149,12 +269,7 @@ func (s *AzureVault) GetPublicKeyFromID(keyID string) ([]byte, error) {
 		return nil, fmt.Errorf("Error response from the API %v", response.StatusCode)
 	}
 
-	azKeyResponse := struct {
-		Key struct {
-			X string `json:"x"`
-			Y string `json:"y"`
-		} `json:"key"`
-	}{}
+	azKeyResponse := AzureKey{}
 
 	result, err := ioutil.ReadAll(response.Body)
 
@@ -168,56 +283,21 @@ func (s *AzureVault) GetPublicKeyFromID(keyID string) ([]byte, error) {
 		return nil, err
 	}
 
-	decodedX, err := base64.RawURLEncoding.DecodeString(azKeyResponse.Key.X)
-
-	if err != nil {
-		return nil, err
-	}
-
-	decodedY, err := base64.RawURLEncoding.DecodeString(azKeyResponse.Key.Y)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the X and Y coordinate to a compress format
-	// By the nature of elliptic curve for a given X there is two Y possible
-	// The compressed for consist of a first byte indicating which Y was chosen
-	yInt := new(big.Int).SetBytes(decodedY)
-	two := new(big.Int).SetInt64(2)
-	even := new(big.Int).Mod(yInt, two).CmpAbs(new(big.Int).SetInt64(0)) == 0
-
-	pubKey := []byte{0x03} // Odd byte
-
-	if even {
-		pubKey = []byte{0x02} // Even byte
-	}
-
-	pubKey = append(pubKey, decodedX...)
-
-	return pubKey, nil
-}
-
-// GetPublicKey retrieve the public key matching keyHash from the azure key vault rest api
-func (s *AzureVault) GetPublicKey(keyHash string) ([]byte, error) {
-	keyID, _ := s.keyIDFromKeyHash(keyHash)
-
-	return s.GetPublicKeyFromID(keyID)
-}
-
-func (s *AzureVault) getAlg(alg string, imported bool) string {
-	if alg == crypto.SigP256K && imported {
-		return "ECDSA256"
-	}
-	return alg
+	return &azKeyResponse, nil
 }
 
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
-func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, error) {
+func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
 	log.Info("Signing in Azure vault")
-	keyID, imported := s.keyIDFromKeyHash(keyHash)
 
-	alg = s.getAlg(alg, imported)
+	azureKey, ok := storedKey.(*AzureKey)
+
+	if !ok {
+		return nil, fmt.Errorf("Key is not of type Azure Key")
+	}
+
+	alg := azureKey.alg()
+	keyID := azureKey.ID()
 
 	request := struct {
 		Alg   string `json:"alg"`
@@ -257,7 +337,8 @@ func (s *AzureVault) Sign(digest []byte, keyHash string, alg string) ([]byte, er
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error response from the API %v", response.StatusCode)
+		result, _ := ioutil.ReadAll(response.Body)
+		return nil, fmt.Errorf("Error response from the API %v, %s", response.StatusCode, string(result))
 	}
 
 	azSignResponse := struct {
