@@ -200,15 +200,14 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	response, err := s.client.Do(httpReq)
-	defer response.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
+		return nil, fmt.Errorf("(Azure/%s) Error response from the API %v, %s", s.config.Vault, response.StatusCode, string(result))
 	}
 
 	azListResponse := struct {
