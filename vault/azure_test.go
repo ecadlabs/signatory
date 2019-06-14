@@ -58,7 +58,7 @@ func mockRequest(loginFunc HandleFunc, signFunc HandleFunc) func(req *http.Reque
 
 func TestAzureSign(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`{ "kid" : "test", "value": "123455"}`, 200))
-	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
+	az := vault.NewAzureVault(config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
 
 	key := &vault.AzureKey{
@@ -83,7 +83,7 @@ func TestAzureSign(t *testing.T) {
 
 func TestAzureSignError(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`Key not found`, 404))
-	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
+	az := vault.NewAzureVault(config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
 	_, err := az.Sign(bytesToSign, nil)
 

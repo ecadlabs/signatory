@@ -15,31 +15,27 @@ type ServerConfig struct {
 
 // AzureConfig contains the information necessary to use the Azure Key Vault backend
 type AzureConfig struct {
-	ClientID       string `yaml:"client_id"`
-	ClientSecret   string `yaml:"client_secret"`
-	DirectoryID    string `yaml:"directory_id"`
-	SubscriptionID string `yaml:"subscription"`
-	VaultURI       string `yaml:"vault_uri"`
-	ResourceGroup  string `yaml:"resource_group"`
-	Vault          string `yaml:"vault"`
-	Keys           []struct {
-		KeyID    string `yaml:"key_id"`
-		Hash     string `yaml:"hash"`
-		Imported bool   `yaml:"imported"`
-	}
+	ClientID       string   `yaml:"client_id"`
+	ClientSecret   string   `yaml:"client_secret"`
+	DirectoryID    string   `yaml:"tenant_id"`
+	SubscriptionID string   `yaml:"subscription"`
+	ResourceGroup  string   `yaml:"resource_group"`
+	Vault          string   `yaml:"vault"`
+	Keys           []string `yaml:"keys"`
 }
 
 // TezosConfig contains the configuration related to tezos network
 type TezosConfig struct {
+	Keys              []string
 	AllowedOperations []string `yaml:"allowed_operations"`
 	AllowedKinds      []string `yaml:"allowed_kinds"`
 }
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
-	Azure  AzureConfig  `yaml:"azure"`
-	Tezos  TezosConfig  `yaml:"tezos"`
-	Server ServerConfig `yaml:"server"`
+	Azure  []AzureConfig `yaml:"azure"`
+	Tezos  TezosConfig   `yaml:"tezos"`
+	Server ServerConfig  `yaml:"server"`
 }
 
 // Read read the config from a file
