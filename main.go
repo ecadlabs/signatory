@@ -119,25 +119,35 @@ func main() {
 		return
 	}
 
-	log.Info("Detecting supported keys...")
+	log.Info("Discovering supported keys from vault(s)...")
 	pubKeys, err := s.ListPublicKeyHash()
 
 	if err != nil {
 		log.Fatal(err)
 	}
+	if len(pubKeys) == 0 {
+		log.Error("No keys discovered in Key Valut(s), exiting..")
+		os.Exit(1)
+	}
 
-	log.Info("Supported keys:\n\n")
+	log.Info("Keys discovered in Key Vault:\n\n")
+	var allowedKeyCount int
 	for _, key := range pubKeys {
 		if s.IsAllowed(key) {
-			log.Infof("%s (Whitelisted) \n", key)
+			allowedKeyCount++
+			log.Infof("%s (Configured and ready for use) \n", key)
 		} else {
-			log.Infof("%s\n", key)
+			log.Infof("%s (Not configured in signatory)\n", key)
 		}
+	}
+	if allowedKeyCount == 0 {
+		log.Error("No keys configured for signing. To allow a key add it to the tezos.keys list in %s ", configFile)
+		os.Exit(1)
 	}
 
 	fmt.Println()
 
-	log.Infof("Only whitelisted keys can sign. \n\n")
+	log.Infof("Only Allowed keys can sign. To allow a key add it to the tezos.keys list in %s", configFile)
 
 	go func() {
 		err := utilityServer.Serve()

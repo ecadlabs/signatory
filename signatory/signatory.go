@@ -79,7 +79,7 @@ func NewSignatory(
 	}
 }
 
-// IsAllowed return true if a key is whitelisted
+// IsAllowed returns true if keyHash is listed in configuration
 func (s *Signatory) IsAllowed(keyHash string) bool {
 	for _, key := range s.config.Keys {
 		if key == keyHash {
@@ -122,7 +122,7 @@ func (s *Signatory) validateMessage(msg *tezos.Message) error {
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	if !s.IsAllowed(keyHash) {
-		return "", fmt.Errorf("%s is not whitelisted", keyHash)
+		return "", fmt.Errorf("%s is not listed in config", keyHash)
 	}
 
 	log.Infof("Signing for key: %s\n", keyHash)
