@@ -1,15 +1,21 @@
-# Azure setup
+#  Azure setup
 
 __Rough draft, needs polish and testing__
 
-The pre-requisites for setting up Azure KMS as a Signatory backend are;
+The goal of this guide is to configure Signatory to use a Azure KMS as a
+singing backend. We will also show how to generate a new key inside the Azure
+HSM, and how to "Bring Your Own Key"/"BYOK" by showing you how to import your
+own key.
+
+To setup Azure KMS as a signing backend for Signatory, you will need:
 
 * An active Azure subscription
 * The [Azure
 CLI](https://docs.microsoft.com/en-us/cli/azure/?view=azure-cli-latest) `az`
 installed and configured on your computer.
 
-## How to configure Azure.
+
+## Setup a new Azure Key Vault and credentials
 
 Use the `example.yaml` signatory config file as a starting point.
 
@@ -21,35 +27,35 @@ For each command, you will get a json formatted result, or an error.
 
 ### Create a Azure resource group.
 
-You need to specify the location you want your
-Signatory to be located. This is up to you. The closer to your baker the
-better, but other criteria may be important to you.
-
-We will place our demo in the `canadaeast` location by running the command;
+You need to specify the location you want your Signatory to be located. This is
+up to you. The closer to your baker the better, but other criteria may be
+important to you. In our example, we will use `canadaeast`, and we will call
+our resource group "signatory_resgroup"
 
 ```sh
 az group create --name signatory_resgroup --location canadaeast
 ```
 
-### Create a new keyvault
+Add your `resource_group` name to your signatory yaml configuration file.
 
-Next we will create a new keyvault within our newly created resource_group by
-running the command:
+### Create a new Key Vault, with HSM enabled
+
+Next we will create a new Key Vault within our newly created resource_group.
+
+We will call our Key Vault `signatory-keyvault`. You can add this name to your
+signatory configuration file in `azure.vault`.
 
 ```sh
-az keyvault create --name sigvault --resource-group signatory_resgroup --sku premium
+az keyvault create \
+    --name signatory-keyvault \
+    --resource-group signatory_resgroup \
+    --sku premium
 ```
 
 The `--sku` argument must be set to premium if you want to have your keys
 stored in a HSM.
 
-From the json output from the above command, copy the following property values:
-
-* vaultUri to the `vault_uri` prop in yaml
-* name ("sigvault") to `vault` in yaml
-* `tenant_id` to `directory_id` in yaml. Azure refers to tenant_id as "directory_id" when looking via the portal
-
-### Get the subscription id for your account
+### Get the subscription and tenant id for your account
 
 To find your subscription id, run the command;
 
@@ -57,25 +63,40 @@ To find your subscription id, run the command;
 az account list
 ```
 
-Copy the `id` vaule from the output into the `subscription` property in the
-signatory config file. If you have multiple logins configured for your `az`
-command, make sure to choose the correct one.
+Copy the `id` value (this is your `subscription` id) and the `tenant_id` values
+from the json output, and put them into your configuration file.
+
+If you have multiple logins configured for your `az` command, make sure to
+choose the correct one.
 
 ### Create a Service Principal for authentication
 
 Next we need to create a "service principal" resource (also known as a "service
-account"). This is the credential that allows Signatory to authenticate and work
-with the Azure KMS service.
+account" or a "App Registration").
+
+This is the credential that allows Signatory to authenticate and work with the
+Azure KMS service.
 
 Run the command:
 
 ```sh
-az ad sp create-for-rbac -n "http://signatory_serviceprincipal"
+az ad sp create-for-rbac --name "signatory_serviceprincipal"
 ```
 
-Copy the `name` value (http://signatory_serviceprincipal), with the `http://`
-prefix into the `client_id` property under your new azure config block.
-Copy the `password` value into the `client_secret` property
+* Copy the `name` value (`signatory_serviceprincipal`) prefix into the `client_id` property under your new azure config block. Add `http://` to the beginning, so it looks like `client_id: http://signatory_serviceprincipal`
+* Copy the `password` value into the `client_secret` property
+* Copy the value of `appId` for use in the next command
+
+Next we need to grant the new "service principal" access to our Key Vault. You
+need to use the `appId` value from the previous command to do this.
+
+```sh
+ az keyvault set-policy \
+    --name signatory-keyvault \
+    --spn APPID_FROM_PREVIOUS_COMMAND \
+    --key-permissions sign list get import
+```
+
 
 ## Import a key to Azure
 
@@ -83,12 +104,23 @@ Copy the `password` value into the `client_secret` property
 
 ## Generate a key in Azures HSM
 
-You can generate a key pair within the HSM. *WARNING* This key is not
-exportable, so you do not have portability. If you use this private key, you
-are locked into using Azure for all signing operations. This might be good in
-some aspects, such as surety, plausible deniability, etc. but your if you loose
-access to your Azure account, you loose access to your key. PROCEED WITH
-CAUTION. We recommend to use this approach only for testing.
+You can generate a key pair within the HSM.
+
+*WARNING* 
+
+This key is not exportable, so you do not have portability. If you use a
+private key generated by the Azure HSM, you are locked into using Azure for all
+signing operations. This might be good in some aspects, such as surety,
+plausible deniability, etc. but your if you loose access to your Azure account,
+or accidentally delete you Key Vault you loose access to your key and any assets assocaited with your account. 
+
+*PROCEED WITH CAUTION*. We recommend to use this approach only for testing.
+
+To generate a new key in the HSM, you use the command below. You can choose to
+type of Tezos address by specifing the curve to use.
+
+* `--curve P-256` will generate a `tz3` address
+* `--curve P-256K` will generate a `tz2` address
 
 ```
 az keyvault key create --name sigtestkey2 --vault-name sigtest2 --protection hsm --kty EC-HSM --curve P-256
@@ -100,21 +132,27 @@ The output from this command will show you a vaule similar to:
 kid: https://sigtest2.vault.azure.net/keys/sigtestkey2/1757975528b04c488c36963eee6e9d5d
 ```
 
-Take this value and add it to the `keys` list under your new azure
-configuration block.
+You need to copy, edit and add this URL to your configuration as follows;
+
+* Copy the URL portion `https://sigtest2.vault.azure.net/keys/sigtestkey2/1757975528b04c488c36963eee6e9d5d`
+* Remove the last part of the path so you get: `https://sigtest2.vault.azure.net/keys/sigtestkey2`
+* Copy this URL into the keys list of your signatory configuration
+
 
 When you start signatory, it will connect to azure, request the public key
 co-ordinates using the `kid` URL, and print the `tz` address to the console.
 
+When you see the `tz` address, you must copy this vaule into the `tezos.keys`
+list for Signatory to carry out siginging operations using this address.
+
 ## Testing / Verify
 
 To test the signing operation, you can send a post to signatory. In this
-example, we are sending a operation of type `03`, which is a `generic`
-operation type. We are just passing a `0` byte, which will serve the purpose of
-testing that singing operations work and no more.
+example, we are sending a dummy operation of type `02`, which is a `endorsment`
+operation type. 
 
 ```sh
-curl -XPOST -d '"0300"' localhost:8003/keys/tz3jbFvkPL3asPSYFnCsFeCzciqmtGB2GSXF
+curl -XPOST -d '"02111111111111111111"' localhost:8003/keys/tz3Tm6UTWmPAZJaNSPAQNiMiyFSHnRXrkcHj 
 ```
 
 If you recieve an error from curl and on the signatory console, you will have
