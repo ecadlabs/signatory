@@ -153,7 +153,7 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("(Azure) Error response from the API %v", response.StatusCode)
+		return "", fmt.Errorf("(Azure/%s) Error response from the API %v", s.config.Vault, response.StatusCode)
 	}
 
 	azLoginResponse := struct {
@@ -207,7 +207,7 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("(Azure/%s) Error response from the API %v, %s", s.config.Vault, response.StatusCode, string(result))
+		return nil, fmt.Errorf("(Azure/%s) Error fetching public keys: %v, %s", s.config.Vault, response.StatusCode, string(result))
 	}
 
 	azListResponse := struct {
@@ -265,7 +265,7 @@ func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("(Azure) Error response from the API %v", response.StatusCode)
+		return nil, fmt.Errorf("(Azure/%s) Error retrieving public key %v", s.config.Vault, response.StatusCode)
 	}
 
 	azKeyResponse := AzureKey{}
@@ -287,12 +287,12 @@ func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
 func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
-	log.Info("Signing in Azure vault")
+	log.Infof("Signing operation with Azure %s vault", s.config.Vault)
 
 	azureKey, ok := storedKey.(*AzureKey)
 
 	if !ok {
-		return nil, fmt.Errorf("Key is not of type Azure Key")
+		return nil, fmt.Errorf("(Azure/%s): Key is not of type Azure Key", s.config.Vault)
 	}
 
 	alg := azureKey.alg()
@@ -337,7 +337,7 @@ func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte,
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
+		return nil, fmt.Errorf("(Azure/%s) Error signing operation  %v, %s", s.config.Vault, response.StatusCode, string(result))
 	}
 
 	azSignResponse := struct {
@@ -404,7 +404,7 @@ func (s *AzureVault) Ready() bool {
 
 // Import use the azure key vault rest api to import a JWK
 func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
-	log.Info("Importing in Azure vault")
+	log.Infof("Importing key into Azure %s vault", s.config.Vault)
 	type Key struct {
 		signatory.JWK
 		KeyOps []string `json:"key_ops"`
@@ -465,7 +465,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return "", fmt.Errorf("(Azure) Error response from the API %v, %s", response.StatusCode, string(result))
+		return "", fmt.Errorf("(Azure/%s) Error importing key %v, %s", s.config.Vault, response.StatusCode, string(result))
 	}
 
 	azImportResponse := struct {
