@@ -135,13 +135,13 @@ func main() {
 	for _, key := range pubKeys {
 		if s.IsAllowed(key) {
 			allowedKeyCount++
-			log.Infof("%s (Configured and ready for use) \n", key)
+			log.Infof("%s (Configured, ready for use)", key)
 		} else {
-			log.Infof("%s (Not configured in signatory)\n", key)
+			log.Infof("%s (Found in vault, not configured for use in %s)", key, configFile)
 		}
 	}
 	if allowedKeyCount == 0 {
-		log.Error("No keys configured for signing. To allow a key add it to the tezos.keys list in %s ", configFile)
+		log.Errorf("No keys configured for signing. To allow a key add it to the tezos.keys list in %s ", configFile)
 		os.Exit(1)
 	}
 
