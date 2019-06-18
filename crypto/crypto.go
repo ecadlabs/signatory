@@ -15,8 +15,12 @@ const (
 
 	// CurveP256K is the standard name for P256K Curve
 	CurveP256K = "P-256K"
+	// CurveP256KAlternate is the an alternate name for P256K Curve
+	CurveP256KAlternate = "SECP256K1"
 	// SigP256K is the standard name for ES256K Signature algorithm
 	SigP256K = "ES256K"
+	// SigP256KAlternate is the an alternate name for ES256K Signature algorithm
+	SigP256KAlternate = "ECDSA256"
 )
 
 func getCurve(name string) elliptic.Curve {

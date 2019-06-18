@@ -2,6 +2,7 @@ package vault_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -57,27 +58,37 @@ func mockRequest(loginFunc HandleFunc, signFunc HandleFunc) func(req *http.Reque
 
 func TestAzureSign(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`{ "kid" : "test", "value": "123455"}`, 200))
-	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
+	az := vault.NewAzureVault(config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
-	sig, err := az.Sign(bytesToSign, "", "ES256")
+
+	key := &vault.AzureKey{
+		Key: vault.AzureKeyDetail{
+			ID: "test",
+		},
+	}
+
+	sig, err := az.Sign(bytesToSign, key)
 
 	if err != nil {
+		fmt.Printf("Unexpected error was thrown: %s\n", err.Error())
 		t.Fail()
 	}
 
 	expected := []byte{215, 109, 248, 231}
 	if string(sig) != string(expected) {
+		fmt.Printf("Expected %s got %s\n", string(expected), string(sig))
 		t.Fail()
 	}
 }
 
 func TestAzureSignError(t *testing.T) {
 	do := mockRequest(mockLogin(), mockSign(`Key not found`, 404))
-	az := vault.NewAzureVault(&config.AzureConfig{}, &MockClient{do})
+	az := vault.NewAzureVault(config.AzureConfig{}, &MockClient{do})
 	bytesToSign := []byte{0x03, 0xff, 0x33}
-	_, err := az.Sign(bytesToSign, "", "ES256")
+	_, err := az.Sign(bytesToSign, nil)
 
 	if err == nil {
+		fmt.Printf("Expected error got nothing\n")
 		t.Fail()
 	}
 }

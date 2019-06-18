@@ -1,7 +1,6 @@
 package signatory
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -19,42 +18,24 @@ var (
 	ErrNotSafeToSign = fmt.Errorf("Not safe to sign")
 )
 
-// JWK struct containing a standard key format
-type JWK struct {
-	KeyType string `json:"kty"`
-	D       string `json:"d"`
-	X       string `json:"x"`
-	Y       string `json:"y"`
-	Curve   string `json:"crv"`
-}
-
-type NotifySigning func(address string, vault string, algorithm string, kind string)
+type NotifySigning func(address string, vault string, kind string)
 
 // PublicKey alias for an array of byte
 type PublicKey = []byte
 
-// ImportedKey struct containing information about an imported key
-type ImportedKey struct {
-	Hash  string
-	KeyID string
+type StoredKey interface {
+	Curve() string
+	PublicKey() []byte
+	ID() string
 }
 
 // Vault interface that represent a secure key store
 type Vault interface {
-	Contains(keyHash string) bool
-	GetPublicKey(keyHash string) (PublicKey, error)
-	ListPublicKeys() ([]PublicKey, error)
-	Sign(digest []byte, key string, alg string) ([]byte, error)
+	GetPublicKey(keyID string) (StoredKey, error)
+	ListPublicKeys() ([]StoredKey, error)
+	Sign(digest []byte, key StoredKey) ([]byte, error)
 	Import(jwk *JWK) (string, error)
 	Name() string
-}
-
-// KeyPair interface that represent an elliptic curve key pair
-type KeyPair interface {
-	X() []byte
-	Y() []byte
-	D() []byte
-	CurveName() string
 }
 
 // Watermark interface for service that allow double bake check
@@ -62,12 +43,24 @@ type Watermark interface {
 	IsSafeToSign(msgID string, level *big.Int) bool
 }
 
+type vaultKeyIDPair struct {
+	vault Vault
+	key   StoredKey
+}
+
+type HashVaultStore = map[string]vaultKeyIDPair
+
+func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
+	s.hashVaultStore[hash] = vaultKeyIDPair{key: key, vault: vault}
+}
+
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
-	vaults        []Vault
-	config        *config.TezosConfig
-	notifySigning NotifySigning
-	watermark     Watermark
+	vaults         []Vault
+	config         *config.TezosConfig
+	notifySigning  NotifySigning
+	watermark      Watermark
+	hashVaultStore HashVaultStore
 }
 
 // NewSignatory return a new signatory struct
@@ -78,18 +71,34 @@ func NewSignatory(
 	watermark Watermark,
 ) *Signatory {
 	return &Signatory{
-		vaults:        vaults,
-		config:        config,
-		notifySigning: notify,
-		watermark:     watermark,
+		vaults:         vaults,
+		config:         config,
+		hashVaultStore: make(HashVaultStore),
+		notifySigning:  notify,
+		watermark:      watermark,
 	}
 }
 
-func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
-	for _, vault := range s.vaults {
-		if vault.Contains(keyHash) {
-			return vault
+// IsAllowed returns true if keyHash is listed in configuration
+func (s *Signatory) IsAllowed(keyHash string) bool {
+	for _, key := range s.config.Keys {
+		if key == keyHash {
+			return true
 		}
+	}
+	return false
+}
+
+func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
+	if pair, ok := s.hashVaultStore[keyHash]; ok {
+		return pair.vault
+	}
+	return nil
+}
+
+func (s *Signatory) getKeyFromKeyHash(keyHash string) StoredKey {
+	if pair, ok := s.hashVaultStore[keyHash]; ok {
+		return pair.key
 	}
 	return nil
 }
@@ -112,6 +121,10 @@ func (s *Signatory) validateMessage(msg *tezos.Message) error {
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
+	if !s.IsAllowed(keyHash) {
+		return "", fmt.Errorf("%s is not listed in config", keyHash)
+	}
+
 	log.Infof("Signing for key: %s\n", keyHash)
 	log.Debugf("About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
 
@@ -134,9 +147,11 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 		return "", ErrVaultNotFound
 	}
 
-	alg := tezos.GetSigAlg(keyHash)
+	// Not nil if vault found
+	storedKey := s.getKeyFromKeyHash(keyHash)
+
 	digest := tezos.DigestFunc(message)
-	sig, err := vault.Sign(digest[:], keyHash, alg)
+	sig, err := vault.Sign(digest[:], storedKey)
 
 	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s\n", hex.EncodeToString(sig))
 
@@ -148,11 +163,31 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	log.Debugf("Encoded signature: %s\n", encodedSig)
 
-	s.notifySigning(keyHash, vault.Name(), alg, msg.Type())
+	s.notifySigning(keyHash, vault.Name(), msg.Type())
 
 	log.Infof("Signed %s successfully", msg.Type())
 
 	return encodedSig, nil
+}
+
+// ListPublicKeyHash retrieve the list of all public key hash supported by the current configuration
+func (s *Signatory) ListPublicKeyHash() ([]string, error) {
+	results := []string{}
+	for _, vault := range s.vaults {
+		pubKeys, err := vault.ListPublicKeys()
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, key := range pubKeys {
+			encoded := tezos.EncodePubKeyHash(key.PublicKey(), key.Curve())
+			results = append(results, encoded)
+
+			s.addKeyMap(encoded, key, vault)
+		}
+	}
+	return results, nil
 }
 
 // GetPublicKey retrieve the public key from a vault
@@ -163,57 +198,13 @@ func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
 		return "", ErrVaultNotFound
 	}
 
+	key := s.getKeyFromKeyHash(keyHash)
+
 	log.Debugf("Fetching public key for: %s\n", keyHash)
 
-	pubKey, err := vault.GetPublicKey(keyHash)
+	pubKey, err := vault.GetPublicKey(key.ID())
 	if err != nil {
 		return "", err
 	}
-	return tezos.EncodePubKey(keyHash, pubKey), nil
-}
-
-// Import a keyPair inside the vault
-func (s *Signatory) Import(pubkey string, secretKey string, vault Vault) (*ImportedKey, error) {
-	keyPair := tezos.NewKeyPair(pubkey, secretKey)
-	err := keyPair.Validate()
-
-	if err != nil {
-		return nil, err
-	}
-
-	jwk, err := s.ToJWK(keyPair)
-
-	if err != nil {
-		return nil, err
-	}
-
-	keyID, err := vault.Import(jwk)
-
-	if err != nil {
-		return nil, err
-	}
-
-	hash, err := keyPair.PubKeyHash()
-
-	if err != nil {
-		return nil, err
-	}
-
-	importedKey := &ImportedKey{
-		KeyID: keyID,
-		Hash:  hash,
-	}
-
-	return importedKey, nil
-}
-
-// ToJWK Convert a keyPair to a JWK
-func (s *Signatory) ToJWK(k KeyPair) (*JWK, error) {
-	return &JWK{
-		X:       base64.StdEncoding.EncodeToString(k.X()),
-		Y:       base64.StdEncoding.EncodeToString(k.Y()),
-		D:       base64.StdEncoding.EncodeToString(k.D()),
-		KeyType: "EC",
-		Curve:   k.CurveName(),
-	}, nil
+	return tezos.EncodePubKey(keyHash, pubKey.PublicKey()), nil
 }

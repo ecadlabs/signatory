@@ -31,7 +31,7 @@ const (
 	// OpGeneric config string for generic operation
 	OpGeneric = "generic"
 	// OpUnknown config string for unkown operation
-	OpUnknown = "unkown"
+	OpUnknown = "unknown"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 	// OpGenBallot config string for ballot operation
 	OpGenBallot = "ballot"
 	// OpGenUnknown config string for unknown operation
-	OpGenUnknown = "unkown"
+	OpGenUnknown = "unknown"
 )
 
 var (
@@ -51,7 +51,7 @@ var (
 	// ErrInvalidMagicByte is an error indicating that a message magic byte is invalid/
 	ErrInvalidMagicByte = errors.New("Invalid magic byte")
 	// ErrDoNotMatchFilter is an error indicating that a message magic byte is invalid/
-	ErrDoNotMatchFilter = errors.New("Do not match filter")
+	ErrDoNotMatchFilter = errors.New("Operation not permitted by filter")
 )
 
 // Message represent a tezos message
