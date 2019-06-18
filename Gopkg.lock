@@ -11,6 +11,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:9e7c5138114ff9c51a60731b3a425c319305013c6ea8b3f60fd2435baba1a0db"
+  name = "github.com/btcsuite/btcd"
+  packages = ["btcec"]
+  pruneopts = "UT"
+  revision = "962a206e94e9151fe41bbd6d6464af4ba7168f50"
+
+[[projects]]
+  branch = "master"
   digest = "1:95f4fdfbc8d7723bd21e467aabe98d86f06d3e2557b1ba92bf9df8aea6706784"
   name = "github.com/btcsuite/btcutil"
   packages = ["base58"]
@@ -26,6 +34,20 @@
   revision = "43f5da33474d31ff27b76cc653db76fc8ff90afe"
 
 [[projects]]
+  branch = "master"
+  digest = "1:60e4d7c355ddeca4a72f2469ca2761d387fee81dcbb7506b0cb5747bea07ee64"
+  name = "github.com/certusone/yubihsm-go"
+  packages = [
+    ".",
+    "commands",
+    "connector",
+    "securechannel",
+  ]
+  pruneopts = "UT"
+  revision = "b28a514e8f0f13447cfb1255be7e7f8111eec38f"
+  source = "github.com/ecadlabs/yubihsm-go"
+
+[[projects]]
   digest = "1:be60b0d02c14243add46b34085d0c1e61d2e90e88b78ff76e64d9f63d66af4ac"
   name = "github.com/decred/dcrd"
   packages = ["dcrec/secp256k1"]
@@ -34,12 +56,31 @@
   version = "v1.3.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:47ca4e38d76577802c4ace4f90dc92b7601289e1a32d16194df6cf517ccc5168"
+  name = "github.com/enceve/crypto"
+  packages = [
+    ".",
+    "cmac",
+  ]
+  pruneopts = "UT"
+  revision = "34d48bb938155e3b408f014835ee1f6e3b4c2672"
+
+[[projects]]
   digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
   version = "v1.3.1"
+
+[[projects]]
+  digest = "1:3af6be4fee7c08f81f13d36f04ffb63ad4b6b5aaba12cce96095c7c2863d4912"
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
+  version = "v1.7.2"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -58,7 +99,7 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:93a746f1060a8acbcf69344862b2ceced80f854170e1caae089b2834c5fbf7f4"
+  digest = "1:eb04f69c8991e52eff33c428bd729e04208bf03235be88e4df0d88497c6861b9"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
@@ -66,8 +107,8 @@
     "prometheus/promhttp",
   ]
   pruneopts = "UT"
-  revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
-  version = "v0.9.2"
+  revision = "4ab88e80c249ed361d3299e2930427d9ac43ef8d"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -78,7 +119,7 @@
   revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
 
 [[projects]]
-  digest = "1:35cf6bdf68db765988baa9c4f10cc5d7dda1126a54bd62e252dbcd0b1fc8da90"
+  digest = "1:8dcedf2e8f06c7f94e48267dea0bc0be261fa97b377f3ae3e87843a92a549481"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -86,19 +127,19 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "a82f4c12f983cc2649298185f296632953e50d3e"
-  version = "v0.3.0"
+  revision = "31bed53e4047fd6c510e43a941f90cb31be0972a"
+  version = "v0.6.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:191d4582bcd2323519d02fadd61dab4cd0b3425c23c2a1268afe2644d416bfd4"
+  digest = "1:403b810b43500b5b0a9a24a47347e31dc2783ccae8cf97c891b46f5b0496fa1a"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
     "internal/fs",
   ]
   pruneopts = "UT"
-  revision = "bc6930f2d5103de3e494ee4f4dc68c195271c57b"
+  revision = "833678b5bb319f2d20a475cb165c6cc59c2cc77c"
+  version = "v0.0.2"
 
 [[projects]]
   digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
@@ -109,23 +150,32 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
-  version = "v1.4.1"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:8acf841d7417aa2621a2b923f6262673033d407053ab49a4db9ec34378e1b49b"
+  digest = "1:f92f6956e4059f6a3efc14924d2dd58ba90da25cc57fe07ae3779ef2f5e0c5f2"
+  name = "golang.org/x/crypto"
+  packages = ["pbkdf2"]
+  pruneopts = "UT"
+  revision = "57b3e21c3d5606066a87e63cfe07ec6b9f0db000"
+
+[[projects]]
+  branch = "master"
+  digest = "1:09a185c5fd288bf29a68c08e84b06e7135c27452b3c8a4f0800f387f7031176f"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
+    "windows",
   ]
   pruneopts = "UT"
-  revision = "d89cdac9e8725f2aefce25fcbfef41134c9ad412"
+  revision = "516e3c20635fbe39539f7ed361a15c51fec29cd8"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -139,9 +189,14 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/btcsuite/btcd/btcec",
     "github.com/btcsuite/btcutil/base58",
     "github.com/carte7000/crypto/blake2b",
+    "github.com/certusone/yubihsm-go",
+    "github.com/certusone/yubihsm-go/commands",
+    "github.com/certusone/yubihsm-go/connector",
     "github.com/decred/dcrd/dcrec/secp256k1",
+    "github.com/gorilla/mux",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/satori/go.uuid",

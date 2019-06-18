@@ -32,3 +32,8 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/certusone/yubihsm-go"
+  branch = "master"
+  source = "github.com/ecadlabs/yubihsm-go"
