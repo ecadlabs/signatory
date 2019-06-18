@@ -1,4 +1,4 @@
-#  Azure setup
+# Azure setup
 
 __Rough draft, needs polish and testing__
 
@@ -33,7 +33,9 @@ important to you. In our example, we will use `canadaeast`, and we will call
 our resource group "signatory_resgroup"
 
 ```sh
-az group create --name signatory_resgroup --location canadaeast
+az group create \
+    --name signatory_resgroup \
+    --location canadaeast
 ```
 
 Add your `resource_group` name to your signatory yaml configuration file.
@@ -97,7 +99,6 @@ need to use the `appId` value from the previous command to do this.
     --key-permissions sign list get import
 ```
 
-
 ## Import a key to Azure
 
 *Coming Soon*
@@ -117,7 +118,7 @@ or accidentally delete you Key Vault you loose access to your key and any assets
 *PROCEED WITH CAUTION*. We recommend to use this approach only for testing.
 
 To generate a new key in the HSM, you use the command below. You can choose to
-type of Tezos address by specifing the curve to use.
+type of Tezos address by specifying the curve to use.
 
 * `--curve P-256` will generate a `tz3` address
 * `--curve P-256K` will generate a `tz2` address
@@ -126,7 +127,7 @@ type of Tezos address by specifing the curve to use.
 az keyvault key create --name sigtestkey2 --vault-name sigtest2 --protection hsm --kty EC-HSM --curve P-256
 ```
 
-The output from this command will show you a vaule similar to:
+The output from this command will show you a value similar to:
 
 ```
 kid: https://sigtest2.vault.azure.net/keys/sigtestkey2/1757975528b04c488c36963eee6e9d5d
@@ -142,21 +143,23 @@ You need to copy, edit and add this URL to your configuration as follows;
 When you start signatory, it will connect to azure, request the public key
 co-ordinates using the `kid` URL, and print the `tz` address to the console.
 
-When you see the `tz` address, you must copy this vaule into the `tezos.keys`
-list for Signatory to carry out siginging operations using this address.
+When you see the `tz` address, you must copy this value into the `tezos.keys`
+list for Signatory to carry out signing operations using this address.
 
 ## Testing / Verify
 
 To test the signing operation, you can send a post to signatory. In this
-example, we are sending a dummy operation of type `02`, which is a `endorsment`
+example, we are sending a dummy operation of type `02`, which is a `endorsement`
 operation type. 
 
 ```sh
-curl -XPOST -d '"02111111111111111111"' localhost:8003/keys/tz3Tm6UTWmPAZJaNSPAQNiMiyFSHnRXrkcHj 
+curl -XPOST \
+    -d '"02111111111111111111"' \
+    localhost:8003/keys/tz3Tm6UTWmPAZJaNSPAQNiMiyFSHnRXrkcHj
 ```
 
-If you recieve an error from curl and on the signatory console, you will have
-to investiage. If it was successful, you should see output simlar to:
+If you receive an error from curl and on the signatory console, you will have
+to investigate. If it was successful, you should see output similar to:
 
 ```
 {"signature":"p2sigR4JTRTMkT4XC4NgVuGdhZDbgaaSZpNPUserkyMCTY1GQJTFpCuihFRVk9n7YaNjA5U3cNcvJPRm7C9G5A1hsLsesVPcMu"}
