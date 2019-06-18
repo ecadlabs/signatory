@@ -1,4 +1,5 @@
 ![Signatory Logo](/docs/signatory-logo.png "Signatory Logo")
+
 #### A Tezos Remote Signer
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2778/badge)](https://bestpractices.coreinfrastructure.org/projects/2778)
@@ -11,6 +12,7 @@ feedback, please be warned that this project is a work in progress and users
 should proceed with caution._
 
 ## What is Signatory?
+
 Signatory is a remote signing daemon that allows people running Tezos bakers to
 securely sign endorsement and baking operations with a variety of different key
 management systems.
@@ -19,21 +21,26 @@ The goal of the Signatory service is to make key management as secure as
 possible in a Cloud and on premise HSM context.
 
 ## Why Use Signatory?
+
 Security and convenience are typically diametrically opposed. Signatory makes
 it easier for Tezos node operators to manage their keys in a secure way by offering
 several well-tested & supported signing options for cloud-based or hardware-based HSMs.
 
 ## Quick Start
+
 Coming soon
 
 ---
 
 ## Features
+
 ### Remote Signing
+
 Signatory receives signing requests from either a baker or an endorser, signs the
 data using one of its backends, and returns a signature.
 
 ### Observability
+
 Signatory is also focused on observability, meaning that it exposes metrics
 about its operations. This allows operators to see historic trends, signing
 volumes, errors and latencies, enabling rich reporting and alerting
@@ -47,6 +54,7 @@ secret key can never be exported. Others allow for key import with different
 levels of security. The trade-offs in this setting are important.
 
 ---
+
 ## How it Works
 
 * Tezos will send a signing request to Signatory
@@ -85,7 +93,7 @@ desirable.
 In Tezos, the signing algorithm can be inferred from the the first three
 characters of an address. For example, an address beginning with `tz3` uses the
 P-256 algorithm. HSM's and Cloud based HSM's have support for a subset of the
-three algorithims supported by Tezos.
+three algorithms supported by Tezos.
 
 * `tz1` - [Ed25519](https://ed25519.cr.yp.to/)
 * `tz2` - [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1) __aka: P256K__
@@ -103,6 +111,7 @@ three algorithims supported by Tezos.
 ---
 
 ## Reporting Issues
+
 ### Security Issues
 
 To report a security issue, please contact security@ecadlabs.com or
@@ -128,6 +137,7 @@ tests, and integration tests where appropriate. Submitting a "work in progress"
 pull request is welcome!
 
 ---
+
 ## Alternative Remote Signers
 
 At least three other remote signers are available to use with Tezos. Tezos also
