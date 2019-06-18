@@ -23,7 +23,7 @@ const (
 	SigP256KAlternate = "ECDSA256"
 )
 
-func getCurve(name string) elliptic.Curve {
+func GetCurve(name string) elliptic.Curve {
 	if name == CurveP256 {
 		return elliptic.P256()
 	}
@@ -35,7 +35,7 @@ func getCurve(name string) elliptic.Curve {
 
 // ECCoordinateFromPrivateKey given an elliptic curve name it will produce X and Y coordiante from D
 func ECCoordinateFromPrivateKey(d []byte, curveName string) (xBytes, yBytes []byte) {
-	curve := getCurve(curveName)
+	curve := GetCurve(curveName)
 
 	if curve == nil {
 		return nil, nil

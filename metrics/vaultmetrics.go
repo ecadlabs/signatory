@@ -29,8 +29,7 @@ func (v *metricVault) Sign(digest []byte, key signatory.StoredKey) ([]byte, erro
 	defer timer.ObserveDuration()
 	return v.vault.Sign(digest, key)
 }
-func (v *metricVault) Import(jwk *signatory.JWK) (string, error) { return v.vault.Import(jwk) }
-func (v *metricVault) Name() string                              { return v.vault.Name() }
+func (v *metricVault) Name() string { return v.vault.Name() }
 
 // Wrap decorate a vault with prometheus metrics
 func Wrap(vault signatory.Vault) signatory.Vault {

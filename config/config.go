@@ -13,6 +13,13 @@ type ServerConfig struct {
 	UtilityPort int `yaml:"utility_port"`
 }
 
+// YubiConfig contains the information necessary to use the Yubi HSM backend
+type YubiConfig struct {
+	Host      string `yaml:"host"`
+	Password  string `yaml:"password"`
+	AuthKeyID uint16 `yaml:"auth_key_id"`
+}
+
 // AzureConfig contains the information necessary to use the Azure Key Vault backend
 type AzureConfig struct {
 	ClientID       string   `yaml:"client_id"`
@@ -33,6 +40,7 @@ type TezosConfig struct {
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
+	Yubi   []YubiConfig  `yaml:"yubi"`
 	Azure  []AzureConfig `yaml:"azure"`
 	Tezos  TezosConfig   `yaml:"tezos"`
 	Server ServerConfig  `yaml:"server"`
