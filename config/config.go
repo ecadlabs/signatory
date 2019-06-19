@@ -36,6 +36,7 @@ type TezosConfig struct {
 	Keys              []string
 	AllowedOperations []string `yaml:"allowed_operations"`
 	AllowedKinds      []string `yaml:"allowed_kinds"`
+	LogPayloads       bool     `yaml:"log_payloads"`
 }
 
 // Config contains all the configuration necessary to run the signatory
