@@ -6,6 +6,12 @@ import (
 	"github.com/ecadlabs/signatory/tezos"
 )
 
+// Importer interface representing an importer bakcend
+type Importer interface {
+	Import(jwk *JWK) (string, error)
+	Name() string
+}
+
 // JWK struct containing a standard key format
 type JWK struct {
 	KeyType string `json:"kty"`
@@ -30,7 +36,7 @@ type KeyPair interface {
 }
 
 // Import a keyPair inside the vault
-func Import(pubkey string, secretKey string, vault Vault) (*ImportedKey, error) {
+func Import(pubkey string, secretKey string, importer Importer) (*ImportedKey, error) {
 	keyPair := tezos.NewKeyPair(pubkey, secretKey)
 	err := keyPair.Validate()
 
@@ -44,7 +50,7 @@ func Import(pubkey string, secretKey string, vault Vault) (*ImportedKey, error) 
 		return nil, err
 	}
 
-	keyID, err := vault.Import(jwk)
+	keyID, err := importer.Import(jwk)
 
 	if err != nil {
 		return nil, err

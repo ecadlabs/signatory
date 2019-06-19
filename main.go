@@ -31,24 +31,36 @@ var (
 	defaultKinds      = []string{}
 )
 
-func createVaults(c *config.Config) ([]signatory.Vault, []server.Health) {
+func createVaults(c *config.Config) ([]signatory.Vault, []signatory.Importer, []server.Health, error) {
 	vaults := []signatory.Vault{}
+	importers := []signatory.Importer{}
 	healths := []server.Health{}
 	for _, azCfg := range c.Azure {
 		azureVault := vault.NewAzureVault(azCfg, nil)
 		vaults = append(vaults, azureVault)
 		healths = append(healths, azureVault)
+		importers = append(importers, azureVault)
 	}
+
+	for _, yubiCfg := range c.Yubi {
+		yubiVault, err := vault.NewYubi(yubiCfg)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		vaults = append(vaults, yubiVault)
+		healths = append(healths, yubiVault)
+	}
+
 	for i := range vaults {
 		vault := vaults[i]
 		wrapped := metrics.Wrap(vault)
 		vaults[i] = wrapped
 	}
 
-	return vaults, healths
+	return vaults, importers, healths, nil
 }
 
-func doImport(vaults []signatory.Vault) {
+func doImport(importers []signatory.Importer) {
 	if len(flag.Args()) != 3 {
 		flag.Usage()
 		return
@@ -58,7 +70,7 @@ func doImport(vaults []signatory.Vault) {
 	sk := flag.Arg(1)
 	v := flag.Arg(2)
 
-	for _, vault := range vaults {
+	for _, vault := range importers {
 		if vault.Name() == v {
 			importedKey, err := signatory.Import(pk, sk, vault)
 			if err != nil {
@@ -108,14 +120,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	vaults, healths := createVaults(c)
+	vaults, importers, healths, err := createVaults(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory())
 
 	srv := server.NewServer(s, &c.Server)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
 
 	if importKey {
-		doImport(vaults)
+		doImport(importers)
 		return
 	}
 

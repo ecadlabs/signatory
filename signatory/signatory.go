@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ecadlabs/signatory/config"
+	"github.com/ecadlabs/signatory/crypto"
 	"github.com/ecadlabs/signatory/tezos"
 )
 
@@ -35,7 +36,6 @@ type Vault interface {
 	GetPublicKey(keyID string) (StoredKey, error)
 	ListPublicKeys() ([]StoredKey, error)
 	Sign(digest []byte, key StoredKey) ([]byte, error)
-	Import(jwk *JWK) (string, error)
 	Name() string
 }
 
@@ -79,6 +79,10 @@ func NewSignatory(
 		notifySigning:  notify,
 		watermark:      watermark,
 	}
+}
+
+func IsSupportedCurve(curve string) bool {
+	return curve == crypto.CurveP256 || curve == crypto.CurveP256K
 }
 
 // IsAllowed returns true if keyHash is listed in configuration
@@ -160,7 +164,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	digest := tezos.DigestFunc(message)
 	sig, err := vault.Sign(digest[:], storedKey)
 
-	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s\n", hex.EncodeToString(sig))
+	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s", hex.EncodeToString(sig))
 
 	if err != nil {
 		return "", err
@@ -168,7 +172,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	encodedSig := tezos.EncodeSig(keyHash, sig)
 
-	log.Debugf("Encoded signature: %s\n", encodedSig)
+	log.Debugf("Encoded signature: %s", encodedSig)
 
 	s.notifySigning(keyHash, vault.Name(), msg.Type())
 
@@ -188,10 +192,13 @@ func (s *Signatory) ListPublicKeyHash() ([]string, error) {
 		}
 
 		for _, key := range pubKeys {
-			encoded := tezos.EncodePubKeyHash(key.PublicKey(), key.Curve())
-			results = append(results, encoded)
+			if IsSupportedCurve(key.Curve()) {
+				encoded := tezos.EncodePubKeyHash(key.PublicKey(), key.Curve())
 
-			s.addKeyMap(encoded, key, vault)
+				results = append(results, encoded)
+				s.addKeyMap(encoded, key, vault)
+
+			}
 		}
 	}
 	return results, nil
@@ -207,7 +214,7 @@ func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
 
 	key := s.getKeyFromKeyHash(keyHash)
 
-	log.Debugf("Fetching public key for: %s\n", keyHash)
+	log.Debugf("Fetching public key for: %s", keyHash)
 
 	pubKey, err := vault.GetPublicKey(key.ID())
 	if err != nil {
