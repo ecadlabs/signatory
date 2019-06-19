@@ -130,14 +130,15 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 
 	httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	response, err := s.client.Do(httpReq)
-	defer response.Body.Close()
 
 	if err != nil {
 		return "", err
 	}
 
+	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("(Azure/%s) Error response from the API %v", s.config.Vault, response.StatusCode)
+		return "", NewHttpError(fmt.Sprintf("(Azure/%s) Error response from the API %v", s.config.Vault, response.StatusCode), response.StatusCode)
 	}
 
 	azLoginResponse := struct {
@@ -190,8 +191,11 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("(Azure/%s) Error fetching public keys: %v, %s", s.config.Vault, response.StatusCode, string(result))
+		result, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, NewHttpError(fmt.Sprintf("(Azure/%s) Error fetching public keys: %v, %s", s.config.Vault, response.StatusCode, string(result)), response.StatusCode)
 	}
 
 	azListResponse := struct {
@@ -242,14 +246,15 @@ func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	response, err := s.client.Do(httpReq)
-	defer response.Body.Close()
 
 	if err != nil {
 		return nil, err
 	}
 
+	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("(Azure/%s) Error retrieving public key %v", s.config.Vault, response.StatusCode)
+		return nil, NewHttpError(fmt.Sprintf("(Azure/%s) Error retrieving public key %v", s.config.Vault, response.StatusCode), response.StatusCode)
 	}
 
 	azKeyResponse := AzureKey{}
@@ -312,15 +317,16 @@ func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte,
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	response, err := s.client.Do(httpReq)
-	defer response.Body.Close()
 
 	if err != nil {
 		return nil, err
 	}
 
+	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return nil, fmt.Errorf("(Azure/%s) Error signing operation  %v, %s", s.config.Vault, response.StatusCode, string(result))
+		return nil, NewHttpError(fmt.Sprintf("(Azure/%s) Error signing operation  %v, %s", s.config.Vault, response.StatusCode, string(result)), response.StatusCode)
 	}
 
 	azSignResponse := struct {
@@ -372,11 +378,12 @@ func (s *AzureVault) Ready() bool {
 	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	response, err := s.client.Do(httpReq)
-	defer response.Body.Close()
 
 	if err != nil {
 		return false
 	}
+
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return false
@@ -448,7 +455,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 
 	if response.StatusCode != http.StatusOK {
 		result, _ := ioutil.ReadAll(response.Body)
-		return "", fmt.Errorf("(Azure/%s) Error importing key %v, %s", s.config.Vault, response.StatusCode, string(result))
+		return "", NewHttpError(fmt.Sprintf("(Azure/%s) Error importing key %v, %s", s.config.Vault, response.StatusCode, string(result)), response.StatusCode)
 	}
 
 	azImportResponse := struct {

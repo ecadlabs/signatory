@@ -134,7 +134,8 @@ func (m *Message) level() *big.Int {
 	return nil
 }
 
-func (m *Message) kind() string {
+// Kind return the kind of a generic operation
+func (m *Message) Kind() string {
 	if len(m.hex) <= 33 {
 		return OpGenUnknown
 	}
@@ -172,7 +173,7 @@ func (m *Message) MatchFilter(conf *config.TezosConfig) error {
 	// Generic operations have an extra check
 	if msgType == OpGeneric {
 		allowed = false
-		kind := m.kind()
+		kind := m.Kind()
 		for _, filter := range conf.AllowedKinds {
 			if kind == filter {
 				allowed = true
