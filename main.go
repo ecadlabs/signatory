@@ -120,6 +120,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if valid, msg := c.Validate(); !valid {
+		log.Fatal(msg)
+	}
+
 	vaults, importers, healths, err := createVaults(c)
 	if err != nil {
 		log.Fatal(err)
