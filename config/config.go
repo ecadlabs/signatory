@@ -37,6 +37,7 @@ type TezosConfig struct {
 	Keys              []string `yaml:"keys" validate:"dive,startswith=tz2|startswith=tz3,len=36"`
 	AllowedOperations []string `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
 	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=transaction proposal ballot"`
+	LogPayloads       bool     `yaml:"log_payloads"`
 }
 
 // Config contains all the configuration necessary to run the signatory

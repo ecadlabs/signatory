@@ -15,7 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// YubiHSM struct containing information required to interogate a Yubi HSM
+// YubiHSM struct containing information required to interrogate a Yubi HSM
 type YubiHSM struct {
 	sm *yubihsm.SessionManager
 }
@@ -66,14 +66,14 @@ func (s *YubiHSM) ListPublicKeys() ([]signatory.StoredKey, error) {
 		return nil, err
 	}
 
-	listObjectsReponse, matched := resp.(*commands.ListObjectsResponse)
+	listObjectsResponse, matched := resp.(*commands.ListObjectsResponse)
 	if !matched {
 		return nil, fmt.Errorf("Unexpected response type")
 	}
 
 	keys := []signatory.StoredKey{}
 
-	for _, object := range listObjectsReponse.Objects {
+	for _, object := range listObjectsResponse.Objects {
 		command, err := commands.CreateGetPubKeyCommand(object.ObjectID)
 		res, err := s.sm.SendEncryptedCommand(command)
 		if err != nil {

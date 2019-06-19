@@ -19,6 +19,7 @@ var (
 	ErrNotSafeToSign = fmt.Errorf("Not safe to sign")
 )
 
+// NotifySigning observer function for signing request
 type NotifySigning func(address string, vault string, kind string)
 
 // PublicKey alias for an array of byte
@@ -48,6 +49,7 @@ type vaultKeyIDPair struct {
 	key   StoredKey
 }
 
+// HashVaultStore store the id and the vault of each key
 type HashVaultStore = map[string]vaultKeyIDPair
 
 func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
@@ -129,8 +131,13 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 		return "", fmt.Errorf("%s is not listed in config", keyHash)
 	}
 
-	log.Infof("Signing for key: %s", keyHash)
-	log.Debugf("About to sign raw bytes hex.EncodeToString(message): %s", hex.EncodeToString(message))
+	log.Infof("Signing for key: %s\n", keyHash)
+
+	level := log.DebugLevel
+	if s.config.LogPayloads {
+		level = log.InfoLevel
+	}
+	log.StandardLogger().Logf(level, "About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
 
 	msg := tezos.ParseMessage(message)
 
