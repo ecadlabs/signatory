@@ -1,0 +1,22 @@
+version: '3'
+services:
+  signatory:
+      build: .
+      ports:
+        - "80:80"
+      volumes: 
+        - ./signatory.yaml:/app/signatory.yaml
+  grafana:
+    image: grafana/grafana
+    volumes: 
+    - ./grafana/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/:/etc/prometheus/
