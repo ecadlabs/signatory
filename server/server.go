@@ -147,6 +147,7 @@ func (server *Server) authorizedKeys(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) createRootHandler() http.Handler {
 	r := mux.NewRouter()
+	r.Use((&Logging{}).Handler)
 	r.HandleFunc("/keys/{key}", server.Sign).Methods("POST")
 	r.HandleFunc("/keys/{key}", server.GetKey).Methods("GET")
 	r.HandleFunc("/authorized_keys", server.authorizedKeys).Methods("GET")

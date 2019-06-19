@@ -58,6 +58,7 @@ func (u *UtilityServer) ready(w http.ResponseWriter, r *http.Request) {
 
 func (u *UtilityServer) createRootHandler() http.Handler {
 	r := mux.NewRouter()
+	r.Use((&Logging{}).Handler)
 	r.Methods("GET").Path("/metrics").Handler(metrics.Handler)
 	r.HandleFunc("/healthz/live", u.live).Methods("GET")
 	r.HandleFunc("/healthz/ready", u.ready).Methods("GET")
