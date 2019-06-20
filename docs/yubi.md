@@ -40,13 +40,23 @@ Open a session using the default password (`password`)
 session open 1 password
 ```
 
-Generate a tz2 key inside the Yubi HSM
+Generate a key inside the Yubi HSM
 
+tz1:
+```sh
+generate asymmetric 1 400 my_tz1_key 1,2,3 exportable-under-wrap,sign-eddsa ed25519
+```
+
+tz2:
 ```sh
 generate asymmetric 1 400 my_tz2_key 1,2,3 exportable-under-wrap,sign-ecdsa eck256
 ```
 
-Now your HSM should contain a tz2 that signatory will 
+tz3:
+```sh
+generate asymmetric 1 400 my_tz3_key 1,2,3 exportable-under-wrap,sign-ecdsa ecp256
+```
+
 
 ## Connecting to Yubi HSM from Signatory
 

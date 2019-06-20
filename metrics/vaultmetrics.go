@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -28,18 +29,20 @@ type metricVault struct {
 	vault signatory.Vault
 }
 
-func (v *metricVault) GetPublicKey(keyHash string) (signatory.StoredKey, error) {
-	return v.vault.GetPublicKey(keyHash)
+func (v *metricVault) GetPublicKey(ctx context.Context, keyHash string) (signatory.StoredKey, error) {
+	return v.vault.GetPublicKey(ctx, keyHash)
 }
-func (v *metricVault) ListPublicKeys() ([]signatory.StoredKey, error) { return v.vault.ListPublicKeys() }
-func (v *metricVault) Sign(digest []byte, key signatory.StoredKey) ([]byte, error) {
+func (v *metricVault) ListPublicKeys(ctx context.Context) ([]signatory.StoredKey, error) {
+	return v.vault.ListPublicKeys(ctx)
+}
+func (v *metricVault) Sign(ctx context.Context, digest []byte, key signatory.StoredKey) ([]byte, error) {
 	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(val float64) {
 		us := val * float64(time.Microsecond)
 		vaultSigningSummary.WithLabelValues(v.vault.Name()).Observe(us)
 	}))
 	defer timer.ObserveDuration()
 
-	result, err := v.vault.Sign(digest, key)
+	result, err := v.vault.Sign(ctx, digest, key)
 
 	if err != nil {
 		if val, ok := err.(HttpError); ok {

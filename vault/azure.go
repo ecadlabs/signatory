@@ -2,6 +2,7 @@ package vault
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -114,7 +115,7 @@ func (s *AzureVault) Name() string {
 	return "Azure"
 }
 
-func (s *AzureVault) getToken(resource string) (string, error) {
+func (s *AzureVault) getToken(ctx context.Context, resource string) (string, error) {
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", s.config.ClientID)
@@ -127,6 +128,8 @@ func (s *AzureVault) getToken(resource string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	httpReq = httpReq.WithContext(ctx)
 
 	httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	response, err := s.client.Do(httpReq)
@@ -167,7 +170,7 @@ func (s *AzureVault) Contains(keyID string) bool {
 }
 
 // ListPublicKeys retrieve all the public keys matching keyHash from the azure key vault rest api
-func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
+func (s *AzureVault) ListPublicKeys(ctx context.Context) ([]signatory.StoredKey, error) {
 	endpoint := fmt.Sprintf("%s/keys?api-version=7.0", s.vaultURI())
 	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
 
@@ -175,7 +178,9 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 		return nil, err
 	}
 
-	token, err := s.getToken(azResVault)
+	httpReq = httpReq.WithContext(ctx)
+
+	token, err := s.getToken(ctx, azResVault)
 
 	if err != nil {
 		return nil, err
@@ -188,6 +193,7 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
@@ -219,7 +225,7 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 	keys := []signatory.StoredKey{}
 	for _, key := range azListResponse.Values {
 		if s.Contains(key.ID) {
-			pubKey, err := s.GetPublicKey(key.ID)
+			pubKey, err := s.GetPublicKey(ctx, key.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -232,12 +238,18 @@ func (s *AzureVault) ListPublicKeys() ([]signatory.StoredKey, error) {
 }
 
 // GetPublicKey retrieve the public key matching keyID from the azure key vault rest api
-func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
+func (s *AzureVault) GetPublicKey(ctx context.Context, keyID string) (signatory.StoredKey, error) {
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("GET", endpoint, bytes.NewReader([]byte{}))
 
-	token, err := s.getToken(azResVault)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq = httpReq.WithContext(ctx)
+
+	token, err := s.getToken(ctx, azResVault)
 
 	if err != nil {
 		return nil, err
@@ -275,7 +287,7 @@ func (s *AzureVault) GetPublicKey(keyID string) (signatory.StoredKey, error) {
 }
 
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
-func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
+func (s *AzureVault) Sign(ctx context.Context, digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
 	log.Infof("Signing operation with Azure %s vault", s.config.Vault)
 	azureKey, ok := storedKey.(*AzureKey)
 
@@ -307,7 +319,9 @@ func (s *AzureVault) Sign(digest []byte, storedKey signatory.StoredKey) ([]byte,
 		return nil, err
 	}
 
-	token, err := s.getToken(azResVault)
+	httpReq = httpReq.WithContext(ctx)
+
+	token, err := s.getToken(ctx, azResVault)
 
 	if err != nil {
 		return nil, err
@@ -369,7 +383,7 @@ func (s *AzureVault) Ready() bool {
 
 	httpReq, err := http.NewRequest("GET", uri, bytes.NewReader([]byte{}))
 
-	token, err := s.getToken(azResManagement)
+	token, err := s.getToken(context.Background(), azResManagement)
 
 	if err != nil {
 		return false
@@ -437,7 +451,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 		return "", err
 	}
 
-	token, err := s.getToken(azResVault)
+	token, err := s.getToken(context.Background(), azResVault)
 
 	if err != nil {
 		return "", err

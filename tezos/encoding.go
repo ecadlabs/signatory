@@ -26,8 +26,13 @@ const (
 	secp256k1SecretKeyPrefix = "spsk"
 	secp256k1PubKeyPrefix    = "sppk"
 
+	ed25519PubKeyPrefix    = "edpk"
+	ed25519SigPrefix       = "edsig"
+	ed25519SecretKeyPrefix = "edsk"
+
 	pS256PubKeyHashPrefix     = "tz3"
 	secp256k1PubKeyHashPrefix = "tz2"
+	ed25519PubKeyHashPrefix   = "tz1"
 )
 
 var (
@@ -44,26 +49,35 @@ var prefixMap = map[string][]byte{
 	secp256k1SecretKeyPrefix:  []byte{0x11, 0xa2, 0xe0, 0xc9},       // spsk
 	secp256k1SigPrefix:        []byte{0x0d, 0x73, 0x65, 0x13, 0x3f}, // spsig1
 	secp256k1PubKeyHashPrefix: []byte{0x06, 0xa1, 0xa1},             // tz2
+
+	ed25519PubKeyPrefix:     []byte{0x0d, 0x0f, 0x25, 0xd9},       // edpk
+	ed25519SecretKeyPrefix:  []byte{0x0d, 0x0f, 0x3a, 0x07},       // edsk
+	ed25519SigPrefix:        []byte{0x09, 0xf5, 0xcd, 0x86, 0x12}, // edsig
+	ed25519PubKeyHashPrefix: []byte{0x06, 0xa1, 0x9f},             // tz1
 }
 
 var curveSigMap = map[string]string{
-	crypto.CurveP256:  p256SigPrefix,
-	crypto.CurveP256K: secp256k1SigPrefix,
+	crypto.CurveP256:    p256SigPrefix,
+	crypto.CurveP256K:   secp256k1SigPrefix,
+	crypto.CurveED25519: ed25519SigPrefix,
 }
 
 var curvePubKeyPrefixMap = map[string]string{
-	crypto.CurveP256:  p256PubKeyPrefix,
-	crypto.CurveP256K: secp256k1PubKeyPrefix,
+	crypto.CurveP256:    p256PubKeyPrefix,
+	crypto.CurveP256K:   secp256k1PubKeyPrefix,
+	crypto.CurveED25519: ed25519PubKeyPrefix,
 }
 
 var hashCurveMap = map[string]string{
 	pS256PubKeyHashPrefix:     crypto.CurveP256,
 	secp256k1PubKeyHashPrefix: crypto.CurveP256K,
+	ed25519PubKeyHashPrefix:   crypto.CurveED25519,
 }
 
 var curveHashMap = map[string]string{
-	crypto.CurveP256:  pS256PubKeyHashPrefix,
-	crypto.CurveP256K: secp256k1PubKeyHashPrefix,
+	crypto.CurveP256:    pS256PubKeyHashPrefix,
+	crypto.CurveP256K:   secp256k1PubKeyHashPrefix,
+	crypto.CurveED25519: ed25519PubKeyHashPrefix,
 }
 
 func base58CheckEncodePrefix(prefix []byte, msg []byte) string {
