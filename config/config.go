@@ -36,7 +36,7 @@ type AzureConfig struct {
 type TezosConfig struct {
 	Keys              []string `yaml:"keys" validate:"dive,startswith=tz1|startswith=tz2|startswith=tz3,len=36"`
 	AllowedOperations []string `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
-	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=transaction proposal ballot"`
+	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=transaction proposal ballot reveal delegation"`
 	LogPayloads       bool     `yaml:"log_payloads"`
 }
 
