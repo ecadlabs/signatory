@@ -20,7 +20,7 @@ var (
 )
 
 // NotifySigning observer function for signing request
-type NotifySigning func(address string, vault string, kind string)
+type NotifySigning func(address string, vault string, op string, kind string)
 
 // PublicKey alias for an array of byte
 type PublicKey = []byte
@@ -174,7 +174,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 
 	log.Debugf("Encoded signature: %s", encodedSig)
 
-	s.notifySigning(keyHash, vault.Name(), msg.Type())
+	s.notifySigning(keyHash, vault.Name(), msg.Type(), msg.Kind())
 
 	log.Infof("Signed %s successfully", msg.Type())
 

@@ -30,7 +30,7 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 			ContainsFunc: func(keyHash string) bool { return false },
 		}},
 		&config.TezosConfig{},
-		func(address string, vault string, kind string) {},
+		func(address string, vault string, op string, kind string) {},
 		watermark.NewIgnore(),
 	)
 
