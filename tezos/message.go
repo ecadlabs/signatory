@@ -20,7 +20,9 @@ const (
 	opKindUnknown     = 0xff
 	opKindProposals   = 0x05
 	opKindBallot      = 0x06
+	opKindReveal      = 0x07
 	opKindTransaction = 0x08
+	opKindDelegation  = 0x0A
 )
 
 const (
@@ -35,6 +37,10 @@ const (
 )
 
 const (
+	// OpGenDelegation config string for delegation operation
+	OpGenDelegation = "delegation"
+	// OpGenReveal config string for reveal operation
+	OpGenReveal = "reveal"
 	// OpGenTransaction config string for transaction operation
 	OpGenTransaction = "transaction"
 	// OpGenProposal config string for proposal operation
@@ -113,7 +119,7 @@ func (m *Message) Watermark(keyHash string) (string, *big.Int) {
 
 func (m *Message) chainID() string {
 	if len(m.hex) < 6 {
-		return "unkown"
+		return "unknown"
 	}
 
 	chainID := m.hex[1:5]
@@ -149,6 +155,10 @@ func (m *Message) Kind() string {
 		return OpGenProposal
 	case opKindTransaction:
 		return OpGenTransaction
+	case opKindReveal:
+		return OpGenReveal
+	case opKindDelegation:
+		return OpGenDelegation
 	default:
 		return OpGenUnknown
 	}

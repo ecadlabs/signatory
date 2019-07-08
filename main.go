@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/metrics"
@@ -140,7 +141,11 @@ func main() {
 	}
 
 	log.Info("Discovering supported keys from vault(s)...")
-	pubKeys, err := s.ListPublicKeyHash()
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancelFunc()
+
+	pubKeys, err := s.ListPublicKeyHash(ctx)
 
 	if err != nil {
 		log.Fatal(err)

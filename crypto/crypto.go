@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	// CurveED25519
+	CurveED25519 = "ed25519"
+
 	// CurveP256 is the standard name for P256 Curve
 	CurveP256 = "P-256"
 	// SigP256 is the standard name for ES256 Signature algorithm
