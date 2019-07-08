@@ -1,6 +1,7 @@
 package signatory
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -33,9 +34,9 @@ type StoredKey interface {
 
 // Vault interface that represent a secure key store
 type Vault interface {
-	GetPublicKey(keyID string) (StoredKey, error)
-	ListPublicKeys() ([]StoredKey, error)
-	Sign(digest []byte, key StoredKey) ([]byte, error)
+	GetPublicKey(ctx context.Context, keyID string) (StoredKey, error)
+	ListPublicKeys(ctx context.Context) ([]StoredKey, error)
+	Sign(ctx context.Context, digest []byte, key StoredKey) ([]byte, error)
 	Name() string
 }
 
@@ -82,7 +83,7 @@ func NewSignatory(
 }
 
 func IsSupportedCurve(curve string) bool {
-	return curve == crypto.CurveP256 || curve == crypto.CurveP256K
+	return curve == crypto.CurveP256 || curve == crypto.CurveP256K || curve == crypto.CurveED25519
 }
 
 // IsAllowed returns true if keyHash is listed in configuration
@@ -126,7 +127,7 @@ func (s *Signatory) validateMessage(msg *tezos.Message) error {
 }
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
-func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
+func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
 	if !s.IsAllowed(keyHash) {
 		return "", fmt.Errorf("%s is not listed in config", keyHash)
 	}
@@ -162,7 +163,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 	storedKey := s.getKeyFromKeyHash(keyHash)
 
 	digest := tezos.DigestFunc(message)
-	sig, err := vault.Sign(digest[:], storedKey)
+	sig, err := vault.Sign(ctx, digest[:], storedKey)
 
 	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s", hex.EncodeToString(sig))
 
@@ -170,6 +171,7 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("%s\n", hex.EncodeToString(sig))
 	encodedSig := tezos.EncodeSig(keyHash, sig)
 
 	log.Debugf("Encoded signature: %s", encodedSig)
@@ -182,10 +184,10 @@ func (s *Signatory) Sign(keyHash string, message []byte) (string, error) {
 }
 
 // ListPublicKeyHash retrieve the list of all public key hash supported by the current configuration
-func (s *Signatory) ListPublicKeyHash() ([]string, error) {
+func (s *Signatory) ListPublicKeyHash(ctx context.Context) ([]string, error) {
 	results := []string{}
 	for _, vault := range s.vaults {
-		pubKeys, err := vault.ListPublicKeys()
+		pubKeys, err := vault.ListPublicKeys(ctx)
 
 		if err != nil {
 			return nil, err
@@ -194,7 +196,6 @@ func (s *Signatory) ListPublicKeyHash() ([]string, error) {
 		for _, key := range pubKeys {
 			if IsSupportedCurve(key.Curve()) {
 				encoded := tezos.EncodePubKeyHash(key.PublicKey(), key.Curve())
-
 				results = append(results, encoded)
 				s.addKeyMap(encoded, key, vault)
 
@@ -205,7 +206,7 @@ func (s *Signatory) ListPublicKeyHash() ([]string, error) {
 }
 
 // GetPublicKey retrieve the public key from a vault
-func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
+func (s *Signatory) GetPublicKey(ctx context.Context, keyHash string) (string, error) {
 	vault := s.getVaultFromKeyHash(keyHash)
 
 	if vault == nil {
@@ -216,7 +217,7 @@ func (s *Signatory) GetPublicKey(keyHash string) (string, error) {
 
 	log.Debugf("Fetching public key for: %s", keyHash)
 
-	pubKey, err := vault.GetPublicKey(key.ID())
+	pubKey, err := vault.GetPublicKey(ctx, key.ID())
 	if err != nil {
 		return "", err
 	}

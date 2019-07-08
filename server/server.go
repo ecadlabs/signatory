@@ -25,8 +25,8 @@ const (
 
 // Signer interface representing a Signer
 type Signer interface {
-	Sign(keyHash string, message []byte) (string, error)
-	GetPublicKey(keyHash string) (string, error)
+	Sign(ctx context.Context, keyHash string, message []byte) (string, error)
+	GetPublicKey(ctx context.Context, keyHash string) (string, error)
 }
 
 // Server struct containing the information necessary to run a tezos remote signers
@@ -104,7 +104,7 @@ func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signed, err := server.signatory.Sign(requestedKeyHash, parsedHex)
+	signed, err := server.signatory.Sign(r.Context(), requestedKeyHash, parsedHex)
 
 	if err != nil {
 		log.Error("Error signing request:", err)
@@ -126,7 +126,7 @@ func (server *Server) GetKey(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	requestedKeyHash := params["key"]
 
-	pubKey, err := server.signatory.GetPublicKey(requestedKeyHash)
+	pubKey, err := server.signatory.GetPublicKey(r.Context(), requestedKeyHash)
 	if err != nil {
 		log.Println("Error fetching key:", err)
 

@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -21,10 +22,10 @@ type FakeSignatory struct {
 	ReadError    error
 }
 
-func (c *FakeSignatory) Sign(keyHash string, message []byte) (string, error) {
+func (c *FakeSignatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
 	return c.Response, c.Error
 }
-func (c *FakeSignatory) GetPublicKey(keyHash string) (string, error) {
+func (c *FakeSignatory) GetPublicKey(ctx context.Context, keyHash string) (string, error) {
 	return c.ReadResponse, c.ReadError
 }
 
