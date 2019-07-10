@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 
 	"github.com/ecadlabs/signatory/tezos"
+	log "github.com/sirupsen/logrus"
 )
 
-// Importer interface representing an importer bakcend
+// Importer interface representing an importer backend
 type Importer interface {
 	Import(jwk *JWK) (string, error)
 	Name() string
@@ -36,31 +37,40 @@ type KeyPair interface {
 }
 
 // Import a keyPair inside the vault
-func Import(pubkey string, secretKey string, importer Importer) (*ImportedKey, error) {
+func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (*ImportedKey, error) {
 	keyPair := tezos.NewKeyPair(pubkey, secretKey)
 	err := keyPair.Validate()
-
 	if err != nil {
 		return nil, err
 	}
 
 	jwk, err := ToJWK(keyPair)
-
-	if err != nil {
-		return nil, err
-	}
-
-	keyID, err := importer.Import(jwk)
-
 	if err != nil {
 		return nil, err
 	}
 
 	hash, err := keyPair.PubKeyHash()
-
 	if err != nil {
 		return nil, err
 	}
+
+	logfields := log.Fields{
+		logPKH:   hash,
+		logVault: importer.Name(),
+	}
+	if n, ok := importer.(VaultNamer); ok {
+		logfields[logVaultName] = n.VaultName()
+	}
+	l := s.logger.WithFields(logfields)
+
+	l.Info("Requesting import operation")
+
+	keyID, err := importer.Import(jwk)
+	if err != nil {
+		return nil, err
+	}
+
+	l.WithField(logKeyID, keyID).Info("Successfully imported")
 
 	importedKey := &ImportedKey{
 		KeyID: keyID,

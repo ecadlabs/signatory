@@ -13,7 +13,6 @@ import (
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/crypto"
 	"github.com/ecadlabs/signatory/signatory"
-	log "github.com/sirupsen/logrus"
 )
 
 // YubiHSM struct containing information required to interrogate a Yubi HSM
@@ -178,7 +177,6 @@ func (s *YubiHSM) signEcdsa(yubiID uint16, digest []byte, storedKey signatory.St
 
 // Sign produce a signature of digest using the storedKey in YubiHSM
 func (s *YubiHSM) Sign(ctx context.Context, digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
-	log.Infof("Signing operation with Yubi HSM")
 	yubiID, err := parseYubiKeyID(storedKey.ID())
 	if err != nil {
 		return nil, err

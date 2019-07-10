@@ -61,7 +61,7 @@ func createVaults(c *config.Config) ([]signatory.Vault, []signatory.Importer, []
 	return vaults, importers, healths, nil
 }
 
-func doImport(importers []signatory.Importer) {
+func doImport(s *signatory.Signatory, importers []signatory.Importer) {
 	if len(flag.Args()) != 3 {
 		flag.Usage()
 		return
@@ -73,14 +73,11 @@ func doImport(importers []signatory.Importer) {
 
 	for _, vault := range importers {
 		if vault.Name() == v {
-			importedKey, err := signatory.Import(pk, sk, vault)
+			_, err := s.Import(pk, sk, vault)
 			if err != nil {
 				log.Error(err)
 				return
 			}
-
-			log.Infof("%s, %s", importedKey.Hash, importedKey.KeyID)
-
 			return
 		}
 	}
@@ -130,13 +127,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory())
+	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory(), nil)
 
-	srv := server.NewServer(s, &c.Server)
+	srv := server.NewServer(s, &c.Server, nil)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
 
 	if importKey {
-		doImport(importers)
+		doImport(s, importers)
 		return
 	}
 

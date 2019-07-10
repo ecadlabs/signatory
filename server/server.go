@@ -34,6 +34,7 @@ type Server struct {
 	signatory Signer
 	config    *config.ServerConfig
 	srv       *http.Server
+	logger    log.FieldLogger
 }
 
 type errorResponse struct {
@@ -49,14 +50,18 @@ type pubKeyResponse struct {
 }
 
 // NewServer create a new server struct
-func NewServer(signatory Signer, config *config.ServerConfig) *Server {
-	return &Server{signatory: signatory, config: config}
+func NewServer(signatory Signer, config *config.ServerConfig, logger log.FieldLogger) *Server {
+	s := &Server{signatory: signatory, config: config, logger: logger}
+	if s.logger == nil {
+		s.logger = log.StandardLogger()
+	}
+	return s
 }
 
 func (server *Server) handleError(w http.ResponseWriter, msg string) {
 	response := errorResponse{Error: msg}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Error("Error encoding error response")
+		server.logger.Error("Error encoding error response")
 	}
 }
 
@@ -87,7 +92,7 @@ func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		log.Error("Error reading POST content: ", err)
+		server.logger.Error("Error reading POST content: ", err)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		server.handleError(w, msgErrReadingRequest)
@@ -97,7 +102,7 @@ func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 	parsedHex, err := server.validateOperation(body)
 
 	if err != nil {
-		log.Error("Error reading POST content: ", err)
+		server.logger.Error("Error reading POST content: ", err)
 
 		w.WriteHeader(http.StatusBadRequest)
 		server.handleError(w, msgErrReadingRequest)
@@ -107,14 +112,14 @@ func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
 	signed, err := server.signatory.Sign(r.Context(), requestedKeyHash, parsedHex)
 
 	if err != nil {
-		log.Error("Error signing request:", err)
+		server.logger.Error("Error signing request:", err)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		server.handleError(w, msgErrSigningRequest)
 	} else {
 		response := signResponse{Signature: signed}
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Error("Error encoding signing response")
+			server.logger.Error("Error encoding signing response")
 		}
 	}
 }
@@ -128,14 +133,14 @@ func (server *Server) GetKey(w http.ResponseWriter, r *http.Request) {
 
 	pubKey, err := server.signatory.GetPublicKey(r.Context(), requestedKeyHash)
 	if err != nil {
-		log.Println("Error fetching key:", err)
+		server.logger.Println("Error fetching key:", err)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		server.handleError(w, msgErrFetchingRequest)
 	} else {
 		response := pubKeyResponse{PublicKey: pubKey}
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Error("Error encoding public key response")
+			server.logger.Error("Error encoding public key response")
 		}
 	}
 }
