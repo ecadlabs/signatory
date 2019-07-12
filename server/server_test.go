@@ -63,7 +63,7 @@ func TestSign(t *testing.T) {
 				Error:    c.SigError,
 				Response: c.SigResponse,
 			}
-			srv := server.NewServer(sig, nil)
+			srv := server.NewServer(sig, nil, nil)
 			r := httptest.NewRequest("POST", "http://irrelevant.com", c.Body)
 			rr := httptest.NewRecorder()
 			srv.Sign(rr, r)
@@ -109,7 +109,7 @@ func TestGetPublicKey(t *testing.T) {
 				ReadError:    c.Error,
 				ReadResponse: c.Response,
 			}
-			srv := server.NewServer(sig, nil)
+			srv := server.NewServer(sig, nil, nil)
 			r := httptest.NewRequest("GET", "http://irrelevant.com", nil)
 			rr := httptest.NewRecorder()
 			srv.GetKey(rr, r)
