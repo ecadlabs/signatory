@@ -52,12 +52,6 @@ func createVaults(c *config.Config) ([]signatory.Vault, []signatory.Importer, []
 		healths = append(healths, yubiVault)
 	}
 
-	for i := range vaults {
-		vault := vaults[i]
-		wrapped := metrics.Wrap(vault)
-		vaults[i] = wrapped
-	}
-
 	return vaults, importers, healths, nil
 }
 
@@ -127,7 +121,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.IncNewSigningOp, watermark.NewMemory(), nil)
+	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.Interceptor, watermark.NewMemory(), nil)
 
 	srv := server.NewServer(s, &c.Server, nil)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)

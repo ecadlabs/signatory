@@ -29,8 +29,16 @@ const (
 	logKeyID     = "key_id"
 )
 
-// NotifySigning observer function for signing request
-type NotifySigning func(address string, vault string, op string, kind string)
+// SingInterceptor is an observer function for signing request
+type SingInterceptor func(opt *SingInterceptorOptions, sing func() error) error
+
+// SingInterceptorOptions contains SingInterceptor arguments to avoid confusion
+type SingInterceptorOptions struct {
+	Address string
+	Vault   string
+	Op      string
+	Kind    string
+}
 
 // PublicKey alias for an array of byte
 type PublicKey = []byte
@@ -75,7 +83,7 @@ func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
 type Signatory struct {
 	vaults         []Vault
 	config         *config.TezosConfig
-	notifySigning  NotifySigning
+	interceptor    SingInterceptor
 	watermark      Watermark
 	hashVaultStore HashVaultStore
 	logger         log.FieldLogger
@@ -85,7 +93,7 @@ type Signatory struct {
 func NewSignatory(
 	vaults []Vault,
 	config *config.TezosConfig,
-	notify NotifySigning,
+	interceptor SingInterceptor,
 	watermark Watermark,
 	logger log.FieldLogger,
 ) (s *Signatory) {
@@ -93,7 +101,7 @@ func NewSignatory(
 		vaults:         vaults,
 		config:         config,
 		hashVaultStore: make(HashVaultStore),
-		notifySigning:  notify,
+		interceptor:    interceptor,
 		watermark:      watermark,
 		logger:         logger,
 	}
@@ -198,7 +206,26 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	// Not nil if vault found
 	storedKey := s.getKeyFromKeyHash(keyHash)
 	digest := tezos.DigestFunc(message)
-	sig, err := vault.Sign(ctx, digest[:], storedKey)
+
+	var (
+		sig []byte
+		err error
+	)
+
+	if s.interceptor != nil {
+		err = s.interceptor(&SingInterceptorOptions{
+			Address: keyHash,
+			Vault:   vault.Name(),
+			Op:      msg.Type(),
+			Kind:    msg.Kind(),
+		}, func() (err error) {
+			sig, err = vault.Sign(ctx, digest[:], storedKey)
+			return err
+		})
+	} else {
+		sig, err = vault.Sign(ctx, digest[:], storedKey)
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -209,9 +236,6 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	encodedSig := tezos.EncodeSig(keyHash, sig)
 
 	l.Debugf("Encoded signature: %s", encodedSig)
-
-	s.notifySigning(keyHash, vault.Name(), msg.Type(), msg.Kind())
-
 	l.Infof("Signed %s successfully", msg.Type())
 
 	return encodedSig, nil

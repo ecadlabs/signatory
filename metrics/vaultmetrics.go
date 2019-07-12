@@ -1,62 +1,65 @@
 package metrics
 
 import (
-	"context"
-	"fmt"
-	"time"
+	"strconv"
 
 	"github.com/ecadlabs/signatory/signatory"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type HttpError interface {
 	Code() int
 }
 
-var vaultSigningSummary = prometheus.NewSummaryVec(
-	prometheus.SummaryOpts{
-		Name: "vault_sign_request_duration_microseconds",
-		Help: "Vaults signing requests latencies in microseconds",
+// Handler is an alias for default Prometheus HTTP handler
+var Handler = promhttp.Handler()
+
+// RegisterHandler register metrics handler
+func init() {
+	prometheus.MustRegister(signingOpCount)
+	prometheus.MustRegister(vaultSigningHist)
+	prometheus.MustRegister(vaultErrorCounter)
+}
+
+var (
+	signingOpCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "signing_ops_total",
+		Help: "Total number of signing operations completed.",
+	}, []string{"address", "vault", "op", "kind"})
+
+	vaultSigningHist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "vault_sign_request_duration_milliseconds",
+		Help:    "Vaults signing requests latencies in milliseconds",
+		Buckets: prometheus.ExponentialBuckets(10, 10, 5),
 	}, []string{"vault"})
 
-var vaultErrorCounter = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "vault_sign_request_error_total",
-		Help: "Vaults signing requests error count",
-	}, []string{"vault", "code"})
+	vaultErrorCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vault_sign_request_error_total",
+			Help: "Vaults signing requests error count",
+		}, []string{"vault", "code"})
+)
 
-type metricVault struct {
-	vault signatory.Vault
-}
-
-func (v *metricVault) GetPublicKey(ctx context.Context, keyHash string) (signatory.StoredKey, error) {
-	return v.vault.GetPublicKey(ctx, keyHash)
-}
-func (v *metricVault) ListPublicKeys(ctx context.Context) ([]signatory.StoredKey, error) {
-	return v.vault.ListPublicKeys(ctx)
-}
-func (v *metricVault) Sign(ctx context.Context, digest []byte, key signatory.StoredKey) ([]byte, error) {
-	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(val float64) {
-		us := val * float64(time.Microsecond)
-		vaultSigningSummary.WithLabelValues(v.vault.Name()).Observe(us)
+// Interceptor function collects sing operation metrics
+func Interceptor(opt *signatory.SingInterceptorOptions, sing func() error) error {
+	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(seconds float64) {
+		vaultSigningHist.WithLabelValues(opt.Vault).Observe(seconds * 1000)
 	}))
-	defer timer.ObserveDuration()
-
-	result, err := v.vault.Sign(ctx, digest, key)
+	err := sing()
+	timer.ObserveDuration()
 
 	if err != nil {
+		var code string
 		if val, ok := err.(HttpError); ok {
-			vaultErrorCounter.WithLabelValues(v.vault.Name(), fmt.Sprintf("%d", val.Code())).Inc()
+			code = strconv.FormatInt(int64(val.Code()), 10)
 		} else {
-			vaultErrorCounter.WithLabelValues(v.vault.Name(), "n/a").Inc()
+			code = "n/a"
 		}
+		vaultErrorCounter.WithLabelValues(opt.Vault, code).Inc()
 	}
 
-	return result, err
-}
-func (v *metricVault) Name() string { return v.vault.Name() }
+	signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Op, opt.Kind).Inc()
 
-// Wrap decorate a vault with prometheus metrics
-func Wrap(vault signatory.Vault) signatory.Vault {
-	return &metricVault{vault: vault}
+	return err
 }
