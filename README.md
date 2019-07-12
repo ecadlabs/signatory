@@ -83,10 +83,10 @@ desirable.
 
 |                  | Status      |
 | ---------------- | ----------- |
-| Azure KMS        | In Progress |
+| Azure KMS        | In Testing  |
+| YubiHSM2         | In Testing  |
 | Google Cloud KMS | Planned     |
 | AWS KMS          | Planned     |
-| YubiHSM2         | Evaluating  |
 
 ### Tezos Address Types
 
