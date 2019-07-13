@@ -33,8 +33,9 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 			ContainsFunc: func(keyHash string) bool { return false },
 		}},
 		&config.TezosConfig{},
-		func(address string, vault string, op string, kind string) {},
+		nil,
 		watermark.NewIgnore(),
+		nil,
 	)
 
 	_, err := s.GetPublicKey(context.TODO(), "Unkown address")

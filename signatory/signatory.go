@@ -20,8 +20,25 @@ var (
 	ErrNotSafeToSign = fmt.Errorf("Not safe to sign")
 )
 
-// NotifySigning observer function for signing request
-type NotifySigning func(address string, vault string, op string, kind string)
+const (
+	logPKH       = "pkh"
+	logVault     = "vault"
+	logVaultName = "vault_name"
+	logOp        = "op"
+	logKind      = "kind"
+	logKeyID     = "key_id"
+)
+
+// SingInterceptor is an observer function for signing request
+type SingInterceptor func(opt *SingInterceptorOptions, sing func() error) error
+
+// SingInterceptorOptions contains SingInterceptor arguments to avoid confusion
+type SingInterceptorOptions struct {
+	Address string
+	Vault   string
+	Op      string
+	Kind    string
+}
 
 // PublicKey alias for an array of byte
 type PublicKey = []byte
@@ -38,6 +55,11 @@ type Vault interface {
 	ListPublicKeys(ctx context.Context) ([]StoredKey, error)
 	Sign(ctx context.Context, digest []byte, key StoredKey) ([]byte, error)
 	Name() string
+}
+
+// VaultNamer might be implemented by some backends which can handle multiple vaults under single account
+type VaultNamer interface {
+	VaultName() string
 }
 
 // Watermark interface for service that allow double bake check
@@ -61,25 +83,34 @@ func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
 type Signatory struct {
 	vaults         []Vault
 	config         *config.TezosConfig
-	notifySigning  NotifySigning
+	interceptor    SingInterceptor
 	watermark      Watermark
 	hashVaultStore HashVaultStore
+	logger         log.FieldLogger
 }
 
 // NewSignatory return a new signatory struct
 func NewSignatory(
 	vaults []Vault,
 	config *config.TezosConfig,
-	notify NotifySigning,
+	interceptor SingInterceptor,
 	watermark Watermark,
-) *Signatory {
-	return &Signatory{
+	logger log.FieldLogger,
+) (s *Signatory) {
+	s = &Signatory{
 		vaults:         vaults,
 		config:         config,
 		hashVaultStore: make(HashVaultStore),
-		notifySigning:  notify,
+		interceptor:    interceptor,
 		watermark:      watermark,
+		logger:         logger,
 	}
+
+	if s.logger == nil {
+		s.logger = log.StandardLogger()
+	}
+
+	return
 }
 
 func IsSupportedCurve(curve string) bool {
@@ -132,19 +163,38 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", fmt.Errorf("%s is not listed in config", keyHash)
 	}
 
-	log.Infof("Signing for key: %s\n", keyHash)
+	msg := tezos.ParseMessage(message)
+	if err := s.validateMessage(msg); err != nil {
+		return "", err
+	}
+
+	l := s.logger.WithFields(log.Fields{
+		logPKH:  keyHash,
+		logOp:   msg.Type(),
+		logKind: msg.Kind(),
+	})
+
+	vault := s.getVaultFromKeyHash(keyHash)
+	if vault == nil {
+		l.Error("Vault not found")
+		return "", ErrVaultNotFound
+	}
+
+	logfields := log.Fields{
+		logVault: vault.Name(),
+	}
+	if n, ok := vault.(VaultNamer); ok {
+		logfields[logVaultName] = n.VaultName()
+	}
+	l = l.WithFields(logfields)
+
+	l.Info("Requesting signing operation")
 
 	level := log.DebugLevel
 	if s.config.LogPayloads {
 		level = log.InfoLevel
 	}
-	log.StandardLogger().Logf(level, "About to sign raw bytes hex.EncodeToString(message): %s\n", hex.EncodeToString(message))
-
-	msg := tezos.ParseMessage(message)
-
-	if err := s.validateMessage(msg); err != nil {
-		return "", err
-	}
+	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")
 
 	if msg.RequireWatermark() {
 		watermark, level := msg.Watermark(keyHash)
@@ -153,32 +203,40 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		}
 	}
 
-	vault := s.getVaultFromKeyHash(keyHash)
-
-	if vault == nil {
-		return "", ErrVaultNotFound
-	}
-
 	// Not nil if vault found
 	storedKey := s.getKeyFromKeyHash(keyHash)
-
 	digest := tezos.DigestFunc(message)
-	sig, err := vault.Sign(ctx, digest[:], storedKey)
 
-	log.Debugf("Signed bytes hex.EncodeToString(bytes): %s", hex.EncodeToString(sig))
+	var (
+		sig []byte
+		err error
+	)
+
+	if s.interceptor != nil {
+		err = s.interceptor(&SingInterceptorOptions{
+			Address: keyHash,
+			Vault:   vault.Name(),
+			Op:      msg.Type(),
+			Kind:    msg.Kind(),
+		}, func() (err error) {
+			sig, err = vault.Sign(ctx, digest[:], storedKey)
+			return err
+		})
+	} else {
+		sig, err = vault.Sign(ctx, digest[:], storedKey)
+	}
 
 	if err != nil {
 		return "", err
 	}
 
+	l.WithField("raw", hex.EncodeToString(sig)).Debug("Signed bytes")
+
 	fmt.Printf("%s\n", hex.EncodeToString(sig))
 	encodedSig := tezos.EncodeSig(keyHash, sig)
 
-	log.Debugf("Encoded signature: %s", encodedSig)
-
-	s.notifySigning(keyHash, vault.Name(), msg.Type(), msg.Kind())
-
-	log.Infof("Signed %s successfully", msg.Type())
+	l.Debugf("Encoded signature: %s", encodedSig)
+	l.Infof("Signed %s successfully", msg.Type())
 
 	return encodedSig, nil
 }
@@ -208,14 +266,22 @@ func (s *Signatory) ListPublicKeyHash(ctx context.Context) ([]string, error) {
 // GetPublicKey retrieve the public key from a vault
 func (s *Signatory) GetPublicKey(ctx context.Context, keyHash string) (string, error) {
 	vault := s.getVaultFromKeyHash(keyHash)
-
 	if vault == nil {
 		return "", ErrVaultNotFound
 	}
 
+	logfields := log.Fields{
+		logPKH:   keyHash,
+		logVault: vault.Name(),
+	}
+	if n, ok := vault.(VaultNamer); ok {
+		logfields[logVaultName] = n.VaultName()
+	}
+	l := s.logger.WithFields(logfields)
+
 	key := s.getKeyFromKeyHash(keyHash)
 
-	log.Debugf("Fetching public key for: %s", keyHash)
+	l.Debugf("Fetching public key for: %s", keyHash)
 
 	pubKey, err := vault.GetPublicKey(ctx, key.ID())
 	if err != nil {

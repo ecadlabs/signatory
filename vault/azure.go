@@ -11,8 +11,6 @@ import (
 	"net/url"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/ecadlabs/signatory/config"
 	"github.com/ecadlabs/signatory/crypto"
 	"github.com/ecadlabs/signatory/signatory"
@@ -288,9 +286,7 @@ func (s *AzureVault) GetPublicKey(ctx context.Context, keyID string) (signatory.
 
 // Sign submit a sign request to the azure keyvault api returns the decoded signature
 func (s *AzureVault) Sign(ctx context.Context, digest []byte, storedKey signatory.StoredKey) ([]byte, error) {
-	log.Infof("Signing operation with Azure %s vault", s.config.Vault)
 	azureKey, ok := storedKey.(*AzureKey)
-
 	if !ok {
 		return nil, fmt.Errorf("(Azure/%s): Key is not of type Azure Key", s.config.Vault)
 	}
@@ -408,7 +404,6 @@ func (s *AzureVault) Ready() bool {
 
 // Import use the azure key vault rest api to import a JWK
 func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
-	log.Infof("Importing key into Azure %s vault", s.config.Vault)
 	type Key struct {
 		signatory.JWK
 		KeyOps []string `json:"key_ops"`
@@ -491,4 +486,9 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 	}
 
 	return azImportResponse.Key.KID, nil
+}
+
+// VaultName returns Azure vault name
+func (s *AzureVault) VaultName() string {
+	return s.config.Vault
 }
