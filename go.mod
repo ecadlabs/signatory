@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/certusone/yubihsm-go v0.1.0
+	github.com/certusone/yubihsm-go v0.1.1-0.20190620183445-0299fd5d703d
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.2
 	github.com/ecadlabs/crypto v0.0.0-20190715192459-7e701899cb7f
 	github.com/go-playground/locales v0.12.1 // indirect

@@ -16,6 +16,8 @@ github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtE
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
 github.com/certusone/yubihsm-go v0.1.0 h1:gwQT3LkOEwzzvoK/QHLB/pRxfnLNAdmkkLoylySBmJg=
 github.com/certusone/yubihsm-go v0.1.0/go.mod h1:335cLDKZ69LDKMRK3HVdiRT/Gq9BkR9ABvWQ7J4QI00=
+github.com/certusone/yubihsm-go v0.1.1-0.20190620183445-0299fd5d703d h1:8HCZBaX1XPilXX9Q80lhaJcenxI8pDss1kz+ra16YoY=
+github.com/certusone/yubihsm-go v0.1.1-0.20190620183445-0299fd5d703d/go.mod h1:335cLDKZ69LDKMRK3HVdiRT/Gq9BkR9ABvWQ7J4QI00=
 github.com/davecgh/go-spew v0.0.0-20171005155431-ecdeabc65495/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
