@@ -146,7 +146,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Info("Keys discovered in Key Vault:\n\n")
+	log.Info("Keys discovered in Key Vault:")
 	var allowedKeyCount int
 	for _, key := range pubKeys {
 		if s.IsAllowed(key) {
