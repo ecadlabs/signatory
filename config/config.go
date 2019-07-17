@@ -33,8 +33,10 @@ type AzureConfig struct {
 }
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig struct {
-	Keys              []string `yaml:"keys" validate:"dive,startswith=tz1|startswith=tz2|startswith=tz3,len=36"`
+type TezosConfig = map[string]TezosPolicy
+
+// TezosPolicy contains policy definition for a specific address
+type TezosPolicy struct {
 	AllowedOperations []string `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
 	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=transaction proposal ballot reveal delegation"`
 	LogPayloads       bool     `yaml:"log_payloads"`
@@ -44,7 +46,7 @@ type TezosConfig struct {
 type Config struct {
 	Yubi   []YubiConfig  `yaml:"yubi"`
 	Azure  []AzureConfig `yaml:"azure"`
-	Tezos  TezosConfig   `yaml:"tezos"`
+	Tezos  TezosConfig   `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
 	Server ServerConfig  `yaml:"server"`
 }
 

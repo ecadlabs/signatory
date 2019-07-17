@@ -13,7 +13,6 @@ import (
 	"github.com/ecadlabs/signatory/metrics"
 	"github.com/ecadlabs/signatory/server"
 	"github.com/ecadlabs/signatory/signatory"
-	"github.com/ecadlabs/signatory/tezos"
 	"github.com/ecadlabs/signatory/vault"
 	"github.com/ecadlabs/signatory/watermark"
 
@@ -25,11 +24,6 @@ const (
 	defaultPort = 80
 	// Registered here https://github.com/prometheus/prometheus/wiki/Default-port-allocations
 	defaultUtilityPort = 9583
-)
-
-var (
-	defaultOperations = []string{tezos.OpBlock, tezos.OpEndorsement}
-	defaultKinds      = []string{}
 )
 
 func createVaults(c *config.Config) ([]signatory.Vault, []signatory.Importer, []server.Health, error) {
@@ -102,10 +96,7 @@ func main() {
 			Port:        defaultPort,
 			UtilityPort: defaultUtilityPort,
 		},
-		Tezos: config.TezosConfig{
-			AllowedOperations: defaultOperations,
-			AllowedKinds:      defaultKinds,
-		},
+		Tezos: make(config.TezosConfig),
 	}
 	err := c.Read(configFile)
 	if err != nil {
@@ -121,7 +112,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s := signatory.NewSignatory(vaults, &c.Tezos, metrics.Interceptor, watermark.NewMemory(), nil)
+	s := signatory.NewSignatory(vaults, c.Tezos, metrics.Interceptor, watermark.NewMemory(), nil)
 
 	srv := server.NewServer(s, &c.Server, nil)
 	utilityServer := server.NewUtilityServer(&c.Server, healths)
