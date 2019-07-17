@@ -103,6 +103,7 @@ func TestFilterMessage(t *testing.T) {
 		Case{Name: "Generic operation ballot", Message: createGeneric(0x06), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
 		Case{Name: "Generic operation transaction", Message: createGeneric(0x08), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenTransaction})},
 		Case{Name: "Generic operation proposal", Message: createGeneric(0x05), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenProposal})},
+		Case{Name: "Generic operation not configured but kind is configured", Message: createGeneric(0x08), Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{}, []string{tezos.OpGenTransaction})},
 	}
 
 	for _, c := range cases {

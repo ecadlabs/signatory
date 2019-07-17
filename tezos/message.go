@@ -180,6 +180,10 @@ func (m *Message) MatchFilter(conf *config.TezosConfig) error {
 		}
 	}
 
+	if !allowed {
+		return ErrDoNotMatchFilter
+	}
+
 	// Generic operations have an extra check
 	if msgType == OpGeneric {
 		allowed = false
