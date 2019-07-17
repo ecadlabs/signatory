@@ -17,7 +17,7 @@ installed and configured on your computer.
 
 ## Setup a new Azure Key Vault and credentials
 
-Use the `example.yaml` signatory config file as a starting point.
+Use the `signatory.yaml` signatory config file as a starting point.
 
 You will need to create several Azure resources, and copy configuration into
 the signatory config file. Let's begin.
