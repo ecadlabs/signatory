@@ -2,7 +2,7 @@
 
 ## Configuration
 
-Signatory configuration is specified in a yaml file. Use the `example.yaml`
+Signatory configuration is specified in a yaml file. Use the `signatory.yaml`
 file as a template to getting started.
 
 Each backend can be configured with one of more instances of the backend. The
