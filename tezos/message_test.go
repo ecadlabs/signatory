@@ -69,12 +69,12 @@ func TestFilterMessage(t *testing.T) {
 	type Case struct {
 		Name    string
 		Message []byte
-		Config  *config.TezosConfig
+		Config  *config.TezosPolicy
 		Error   error
 	}
 
-	genTezosConfig := func(filters []string, kinds []string) *config.TezosConfig {
-		return &config.TezosConfig{
+	genTezosConfig := func(filters []string, kinds []string) *config.TezosPolicy {
+		return &config.TezosPolicy{
 			AllowedOperations: filters,
 			AllowedKinds:      kinds,
 		}

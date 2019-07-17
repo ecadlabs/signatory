@@ -165,7 +165,7 @@ func (m *Message) Kind() string {
 }
 
 // MatchFilter filter a message according to a Tezos Configuration
-func (m *Message) MatchFilter(conf *config.TezosConfig) error {
+func (m *Message) MatchFilter(conf *config.TezosPolicy) error {
 	msgType := m.Type()
 
 	if msgType == OpUnknown {

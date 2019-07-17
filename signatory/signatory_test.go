@@ -32,7 +32,7 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 		[]signatory.Vault{&FakeVault{
 			ContainsFunc: func(keyHash string) bool { return false },
 		}},
-		&config.TezosConfig{},
+		make(config.TezosConfig),
 		nil,
 		watermark.NewIgnore(),
 		nil,
