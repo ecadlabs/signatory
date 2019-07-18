@@ -4,7 +4,7 @@ jobs:
   test:
     docker:
       - image: circleci/golang:latest
-    working_directory: /build/signatory
+    working_directory: ~/build/signatory
     environment:
       GO111MODULE: on
     steps:
