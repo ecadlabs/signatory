@@ -82,7 +82,7 @@ func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
 	vaults         []Vault
-	config         *config.TezosConfig
+	config         config.TezosConfig
 	interceptor    SingInterceptor
 	watermark      Watermark
 	hashVaultStore HashVaultStore
@@ -92,7 +92,7 @@ type Signatory struct {
 // NewSignatory return a new signatory struct
 func NewSignatory(
 	vaults []Vault,
-	config *config.TezosConfig,
+	config config.TezosConfig,
 	interceptor SingInterceptor,
 	watermark Watermark,
 	logger log.FieldLogger,
@@ -119,12 +119,22 @@ func IsSupportedCurve(curve string) bool {
 
 // IsAllowed returns true if keyHash is listed in configuration
 func (s *Signatory) IsAllowed(keyHash string) bool {
-	for _, key := range s.config.Keys {
+	for key := range s.config {
 		if key == keyHash {
 			return true
 		}
 	}
 	return false
+}
+
+func (s *Signatory) FetchPolicyOrDefault(keyHash string) *config.TezosPolicy {
+	if val, ok := s.config[keyHash]; ok {
+		return &val
+	}
+	return &config.TezosPolicy{
+		AllowedOperations: []string{tezos.OpEndorsement, tezos.OpBlock},
+		AllowedKinds:      []string{},
+	}
 }
 
 func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
@@ -141,14 +151,14 @@ func (s *Signatory) getKeyFromKeyHash(keyHash string) StoredKey {
 	return nil
 }
 
-func (s *Signatory) validateMessage(msg *tezos.Message) error {
+func (s *Signatory) validateMessage(msg *tezos.Message, policy *config.TezosPolicy) error {
 	err := msg.Validate()
 
 	if err != nil {
 		return err
 	}
 
-	err = msg.MatchFilter(s.config)
+	err = msg.MatchFilter(policy)
 
 	if err != nil {
 		return err
@@ -163,8 +173,10 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", fmt.Errorf("%s is not listed in config", keyHash)
 	}
 
+	policy := s.FetchPolicyOrDefault(keyHash)
+
 	msg := tezos.ParseMessage(message)
-	if err := s.validateMessage(msg); err != nil {
+	if err := s.validateMessage(msg, policy); err != nil {
 		return "", err
 	}
 
@@ -191,7 +203,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	l.Info("Requesting signing operation")
 
 	level := log.DebugLevel
-	if s.config.LogPayloads {
+	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
 	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")

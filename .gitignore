@@ -12,5 +12,4 @@
 *.out
 
 vendor/
-signatory.yaml
 .vscode
