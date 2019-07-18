@@ -17,7 +17,6 @@ jobs:
           name: Unit tests
           command: |
             export GO111MODULE=on
-
             ./cc-test-reporter before-build
 
             for pkg in $(go list ./... | grep -v vendor); do
@@ -26,13 +25,20 @@ jobs:
 
             mod=$(cat go.mod | awk '/^module/ {print $2}')
             echo "mode: set" > c.out
+<<<<<<< HEAD
 
+=======
+>>>>>>> oops
             if ls ./*.cover >/dev/null 2>&1; then
               grep -h -v "^mode:" ./*.cover >> c.out
               rm -f *.cover
             fi
+<<<<<<< HEAD
 
             ./cc-test-reporter -p "${mod}/" after-build
+=======
+            ./cc-test-reporter after-build
+>>>>>>> oops
   publish:
     docker:
       - image: docker:17.05.0-ce-git
