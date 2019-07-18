@@ -4,12 +4,11 @@ jobs:
   test:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/ecadlabs/signatory
+    working_directory: /build/signatory
+    environment:
+      GO111MODULE: on
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && dep ensure
       - run:
           name: Setup Code Climate test-reporter
           command: |
@@ -35,7 +34,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Build Docker Image
-          command: docker build -t ecadlabs/signatory:$CIRCLE_TAG .
+          command: docker build -t ecadlabs/signatory:$CIRCLE_TAG -e GIT_REVISION=$CIRCLE_SHA1 -e GIT_BRANCH=$CIRCLE_BRANCH -e GIT_VERSION=$CIRCLE_TAG .
       - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS

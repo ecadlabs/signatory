@@ -9,6 +9,7 @@ import (
 var (
 	GitRevision string
 	GitBranch   string
+	GitVersion  string
 )
 
 type constCollector struct {
@@ -26,6 +27,11 @@ func NewBuildInfoCollector(prefix string) prometheus.Collector {
 		path = bi.Main.Path
 		version = bi.Main.Version
 		sum = bi.Main.Sum
+	}
+
+	if GitVersion != "" {
+		// Override from the build command line
+		version = GitVersion
 	}
 
 	if GitRevision != "" {
