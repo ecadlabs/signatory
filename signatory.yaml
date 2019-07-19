@@ -24,18 +24,18 @@ server:
   # Default port 9583
   utility_port: 9583
 tezos:
-  # Control if operations for signing should be logged
-  log_payloads: yes
-  # Allow list for operations controls what type of operations signatory will sign.
-  # A baker should be able to endorse and produce blocks, but would not require `transactions`.
-  keys:
-    - tz1_YOUR_TZ_ADDRESS_HERE
-  allowed_operations:
-    - endorsement
-    - block
-    - generic
-  allowed_kinds:
-    - ballot
-    # - delegation
-    # - reveal
-    # - transaction
+  tz1_YOUR_TZ_ADDRESS_HERE:
+    # Control if operations for signing should be logged
+    log_payloads: yes
+    # Allow list for operations controls what type of operations signatory will sign.
+    # A baker should be able to endorse and produce blocks, but would not require `transactions`.
+    allowed_operations:
+      - endorsement
+      - block
+      - generic
+    allowed_kinds:
+      - ballot
+      # - delegation
+      # - reveal
+      # - transaction
+
