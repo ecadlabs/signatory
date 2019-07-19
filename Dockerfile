@@ -1,17 +1,15 @@
 FROM golang:alpine AS build-env
 
-RUN apk update
-RUN apk add build-base curl git
-RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+ENV COLLECTOR_PKG="github.com/ecadlabs/signatory/metrics"
+ENV GO111MODULE="on"
 
-WORKDIR  /go/src/github.com/ecadlabs/signatory
+WORKDIR /build/signatory
 ADD . .
-RUN dep ensure
-RUN go build -o sig
+RUN go build -o sig -ldflags "-X ${COLLECTOR_PKG}.GitRevision=${GIT_REVISION} -X ${COLLECTOR_PKG}.GitBranch=${GIT_BRANCH} -X ${COLLECTOR_PKG}.GitVersion=${GIT_VERSION}"
 
 # final stage
 FROM alpine
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
-COPY --from=build-env /go/src/github.com/ecadlabs/signatory/sig /app/
+COPY --from=build-env /build/signatory/sig /app/
 ENTRYPOINT /app/sig
