@@ -206,7 +206,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")
+	l.WithField("raw", hex.EncodeToString(message)).Info(level, "About to sign raw bytes")
 
 	if msg.RequireWatermark() {
 		watermark, level := msg.Watermark(keyHash)

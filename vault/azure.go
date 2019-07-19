@@ -431,7 +431,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 		return "", err
 	}
 
-	id := uuid.NewV4()
+	id, err := uuid.NewV4()
 
 	if err != nil {
 		return "", err
