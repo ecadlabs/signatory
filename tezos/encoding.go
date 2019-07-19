@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/carte7000/crypto/blake2b"
+	"github.com/ecadlabs/crypto/blake2b"
 	"github.com/ecadlabs/signatory/crypto"
 )
 
