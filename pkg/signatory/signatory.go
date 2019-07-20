@@ -169,19 +169,23 @@ func (s *Signatory) validateMessage(msg *tezos.Message, policy *config.TezosPoli
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
+	l := s.logger.WithField(logPKH, keyHash)
+
 	if !s.IsAllowed(keyHash) {
-		return "", fmt.Errorf("%s is not listed in config", keyHash)
+		err := fmt.Errorf("%s is not listed in config", keyHash)
+		l.WithField("raw", hex.EncodeToString(message)).Error(err)
+		return "", err
 	}
 
 	policy := s.FetchPolicyOrDefault(keyHash)
 
 	msg := tezos.ParseMessage(message)
 	if err := s.validateMessage(msg, policy); err != nil {
+		l.WithField("raw", hex.EncodeToString(message)).Error(err)
 		return "", err
 	}
 
-	l := s.logger.WithFields(log.Fields{
-		logPKH:  keyHash,
+	l = l.WithFields(log.Fields{
 		logOp:   msg.Type(),
 		logKind: msg.Kind(),
 	})

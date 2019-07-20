@@ -52,13 +52,25 @@ const (
 )
 
 var (
-	// ErrMessageEmpty is an error indicating that a message was empty
-	ErrMessageEmpty = errors.New("Message is empty")
-	// ErrInvalidMagicByte is an error indicating that a message magic byte is invalid/
-	ErrInvalidMagicByte = errors.New("Invalid magic byte")
+	// ErrMessageTooShort is an error indicating that a message is too short
+	ErrMessageTooShort = errors.New("Message is too short")
 	// ErrDoNotMatchFilter is an error indicating that a message magic byte is invalid/
 	ErrDoNotMatchFilter = errors.New("Operation not permitted by filter")
 )
+
+var opMagicBytes = map[int]string{
+	opMagicByteBlock:       OpBlock,
+	opMagicByteEndorsement: OpEndorsement,
+	opMagicByteGeneric:     OpGeneric,
+}
+
+var kindsMagicBytes = map[int]string{
+	opKindBallot:      OpGenBallot,
+	opKindProposals:   OpGenProposal,
+	opKindTransaction: OpGenTransaction,
+	opKindReveal:      OpGenReveal,
+	opKindDelegation:  OpGenDelegation,
+}
 
 // Message represent a tezos message
 type Message struct {
@@ -72,32 +84,41 @@ func ParseMessage(message []byte) *Message {
 
 // Validate validate if a tezos operation is valid
 func (m *Message) Validate() error {
-	if len(m.hex) == 0 {
-		return ErrMessageEmpty
+	b := m.magicByte()
+	if b < 0 {
+		return ErrMessageTooShort
+	}
+	if _, ok := opMagicBytes[b]; !ok {
+		return fmt.Errorf("Invalid magic byte: %#02x", b)
 	}
 
-	if m.Type() == OpUnknown {
-		return ErrInvalidMagicByte
+	b = m.kindByte()
+	if b < 0 {
+		return ErrMessageTooShort
+	}
+	if _, ok := kindsMagicBytes[b]; !ok {
+		return fmt.Errorf("Invalid kind code: %#02x", b)
 	}
 
 	return nil
 }
 
+func (m *Message) magicByte() int {
+	if len(m.hex) == 0 {
+		return -1
+	}
+	return int(m.hex[0])
+}
+
 // Type return the message type
 func (m *Message) Type() string {
-	if len(m.hex) == 0 {
+	b := m.magicByte()
+	if b < 0 {
 		return OpUnknown
 	}
 
-	magicByte := m.hex[0]
-
-	switch magicByte {
-	case opMagicByteBlock:
-		return OpBlock
-	case opMagicByteEndorsement:
-		return OpEndorsement
-	case opMagicByteGeneric:
-		return OpGeneric
+	if op, ok := opMagicBytes[b]; ok {
+		return op
 	}
 
 	return OpUnknown
@@ -140,28 +161,25 @@ func (m *Message) level() *big.Int {
 	return nil
 }
 
+func (m *Message) kindByte() int {
+	if len(m.hex) <= 33 {
+		return -1
+	}
+	return int(m.hex[33])
+}
+
 // Kind return the kind of a generic operation
 func (m *Message) Kind() string {
-	if len(m.hex) <= 33 {
+	b := m.kindByte()
+	if b < 0 {
 		return OpGenUnknown
 	}
 
-	kind := m.hex[33]
-
-	switch kind {
-	case opKindBallot:
-		return OpGenBallot
-	case opKindProposals:
-		return OpGenProposal
-	case opKindTransaction:
-		return OpGenTransaction
-	case opKindReveal:
-		return OpGenReveal
-	case opKindDelegation:
-		return OpGenDelegation
-	default:
-		return OpGenUnknown
+	if kind, ok := kindsMagicBytes[b]; ok {
+		return kind
 	}
+
+	return OpGenUnknown
 }
 
 // MatchFilter filter a message according to a Tezos Configuration
