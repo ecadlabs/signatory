@@ -78,8 +78,8 @@ INFO[0001] Keys discovered in Key Vault:
 INFO[0001] tz2Ch1abG7FNiibmV26Uzgdsnfni9XGrk5wD (Found in vault, not configured for use in signatory.yaml) 
 ```
 
-You must copy your tz2 key into the `tezos.keys`
-list for Signatory to carry out signing operations using this address.
+You must copy your tz2 key into the `tezos`
+config section for Signatory to carry out signing operations using this address.
 
 
 ## Testing / Verify
@@ -100,3 +100,5 @@ to investigate. If it was successful, you should see output similar to:
 ```
 {"signature":"p2sigR4JTRTMkT4XC4NgVuGdhZDbgaaSZpNPUserkyMCTY1GQJTFpCuihFRVk9n7YaNjA5U3cNcvJPRm7C9G5A1hsLsesVPcMu"}
 ```
+
+## Importing your existing key inside 
