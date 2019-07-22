@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/metrics"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/gorilla/mux"
 )
 

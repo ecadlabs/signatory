@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ecadlabs/signatory/server"
+	"github.com/ecadlabs/signatory/pkg/server"
 )
 
 type FakeSignatory struct {

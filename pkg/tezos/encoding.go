@@ -5,7 +5,7 @@ import (
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/ecadlabs/crypto/blake2b"
-	"github.com/ecadlabs/signatory/crypto"
+	"github.com/ecadlabs/signatory/pkg/crypto"
 )
 
 // DigestFunc is an alias for blake2b checksum algorithm

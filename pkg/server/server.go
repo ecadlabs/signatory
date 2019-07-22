@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/ecadlabs/signatory/config"
+	"github.com/ecadlabs/signatory/pkg/config"
 )
 
 const (

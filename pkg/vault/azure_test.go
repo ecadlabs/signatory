@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/vault"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/vault"
 )
 
 type HandleFunc func(req *http.Request) (*http.Response, error)

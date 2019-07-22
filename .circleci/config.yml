@@ -41,7 +41,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Build Docker Image
-          command: docker build -t ecadlabs/signatory:$CIRCLE_TAG -e GIT_REVISION=$CIRCLE_SHA1 -e GIT_BRANCH=$CIRCLE_BRANCH -e GIT_VERSION=$CIRCLE_TAG .
+          command: docker build -t ecadlabs/signatory:$CIRCLE_TAG -e GIT_REVISION=$CIRCLE_SHA1 -e GIT_BRANCH=$CIRCLE_BRANCH -e GIT_VERSION=$CIRCLE_TAG -f cmd/signatory .
       - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS

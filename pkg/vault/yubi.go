@@ -10,9 +10,9 @@ import (
 	yubihsm "github.com/certusone/yubihsm-go"
 	"github.com/certusone/yubihsm-go/commands"
 	"github.com/certusone/yubihsm-go/connector"
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/crypto"
-	"github.com/ecadlabs/signatory/signatory"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypto"
+	"github.com/ecadlabs/signatory/pkg/signatory"
 )
 
 // YubiHSM struct containing information required to interrogate a Yubi HSM

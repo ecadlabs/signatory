@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/metrics"
-	"github.com/ecadlabs/signatory/server"
-	"github.com/ecadlabs/signatory/signatory"
-	"github.com/ecadlabs/signatory/vault"
-	"github.com/ecadlabs/signatory/watermark"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/metrics"
+	"github.com/ecadlabs/signatory/pkg/server"
+	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/watermark"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"

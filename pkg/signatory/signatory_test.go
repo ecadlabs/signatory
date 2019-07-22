@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/signatory"
-	"github.com/ecadlabs/signatory/watermark"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/watermark"
 )
 
 type FakeVault struct {

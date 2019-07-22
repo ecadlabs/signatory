@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/crypto/blake2b"
-	"github.com/ecadlabs/signatory/crypto"
+	"github.com/ecadlabs/signatory/pkg/crypto"
 )
 
 const (

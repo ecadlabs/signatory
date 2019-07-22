@@ -3,7 +3,7 @@ package signatory
 import (
 	"encoding/base64"
 
-	"github.com/ecadlabs/signatory/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	log "github.com/sirupsen/logrus"
 )
 

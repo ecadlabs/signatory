@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ecadlabs/signatory/signatory"
-	"github.com/ecadlabs/signatory/tezos"
+	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 )
 
 func TestToJWK(t *testing.T) {

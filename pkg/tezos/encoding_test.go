@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ecadlabs/signatory/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 )
 
 func TestEncodeSig(t *testing.T) {

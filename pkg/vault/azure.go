@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/crypto"
-	"github.com/ecadlabs/signatory/signatory"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypto"
+	"github.com/ecadlabs/signatory/pkg/signatory"
 	uuid "github.com/satori/go.uuid"
 )
 

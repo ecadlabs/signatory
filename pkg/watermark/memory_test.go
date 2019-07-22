@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ecadlabs/signatory/watermark"
+	"github.com/ecadlabs/signatory/pkg/watermark"
 )
 
 func TestGetSigAlg(t *testing.T) {

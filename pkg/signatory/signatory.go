@@ -8,9 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/ecadlabs/signatory/config"
-	"github.com/ecadlabs/signatory/crypto"
-	"github.com/ecadlabs/signatory/tezos"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypto"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 )
 
 var (
@@ -206,7 +206,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")
+	l.WithField("raw", hex.EncodeToString(message)).Info(level, "About to sign raw bytes")
 
 	if msg.RequireWatermark() {
 		watermark, level := msg.Watermark(keyHash)
