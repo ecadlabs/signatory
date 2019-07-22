@@ -1,7 +1,6 @@
 package tezos
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -51,13 +50,6 @@ const (
 	OpGenUnknown = "unknown"
 )
 
-var (
-	// ErrMessageTooShort is an error indicating that a message is too short
-	ErrMessageTooShort = errors.New("Message is too short")
-	// ErrDoNotMatchFilter is an error indicating that a message magic byte is invalid/
-	ErrDoNotMatchFilter = errors.New("Operation not permitted by filter")
-)
-
 var opMagicBytes = map[int]string{
 	opMagicByteBlock:       OpBlock,
 	opMagicByteEndorsement: OpEndorsement,
@@ -84,36 +76,38 @@ func ParseMessage(message []byte) *Message {
 
 // Validate validate if a tezos operation is valid
 func (m *Message) Validate() error {
-	b := m.magicByte()
-	if b < 0 {
-		return ErrMessageTooShort
-	}
-	if _, ok := opMagicBytes[b]; !ok {
-		return fmt.Errorf("Invalid magic byte: %#02x", b)
+	b, err := m.magicByte()
+	if err != nil {
+		return err
 	}
 
-	b = m.kindByte()
-	if b < 0 {
-		return ErrMessageTooShort
+	if _, ok := opMagicBytes[b]; !ok {
+		return &MagicByteError{Value: b}
 	}
+
+	b, err = m.kindByte()
+	if err != nil {
+		return err
+	}
+
 	if _, ok := kindsMagicBytes[b]; !ok {
-		return fmt.Errorf("Invalid kind code: %#02x", b)
+		return &MessageKindError{Value: b}
 	}
 
 	return nil
 }
 
-func (m *Message) magicByte() int {
+func (m *Message) magicByte() (int, error) {
 	if len(m.hex) == 0 {
-		return -1
+		return 0, &MessageTooShortError{Len: len(m.hex)}
 	}
-	return int(m.hex[0])
+	return int(m.hex[0]), nil
 }
 
 // Type return the message type
 func (m *Message) Type() string {
-	b := m.magicByte()
-	if b < 0 {
+	b, err := m.magicByte()
+	if err != nil {
 		return OpUnknown
 	}
 
@@ -161,17 +155,17 @@ func (m *Message) level() *big.Int {
 	return nil
 }
 
-func (m *Message) kindByte() int {
+func (m *Message) kindByte() (int, error) {
 	if len(m.hex) <= 33 {
-		return -1
+		return 0, &MessageTooShortError{Len: len(m.hex)}
 	}
-	return int(m.hex[33])
+	return int(m.hex[33]), nil
 }
 
 // Kind return the kind of a generic operation
 func (m *Message) Kind() string {
-	b := m.kindByte()
-	if b < 0 {
+	b, err := m.kindByte()
+	if err != nil {
 		return OpGenUnknown
 	}
 
@@ -187,7 +181,7 @@ func (m *Message) MatchFilter(conf *config.TezosPolicy) error {
 	msgType := m.Type()
 
 	if msgType == OpUnknown {
-		return ErrDoNotMatchFilter
+		return &FilterError{}
 	}
 
 	var allowed = false
@@ -199,7 +193,7 @@ func (m *Message) MatchFilter(conf *config.TezosPolicy) error {
 	}
 
 	if !allowed {
-		return ErrDoNotMatchFilter
+		return &FilterError{}
 	}
 
 	// Generic operations have an extra check
@@ -214,7 +208,7 @@ func (m *Message) MatchFilter(conf *config.TezosPolicy) error {
 	}
 
 	if !allowed {
-		return ErrDoNotMatchFilter
+		return &FilterError{}
 	}
 
 	return nil

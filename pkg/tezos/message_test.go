@@ -6,6 +6,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateMessage(t *testing.T) {
@@ -16,24 +17,20 @@ func TestValidateMessage(t *testing.T) {
 	}
 
 	cases := []Case{
-		Case{Name: "Nil message", Message: nil, Error: tezos.ErrMessageEmpty},
-		Case{Name: "Empty message", Message: []byte{}, Error: tezos.ErrMessageEmpty},
-		Case{Name: "Generic operation", Message: []byte{0x03, 0x02}, Error: nil},
-		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02}, Error: nil},
-		Case{Name: "Block operation", Message: []byte{0x01, 0x02}, Error: nil},
-		Case{Name: "Invalid magic byte", Message: []byte{0x00, 0x02}, Error: tezos.ErrInvalidMagicByte},
-		Case{Name: "Invalid magic byte", Message: []byte{0x04, 0x02}, Error: tezos.ErrInvalidMagicByte},
+		Case{Name: "Nil message", Message: nil, Error: &tezos.MessageTooShortError{Len: 0}},
+		Case{Name: "Empty message", Message: []byte{}, Error: &tezos.MessageTooShortError{Len: 0}},
+		Case{Name: "Generic operation", Message: []byte{0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05}, Error: nil},
+		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06}, Error: nil},
+		Case{Name: "Block operation", Message: []byte{0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07}, Error: nil},
+		Case{Name: "Invalid magic byte", Message: []byte{0x00, 0x02}, Error: &tezos.MagicByteError{Value: 0}},
+		Case{Name: "Invalid magic byte", Message: []byte{0x04, 0x02}, Error: &tezos.MagicByteError{Value: 4}},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			msg := tezos.ParseMessage(c.Message)
 			err := msg.Validate()
-
-			if err != c.Error {
-				fmt.Printf("Expected %v but got %v\n", c.Error, err)
-				t.Fail()
-			}
+			require.Equal(t, c.Error, err)
 		})
 	}
 }
@@ -88,22 +85,22 @@ func TestFilterMessage(t *testing.T) {
 	}
 
 	cases := []Case{
-		Case{Name: "Nil message", Message: nil, Error: tezos.ErrDoNotMatchFilter},
-		Case{Name: "Empty message", Message: []byte{}, Error: tezos.ErrDoNotMatchFilter},
+		Case{Name: "Nil message", Message: nil, Error: &tezos.FilterError{}},
+		Case{Name: "Empty message", Message: []byte{}, Error: &tezos.FilterError{}},
 		Case{Name: "Endorsement operation", Message: []byte{0x02, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpEndorsement}, nil)},
 		Case{Name: "Block operation", Message: []byte{0x01, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpBlock}, nil)},
-		Case{Name: "Invalid magic byte", Message: []byte{0x00, 0x02}, Error: tezos.ErrDoNotMatchFilter},
-		Case{Name: "Invalid magic byte", Message: []byte{0x04, 0x02}, Error: tezos.ErrDoNotMatchFilter},
-		Case{Name: "Unsupported operation", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpBlock, tezos.OpEndorsement}, nil)},
-		Case{Name: "Unsupported operation", Message: []byte{0x01, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
+		Case{Name: "Invalid magic byte", Message: []byte{0x00, 0x02}, Error: &tezos.FilterError{}},
+		Case{Name: "Invalid magic byte", Message: []byte{0x04, 0x02}, Error: &tezos.FilterError{}},
+		Case{Name: "Unsupported operation", Message: []byte{0x03, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpBlock, tezos.OpEndorsement}, nil)},
+		Case{Name: "Unsupported operation", Message: []byte{0x01, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
 
-		Case{Name: "Generic operation not configured", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
-		Case{Name: "Generic operation not long enough", Message: []byte{0x03, 0x02}, Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
+		Case{Name: "Generic operation not configured", Message: []byte{0x03, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
+		Case{Name: "Generic operation not long enough", Message: []byte{0x03, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
 		Case{Name: "Generic operation unkown not long enough", Message: []byte{0x03, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenUnknown})},
 		Case{Name: "Generic operation ballot", Message: createGeneric(0x06), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
 		Case{Name: "Generic operation transaction", Message: createGeneric(0x08), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenTransaction})},
 		Case{Name: "Generic operation proposal", Message: createGeneric(0x05), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenProposal})},
-		Case{Name: "Generic operation not configured but kind is configured", Message: createGeneric(0x08), Error: tezos.ErrDoNotMatchFilter, Config: genTezosConfig([]string{}, []string{tezos.OpGenTransaction})},
+		Case{Name: "Generic operation not configured but kind is configured", Message: createGeneric(0x08), Error: &tezos.FilterError{}, Config: genTezosConfig([]string{}, []string{tezos.OpGenTransaction})},
 	}
 
 	for _, c := range cases {
@@ -111,10 +108,7 @@ func TestFilterMessage(t *testing.T) {
 			msg := tezos.ParseMessage(c.Message)
 			err := msg.MatchFilter(c.Config)
 
-			if err != c.Error {
-				fmt.Printf("Expected %v but got %v\n", c.Error, err)
-				t.Fail()
-			}
+			require.Equal(t, c.Error, err)
 		})
 	}
 }
