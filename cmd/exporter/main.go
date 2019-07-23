@@ -17,8 +17,10 @@ import (
 )
 
 type mergeEntry struct {
-	PK pkEntry
-	SK skEntry
+	PK         pkEntry
+	SK         skEntry
+	passphrase string
+	Unlocked   bool
 }
 
 type skEntry struct {
@@ -33,6 +35,10 @@ type pkEntry struct {
 
 func (s *mergeEntry) IsUnencrypted() bool {
 	return strings.HasPrefix(s.SK.Value, "unencrypted")
+}
+
+func (s *mergeEntry) IsEncrypted() bool {
+	return strings.HasPrefix(s.SK.Value, "encrypted")
 }
 
 func (s *mergeEntry) SecretKey() string {
@@ -52,7 +58,22 @@ func (s *mergeEntry) PublicKey() string {
 	panic("Unkown key format")
 }
 
+func (s *mergeEntry) Unlock(passphrase string) {
+	s.passphrase = passphrase
+	// Recompute the key pair with the passphrase
+	s.KeyPair()
+}
+
 func (s *mergeEntry) KeyPair() *tezos.KeyPair {
+	if s.IsEncrypted() {
+		decrypted, err := tezos.NewEncryptedKeyPair(s.PublicKey(), s.SecretKey(), s.passphrase)
+		if err == nil {
+			s.Unlocked = true
+		}
+		return decrypted
+	}
+
+	s.Unlocked = true
 	return tezos.NewKeyPair(s.PublicKey(), s.SecretKey())
 }
 
@@ -79,9 +100,11 @@ func main() {
 	var tezosFile string
 	var keyToExport string
 	var output string
+	var passphrase string
 	var version bool
 	flag.StringVar(&tezosFile, "f", "~/.tezos-client", "Path to your unencrypted wallet file")
 	flag.StringVar(&output, "o", "", `File path of your exported key (default "./<NAME_OF_YOUR_KEY")`)
+	flag.StringVar(&passphrase, "passphrase", "", `Your key passphrase (optional)`)
 	flag.BoolVar(&version, "v", false, "Print the version")
 	flag.StringVar(&keyToExport, "key", "", "Name of the key to export (optional)")
 	flag.Parse()
@@ -135,6 +158,8 @@ func main() {
 		for _, key := range mergedEntries {
 			if key.IsUnencrypted() {
 				keyName = append(keyName, key.CompleteName())
+			} else if key.IsEncrypted() {
+				keyName = append(keyName, key.CompleteName())
 			}
 		}
 
@@ -159,6 +184,37 @@ func main() {
 		if entry.CompleteName() == keyToExport {
 			entryToExport = entry
 		}
+	}
+
+	if entryToExport.IsEncrypted() {
+		if passphrase != "" {
+			entryToExport.Unlock(passphrase)
+		} else {
+			prompt := promptui.Prompt{
+				Label: "Your about to decrypt your keys please ensure that you are on a secure system. Continue? (Y/n)",
+			}
+
+			proceed, err := prompt.Run()
+			check(err)
+
+			if proceed != "Y" {
+				log.Info("Exited without decrypting keys")
+				os.Exit(0)
+			}
+
+			prompt = promptui.Prompt{
+				Label: "Password",
+				Mask:  '*',
+			}
+
+			result, err := prompt.Run()
+			check(err)
+			entryToExport.Unlock(result)
+		}
+	}
+
+	if !entryToExport.Unlocked {
+		log.Fatal("Invalid passphrase")
 	}
 
 	x509Encoded, err := entryToExport.KeyPair().EncodeASN1()

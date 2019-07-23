@@ -3,17 +3,30 @@ package tezos
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/sha512"
 	"encoding/asn1"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/ecadlabs/crypto/blake2b"
+	"github.com/ecadlabs/crypto/nacl/secretbox"
+	"github.com/ecadlabs/crypto/pbkdf2"
 	"github.com/ecadlabs/signatory/pkg/crypto"
 )
 
 const (
 	publicKeyHashLenght = 20
+)
+
+var (
+	zeroNonce                      = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	pbkdf2IterationCount           = 32768
+	keyLength                      = 32
+	encryptedSecretKeyPrefixLength = 5
+	pbkdf2SaltLength               = 8
+	// ErrInvalidPassphrase is returned when encrypted key decryption fail
+	ErrInvalidPassphrase = errors.New("Invalid passphrase")
 )
 
 func newUnkownPrefixErr(prefix string) error {
@@ -23,6 +36,30 @@ func newUnkownPrefixErr(prefix string) error {
 // NewKeyPair create new tezos keypair
 func NewKeyPair(publicKey string, secretKey string) *KeyPair {
 	return &KeyPair{secretKey: secretKey, publicKey: publicKey}
+}
+
+// NewEncryptedKeyPair create a key pair from encrypted secret key and passphrase
+func NewEncryptedKeyPair(publicKey string, secretKey string, passphrase string) (*KeyPair, error) {
+	secretKeyPrefix := secretKey[:encryptedSecretKeyPrefixLength]
+
+	decoded, err := decodeKey(prefixMap[secretKeyPrefix], secretKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	k := pbkdf2.Key([]byte(passphrase), decoded[:pbkdf2SaltLength], pbkdf2IterationCount, keyLength, sha512.New)
+	var decryptNonce [24]byte
+	var key [32]byte
+	copy(key[:], k[:32])
+	copy(decryptNonce[:], zeroNonce)
+	res, worked := secretbox.Open(nil, decoded[pbkdf2SaltLength:], &decryptNonce, &key)
+	pair := &KeyPair{secretKey: EncodeSecretKeyUsingSecretKeyPrefix(secretKeyPrefix, res), publicKey: publicKey}
+	if !worked {
+		return pair, ErrInvalidPassphrase
+	}
+
+	return pair, nil
 }
 
 // KeyPair a struct contains tezos formatted public key and secret key

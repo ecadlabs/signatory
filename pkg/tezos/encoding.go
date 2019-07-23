@@ -18,17 +18,20 @@ const (
 )
 
 const (
-	p256PubKeyPrefix    = "p2pk"
-	p256SecretKeyPrefix = "p2sk"
-	p256SigPrefix       = "p2sig"
+	p256PubKeyPrefix             = "p2pk"
+	p256SecretKeyPrefix          = "p2sk"
+	p256EncryptedSecretKeyPrefix = "p2esk"
+	p256SigPrefix                = "p2sig"
 
-	secp256k1SigPrefix       = "spsig1"
-	secp256k1SecretKeyPrefix = "spsk"
-	secp256k1PubKeyPrefix    = "sppk"
+	secp256k1SigPrefix                = "spsig1"
+	secp256k1SecretKeyPrefix          = "spsk"
+	secp256k1EncryptedSecretKeyPrefix = "spesk"
+	secp256k1PubKeyPrefix             = "sppk"
 
-	ed25519PubKeyPrefix    = "edpk"
-	ed25519SigPrefix       = "edsig"
-	ed25519SecretKeyPrefix = "edsk"
+	ed25519PubKeyPrefix             = "edpk"
+	ed25519SigPrefix                = "edsig"
+	ed25519SecretKeyPrefix          = "edsk"
+	ed25519EncryptedSecretKeyPrefix = "edesk"
 
 	pS256PubKeyHashPrefix     = "tz3"
 	secp256k1PubKeyHashPrefix = "tz2"
@@ -40,26 +43,35 @@ var (
 )
 
 var prefixMap = map[string][]byte{
-	p256PubKeyPrefix:      []byte{3, 178, 139, 127},       // p2pk
-	p256SecretKeyPrefix:   []byte{0x10, 0x51, 0xee, 0xbd}, // p2sk
-	p256SigPrefix:         []byte{54, 240, 44, 52},        // p2sig
-	pS256PubKeyHashPrefix: []byte{0x06, 0xa1, 0xa4},       // tz3
+	p256PubKeyPrefix:             []byte{3, 178, 139, 127},             // p2pk
+	p256SecretKeyPrefix:          []byte{0x10, 0x51, 0xee, 0xbd},       // p2sk
+	p256EncryptedSecretKeyPrefix: []byte{0x09, 0x30, 0x39, 0x73, 0xab}, // p2esk
+	p256SigPrefix:                []byte{54, 240, 44, 52},              // p2sig
+	pS256PubKeyHashPrefix:        []byte{0x06, 0xa1, 0xa4},             // tz3
 
-	secp256k1PubKeyPrefix:     []byte{0x03, 0xfe, 0xe2, 0x56},       // sppk
-	secp256k1SecretKeyPrefix:  []byte{0x11, 0xa2, 0xe0, 0xc9},       // spsk
-	secp256k1SigPrefix:        []byte{0x0d, 0x73, 0x65, 0x13, 0x3f}, // spsig1
-	secp256k1PubKeyHashPrefix: []byte{0x06, 0xa1, 0xa1},             // tz2
+	secp256k1PubKeyPrefix:             []byte{0x03, 0xfe, 0xe2, 0x56},       // sppk
+	secp256k1SecretKeyPrefix:          []byte{0x11, 0xa2, 0xe0, 0xc9},       // spsk
+	secp256k1EncryptedSecretKeyPrefix: []byte{0x09, 0xed, 0xf1, 0xae, 0x96}, // spesk
+	secp256k1SigPrefix:                []byte{0x0d, 0x73, 0x65, 0x13, 0x3f}, // spsig1
+	secp256k1PubKeyHashPrefix:         []byte{0x06, 0xa1, 0xa1},             // tz2
 
-	ed25519PubKeyPrefix:     []byte{0x0d, 0x0f, 0x25, 0xd9},       // edpk
-	ed25519SecretKeyPrefix:  []byte{0x0d, 0x0f, 0x3a, 0x07},       // edsk
-	ed25519SigPrefix:        []byte{0x09, 0xf5, 0xcd, 0x86, 0x12}, // edsig
-	ed25519PubKeyHashPrefix: []byte{0x06, 0xa1, 0x9f},             // tz1
+	ed25519PubKeyPrefix:             []byte{0x0d, 0x0f, 0x25, 0xd9},       // edpk
+	ed25519SecretKeyPrefix:          []byte{0x0d, 0x0f, 0x3a, 0x07},       // edsk
+	ed25519EncryptedSecretKeyPrefix: []byte{0x07, 0x5a, 0x3c, 0xb3, 0x29}, // edesk
+	ed25519SigPrefix:                []byte{0x09, 0xf5, 0xcd, 0x86, 0x12}, // edsig
+	ed25519PubKeyHashPrefix:         []byte{0x06, 0xa1, 0x9f},             // tz1
 }
 
 var curveSigMap = map[string]string{
 	crypto.CurveP256:    p256SigPrefix,
 	crypto.CurveP256K:   secp256k1SigPrefix,
 	crypto.CurveED25519: ed25519SigPrefix,
+}
+
+var encSecretPrefixSecretPrefix = map[string]string{
+	p256EncryptedSecretKeyPrefix:      p256SecretKeyPrefix,
+	secp256k1EncryptedSecretKeyPrefix: secp256k1SecretKeyPrefix,
+	ed25519EncryptedSecretKeyPrefix:   ed25519SecretKeyPrefix,
 }
 
 var curvePubKeyPrefixMap = map[string]string{
@@ -148,6 +160,23 @@ func EncodePubKey(pubKeyHash string, pubKey []byte) string {
 	}
 
 	return base58CheckEncodePrefix(prefixMap[pubKeyPrefix], pubKey)
+}
+
+// EncodeSecretKeyUsingSecretKeyPrefix encode a public key according to the tezos format
+func EncodeSecretKeyUsingSecretKeyPrefix(secretPrefix string, secretKey []byte) string {
+	skPrefix, ok := encSecretPrefixSecretPrefix[secretPrefix]
+
+	if !ok {
+		return ""
+	}
+
+	skPrefixByte, ok := prefixMap[skPrefix]
+
+	if !ok {
+		return ""
+	}
+
+	return base58CheckEncodePrefix(skPrefixByte, secretKey)
 }
 
 // EncodePubKeyHash encode a pubkey to a Tezos public key hash base on a curve
