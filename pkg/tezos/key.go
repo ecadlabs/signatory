@@ -194,7 +194,7 @@ func (k *KeyPair) EncodeASN1() ([]byte, error) {
 
 	// This is the same as x509.MarshalECPrivateKey but we need to duplicate the implementation in order to support more curve
 	paddedPrivateKey := make([]byte, (pk.Curve.Params().N.BitLen()+7)/8)
-
+	copy(paddedPrivateKey[len(paddedPrivateKey)-len(k.D()):], k.D())
 	return asn1.Marshal(ecPrivateKey{
 		Version:       1,
 		PrivateKey:    paddedPrivateKey,
