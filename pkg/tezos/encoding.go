@@ -162,11 +162,7 @@ func EncodePubKeyHash(pubKey []byte, curve string) string {
 }
 
 func decodeKey(prefix []byte, key string) ([]byte, error) {
-	decoded, v, err := base58.CheckDecode(key)
-
-	if v != decoded[0] && len(decoded) != 33 {
-		decoded = append([]byte{v}, decoded...)
-	}
+	decoded, _, err := base58.CheckDecode(key)
 
 	if err != nil {
 		return nil, err
@@ -181,7 +177,3 @@ func getPubkeyHashPrefix(pubkeyHash string) string {
 
 	return pubkeyHash[:pubKeyHashPrefixLength]
 }
-
-// edpkuhmrbunxumoiVdQuxBZUPMmwkPt7yLtY5Qnua3VJVTLWr3vXXa
-// sppk7b66BhTvYZm5iPds9at3bzhEMt94qF32WJKFcFkQHy2PkDENBTj
-// p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU

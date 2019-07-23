@@ -27,6 +27,7 @@ const (
 	SigP256KAlternate = "ECDSA256"
 )
 
+// GetCurve return the actual elliptic.Curve for the curve in parameter
 func GetCurve(name string) elliptic.Curve {
 	if name == CurveP256 {
 		return elliptic.P256()
@@ -43,6 +44,7 @@ var (
 	oidNamedCurveED25519 = asn1.ObjectIdentifier{1, 3, 101, 112}
 )
 
+// OIDFromNamedCurve return the ISO Object Identifier for the curve in parameter
 func OIDFromNamedCurve(curve string) (asn1.ObjectIdentifier, bool) {
 	switch curve {
 	case CurveP256K:

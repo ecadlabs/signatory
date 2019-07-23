@@ -10,22 +10,23 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/manifoldco/promptui"
 	log "github.com/sirupsen/logrus"
 )
 
 type mergeEntry struct {
-	PK PKEntry
-	SK SKEntry
+	PK pkEntry
+	SK skEntry
 }
 
-type SKEntry struct {
+type skEntry struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-type PKEntry struct {
+type pkEntry struct {
 	Name  string      `json:"name"`
 	Value interface{} `json:"value"`
 }
@@ -78,14 +79,24 @@ func main() {
 	var tezosFile string
 	var keyToExport string
 	var output string
+	var version bool
 	flag.StringVar(&tezosFile, "f", "~/.tezos-client", "Path to your unencrypted wallet file")
-	flag.StringVar(&output, "o", "", "File path of your exporter key")
-	flag.StringVar(&keyToExport, "key", "", "Name of the key to export")
+	flag.StringVar(&output, "o", "", `File path of your exported key (default "./<NAME_OF_YOUR_KEY")`)
+	flag.BoolVar(&version, "v", false, "Print the version")
+	flag.StringVar(&keyToExport, "key", "", "Name of the key to export (optional)")
 	flag.Parse()
+
+	if version {
+		log.Infof("Git version: %s", metrics.GitVersion)
+		log.Infof("Git revision: %s", metrics.GitRevision)
+		log.Infof("Git branch: %s", metrics.GitBranch)
+		os.Exit(0)
+	}
+
 	f, err := os.Open(filepath.Join(tezosFile, "secret_keys"))
 	check(err)
 
-	skEntries := []SKEntry{}
+	skEntries := []skEntry{}
 
 	err = json.NewDecoder(f).Decode(&skEntries)
 	check(err)
@@ -93,7 +104,7 @@ func main() {
 	f, err = os.Open(filepath.Join(tezosFile, "public_keys"))
 	check(err)
 
-	pkEntries := []PKEntry{}
+	pkEntries := []pkEntry{}
 
 	err = json.NewDecoder(f).Decode(&pkEntries)
 	check(err)
@@ -170,4 +181,5 @@ func main() {
 	}
 	err = pem.Encode(outputFile, block)
 	check(err)
+	log.Infof("Exported %s to %s succesfully", entryToExport.PKH(), outputFile.Name())
 }
