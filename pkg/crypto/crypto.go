@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/elliptic"
+	"encoding/asn1"
 	"math/big"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
@@ -34,6 +35,25 @@ func GetCurve(name string) elliptic.Curve {
 		return secp256k1.S256()
 	}
 	return nil
+}
+
+var (
+	oidNamedCurveP256K   = asn1.ObjectIdentifier{1, 3, 132, 0, 10}
+	oidNamedCurveP256    = asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7}
+	oidNamedCurveED25519 = asn1.ObjectIdentifier{1, 3, 101, 112}
+)
+
+func OIDFromNamedCurve(curve string) (asn1.ObjectIdentifier, bool) {
+	switch curve {
+	case CurveP256K:
+		return oidNamedCurveP256K, true
+	case CurveP256:
+		return oidNamedCurveP256, true
+	case CurveED25519:
+		return oidNamedCurveED25519, true
+	}
+
+	return nil, false
 }
 
 // ECCoordinateFromPrivateKey given an elliptic curve name it will produce X and Y coordiante from D

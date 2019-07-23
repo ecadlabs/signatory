@@ -68,6 +68,12 @@ var curvePubKeyPrefixMap = map[string]string{
 	crypto.CurveED25519: ed25519PubKeyPrefix,
 }
 
+var pubKeyPrefixCurveMap = map[string]string{
+	p256PubKeyPrefix:      crypto.CurveP256,
+	secp256k1PubKeyPrefix: crypto.CurveP256K,
+	ed25519PubKeyPrefix:   crypto.CurveED25519,
+}
+
 var hashCurveMap = map[string]string{
 	pS256PubKeyHashPrefix:     crypto.CurveP256,
 	secp256k1PubKeyHashPrefix: crypto.CurveP256K,
@@ -95,6 +101,17 @@ func base58CheckEncodePrefix(prefix []byte, msg []byte) string {
 
 func getCurveFromPubkeyHash(pubKeyHash string) string {
 	prefix := getPubkeyHashPrefix(pubKeyHash)
+	curveName, ok := hashCurveMap[prefix]
+
+	if !ok {
+		return ""
+	}
+
+	return curveName
+}
+
+func getCurveFromPubkey(pubKey string) string {
+	prefix := pubKey[:4]
 	curveName, ok := hashCurveMap[prefix]
 
 	if !ok {
@@ -145,7 +162,12 @@ func EncodePubKeyHash(pubKey []byte, curve string) string {
 }
 
 func decodeKey(prefix []byte, key string) ([]byte, error) {
-	decoded, _, err := base58.CheckDecode(key)
+	decoded, v, err := base58.CheckDecode(key)
+
+	if v != decoded[0] && len(decoded) != 33 {
+		decoded = append([]byte{v}, decoded...)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -159,3 +181,7 @@ func getPubkeyHashPrefix(pubkeyHash string) string {
 
 	return pubkeyHash[:pubKeyHashPrefixLength]
 }
+
+// edpkuhmrbunxumoiVdQuxBZUPMmwkPt7yLtY5Qnua3VJVTLWr3vXXa
+// sppk7b66BhTvYZm5iPds9at3bzhEMt94qF32WJKFcFkQHy2PkDENBTj
+// p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU

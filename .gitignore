@@ -16,4 +16,5 @@ sig
 
 vendor/
 .vscode
-signatory
+/signatory
+/exporter
