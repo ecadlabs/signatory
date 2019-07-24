@@ -29,11 +29,11 @@ const (
 	logKeyID     = "key_id"
 )
 
-// SingInterceptor is an observer function for signing request
-type SingInterceptor func(opt *SingInterceptorOptions, sing func() error) error
+// SignInterceptor is an observer function for signing request
+type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 
-// SingInterceptorOptions contains SingInterceptor arguments to avoid confusion
-type SingInterceptorOptions struct {
+// SignInterceptorOptions contains SignInterceptor arguments to avoid confusion
+type SignInterceptorOptions struct {
 	Address string
 	Vault   string
 	Op      string
@@ -83,7 +83,7 @@ func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
 type Signatory struct {
 	vaults         []Vault
 	config         config.TezosConfig
-	interceptor    SingInterceptor
+	interceptor    SignInterceptor
 	watermark      Watermark
 	hashVaultStore HashVaultStore
 	logger         log.FieldLogger
@@ -93,7 +93,7 @@ type Signatory struct {
 func NewSignatory(
 	vaults []Vault,
 	config config.TezosConfig,
-	interceptor SingInterceptor,
+	interceptor SignInterceptor,
 	watermark Watermark,
 	logger log.FieldLogger,
 ) (s *Signatory) {
@@ -229,7 +229,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	)
 
 	if s.interceptor != nil {
-		err = s.interceptor(&SingInterceptorOptions{
+		err = s.interceptor(&SignInterceptorOptions{
 			Address: keyHash,
 			Vault:   vault.Name(),
 			Op:      msg.Type(),
