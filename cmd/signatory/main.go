@@ -140,13 +140,28 @@ func main() {
 	log.Info("Keys discovered in Key Vault:")
 	var allowedKeyCount int
 	for _, key := range pubKeys {
+		l := log.WithField(signatory.LogPKH, key)
+
+		vault, _, err := s.GetCachedPublicKey(ctx, key)
+		if err != nil {
+			l.Error(err)
+			continue
+		}
+
+		logfields := log.Fields{signatory.LogVault: vault.Name()}
+		if n, ok := vault.(signatory.VaultNamer); ok {
+			logfields[signatory.LogVaultName] = n.VaultName()
+		}
+		l = l.WithFields(logfields)
+
 		if s.IsAllowed(key) {
 			allowedKeyCount++
-			log.Infof("%s (Configured, ready for use)", key)
+			l.Info("Kery is configured, ready for use")
 		} else {
-			log.Infof("%s (Found in vault, not configured for use in %s)", key, configFile)
+			l.Infof("Key has been found in vault, not configured for use in %s", configFile)
 		}
 	}
+
 	if allowedKeyCount == 0 {
 		log.Errorf("No keys configured for signing. To allow a key add it to the tezos.keys list in %s ", configFile)
 		os.Exit(1)
