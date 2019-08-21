@@ -104,7 +104,7 @@ three algorithms supported by Tezos.
 |                  | tz1 | tz2 | tz3 |
 | ---------------- | --- | --- | --- |
 | Google Cloud KMS | ☒   | ☒   | ☑   |
-| AWS KMS          | ☒   | ☒   | ☑   |
+| AWS KMS          | ☒   | ☑   | ☑   |
 | Azure KMS        | ☒   | ☑   | ☑   |
 | YubiHSM2         | ☑   | ☑   | ☑   |
 
