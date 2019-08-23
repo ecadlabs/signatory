@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 
@@ -21,19 +22,19 @@ var (
 )
 
 const (
-	logPKH       = "pkh"
-	logVault     = "vault"
-	logVaultName = "vault_name"
-	logOp        = "op"
-	logKind      = "kind"
-	logKeyID     = "key_id"
+	LogPKH       = "pkh"
+	LogVault     = "vault"
+	LogVaultName = "vault_name"
+	LogOp        = "op"
+	LogKind      = "kind"
+	LogKeyID     = "key_id"
 )
 
-// SingInterceptor is an observer function for signing request
-type SingInterceptor func(opt *SingInterceptorOptions, sing func() error) error
+// SignInterceptor is an observer function for signing request
+type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 
-// SingInterceptorOptions contains SingInterceptor arguments to avoid confusion
-type SingInterceptorOptions struct {
+// SignInterceptorOptions contains SignInterceptor arguments to avoid confusion
+type SignInterceptorOptions struct {
 	Address string
 	Vault   string
 	Op      string
@@ -67,40 +68,34 @@ type Watermark interface {
 	IsSafeToSign(msgID string, level *big.Int) bool
 }
 
-type vaultKeyIDPair struct {
+type keyVaultPair struct {
 	vault Vault
 	key   StoredKey
-}
-
-// HashVaultStore store the id and the vault of each key
-type HashVaultStore = map[string]vaultKeyIDPair
-
-func (s *Signatory) addKeyMap(hash string, key StoredKey, vault Vault) {
-	s.hashVaultStore[hash] = vaultKeyIDPair{key: key, vault: vault}
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
 type Signatory struct {
 	vaults         []Vault
 	config         config.TezosConfig
-	interceptor    SingInterceptor
+	interceptor    SignInterceptor
 	watermark      Watermark
-	hashVaultStore HashVaultStore
 	logger         log.FieldLogger
+	hashVaultCache map[string]*keyVaultPair
+	mtx            sync.Mutex
 }
 
 // NewSignatory return a new signatory struct
 func NewSignatory(
 	vaults []Vault,
 	config config.TezosConfig,
-	interceptor SingInterceptor,
+	interceptor SignInterceptor,
 	watermark Watermark,
 	logger log.FieldLogger,
 ) (s *Signatory) {
 	s = &Signatory{
 		vaults:         vaults,
 		config:         config,
-		hashVaultStore: make(HashVaultStore),
+		hashVaultCache: make(map[string]*keyVaultPair),
 		interceptor:    interceptor,
 		watermark:      watermark,
 		logger:         logger,
@@ -113,7 +108,7 @@ func NewSignatory(
 	return
 }
 
-func IsSupportedCurve(curve string) bool {
+func isSupportedCurve(curve string) bool {
 	return curve == crypto.CurveP256 || curve == crypto.CurveP256K || curve == crypto.CurveED25519
 }
 
@@ -137,20 +132,6 @@ func (s *Signatory) FetchPolicyOrDefault(keyHash string) *config.TezosPolicy {
 	}
 }
 
-func (s *Signatory) getVaultFromKeyHash(keyHash string) Vault {
-	if pair, ok := s.hashVaultStore[keyHash]; ok {
-		return pair.vault
-	}
-	return nil
-}
-
-func (s *Signatory) getKeyFromKeyHash(keyHash string) StoredKey {
-	if pair, ok := s.hashVaultStore[keyHash]; ok {
-		return pair.key
-	}
-	return nil
-}
-
 func (s *Signatory) validateMessage(msg *tezos.Message, policy *config.TezosPolicy) error {
 	err := msg.Validate()
 
@@ -167,9 +148,51 @@ func (s *Signatory) validateMessage(msg *tezos.Message, policy *config.TezosPoli
 	return nil
 }
 
+func (s *Signatory) cacheLookup(ctx context.Context, keyHash string, update bool) (*keyVaultPair, error) {
+	s.mtx.Lock()
+	if v, ok := s.hashVaultCache[keyHash]; ok {
+		s.mtx.Unlock()
+		return v, nil
+	}
+	s.mtx.Unlock()
+
+	if !update {
+		return nil, nil
+	}
+
+	// Rescan
+	cache, err := s.listPublicKeyHash(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	s.hashVaultCache = cache
+	if v, ok := s.hashVaultCache[keyHash]; ok {
+		return v, nil
+	}
+	return nil, nil
+}
+
+// GetCachedPublicKey returns public key object and vault for the given hash from the cache. The latter is not updated.
+func (s *Signatory) GetCachedPublicKey(ctx context.Context, keyHash string) (Vault, StoredKey, error) {
+	cached, err := s.cacheLookup(ctx, keyHash, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if cached == nil {
+		return nil, nil, ErrVaultNotFound
+	}
+
+	return cached.vault, cached.key, nil
+}
+
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
-	l := s.logger.WithField(logPKH, keyHash)
+	l := s.logger.WithField(LogPKH, keyHash)
 
 	if !s.IsAllowed(keyHash) {
 		err := fmt.Errorf("%s is not listed in config", keyHash)
@@ -186,21 +209,26 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	}
 
 	l = l.WithFields(log.Fields{
-		logOp:   msg.Type(),
-		logKind: msg.Kind(),
+		LogOp:   msg.Type(),
+		LogKind: msg.Kind(),
 	})
 
-	vault := s.getVaultFromKeyHash(keyHash)
-	if vault == nil {
+	cached, err := s.cacheLookup(ctx, keyHash, true)
+	if err != nil {
+		l.Error(err)
+		return "", err
+	}
+
+	if cached == nil {
 		l.Error("Vault not found")
 		return "", ErrVaultNotFound
 	}
 
 	logfields := log.Fields{
-		logVault: vault.Name(),
+		LogVault: cached.vault.Name(),
 	}
-	if n, ok := vault.(VaultNamer); ok {
-		logfields[logVaultName] = n.VaultName()
+	if n, ok := cached.vault.(VaultNamer); ok {
+		logfields[LogVaultName] = n.VaultName()
 	}
 	l = l.WithFields(logfields)
 
@@ -220,26 +248,22 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	}
 
 	// Not nil if vault found
-	storedKey := s.getKeyFromKeyHash(keyHash)
 	digest := tezos.DigestFunc(message)
 
-	var (
-		sig []byte
-		err error
-	)
+	var sig []byte
 
 	if s.interceptor != nil {
-		err = s.interceptor(&SingInterceptorOptions{
+		err = s.interceptor(&SignInterceptorOptions{
 			Address: keyHash,
-			Vault:   vault.Name(),
+			Vault:   cached.vault.Name(),
 			Op:      msg.Type(),
 			Kind:    msg.Kind(),
 		}, func() (err error) {
-			sig, err = vault.Sign(ctx, digest[:], storedKey)
+			sig, err = cached.vault.Sign(ctx, digest[:], cached.key)
 			return err
 		})
 	} else {
-		sig, err = vault.Sign(ctx, digest[:], storedKey)
+		sig, err = cached.vault.Sign(ctx, digest[:], cached.key)
 	}
 
 	if err != nil {
@@ -257,49 +281,68 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	return encodedSig, nil
 }
 
-// ListPublicKeyHash retrieve the list of all public key hash supported by the current configuration
-func (s *Signatory) ListPublicKeyHash(ctx context.Context) ([]string, error) {
-	results := []string{}
+func (s *Signatory) listPublicKeyHash(ctx context.Context) (map[string]*keyVaultPair, error) {
+	cache := make(map[string]*keyVaultPair)
+
 	for _, vault := range s.vaults {
 		pubKeys, err := vault.ListPublicKeys(ctx)
-
 		if err != nil {
 			return nil, err
 		}
 
 		for _, key := range pubKeys {
-			if IsSupportedCurve(key.Curve()) {
+			if isSupportedCurve(key.Curve()) {
 				encoded := tezos.EncodePubKeyHash(key.PublicKey(), key.Curve())
-				results = append(results, encoded)
-				s.addKeyMap(encoded, key, vault)
-
+				cache[encoded] = &keyVaultPair{key: key, vault: vault}
 			}
 		}
 	}
+	return cache, nil
+}
+
+// ListPublicKeyHash retrieve the list of all public key hash supported by the current configuration
+func (s *Signatory) ListPublicKeyHash(ctx context.Context) ([]string, error) {
+	cache, err := s.listPublicKeyHash(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace the cache
+	s.mtx.Lock()
+	s.hashVaultCache = cache
+	s.mtx.Unlock()
+
+	results := make([]string, 0, len(cache))
+	for keyHash := range cache {
+		results = append(results, keyHash)
+	}
+
 	return results, nil
 }
 
 // GetPublicKey retrieve the public key from a vault
 func (s *Signatory) GetPublicKey(ctx context.Context, keyHash string) (string, error) {
-	vault := s.getVaultFromKeyHash(keyHash)
-	if vault == nil {
+	cached, err := s.cacheLookup(ctx, keyHash, true)
+	if err != nil {
+		return "", err
+	}
+
+	if cached == nil {
 		return "", ErrVaultNotFound
 	}
 
 	logfields := log.Fields{
-		logPKH:   keyHash,
-		logVault: vault.Name(),
+		LogPKH:   keyHash,
+		LogVault: cached.vault.Name(),
 	}
-	if n, ok := vault.(VaultNamer); ok {
-		logfields[logVaultName] = n.VaultName()
+	if n, ok := cached.vault.(VaultNamer); ok {
+		logfields[LogVaultName] = n.VaultName()
 	}
 	l := s.logger.WithFields(logfields)
 
-	key := s.getKeyFromKeyHash(keyHash)
-
 	l.Debugf("Fetching public key for: %s", keyHash)
 
-	pubKey, err := vault.GetPublicKey(ctx, key.ID())
+	pubKey, err := cached.vault.GetPublicKey(ctx, cached.key.ID())
 	if err != nil {
 		return "", err
 	}

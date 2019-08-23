@@ -55,11 +55,11 @@ func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (
 	}
 
 	logfields := log.Fields{
-		logPKH:   hash,
-		logVault: importer.Name(),
+		LogPKH:   hash,
+		LogVault: importer.Name(),
 	}
 	if n, ok := importer.(VaultNamer); ok {
-		logfields[logVaultName] = n.VaultName()
+		logfields[LogVaultName] = n.VaultName()
 	}
 	l := s.logger.WithFields(logfields)
 
@@ -70,7 +70,7 @@ func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (
 		return nil, err
 	}
 
-	l.WithField(logKeyID, keyID).Info("Successfully imported")
+	l.WithField(LogKeyID, keyID).Info("Successfully imported")
 
 	importedKey := &ImportedKey{
 		KeyID: keyID,
