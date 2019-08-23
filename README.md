@@ -72,12 +72,15 @@ The service will support a variety of backend Key Management Systems (KMS)
 for secure handling of private keys. Most cloud based KMS systems offer a HSM
 backed mode, which is strongly recommended.
 
-By supporting multiple Cloud KMS/HSM systems, we hope to help the network from
-centralization on a particular Cloud offering. In the first year of the Tezos
-network operation, there was anecdotal evidence that a lot of bakers run on AWS.
-AWS is a superb provider, but having a concentration of nodes on one cloud
-vendor centralizes the underlying infrastructure of the network, which is not
-desirable.
+Our goal in supporting multiple Cloud KMS/HSM systems so to prevent
+centralization on the _network_ or _infrastructure_ level. It is not optimal
+if we have the most decentralized network in terms of bakers, but a large
+majority operate on single infrastructure provider.
+
+In the first year of the Tezos network operation, there was anecdotal
+evidence that a lot of bakers run on AWS. AWS is a superb provider, but
+having a concentration of nodes on one cloud vendor centralizes the
+underlying infrastructure of the network, which is not desirable.
 
 ### Backend KMS/HSM Support Status
 
