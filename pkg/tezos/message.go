@@ -31,7 +31,7 @@ const (
 	OpEndorsement = "endorsement"
 	// OpGeneric config string for generic operation
 	OpGeneric = "generic"
-	// OpUnknown config string for unkown operation
+	// OpUnknown config string for unknown operation
 	OpUnknown = "unknown"
 )
 

@@ -133,7 +133,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if len(pubKeys) == 0 {
-		log.Error("No keys discovered in Key Valut(s), exiting..")
+		log.Error("No keys discovered in Key Vault(s), exiting..")
 		os.Exit(1)
 	}
 
@@ -156,9 +156,9 @@ func main() {
 
 		if s.IsAllowed(key) {
 			allowedKeyCount++
-			l.Info("Kery is configured, ready for use")
+			l.Info("Key configured, ready for use")
 		} else {
-			l.Infof("Key has been found in vault, not configured for use in %s", configFile)
+			l.Infof("Key found in vault but not configured in %s", configFile)
 		}
 	}
 

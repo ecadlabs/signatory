@@ -36,7 +36,7 @@ func GetCurve(name string) elliptic.Curve {
 	return nil
 }
 
-// ECCoordinateFromPrivateKey given an elliptic curve name it will produce X and Y coordiante from D
+// ECCoordinateFromPrivateKey given an elliptic curve name it will produce X and Y coordinate from D
 func ECCoordinateFromPrivateKey(d []byte, curveName string) (xBytes, yBytes []byte) {
 	curve := GetCurve(curveName)
 

@@ -38,7 +38,7 @@ func TestGetPublicKeyNoVault(t *testing.T) {
 		nil,
 	)
 
-	_, err := s.GetPublicKey(context.TODO(), "Unkown address")
+	_, err := s.GetPublicKey(context.TODO(), "Unknown address")
 
 	if err != signatory.ErrVaultNotFound {
 		fmt.Printf("Unexpected error was thrown: %s\n", err.Error())

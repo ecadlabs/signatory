@@ -96,7 +96,7 @@ func TestFilterMessage(t *testing.T) {
 
 		Case{Name: "Generic operation not configured", Message: []byte{0x03, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpGeneric}, nil)},
 		Case{Name: "Generic operation not long enough", Message: []byte{0x03, 0x02}, Error: &tezos.FilterError{}, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
-		Case{Name: "Generic operation unkown not long enough", Message: []byte{0x03, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenUnknown})},
+		Case{Name: "Generic operation unknown not long enough", Message: []byte{0x03, 0x02}, Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenUnknown})},
 		Case{Name: "Generic operation ballot", Message: createGeneric(0x06), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenBallot})},
 		Case{Name: "Generic operation transaction", Message: createGeneric(0x08), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenTransaction})},
 		Case{Name: "Generic operation proposal", Message: createGeneric(0x05), Error: nil, Config: genTezosConfig([]string{tezos.OpGeneric}, []string{tezos.OpGenProposal})},
