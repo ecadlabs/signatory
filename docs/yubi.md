@@ -3,7 +3,7 @@
 __Rough draft, needs polish and testing__
 
 The goal of this guide is to configure Signatory to use a Yubi HSM 2 as a
-singing backend. We will also show how to generate a new key inside the Yubi
+signing backend. We will also show how to generate a new key inside the Yubi
 HSM and use it with signatory.
 
 To setup Yubi HSM 2 as a signing backend for Signatory, you will need:
@@ -13,7 +13,7 @@ To setup Yubi HSM 2 as a signing backend for Signatory, you will need:
 
 ## Create a Key in your Yubi HSM
 
-On your machine which as the Yubi HSM run the following command
+On your machine which has the Yubi HSM run the following command
 
 ```sh
 yubihsm-connector -d

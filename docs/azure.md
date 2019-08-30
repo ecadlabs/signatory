@@ -3,7 +3,7 @@
 __Rough draft, needs polish and testing__
 
 The goal of this guide is to configure Signatory to use a Azure KMS as a
-singing backend. We will also show how to generate a new key inside the Azure
+signing backend. We will also show how to generate a new key inside the Azure
 HSM, and how to "Bring Your Own Key"/"BYOK" by showing you how to import your
 own key.
 
