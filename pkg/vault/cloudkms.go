@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 
@@ -140,7 +139,7 @@ func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (signato
 	}
 
 	if resp.Algorithm != kmspb.CryptoKeyVersion_EC_SIGN_P256_SHA256 {
-		return nil, fmt.Errorf("(CloudKMS/%s): unsupported key type: %v", c.config.keyRing(), resp)
+		return nil, fmt.Errorf("(CloudKMS/%s): unsupported key type (%v)", c.config.keyRing(), resp)
 	}
 
 	ecKey, err := c.getPublicKey(ctx, resp.Name)
@@ -174,12 +173,7 @@ func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key signatory.S
 		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRing(), err)
 	}
 
-	val, err := base64.RawURLEncoding.DecodeString(string(resp.Signature))
-	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRing(), err)
-	}
-
-	return val, nil
+	return resp.Signature, nil
 }
 
 func (c *CloudKMSVault) Name() string {
