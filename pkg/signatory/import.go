@@ -1,6 +1,7 @@
 package signatory
 
 import (
+	"context"
 	"encoding/base64"
 
 	"github.com/ecadlabs/signatory/pkg/tezos"
@@ -9,7 +10,7 @@ import (
 
 // Importer interface representing an importer backend
 type Importer interface {
-	Import(jwk *JWK) (string, error)
+	Import(ctx context.Context, jwk *JWK) (string, error)
 	Name() string
 }
 
@@ -65,7 +66,7 @@ func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (
 
 	l.Info("Requesting import operation")
 
-	keyID, err := importer.Import(jwk)
+	keyID, err := importer.Import(context.TODO(), jwk)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +84,9 @@ func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (
 // ToJWK Convert a keyPair to a JWK
 func ToJWK(k KeyPair) (*JWK, error) {
 	return &JWK{
-		X:       base64.StdEncoding.EncodeToString(k.X()),
-		Y:       base64.StdEncoding.EncodeToString(k.Y()),
-		D:       base64.StdEncoding.EncodeToString(k.D()),
+		X:       base64.RawURLEncoding.EncodeToString(k.X()),
+		Y:       base64.RawURLEncoding.EncodeToString(k.Y()),
+		D:       base64.RawURLEncoding.EncodeToString(k.D()),
 		KeyType: "EC",
 		Curve:   k.CurveName(),
 	}, nil

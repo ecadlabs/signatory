@@ -403,7 +403,7 @@ func (s *AzureVault) Ready() bool {
 }
 
 // Import use the azure key vault rest api to import a JWK
-func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
+func (s *AzureVault) Import(ctx context.Context, jwk *signatory.JWK) (string, error) {
 	type Key struct {
 		signatory.JWK
 		KeyOps []string `json:"key_ops"`
@@ -441,6 +441,7 @@ func (s *AzureVault) Import(jwk *signatory.JWK) (string, error) {
 
 	endpoint := fmt.Sprintf("%s?api-version=7.0", keyID)
 	httpReq, err := http.NewRequest("PUT", endpoint, bytes.NewReader(req))
+	httpReq = httpReq.WithContext(ctx)
 
 	if err != nil {
 		return "", err
