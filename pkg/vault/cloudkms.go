@@ -23,33 +23,29 @@ import (
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
-type CloudKMSVaultConfig struct {
-	ServiceAccountKey string
-	Project           string
-	Location          string
-	KeyRing           string
-	ImportUsingHSM    bool
-}
-
+// CloudKMSVault is a Google Cloud KMS backend
 type CloudKMSVault struct {
 	client *kms.KeyManagementClient
 	config config.CloudKMSVaultConfig
 }
 
+// CloudKMSKey represents a key stored in Google Cloud KMS
 type CloudKMSKey struct {
 	key *kmspb.CryptoKeyVersion
 	pub *ecdsa.PublicKey
 }
 
+// Curve returns EC curve name
 func (c *CloudKMSKey) Curve() string {
 	return crypto.CurveP256
 }
 
-// TODO make it accept a context and return an error?
+// PublicKey returns encoded public key
 func (c *CloudKMSKey) PublicKey() []byte {
 	return toCompressedFormat(c.pub.X.Bytes(), c.pub.Y.Bytes())
 }
 
+// ID returnd a unique key ID
 func (c *CloudKMSKey) ID() string {
 	return c.key.Name
 }
@@ -74,6 +70,7 @@ func (c *CloudKMSVault) getPublicKey(ctx context.Context, name string) (*ecdsa.P
 	return ecKey, nil
 }
 
+// ListPublicKeys returns a list of keys stored under the backend
 func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []signatory.StoredKey, err error) {
 	it := c.client.ListCryptoKeys(ctx, &kmspb.ListCryptoKeysRequest{Parent: c.config.KeyRingName()})
 	for {
@@ -121,6 +118,7 @@ func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []signatory.St
 	return
 }
 
+// GetPublicKey returns a public key by given ID
 func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (signatory.StoredKey, error) {
 	req := kmspb.GetCryptoKeyVersionRequest{
 		Name: keyID,
@@ -146,6 +144,7 @@ func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (signato
 	}, nil
 }
 
+// Sign performs signing operation
 func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key signatory.StoredKey) ([]byte, error) {
 	kmsKey, ok := key.(*CloudKMSKey)
 	if !ok {
@@ -237,6 +236,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk interface{}) ([]byte, error) {
 	return res, nil
 }
 
+// Import impurts a private key
 func (c *CloudKMSVault) Import(ctx context.Context, jwk *signatory.JWK) (string, error) {
 	// Encode the key to be imported
 	pk, err := jwkToECPK(jwk)
@@ -337,10 +337,12 @@ func (c *CloudKMSVault) Import(ctx context.Context, jwk *signatory.JWK) (string,
 	return ver.Name, nil
 }
 
+// Name returns backend name
 func (c *CloudKMSVault) Name() string {
 	return "CloudKMS"
 }
 
+// NewCloudKMSVault creates new Google Cloud KMS backend
 func NewCloudKMSVault(ctx context.Context, config *config.CloudKMSVaultConfig) (*CloudKMSVault, error) {
 	var opts []option.ClientOption
 	if config.ServiceAccountKey != "" {

@@ -57,10 +57,11 @@ type TezosPolicy struct {
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
-	Yubi   []YubiConfig  `yaml:"yubi"`
-	Azure  []AzureConfig `yaml:"azure"`
-	Tezos  TezosConfig   `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
-	Server ServerConfig  `yaml:"server"`
+	Yubi     []*YubiConfig          `yaml:"yubi"`
+	Azure    []*AzureConfig         `yaml:"azure"`
+	CloudKMS []*CloudKMSVaultConfig `yaml:"cloudkms"`
+	Tezos    TezosConfig            `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
+	Server   ServerConfig           `yaml:"server"`
 }
 
 func (c *Config) Validate() (bool, string) {

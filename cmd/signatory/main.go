@@ -30,20 +30,30 @@ func createVaults(c *config.Config) ([]signatory.Vault, []signatory.Importer, []
 	vaults := []signatory.Vault{}
 	importers := []signatory.Importer{}
 	healths := []server.Health{}
+
 	for _, azCfg := range c.Azure {
-		azureVault := vault.NewAzureVault(azCfg, nil)
+		azureVault := vault.NewAzureVault(*azCfg, nil)
 		vaults = append(vaults, azureVault)
 		healths = append(healths, azureVault)
 		importers = append(importers, azureVault)
 	}
 
 	for _, yubiCfg := range c.Yubi {
-		yubiVault, err := vault.NewYubi(yubiCfg)
+		yubiVault, err := vault.NewYubi(*yubiCfg)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		vaults = append(vaults, yubiVault)
 		healths = append(healths, yubiVault)
+	}
+
+	for _, kmsCfg := range c.CloudKMS {
+		kmsVault, err := vault.NewCloudKMSVault(context.TODO(), kmsCfg)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		vaults = append(vaults, kmsVault)
+		importers = append(importers, kmsVault)
 	}
 
 	return vaults, importers, healths, nil
