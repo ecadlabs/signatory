@@ -32,6 +32,19 @@ type AzureConfig struct {
 	Keys           []string `yaml:"keys"`
 }
 
+// CloudKMSVaultConfig contains Google Cloud KMS backend configuration
+type CloudKMSVaultConfig struct {
+	ServiceAccountKey string `yaml:"service_account_key"`
+	Project           string `yaml:"project" validate:"required"`
+	Location          string `yaml:"location" validate:"required"`
+	KeyRing           string `yaml:"key_ring" validate:"required"`
+}
+
+// KeyRingName returns full Google Cloud KMS key ring path
+func (c *CloudKMSVaultConfig) KeyRingName() string {
+	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s", c.Project, c.Location, c.KeyRing)
+}
+
 // TezosConfig contains the configuration related to tezos network
 type TezosConfig = map[string]TezosPolicy
 
