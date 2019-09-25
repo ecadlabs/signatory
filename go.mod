@@ -22,6 +22,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.3.0
 	go.opencensus.io v0.22.1 // indirect
+	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
 	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2 // indirect
 	golang.org/x/sys v0.0.0-20190913121621-c3b328c6e5a7 // indirect
 	google.golang.org/api v0.10.0

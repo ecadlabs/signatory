@@ -7,10 +7,8 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 
 	kms "cloud.google.com/go/kms/apiv1"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -168,38 +166,6 @@ func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key signatory.S
 	return resp.Signature, nil
 }
 
-// TODO move to crypto
-func jwkToECPK(jwk *signatory.JWK) (*ecdsa.PrivateKey, error) {
-	curve := crypto.GetCurve(jwk.Curve)
-	if curve == nil {
-		return nil, fmt.Errorf("Unknown curve: %s", jwk.Curve)
-	}
-
-	x, err := base64.RawURLEncoding.DecodeString(jwk.X)
-	if err != nil {
-		return nil, err
-	}
-
-	y, err := base64.RawURLEncoding.DecodeString(jwk.Y)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := base64.RawURLEncoding.DecodeString(jwk.D)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: curve,
-			X:     big.NewInt(0).SetBytes(x),
-			Y:     big.NewInt(0).SetBytes(y),
-		},
-		D: big.NewInt(0).SetBytes(d),
-	}, nil
-}
-
 // PKCS#11 CKM_RSA_AES_KEY_WRAP
 func wrapPrivateKey(pubKey *rsa.PublicKey, pk interface{}) ([]byte, error) {
 	pkcs8Key, err := x509.MarshalPKCS8PrivateKey(pk)
@@ -237,13 +203,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk interface{}) ([]byte, error) {
 }
 
 // Import impurts a private key
-func (c *CloudKMSVault) Import(ctx context.Context, jwk *signatory.JWK) (string, error) {
-	// Encode the key to be imported
-	pk, err := jwkToECPK(jwk)
-	if err != nil {
-		return "", fmt.Errorf("(CloudKMS/%s): %v", c.config.KeyRingName(), err)
-	}
-
+func (c *CloudKMSVault) Import(ctx context.Context, pk *ecdsa.PrivateKey) (string, error) {
 	// Create a key
 	newKeyReq := kmspb.CreateCryptoKeyRequest{
 		Parent:      c.config.KeyRingName(),

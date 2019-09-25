@@ -1,8 +1,10 @@
-package crypto
+package cryptoutils
 
 import (
+	"crypto"
 	"crypto/elliptic"
 	"math/big"
+	"sync"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
 )
@@ -70,4 +72,29 @@ func CanonizeEncodeP256K(sig []byte) []byte {
 	r = rInt.Bytes()
 	signature := append(r, s...)
 	return signature
+}
+
+var (
+	initS256  sync.Once
+	s256Curve secp256k1.KoblitzCurve
+)
+
+// S256 S256 returns a Curve which implements secp256k1 with correct name
+func S256() *secp256k1.KoblitzCurve {
+	initS256.Do(func() {
+		s256Curve = *secp256k1.S256()
+		if s256Curve.CurveParams.Name != "" {
+			return
+		}
+		// github.com/decred/dcrd/dcrec/secp256k1 leaves the name empty, fix it
+		cp := *s256Curve.CurveParams
+		cp.Name = "P-256K"
+		s256Curve.CurveParams = &cp
+	})
+
+	return &s256Curve
+}
+
+type PrivateKey interface {
+	Public() crypto.PublicKey
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"crypto/ecdsa"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -402,37 +403,36 @@ func (s *AzureVault) Ready() bool {
 	return true
 }
 
+type jwkKey struct {
+	KeyType string `json:"kty"`
+	D       string `json:"d"`
+	X       string `json:"x"`
+	Y       string `json:"y"`
+	Curve   string `json:"crv"`
+	KeyOps []string `json:"key_ops"`
+}
+
 // Import use the azure key vault rest api to import a JWK
-func (s *AzureVault) Import(ctx context.Context, jwk *signatory.JWK) (string, error) {
-	type Key struct {
-		signatory.JWK
-		KeyOps []string `json:"key_ops"`
-	}
+func (s *AzureVault) Import(ctx context.Context, pk *ecdsa.PrivateKey) (string, error) {
 	request := struct {
-		Key Key `json:"key"`
+		Key jwkKey `json:"key"`
 	}{
-		Key: Key{
-			KeyOps: []string{
-				"sign",
-				"verify",
-			},
+		Key: jwkKey{
+			KeyType: "EC",
+			D: base64.RawURLEncoding.EncodeToString(pk.D.Bytes()),
+			X: base64.RawURLEncoding.EncodeToString(pk.X.Bytes())
+			Y: base64.RawURLEncoding.EncodeToString(pk.Y.Bytes())
+			Curve: pk.Params().Name,
+			KeyOps: []string{"sign","verify"},
 		},
 	}
 
-	request.Key.X = jwk.X
-	request.Key.Y = jwk.Y
-	request.Key.D = jwk.D
-	request.Key.KeyType = jwk.KeyType
-	request.Key.Curve = jwk.Curve
-
 	req, err := json.Marshal(request)
-
 	if err != nil {
 		return "", err
 	}
 
 	id := uuid.NewV4()
-
 	if err != nil {
 		return "", err
 	}

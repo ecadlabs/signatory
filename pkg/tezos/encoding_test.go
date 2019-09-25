@@ -1,12 +1,6 @@
-package tezos_test
+package tezos
 
-import (
-	"encoding/hex"
-	"fmt"
-	"testing"
-
-	"github.com/ecadlabs/signatory/pkg/tezos"
-)
+/*
 
 func TestEncodeSig(t *testing.T) {
 	type Case struct {
@@ -73,3 +67,4 @@ func TestEncodePubKey(t *testing.T) {
 		})
 	}
 }
+*/

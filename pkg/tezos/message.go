@@ -138,7 +138,8 @@ func (m *Message) chainID() string {
 	}
 
 	chainID := m.hex[1:5]
-	return base58CheckEncodePrefix(chainIDPrefix, chainID)
+	res, _ := encodeBase58(pChainID, chainID)
+	return res
 }
 
 func (m *Message) level() *big.Int {
