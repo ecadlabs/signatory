@@ -12,6 +12,7 @@ func TestTZKey(t *testing.T) {
 		priv string
 		pub  string
 		hash string
+		pass string
 	}
 
 	cases := []testCase{
@@ -33,12 +34,33 @@ func TestTZKey(t *testing.T) {
 			pub:  "sppk7auhfZa5wAcR8hk3WCw47kHgG3Pp8zaP3ctdAqdDd2dBAeZBof1",
 			hash: "tz2VN9n2C56xGLykHCjhNvZQqUeTVisrHjxA",
 		},
+		// p256 encrypted
+		{
+			priv: "p2esk27ocLPLp1JkTWfxByXysGyB7MBDURYJAzAGJLR3XSEV9Nq8wFFdDVXVTwvCwR7Ne2dcUveamjXbvZf3on6T",
+			pub:  "p2pk66vAYU7rN1ckJMp38Z9pXCrkiZCVyi6KyeMwhY69h5WDPHdMecH",
+			hash: "tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q",
+			pass: "foo",
+		},
+		// ed25519 encrypted
+		{
+			priv: "edesk1uiM6BaysskGto8pRtzKQqFqsy1sea1QRjTzaQYuBxYNhuN6eqEU78TGRXZocsVRJYcN7AaU9JDykwUd8KW",
+			pub:  "edpkttVn1coEZNjcjjAF36jDXDB377imNiKCHqjdXSt85eVN779jfX",
+			hash: "tz1MKPxkZLfdw31LL7zi55aZEoyH9DPL7eh7",
+			pass: "foo",
+		},
+		// secp256k1 encrypted
+		{
+			priv: "spesk246GnDVaqGoYZvKbjrWM1g6xUXnyETXtwZgEYFnP8BQXcaS4rfQQco7C94D1yBmcL1v46Sqy8fXrhBSM7TW",
+			pub:  "sppk7aSJpAzeXNTaobig65si221WTqgPh8mJsCJSAiZU7asJkWBVGyx",
+			hash: "tz29QkiEM1xf3chaZj6DjL5udNLbUZ8d6QJ4",
+			pass: "foo",
+		},
 	}
 
 	as := assert.New(t)
 
 	for i, tst := range cases {
-		pk, err := ParsePrivateKey(tst.priv)
+		pk, err := ParsePrivateKey(tst.priv, func() ([]byte, error) { return []byte(tst.pass), nil })
 		if !as.NoError(err, i) {
 			return
 		}

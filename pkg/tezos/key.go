@@ -5,20 +5,31 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/sha512"
 	"errors"
 	"fmt"
 	"math/big"
 
-	"golang.org/x/crypto/blake2b"
-
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 var (
 	// ErrPrivateKey is returned when private key type is unknown
 	ErrPrivateKey = errors.New("unknown private key type")
-	// ErrPKValue is returned when elliptic D value of unexpected order is provided
-	ErrPKValue = errors.New("invalid elliptic curve private key value")
+	// ErrPrivateKeyValue is returned when elliptic D value of unexpected order is provided
+	ErrPrivateKeyValue = errors.New("invalid elliptic curve private key value")
+	// ErrPassphrase is returned when required passphrase is not provided
+	ErrPassphrase = errors.New("passphrase required")
+	// ErrPrivateKeyDecrypt is returned if attempt to decrypt the private key has been failed
+	ErrPrivateKeyDecrypt = errors.New("unable to decrypt the private key")
+)
+
+const (
+	encIterations = 32768
+	encKeyLen     = 32
 )
 
 // see https://golang.org/src/crypto/x509/sec1.go
@@ -26,7 +37,7 @@ func ecPrivateKeyFromBytes(b []byte, curve elliptic.Curve) (key *ecdsa.PrivateKe
 	k := new(big.Int).SetBytes(b)
 	curveOrder := curve.Params().N
 	if k.Cmp(curveOrder) >= 0 {
-		return nil, ErrPKValue
+		return nil, ErrPrivateKeyValue
 	}
 
 	priv := ecdsa.PrivateKey{
@@ -56,10 +67,55 @@ func ecPrivateKeyFromBytes(b []byte, curve elliptic.Curve) (key *ecdsa.PrivateKe
 	return &priv, nil
 }
 
-func ParsePrivateKey(data string) (priv crypto.PrivateKey, err error) {
+type PassphraseFunc func() ([]byte, error)
+
+func isEncrypted(prefix tzPrefix) (unencrypted tzPrefix, ok bool) {
+	switch prefix {
+	case pED25519EncryptedSeed:
+		return pED25519Seed, true
+	case pSECP256K1EncryptedSecretKey:
+		return pSECP256K1SecretKey, true
+	case pP256EncryptedSecretKey:
+		return pP256SecretKey, true
+	}
+	return
+}
+
+func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv crypto.PrivateKey, err error) {
 	prefix, pl, err := decodeBase58(data)
 	if err != nil {
 		return
+	}
+
+	// See https://github.com/murbard/pytezos/blob/master/pytezos/crypto.py#L67
+	if unencPrefix, ok := isEncrypted(prefix); ok {
+		// Decrypt
+		if passFunc == nil {
+			return nil, ErrPassphrase
+		}
+		passphrase, err := passFunc()
+		if err != nil {
+			return nil, err
+		}
+		if len(passphrase) == 0 {
+			return nil, ErrPassphrase
+		}
+
+		salt, box := pl[:8], pl[8:]
+		secretboxKey := pbkdf2.Key(passphrase, salt, encIterations, encKeyLen, sha512.New)
+
+		var (
+			tmp   [32]byte
+			nonce [24]byte
+		)
+		copy(tmp[:], secretboxKey)
+		opened, ok := secretbox.Open(nil, box, &nonce, &tmp)
+		if !ok {
+			return nil, ErrPrivateKeyDecrypt
+		}
+
+		prefix = unencPrefix
+		pl = opened
 	}
 
 	switch prefix {
@@ -83,12 +139,6 @@ func ParsePrivateKey(data string) (priv crypto.PrivateKey, err error) {
 			return nil, fmt.Errorf("invalid ED25519 private key length: %d", l)
 		}
 		return ed25519.PrivateKey(pl), nil
-
-		/*
-			TODO:
-			case pSECP256K1EncryptedSecretKey:
-			case pP256EncryptedSecretKey:
-		*/
 	}
 
 	return nil, ErrPrivateKey
