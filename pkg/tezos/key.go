@@ -67,6 +67,7 @@ func ecPrivateKeyFromBytes(b []byte, curve elliptic.Curve) (key *ecdsa.PrivateKe
 	return &priv, nil
 }
 
+// PassphraseFunc is a callback used to obtain a passphrase for decryption of the private key
 type PassphraseFunc func() ([]byte, error)
 
 func isEncrypted(prefix tzPrefix) (unencrypted tzPrefix, ok bool) {
@@ -81,6 +82,7 @@ func isEncrypted(prefix tzPrefix) (unencrypted tzPrefix, ok bool) {
 	return
 }
 
+// ParsePrivateKey parses base58 encoded private key
 func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv crypto.PrivateKey, err error) {
 	prefix, pl, err := decodeBase58(data)
 	if err != nil {

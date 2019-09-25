@@ -265,7 +265,8 @@ func decodeBase58(data string) (prefix tzPrefix, payload []byte, err error) {
 		}
 	}
 
-	return tzPrefix{}, nil, ErrPrefix
+	err = ErrPrefix
+	return
 }
 
 func encodeBase58(prefix tzPrefix, payload []byte) (string, error) {
