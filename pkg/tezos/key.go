@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -168,7 +169,7 @@ func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, p
 		case elliptic.P256():
 			hashPrefix = pP256PublicKeyHash
 			pubPrefix = pP256PublicKey
-		case cryptoutils.S256():
+		case cryptoutils.S256(), secp256k1.S256():
 			hashPrefix = pSECP256K1PublicKeyHash
 			pubPrefix = pSECP256K1PublicKey
 		default:
