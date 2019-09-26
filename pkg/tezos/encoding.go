@@ -189,6 +189,14 @@ func (t *tzPrefix) ver() byte {
 // Common prefixes
 // See https://gitlab.com/tezos/tezos/blob/master/src/lib_crypto/base58.ml
 var (
+	// 32
+	pBlockHash             = tzPrefix{l: 2, p: [5]byte{1, 52}}        // B(51)
+	pOperationHash         = tzPrefix{l: 2, p: [5]byte{5, 116}}       // o(51)
+	pOperationListHash     = tzPrefix{l: 2, p: [5]byte{133, 233}}     // Lo(52)
+	pOperationListListHash = tzPrefix{l: 3, p: [5]byte{29, 159, 109}} // LLo(53)
+	pProtocolHash          = tzPrefix{l: 2, p: [5]byte{2, 170}}       // P(51)
+	pContextHash           = tzPrefix{l: 2, p: [5]byte{79, 199}}      // Co(52)
+
 	// 20
 	pED25519PublicKeyHash   = tzPrefix{l: 3, p: [5]byte{6, 161, 159}} //  tz1(36)
 	pSECP256K1PublicKeyHash = tzPrefix{l: 3, p: [5]byte{6, 161, 161}} // tz2(36)
@@ -211,6 +219,8 @@ var (
 	// 33
 	pSECP256K1PublicKey = tzPrefix{l: 4, p: [5]byte{3, 254, 226, 86}}  // sppk(55)
 	pP256PublicKey      = tzPrefix{l: 4, p: [5]byte{3, 178, 139, 127}} // p2pk(55)
+	pSECP256K1Scalar    = tzPrefix{l: 3, p: [5]byte{38, 248, 136}}     // SSp(53)
+	pSECP256K1Element   = tzPrefix{l: 3, p: [5]byte{5, 92, 0}}         // GSp(54)
 
 	// 64
 	pED25519SecretKey   = tzPrefix{l: 4, p: [5]byte{43, 246, 78, 7}}       // edsk(98)
@@ -225,6 +235,12 @@ var (
 
 // Full list of prefixes with payload lengths
 var commonPrefixes = map[tzPrefix]int{
+	pBlockHash:                   32,
+	pOperationHash:               32,
+	pOperationListHash:           32,
+	pOperationListListHash:       32,
+	pProtocolHash:                32,
+	pContextHash:                 32,
 	pED25519PublicKeyHash:        20,
 	pSECP256K1PublicKeyHash:      20,
 	pP256PublicKeyHash:           20,
@@ -238,6 +254,8 @@ var commonPrefixes = map[tzPrefix]int{
 	pP256EncryptedSecretKey:      56,
 	pSECP256K1PublicKey:          33,
 	pP256PublicKey:               33,
+	pSECP256K1Scalar:             33,
+	pSECP256K1Element:            33,
 	pED25519SecretKey:            64,
 	pED25519Signature:            64,
 	pSECP256K1Signature:          64,

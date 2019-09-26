@@ -149,7 +149,7 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv crypto.PrivateK
 
 // SEC1 compressed point form https://www.secg.org/sec1-v2.pdf
 // See https://github.com/decred/dcrd/blob/master/dcrec/secp256k1/pubkey.go#L144
-func serializeCoordinates(x, y *big.Int) []byte {
+func serializeCoordinates(x, y *big.Int) ([]byte, error) {
 	var format byte = 0x2
 	if y.Bit(0) == 1 {
 		format |= 0x1
@@ -157,9 +157,15 @@ func serializeCoordinates(x, y *big.Int) []byte {
 
 	b := make([]byte, 33)
 	b[0] = format
-	copy(b[1:], x.Bytes())
+	xx := x.Bytes()
 
-	return b
+	i := 32 - len(xx)
+	if i < 0 {
+		return nil, fmt.Errorf("unexpected X value length: %d", len(xx))
+	}
+	copy(b[1+i:], xx)
+
+	return b, nil
 }
 
 func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, payload []byte, err error) {
@@ -176,7 +182,7 @@ func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, p
 			err = fmt.Errorf("unknown curve: %s", key.Params().Name)
 			return
 		}
-		payload = serializeCoordinates(key.X, key.Y)
+		payload, err = serializeCoordinates(key.X, key.Y)
 		return
 
 	case ed25519.PublicKey:
