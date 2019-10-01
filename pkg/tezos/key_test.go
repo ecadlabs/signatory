@@ -3,7 +3,6 @@ package tezos
 import (
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,18 +61,18 @@ func TestTZKey(t *testing.T) {
 	for i, tst := range cases {
 		pk, err := ParsePrivateKey(tst.priv, func() ([]byte, error) { return []byte(tst.pass), nil })
 		if !as.NoError(err, i) {
-			return
+			continue
 		}
 
-		pub := pk.(cryptoutils.PrivateKey).Public()
+		pub := pk.Public()
 		hash, err := EncodePublicKeyHash(pub)
 		if !as.NoError(err) {
-			return
+			continue
 		}
 
 		encPub, err := EncodePublicKey(pub)
 		if !as.NoError(err) {
-			return
+			continue
 		}
 
 		as.Equal(encPub, tst.pub)

@@ -1,5 +1,6 @@
 package vault_test
 
+/*
 import (
 	"bytes"
 	"context"
@@ -93,3 +94,4 @@ func TestAzureSignError(t *testing.T) {
 		t.Fail()
 	}
 }
+*/

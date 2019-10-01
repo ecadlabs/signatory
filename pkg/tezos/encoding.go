@@ -6,171 +6,8 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcutil/base58"
-)
-
-/*
-import (
-	"crypto/sha256"
-
-	"github.com/btcsuite/btcutil/base58"
-	eblake2b "github.com/ecadlabs/crypto/blake2b"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"golang.org/x/crypto/blake2b"
 )
-
-// DigestFunc is an alias for blake2b checksum algorithm
-var DigestFunc = blake2b.Sum256
-
-const (
-	pubKeyPrefixLength     = 4
-	secretKeyPrefixLength  = 4
-	pubKeyHashPrefixLength = 3
-)
-
-const (
-	p256PubKeyPrefix    = "p2pk"
-	p256SecretKeyPrefix = "p2sk"
-	p256SigPrefix       = "p2sig"
-
-	secp256k1SigPrefix       = "spsig1"
-	secp256k1SecretKeyPrefix = "spsk"
-	secp256k1PubKeyPrefix    = "sppk"
-
-	ed25519PubKeyPrefix    = "edpk"
-	ed25519SigPrefix       = "edsig"
-	ed25519SecretKeyPrefix = "edsk"
-
-	pS256PubKeyHashPrefix     = "tz3"
-	secp256k1PubKeyHashPrefix = "tz2"
-	ed25519PubKeyHashPrefix   = "tz1"
-)
-
-var (
-	chainIDPrefix = []byte{0x57, 0x52, 0x00}
-)
-
-var prefixMap = map[string][]byte{
-	p256PubKeyPrefix:      []byte{3, 178, 139, 127},       // p2pk
-	p256SecretKeyPrefix:   []byte{0x10, 0x51, 0xee, 0xbd}, // p2sk
-	p256SigPrefix:         []byte{54, 240, 44, 52},        // p2sig
-	pS256PubKeyHashPrefix: []byte{0x06, 0xa1, 0xa4},       // tz3
-
-	secp256k1PubKeyPrefix:     []byte{0x03, 0xfe, 0xe2, 0x56},       // sppk
-	secp256k1SecretKeyPrefix:  []byte{0x11, 0xa2, 0xe0, 0xc9},       // spsk
-	secp256k1SigPrefix:        []byte{0x0d, 0x73, 0x65, 0x13, 0x3f}, // spsig1
-	secp256k1PubKeyHashPrefix: []byte{0x06, 0xa1, 0xa1},             // tz2
-
-	ed25519PubKeyPrefix:     []byte{0x0d, 0x0f, 0x25, 0xd9},       // edpk
-	ed25519SecretKeyPrefix:  []byte{0x0d, 0x0f, 0x3a, 0x07},       // edsk
-	ed25519SigPrefix:        []byte{0x09, 0xf5, 0xcd, 0x86, 0x12}, // edsig
-	ed25519PubKeyHashPrefix: []byte{0x06, 0xa1, 0x9f},             // tz1
-}
-
-var curveSigMap = map[string]string{
-	cryptoutils.CurveP256:    p256SigPrefix,
-	cryptoutils.CurveP256K:   secp256k1SigPrefix,
-	cryptoutils.CurveED25519: ed25519SigPrefix,
-}
-
-var curvePubKeyPrefixMap = map[string]string{
-	cryptoutils.CurveP256:    p256PubKeyPrefix,
-	cryptoutils.CurveP256K:   secp256k1PubKeyPrefix,
-	cryptoutils.CurveED25519: ed25519PubKeyPrefix,
-}
-
-var hashCurveMap = map[string]string{
-	pS256PubKeyHashPrefix:     cryptoutils.CurveP256,
-	secp256k1PubKeyHashPrefix: cryptoutils.CurveP256K,
-	ed25519PubKeyHashPrefix:   cryptoutils.CurveED25519,
-}
-
-var curveHashMap = map[string]string{
-	cryptoutils.CurveP256:    pS256PubKeyHashPrefix,
-	cryptoutils.CurveP256K:   secp256k1PubKeyHashPrefix,
-	cryptoutils.CurveED25519: ed25519PubKeyHashPrefix,
-}
-
-func base58CheckEncodePrefix(prefix []byte, msg []byte) string {
-	sig := []byte{}
-	// Append prefix
-	sig = append(sig, prefix...)
-	sig = append(sig, msg...)
-	// Compute checksum
-	f := sha256.Sum256(sig)
-	f2 := sha256.Sum256(f[:])
-	// Append checksum to signature
-	sig = append(sig, f2[:4]...)
-	return base58.Encode(sig)
-}
-
-func getCurveFromPubkeyHash(pubKeyHash string) string {
-	prefix := getPubkeyHashPrefix(pubKeyHash)
-	curveName, ok := hashCurveMap[prefix]
-
-	if !ok {
-		return ""
-	}
-
-	return curveName
-}
-
-// EncodeSig encode a signature according to the tezos format
-func EncodeSig(pubKeyHash string, sig []byte) string {
-	curveName := getCurveFromPubkeyHash(pubKeyHash)
-	sigPrefix, ok := curveSigMap[curveName]
-
-	if !ok {
-		return ""
-	}
-
-	if curveName == cryptoutils.CurveP256K {
-		sig = cryptoutils.CanonizeEncodeP256K(sig)
-	}
-
-	return base58CheckEncodePrefix(prefixMap[sigPrefix], sig)
-}
-
-// EncodePubKey encode a public key according to the tezos format
-func EncodePubKey(pubKeyHash string, pubKey []byte) string {
-	curveName := getCurveFromPubkeyHash(pubKeyHash)
-
-	pubKeyPrefix, ok := curvePubKeyPrefixMap[curveName]
-
-	if !ok {
-		return ""
-	}
-
-	return base58CheckEncodePrefix(prefixMap[pubKeyPrefix], pubKey)
-}
-
-// EncodePubKeyHash encode a pubkey to a Tezos public key hash base on a curve
-func EncodePubKeyHash(pubKey []byte, curve string) string {
-	if val, ok := curveHashMap[curve]; ok {
-		if prefix := prefixMap[val]; ok {
-			hash := eblake2b.SumX(20, pubKey)
-			return base58CheckEncodePrefix(prefix, hash[:20])
-		}
-	}
-	return ""
-}
-
-func decodeKey(prefix []byte, key string) ([]byte, error) {
-	decoded, _, err := base58.CheckDecode(key)
-	if err != nil {
-		return nil, err
-	}
-	return decoded[len(prefix)-1:], nil
-}
-
-func getPubkeyHashPrefix(pubkeyHash string) string {
-	if len(pubkeyHash) < pubKeyHashPrefixLength {
-		return ""
-	}
-
-	return pubkeyHash[:pubKeyHashPrefixLength]
-}
-
-*/
 
 // tzPrefix is a comparable type unlike slice
 type tzPrefix struct {
@@ -198,9 +35,10 @@ var (
 	pContextHash           = tzPrefix{l: 2, p: [5]byte{79, 199}}      // Co(52)
 
 	// 20
-	pED25519PublicKeyHash   = tzPrefix{l: 3, p: [5]byte{6, 161, 159}} //  tz1(36)
+	pED25519PublicKeyHash   = tzPrefix{l: 3, p: [5]byte{6, 161, 159}} // tz1(36)
 	pSECP256K1PublicKeyHash = tzPrefix{l: 3, p: [5]byte{6, 161, 161}} // tz2(36)
 	pP256PublicKeyHash      = tzPrefix{l: 3, p: [5]byte{6, 161, 164}} // tz3(36)
+	pContractHash           = tzPrefix{l: 3, p: [5]byte{2, 90, 121}}  // KT1(36)
 
 	// 16
 	pCryptoboxPublicKeyHash = tzPrefix{l: 2, p: [5]byte{153, 103}} // id(30)
@@ -244,6 +82,7 @@ var commonPrefixes = map[tzPrefix]int{
 	pED25519PublicKeyHash:        20,
 	pSECP256K1PublicKeyHash:      20,
 	pP256PublicKeyHash:           20,
+	pContractHash:                20,
 	pCryptoboxPublicKeyHash:      16,
 	pED25519Seed:                 32,
 	pED25519PublicKey:            32,
@@ -277,7 +116,7 @@ func decodeBase58(data string) (prefix tzPrefix, payload []byte, err error) {
 		prefix := p.prefix()
 		if ver == p.ver() && bytes.HasPrefix(buf, prefix) {
 			if len(buf)-len(prefix) != length {
-				return p, nil, fmt.Errorf("invalid base58 message length: expected %d, got %d", length, len(buf)-len(prefix))
+				return p, nil, fmt.Errorf("tezos: invalid base58 message length: expected %d, got %d", length, len(buf)-len(prefix))
 			}
 			return p, buf[len(prefix):], nil
 		}
@@ -294,4 +133,25 @@ func encodeBase58(prefix tzPrefix, payload []byte) (string, error) {
 	copy(data[len(p):], payload)
 
 	return base58.CheckEncode(data, prefix.ver()), nil
+}
+
+// EncodeSignature returns encoded version of a digital signature
+func EncodeSignature(sig cryptoutils.Signature) (res string, err error) {
+	var data []byte
+	switch s := sig.(type) {
+	case cryptoutils.ED25519Signature:
+		data = s
+	case *cryptoutils.ECDSASignature:
+		sr := s.R.Bytes()
+		ss := s.S.Bytes()
+		if len(sr) > 32 || len(ss) > 32 {
+			return "", errors.New("tezos: invalid signature size") // unlikely
+		}
+		data = make([]byte, 64)
+		copy(data[32-len(sr):], sr)
+		copy(data[64-len(ss):], ss)
+	default:
+		return "", fmt.Errorf("tezos: unknown signature type %T (%v)", sig, sig)
+	}
+	return encodeBase58(pGenericSignature, data)
 }

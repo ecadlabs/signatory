@@ -11,6 +11,7 @@ import (
 	"math/big"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
+
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -54,7 +55,7 @@ func ecPrivateKeyFromBytes(b []byte, curve elliptic.Curve) (key *ecdsa.PrivateKe
 	// according to [SEC1], but this code will ignore it.
 	for len(b) > len(privateKey) {
 		if b[0] != 0 {
-			return nil, errors.New("invalid private key length")
+			return nil, errors.New("tezos: invalid private key length")
 		}
 		b = b[1:]
 	}
@@ -84,7 +85,7 @@ func isEncrypted(prefix tzPrefix) (unencrypted tzPrefix, ok bool) {
 }
 
 // ParsePrivateKey parses base58 encoded private key
-func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv crypto.PrivateKey, err error) {
+func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.PrivateKey, err error) {
 	prefix, pl, err := decodeBase58(data)
 	if err != nil {
 		return
@@ -133,13 +134,13 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv crypto.PrivateK
 
 	case pED25519Seed:
 		if l := len(pl); l != ed25519.SeedSize {
-			return nil, fmt.Errorf("invalid ED25519 seed length: %d", l)
+			return nil, fmt.Errorf("tezos: invalid ED25519 seed length: %d", l)
 		}
 		return ed25519.NewKeyFromSeed(pl), nil
 
 	case pED25519SecretKey:
 		if l := len(pl); l != ed25519.PrivateKeySize {
-			return nil, fmt.Errorf("invalid ED25519 private key length: %d", l)
+			return nil, fmt.Errorf("tezos: invalid ED25519 private key length: %d", l)
 		}
 		return ed25519.PrivateKey(pl), nil
 	}
@@ -161,7 +162,7 @@ func serializeCoordinates(x, y *big.Int) ([]byte, error) {
 
 	i := 32 - len(xx)
 	if i < 0 {
-		return nil, fmt.Errorf("unexpected X value length: %d", len(xx))
+		return nil, fmt.Errorf("tezos: unexpected X value length: %d", len(xx))
 	}
 	copy(b[1+i:], xx)
 
@@ -171,15 +172,15 @@ func serializeCoordinates(x, y *big.Int) ([]byte, error) {
 func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, payload []byte, err error) {
 	switch key := pub.(type) {
 	case *ecdsa.PublicKey:
-		switch key.Curve {
-		case elliptic.P256():
+		switch {
+		case key.Curve == elliptic.P256():
 			hashPrefix = pP256PublicKeyHash
 			pubPrefix = pP256PublicKey
-		case cryptoutils.S256(), secp256k1.S256():
+		case key.Curve == cryptoutils.S256() || key.Curve == secp256k1.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
 			hashPrefix = pSECP256K1PublicKeyHash
 			pubPrefix = pSECP256K1PublicKey
 		default:
-			err = fmt.Errorf("unknown curve: %s", key.Params().Name)
+			err = fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
 			return
 		}
 		payload, err = serializeCoordinates(key.X, key.Y)
@@ -192,7 +193,7 @@ func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, p
 		return
 	}
 
-	err = fmt.Errorf("unknown public key type: %T", pub)
+	err = fmt.Errorf("tezos: unknown public key type: %T", pub)
 	return
 }
 

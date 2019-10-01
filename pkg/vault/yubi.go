@@ -1,5 +1,6 @@
 package vault
 
+/*
 import (
 	"bytes"
 	"context"
@@ -11,7 +12,7 @@ import (
 	"github.com/certusone/yubihsm-go/commands"
 	"github.com/certusone/yubihsm-go/connector"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/crypto"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 )
 
@@ -29,13 +30,13 @@ type YubiKey struct {
 // Curve retrieve the curve to be used with this key
 func (k *YubiKey) Curve() string {
 	if k.response.Algorithm == commands.AlgorithmP256 {
-		return crypto.CurveP256
+		return cryptoutils.CurveP256
 	}
 	if k.response.Algorithm == commands.AlgorithmSecp256k1 {
-		return crypto.CurveP256K
+		return cryptoutils.CurveP256K
 	}
 	if k.response.Algorithm == commands.AlgorighmED25519 {
-		return crypto.CurveED25519
+		return cryptoutils.CurveED25519
 	}
 	return "unsupported"
 }
@@ -222,3 +223,4 @@ func (s *YubiHSM) Ready() bool {
 		return false
 	}
 }
+*/

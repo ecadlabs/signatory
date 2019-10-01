@@ -1,5 +1,6 @@
 package vault
 
+/*
 import (
 	"bytes"
 	"context"
@@ -13,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/crypto"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	uuid "github.com/satori/go.uuid"
 )
@@ -50,8 +51,8 @@ type AzureKey struct {
 
 // Curve retrieve the curve to be used with this key
 func (az *AzureKey) Curve() string {
-	if az.Key.Curve == crypto.CurveP256KAlternate {
-		return crypto.CurveP256K
+	if az.Key.Curve == cryptoutils.CurveP256KAlternate {
+		return cryptoutils.CurveP256K
 	}
 
 	return az.Key.Curve
@@ -59,12 +60,12 @@ func (az *AzureKey) Curve() string {
 
 func (az *AzureKey) alg() string {
 	switch az.Key.Curve {
-	case crypto.CurveP256KAlternate:
-		return crypto.SigP256KAlternate
-	case crypto.CurveP256K:
-		return crypto.SigP256K
-	case crypto.CurveP256:
-		return crypto.SigP256
+	case cryptoutils.CurveP256KAlternate:
+		return cryptoutils.SigP256KAlternate
+	case cryptoutils.CurveP256K:
+		return cryptoutils.SigP256K
+	case cryptoutils.CurveP256:
+		return cryptoutils.SigP256
 	default:
 		return ""
 	}
@@ -493,3 +494,4 @@ func (s *AzureVault) Import(ctx context.Context, pk *ecdsa.PrivateKey) (string, 
 func (s *AzureVault) VaultName() string {
 	return s.config.Vault
 }
+*/

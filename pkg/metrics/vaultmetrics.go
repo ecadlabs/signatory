@@ -59,7 +59,9 @@ func Interceptor(opt *signatory.SignInterceptorOptions, sing func() error) error
 		vaultErrorCounter.WithLabelValues(opt.Vault, code).Inc()
 	}
 
-	signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Op, opt.Kind).Inc()
+	for _, k := range opt.Kind {
+		signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Op, k).Inc()
+	}
 
 	return err
 }

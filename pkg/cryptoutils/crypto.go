@@ -2,13 +2,17 @@ package cryptoutils
 
 import (
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/hex"
+	"fmt"
 	"math/big"
 	"sync"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
 )
 
+/*
 const (
 	// CurveED25519
 	CurveED25519 = "ed25519"
@@ -27,51 +31,61 @@ const (
 	// SigP256KAlternate is the an alternate name for ES256K Signature algorithm
 	SigP256KAlternate = "ECDSA256"
 )
+*/
 
-func GetCurve(name string) elliptic.Curve {
-	if name == CurveP256 {
-		return elliptic.P256()
-	}
-	if name == CurveP256K {
-		return secp256k1.S256()
-	}
-	return nil
-}
-
-// ECCoordinateFromPrivateKey given an elliptic curve name it will produce X and Y coordinate from D
-func ECCoordinateFromPrivateKey(d []byte, curveName string) (xBytes, yBytes []byte) {
-	curve := GetCurve(curveName)
-
-	if curve == nil {
-		return nil, nil
-	}
-
-	x, y := curve.ScalarBaseMult(d)
-	xBytes = x.Bytes()
-	yBytes = y.Bytes()
-	return
-}
-
-// CanonizeEncodeP256K returns the canonical versions of the signature
+// CanonizeECDSASignature returns the canonical versions of the signature
 // the canonical version enforce low S values
 // if S is above order / 2 it negating the S (modulo the order (N))
-func CanonizeEncodeP256K(sig []byte) []byte {
-	r := sig[:32]
-	s := sig[32:]
-	rInt := new(big.Int).SetBytes(r)
-	sInt := new(big.Int).SetBytes(s)
+func CanonizeECDSASignature(curve elliptic.Curve, sig *ECDSASignature) *ECDSASignature {
+	r := new(big.Int).Set(sig.R)
+	s := new(big.Int).Set(sig.S)
 
-	order := secp256k1.S256().N
-	two := new(big.Int).SetBytes([]byte{0x02})
-	quo := new(big.Int).Quo(order, two)
-	if sInt.Cmp(quo) > 0 {
-		sInt = sInt.Sub(order, sInt)
+	order := curve.Params().N
+	quo := new(big.Int).Quo(order, new(big.Int).SetInt64(2))
+	if s.Cmp(quo) > 0 {
+		s = s.Sub(order, s)
 	}
 
-	s = sInt.Bytes()
-	r = rInt.Bytes()
-	signature := append(r, s...)
-	return signature
+	return &ECDSASignature{
+		R: r,
+		S: s,
+	}
+}
+
+// CanonizeSignature returns the canonical versions of the ECDSA signature if one is given
+func CanonizeSignature(pub crypto.PublicKey, sig Signature) Signature {
+	epub, ok := pub.(*ecdsa.PublicKey)
+	if !ok {
+		return sig
+	}
+	s, ok := sig.(*ECDSASignature)
+	if !ok {
+		return sig
+	}
+
+	return CanonizeECDSASignature(epub.Curve, s)
+}
+
+// Signature is a type representing a digital signature.
+type Signature interface {
+	String() string
+}
+
+// ECDSASignature is a type representing an ecdsa signature.
+type ECDSASignature struct {
+	R *big.Int
+	S *big.Int
+}
+
+func (e *ECDSASignature) String() string {
+	return fmt.Sprintf("ecdsa:[r:%s,s:%s]", hex.EncodeToString(e.R.Bytes()), hex.EncodeToString(e.S.Bytes()))
+}
+
+// ED25519Signature is a type representing an Ed25519 signature
+type ED25519Signature []byte
+
+func (e ED25519Signature) String() string {
+	return fmt.Sprintf("ed25519:[%s]", hex.EncodeToString(e))
 }
 
 var (
@@ -95,6 +109,18 @@ func S256() *secp256k1.KoblitzCurve {
 	return &s256Curve
 }
 
+// CurveEqual returns true if curves are equal regardless of names and pointer values
+func CurveEqual(a, b elliptic.Curve) bool {
+	ap, bp := a.Params(), b.Params()
+	return ap.P.Cmp(bp.P) == 0 &&
+		ap.N.Cmp(bp.N) == 0 &&
+		ap.B.Cmp(bp.B) == 0 &&
+		ap.Gx.Cmp(bp.Gx) == 0 &&
+		ap.Gy.Cmp(bp.Gy) == 0 &&
+		ap.BitSize == bp.BitSize
+}
+
+// PrivateKey is omplemented by private key types
 type PrivateKey interface {
 	Public() crypto.PublicKey
 }

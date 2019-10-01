@@ -14,7 +14,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
-	"github.com/ecadlabs/signatory/pkg/watermark"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"

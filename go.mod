@@ -9,7 +9,7 @@ require (
 	github.com/certusone/yubihsm-go v0.1.1-0.20190620183445-0299fd5d703d
 	github.com/davecgh/go-spew v1.1.1
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.2
-	github.com/ecadlabs/crypto v0.0.0-20190715192459-7e701899cb7f
+	github.com/ecadlabs/crypto v0.0.0-20190715192459-7e701899cb7f // indirect
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/google/tink v1.3.0-rc1

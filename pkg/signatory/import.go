@@ -2,58 +2,60 @@ package signatory
 
 import (
 	"context"
-	"crypto"
 
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	log "github.com/sirupsen/logrus"
 )
 
 // Importer interface representing an importer backend
 type Importer interface {
-	Import(ctx context.Context, pk crypto.PrivateKey) (string, error)
-	Name() string
-}
-
-// ImportedKey struct containing information about an imported key
-type ImportedKey struct {
-	Hash  string
-	KeyID string
+	Vault
+	Import(ctx context.Context, pk cryptoutils.PrivateKey) (StoredKey, error)
 }
 
 // Import a keyPair inside the vault
-func (s *Signatory) Import(secretKey string, importer Importer) (*ImportedKey, error) {
-	pk, err := tezos.ParseTezosPrivateKey()
+func (s *Signatory) Import(ctx context.Context, importer Importer, secretKey string, passCB tezos.PassphraseFunc) (*PublicKey, error) {
+	pk, err := tezos.ParsePrivateKey(secretKey, passCB)
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := keyPair.PubKeyHash()
+	pub := pk.Public()
+
+	hash, err := tezos.EncodePublicKeyHash(pub)
 	if err != nil {
 		return nil, err
 	}
 
-	logfields := log.Fields{
+	l := s.logger().WithFields(log.Fields{
 		LogPKH:   hash,
 		LogVault: importer.Name(),
-	}
+	})
 	if n, ok := importer.(VaultNamer); ok {
-		logfields[LogVaultName] = n.VaultName()
+		l = l.WithField(LogVaultName, n.VaultName())
 	}
-	l := s.logger.WithFields(logfields)
 
 	l.Info("Requesting import operation")
 
-	keyID, err := importer.Import(context.TODO(), jwk)
+	stored, err := importer.Import(ctx, pk)
 	if err != nil {
 		return nil, err
 	}
 
-	l.WithField(LogKeyID, keyID).Info("Successfully imported")
+	s.cache.push(hash, &keyVaultPair{key: stored, vault: importer})
 
-	importedKey := &ImportedKey{
-		KeyID: keyID,
-		Hash:  hash,
+	l.WithField(LogKeyID, stored.ID()).Info("Successfully imported")
+
+	enc, err := tezos.EncodePublicKey(pub)
+	if err != nil {
+		return nil, err
 	}
 
-	return importedKey, nil
+	return &PublicKey{
+		PublicKey:     enc,
+		PublicKeyHash: hash,
+		VaultName:     importer.Name(),
+		ID:            stored.ID(),
+	}, nil
 }
