@@ -2,20 +2,25 @@ package signatory
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
 
-// Importer interface representing an importer backend
-type Importer interface {
-	Vault
-	Import(ctx context.Context, pk cryptoutils.PrivateKey) (StoredKey, error)
-}
-
 // Import a keyPair inside the vault
-func (s *Signatory) Import(ctx context.Context, importer Importer, secretKey string, passCB tezos.PassphraseFunc) (*PublicKey, error) {
+func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB tezos.PassphraseFunc) (*PublicKey, error) {
+	v, ok := s.vaults[importerName]
+	if !ok {
+		return nil, fmt.Errorf("import: vault %s is not found", importerName)
+	}
+
+	importer, ok := v.(vault.Importer)
+	if !ok {
+		return nil, fmt.Errorf("import: vault %s doesn't support import operation", importerName)
+	}
+
 	pk, err := tezos.ParsePrivateKey(secretKey, passCB)
 	if err != nil {
 		return nil, err
@@ -32,8 +37,10 @@ func (s *Signatory) Import(ctx context.Context, importer Importer, secretKey str
 		LogPKH:   hash,
 		LogVault: importer.Name(),
 	})
-	if n, ok := importer.(VaultNamer); ok {
+	if n, ok := importer.(vault.VaultNamer); ok {
 		l = l.WithField(LogVaultName, n.VaultName())
+	} else {
+		l = l.WithField(LogVaultName, importerName)
 	}
 
 	l.Info("Requesting import operation")
@@ -57,5 +64,6 @@ func (s *Signatory) Import(ctx context.Context, importer Importer, secretKey str
 		PublicKeyHash: hash,
 		VaultName:     importer.Name(),
 		ID:            stored.ID(),
+		Policy:        s.fetchPolicyOrDefault(hash),
 	}, nil
 }

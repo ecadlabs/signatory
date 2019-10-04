@@ -2,92 +2,89 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
-	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
-// Health interface for a service that had a ready func
-type Health interface {
-	Ready() bool
-}
+const timeout = time.Second * 10
 
 // UtilityServer struct containing the information necessary to run a utility endpoints
 type UtilityServer struct {
-	config        *config.ServerConfig
-	srv           *http.Server
-	healthService []Health
-	shuttingDown  bool
+	Address string
+	Health  vault.ReadinessChecker
+	Logger  log.FieldLogger
+
+	shuttingDown int32
 }
 
-// NewUtilityServer create a new utility server struct
-func NewUtilityServer(config *config.ServerConfig, healthService []Health) *UtilityServer {
-	return &UtilityServer{config: config, healthService: healthService, shuttingDown: false}
-}
-
-func (u *UtilityServer) live(w http.ResponseWriter, r *http.Request) {
-	// Always live
-	fmt.Fprintf(w, "ok")
-}
-
-func (u *UtilityServer) isReady() bool {
-	if u.shuttingDown {
-		return false
+func (u *UtilityServer) logger() log.FieldLogger {
+	if u.Logger != nil {
+		return u.Logger
 	}
+	return log.StandardLogger()
+}
 
-	for _, srv := range u.healthService {
-		if !srv.Ready() {
-			return false
+func (u *UtilityServer) readyHandler(w http.ResponseWriter, r *http.Request) {
+	var ok bool
+	if atomic.LoadInt32(&u.shuttingDown) == 0 {
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
+
+		var err error
+		ok, err = u.Health.Ready(ctx)
+		if err != nil {
+			jsonError(w, err)
+			return
 		}
 	}
-	return true
-}
 
-func (u *UtilityServer) ready(w http.ResponseWriter, r *http.Request) {
-	if u.isReady() {
-		fmt.Fprintf(w, "ready")
-	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(w, "not ready")
+	resp := struct {
+		Ready bool `json:"ready"`
+	}{
+		Ready: ok,
 	}
+
+	var status int
+	if ok {
+		status = http.StatusOK
+	} else {
+		status = http.StatusServiceUnavailable
+	}
+
+	jsonResponse(w, status, &resp)
 }
 
-func (u *UtilityServer) createRootHandler() http.Handler {
+type utilityServer struct {
+	*http.Server
+	srv *UtilityServer
+}
+
+// New returns a new http server with registered routes
+func (u *UtilityServer) New() HTTPServer {
 	r := mux.NewRouter()
-	r.Use((&Logging{}).Handler)
 	r.Methods("GET").Path("/metrics").Handler(metrics.Handler)
-	r.HandleFunc("/healthz/live", u.live).Methods("GET")
-	r.HandleFunc("/healthz/ready", u.ready).Methods("GET")
-	return r
-}
-
-// Serve start the server and register route
-func (u *UtilityServer) Serve() error {
-	handlers := u.createRootHandler()
-	binding := fmt.Sprintf(":%d", u.config.UtilityPort)
+	r.Methods("GET").Path("/healthz").HandlerFunc(u.readyHandler)
 
 	srv := &http.Server{
-		Handler:      handlers,
-		Addr:         binding,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Handler: r,
+		Addr:    u.Address,
 	}
 
-	u.srv = srv
-
-	return srv.ListenAndServe()
+	u.logger().Printf("Utility HTTP server is listening for connections on %s", u.Address)
+	return &utilityServer{
+		Server: srv,
+		srv:    u,
+	}
 }
 
-// ShutdownAfter shutdown the server after executing afterFunc
-func (u *UtilityServer) ShutdownAfter(ctx context.Context, afterFunc func()) error {
-	u.shuttingDown = true
-	afterFunc()
-	if u.srv != nil {
-		return u.srv.Shutdown(ctx)
-	}
-	return nil
+// Shutdown shutdown the server after executing afterFunc
+func (u *utilityServer) Shutdown(ctx context.Context) error {
+	atomic.StoreInt32(&u.srv.shuttingDown, 1)
+	return u.Server.Shutdown(ctx)
 }

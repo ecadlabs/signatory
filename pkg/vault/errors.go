@@ -11,7 +11,7 @@ func (e *withHttp) Code() int {
 	return e.code
 }
 
-func NewHttpError(msg string, code int) error {
+func NewHTTPError(msg string, code int) error {
 	wrapped := errors.New(msg)
 	return &withHttp{
 		wrapped,

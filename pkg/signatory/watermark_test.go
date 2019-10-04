@@ -79,7 +79,7 @@ func TestGetSigAlg(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			m := NewMemory()
+			m := NewInMemoryWatermark()
 			var res bool
 			for _, d := range c.data {
 				res = m.IsSafeToSign("bar", d)

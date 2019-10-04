@@ -104,7 +104,7 @@ func marshalECPrivateKeyWithOID(key *ecdsa.PrivateKey, oid asn1.ObjectIdentifier
 	})
 }
 
-// MarshalPKCS8PrivateKey converts aprivate key to PKCS#8, ASN.1 DER form.
+// MarshalPKCS8PrivateKey converts a private key to PKCS#8, ASN.1 DER form.
 func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
 	if ecdsaKey, ok := key.(*ecdsa.PrivateKey); ok {
 		return marshalPKCS8ECDSAPrivateKey(ecdsaKey)

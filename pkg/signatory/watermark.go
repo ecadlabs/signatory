@@ -12,22 +12,22 @@ type Watermark interface {
 	IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool
 }
 
-// Memory keep previous operation in memory
-type Memory struct {
+// InMemoryWatermark keep previous operation in memory
+type InMemoryWatermark struct {
 	watermarks map[string]int32
 	mtx        *sync.Mutex
 }
 
-// NewMemory create a new Memory watermark
-func NewMemory() *Memory {
-	return &Memory{
+// NewInMemoryWatermark create a new Memory watermark
+func NewInMemoryWatermark() *InMemoryWatermark {
+	return &InMemoryWatermark{
 		watermarks: make(map[string]int32),
 		mtx:        &sync.Mutex{},
 	}
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *Memory) IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool {
+func (w *InMemoryWatermark) IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool {
 	msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID)
 	if !ok {
 		// watermark is not required
@@ -53,21 +53,21 @@ func (w *Memory) IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool {
 	return true
 }
 
-// Ignore watermark that do not validation and return true
-type Ignore struct {
+// IgnoreWatermark watermark that do not validation and return true
+type IgnoreWatermark struct {
 }
 
-// NewIgnore create a new ignore watermark
-func NewIgnore() *Ignore {
-	return &Ignore{}
+// NewIgnoreWatermark create a new ignore watermark
+func NewIgnoreWatermark() *IgnoreWatermark {
+	return &IgnoreWatermark{}
 }
 
 // IsSafeToSign always return true
-func (w *Ignore) IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool {
+func (w *IgnoreWatermark) IsSafeToSign(pkh string, msg tezos.UnsignedMessage) bool {
 	return true
 }
 
 var (
-	_ Watermark = &Memory{}
-	_ Watermark = &Ignore{}
+	_ Watermark = &InMemoryWatermark{}
+	_ Watermark = &IgnoreWatermark{}
 )

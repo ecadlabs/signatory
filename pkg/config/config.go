@@ -1,19 +1,23 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"strings"
 
 	"gopkg.in/go-playground/validator.v9"
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
-	Port        int `yaml:"port" validate:"gte=0,lte=65535"`
-	UtilityPort int `yaml:"utility_port" validate:"gte=0,lte=65535"`
+	Address        string `yaml:"address" validate:"hostport"`
+	UtilityAddress string `yaml:"utility_address" validate:"hostport"`
 }
 
+/*
 // YubiConfig contains the information necessary to use the Yubi HSM backend
 type YubiConfig struct {
 	Host      string `yaml:"host" validate:"required,hostname"`
@@ -31,22 +35,15 @@ type AzureConfig struct {
 	Vault          string   `yaml:"vault" validate:"required"`
 	Keys           []string `yaml:"keys"`
 }
-
-// CloudKMSVaultConfig contains Google Cloud KMS backend configuration
-type CloudKMSVaultConfig struct {
-	ServiceAccountKey string `yaml:"service_account_key"`
-	Project           string `yaml:"project" validate:"required"`
-	Location          string `yaml:"location" validate:"required"`
-	KeyRing           string `yaml:"key_ring" validate:"required"`
-}
-
-// KeyRingName returns full Google Cloud KMS key ring path
-func (c *CloudKMSVaultConfig) KeyRingName() string {
-	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s", c.Project, c.Location, c.KeyRing)
-}
+*/
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig = map[string]TezosPolicy
+type TezosConfig map[string]*TezosAddressConfig
+
+// TezosAddressConfig contains the configuration related to tezos network
+type TezosAddressConfig struct {
+	Policy *TezosPolicy `yaml:"policy"`
+}
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
@@ -55,25 +52,32 @@ type TezosPolicy struct {
 	LogPayloads       bool     `yaml:"log_payloads"`
 }
 
-// Config contains all the configuration necessary to run the signatory
-type Config struct {
-	Yubi     []*YubiConfig          `yaml:"yubi"`
-	Azure    []*AzureConfig         `yaml:"azure"`
-	CloudKMS []*CloudKMSVaultConfig `yaml:"cloudkms"`
-	Tezos    TezosConfig            `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
-	Server   ServerConfig           `yaml:"server"`
+// VaultConfig represents single vault instance
+type VaultConfig struct {
+	Driver string     `yaml:"driver" validate:"required"`
+	Config *yaml.Node `yaml:"config"`
 }
 
-func (c *Config) Validate() (bool, string) {
-	err := validator.New().Struct(c)
-	if err != nil {
-		msg := ""
-		for _, err := range err.(validator.ValidationErrors) {
-			msg = fmt.Sprintf("%s%s (%s) not valid according to rule: %s %s\n", msg, err.Namespace(), err.Value(), err.Tag(), err.Param())
+// Config contains all the configuration necessary to run the signatory
+type Config struct {
+	/*
+		Yubi   []*YubiConfig  `yaml:"yubi"`
+		Azure  []*AzureConfig `yaml:"azure"`
+	*/
+	Vaults map[string]*VaultConfig `yaml:"vaults" validate:"gt=0,dive,required"`
+	Tezos  TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
+	Server ServerConfig            `yaml:"server"`
+}
+
+func FormatValidationError(err error) error {
+	if list, ok := err.(validator.ValidationErrors); ok {
+		var msgs []string
+		for _, e := range list {
+			msgs = append(msgs, fmt.Sprintf("%s (%s) not valid according to rule: %s %s", e.Namespace(), e.Value(), e.Tag(), e.Param()))
 		}
-		return false, msg
+		err = errors.New(strings.Join(msgs, ","))
 	}
-	return true, ""
+	return err
 }
 
 // Read read the config from a file
@@ -85,4 +89,13 @@ func (c *Config) Read(file string) error {
 	}
 
 	return nil
+}
+
+func Validator() *validator.Validate {
+	validate := validator.New()
+	validate.RegisterValidation("hostport", func(fl validator.FieldLevel) bool {
+		_, _, err := net.SplitHostPort(fl.Field().String())
+		return err == nil
+	})
+	return validate
 }
