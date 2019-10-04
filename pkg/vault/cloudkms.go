@@ -17,6 +17,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/google/tink/go/subtle/kwp"
+	"github.com/pkg/errors"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -114,6 +115,10 @@ func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []StoredKey, e
 				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.config.keyRingName(), err)
 			}
 
+			if ver.State != kmspb.CryptoKeyVersion_ENABLED {
+				continue
+			}
+
 			ecKey, err := c.getPublicKey(ctx, ver.Name)
 			if err != nil {
 				return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %v", c.config.keyRingName(), err)
@@ -137,6 +142,10 @@ func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (StoredK
 	resp, err := c.client.GetCryptoKeyVersion(ctx, &req)
 	if err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s) GetCryptoKeyVersion: %v", c.config.keyRingName(), err)
+	}
+
+	if resp.State != kmspb.CryptoKeyVersion_ENABLED {
+		return nil, fmt.Errorf("(CloudKMS/%s) Key version is not enabled: %s", c.config.keyRingName(), keyID)
 	}
 
 	ecKey, err := c.getPublicKey(ctx, resp.Name)
@@ -354,12 +363,15 @@ func NewCloudKMSVault(ctx context.Context, config *Config) (*CloudKMSVault, erro
 func init() {
 	RegisterVault("cloudkms", func(ctx context.Context, node *yaml.Node) (Vault, error) {
 		var conf Config
+		if node == nil || node.Kind == 0 {
+			return nil, errors.New("(CloudKMS): config is missing")
+		}
 		if err := node.Decode(&conf); err != nil {
 			return nil, err
 		}
 
 		if err := config.Validator().Struct(&conf); err != nil {
-			return nil, config.FormatValidationError(err)
+			return nil, err
 		}
 
 		return NewCloudKMSVault(ctx, &conf)

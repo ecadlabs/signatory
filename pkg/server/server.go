@@ -13,6 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const defaultAddr = ":6732"
+
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
 	Sign(ctx context.Context, keyHash string, message []byte) (string, error)
@@ -101,11 +103,16 @@ func (s *Server) New() HTTPServer {
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
 
-	srv := &http.Server{
-		Handler: r,
-		Addr:    s.Address,
+	addr := s.Address
+	if addr == "" {
+		addr = defaultAddr
 	}
 
-	s.logger().Printf("HTTP server is listening for connections on %s", s.Address)
+	srv := &http.Server{
+		Handler: r,
+		Addr:    addr,
+	}
+
+	s.logger().Printf("HTTP server is listening for connections on %s", addr)
 	return srv
 }

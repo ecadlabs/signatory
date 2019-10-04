@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -21,12 +22,12 @@ var (
 )
 
 const (
-	LogPKH       = "pkh"
-	LogVault     = "vault"
-	LogVaultName = "vault_name"
-	LogOp        = "op"
-	LogKind      = "kind"
-	LogKeyID     = "key_id"
+	logPKH       = "pkh"
+	logVault     = "vault"
+	logVaultName = "vault_name"
+	logOp        = "op"
+	logKind      = "kind"
+	logKeyID     = "key_id"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -96,16 +97,30 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = config.TezosPolicy{
-	AllowedOperations: []string{"endorsement", "block"},
+	AllowedOperations: []string{"block", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *config.TezosPolicy {
 	val, ok := s.config.Policy[keyHash]
-	if !ok || val == nil {
+	if !ok {
 		return nil
 	}
-	if val.Policy != nil {
-		return val.Policy
+	if val != nil {
+		pol := config.TezosPolicy{
+			LogPayloads: val.LogPayloads,
+		}
+		if val.AllowedKinds != nil {
+			pol.AllowedKinds = make([]string, len(val.AllowedKinds))
+			copy(pol.AllowedKinds, val.AllowedKinds)
+			sort.Strings(pol.AllowedKinds)
+		}
+		if val.AllowedOperations != nil {
+			pol.AllowedOperations = make([]string, len(val.AllowedOperations))
+			copy(pol.AllowedOperations, val.AllowedOperations)
+			sort.Strings(pol.AllowedOperations)
+		}
+
+		return &pol
 	}
 	return &defaultPolicy
 }
@@ -144,7 +159,7 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
-	l := s.logger().WithField(LogPKH, keyHash)
+	l := s.logger().WithField(logPKH, keyHash)
 
 	policy := s.fetchPolicyOrDefault(keyHash)
 	if policy == nil {
@@ -159,12 +174,12 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", err
 	}
 
-	l = l.WithField(LogOp, msg.MessageKind())
+	l = l.WithField(logOp, msg.MessageKind())
 
 	var opKind []string
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
-		l = l.WithField(LogKind, opKind)
+		l = l.WithField(logKind, opKind)
 	}
 
 	p, err := s.getPublicKey(ctx, keyHash)
@@ -173,11 +188,11 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", err
 	}
 
-	l = l.WithField(LogVault, p.vault.Name())
+	l = l.WithField(logVault, p.vault.Name())
 	if n, ok := p.vault.(vault.VaultNamer); ok {
-		l = l.WithField(LogVaultName, n.VaultName())
+		l = l.WithField(logVaultName, n.VaultName())
 	} else {
-		l = l.WithField(LogVaultName, p.name)
+		l = l.WithField(logVaultName, p.name)
 	}
 
 	l.Info("Requesting signing operation")
@@ -278,7 +293,7 @@ func (s *Signatory) getPublicKey(ctx context.Context, keyHash string) (*keyVault
 		return cached, nil
 	}
 
-	s.logger().WithField(LogPKH, keyHash).Debugf("Fetching public key for: %s", keyHash)
+	s.logger().WithField(logPKH, keyHash).Debugf("Fetching public key for: %s", keyHash)
 
 	list, err := s.listPublicKeys(ctx)
 	if err != nil {
@@ -331,13 +346,13 @@ func NewSignatory(ctx context.Context, c *Config) (*Signatory, error) {
 	// Initialize vaults
 	for name, vc := range c.Vaults {
 		l := s.logger().WithFields(log.Fields{
-			LogVault:     vc.Driver,
-			LogVaultName: name,
+			logVault:     vc.Driver,
+			logVaultName: name,
 		})
 
 		l.Info("Initializing vault")
 
-		v, err := vault.NewVault(ctx, vc.Driver, vc.Config)
+		v, err := vault.NewVault(ctx, vc.Driver, &vc.Config)
 		if err != nil {
 			return nil, err
 		}

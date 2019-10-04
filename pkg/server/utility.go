@@ -13,6 +13,7 @@ import (
 )
 
 const timeout = time.Second * 10
+const defaultUtilityAddr = ":9583"
 
 // UtilityServer struct containing the information necessary to run a utility endpoints
 type UtilityServer struct {
@@ -71,12 +72,17 @@ func (u *UtilityServer) New() HTTPServer {
 	r.Methods("GET").Path("/metrics").Handler(metrics.Handler)
 	r.Methods("GET").Path("/healthz").HandlerFunc(u.readyHandler)
 
-	srv := &http.Server{
-		Handler: r,
-		Addr:    u.Address,
+	addr := u.Address
+	if addr == "" {
+		addr = defaultUtilityAddr
 	}
 
-	u.logger().Printf("Utility HTTP server is listening for connections on %s", u.Address)
+	srv := &http.Server{
+		Handler: r,
+		Addr:    addr,
+	}
+
+	u.logger().Printf("Utility HTTP server is listening for connections on %s", addr)
 	return &utilityServer{
 		Server: srv,
 		srv:    u,

@@ -14,7 +14,7 @@ ID:                 {{.ID}}
 {{with .Policy -}}
 Allowed Operations: {{.AllowedOperations}}
 Allowed Kinds:      {{.AllowedKinds}}
-{{else - }}
+{{else -}}
 *DISABLED*
 {{end}}
 {{end -}}

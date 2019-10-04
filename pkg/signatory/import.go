@@ -34,13 +34,13 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 	}
 
 	l := s.logger().WithFields(log.Fields{
-		LogPKH:   hash,
-		LogVault: importer.Name(),
+		logPKH:   hash,
+		logVault: importer.Name(),
 	})
 	if n, ok := importer.(vault.VaultNamer); ok {
-		l = l.WithField(LogVaultName, n.VaultName())
+		l = l.WithField(logVaultName, n.VaultName())
 	} else {
-		l = l.WithField(LogVaultName, importerName)
+		l = l.WithField(logVaultName, importerName)
 	}
 
 	l.Info("Requesting import operation")
@@ -52,7 +52,7 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 
 	s.cache.push(hash, &keyVaultPair{key: stored, vault: importer})
 
-	l.WithField(LogKeyID, stored.ID()).Info("Successfully imported")
+	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
 
 	enc, err := tezos.EncodePublicKey(pub)
 	if err != nil {

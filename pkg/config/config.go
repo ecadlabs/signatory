@@ -1,11 +1,8 @@
 package config
 
 import (
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"net"
-	"strings"
 
 	"gopkg.in/go-playground/validator.v9"
 	yaml "gopkg.in/yaml.v3"
@@ -38,12 +35,7 @@ type AzureConfig struct {
 */
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig map[string]*TezosAddressConfig
-
-// TezosAddressConfig contains the configuration related to tezos network
-type TezosAddressConfig struct {
-	Policy *TezosPolicy `yaml:"policy"`
-}
+type TezosConfig map[string]*TezosPolicy
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
@@ -54,8 +46,8 @@ type TezosPolicy struct {
 
 // VaultConfig represents single vault instance
 type VaultConfig struct {
-	Driver string     `yaml:"driver" validate:"required"`
-	Config *yaml.Node `yaml:"config"`
+	Driver string    `yaml:"driver" validate:"required"`
+	Config yaml.Node `yaml:"config"`
 }
 
 // Config contains all the configuration necessary to run the signatory
@@ -69,23 +61,14 @@ type Config struct {
 	Server ServerConfig            `yaml:"server"`
 }
 
-func FormatValidationError(err error) error {
-	if list, ok := err.(validator.ValidationErrors); ok {
-		var msgs []string
-		for _, e := range list {
-			msgs = append(msgs, fmt.Sprintf("%s (%s) not valid according to rule: %s %s", e.Namespace(), e.Value(), e.Tag(), e.Param()))
-		}
-		err = errors.New(strings.Join(msgs, ","))
-	}
-	return err
-}
-
 // Read read the config from a file
 func (c *Config) Read(file string) error {
-	yamlFile, _ := ioutil.ReadFile(file)
-	err := yaml.Unmarshal(yamlFile, c)
+	yamlFile, err := ioutil.ReadFile(file)
 	if err != nil {
-		return fmt.Errorf("Unmarshal: %v", err)
+		return err
+	}
+	if err = yaml.Unmarshal(yamlFile, c); err != nil {
+		return err
 	}
 
 	return nil
@@ -94,8 +77,9 @@ func (c *Config) Read(file string) error {
 func Validator() *validator.Validate {
 	validate := validator.New()
 	validate.RegisterValidation("hostport", func(fl validator.FieldLevel) bool {
-		_, _, err := net.SplitHostPort(fl.Field().String())
-		return err == nil
+		s := fl.Field().String()
+		_, _, err := net.SplitHostPort(s)
+		return s == "" || err == nil
 	})
 	return validate
 }
