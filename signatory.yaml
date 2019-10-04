@@ -1,12 +1,34 @@
 server:
-  #port: 6732
-  #utility_port: 9583
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+
 vaults:
+  # Name is used to identify backend during import process
   kms:
     driver: cloudkms
     config:
       project: signatory-testing
       location: europe-north1
       key_ring: hsm-ring
+#  azure:
+#    driver: azure
+#  yubi:
+#    driver: yubihsm
+
+# List enabled hashes here
 tezos:
+  # Default policy
   tz3VfoCwiQyMNYnaseFLFAjN9AQJQnhvddjG:
+  # Explicit policy
+  tz3aTwpna6m9qsw4YZVFad1nsm5cGgWHVQ8R:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement

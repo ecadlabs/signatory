@@ -40,7 +40,7 @@ type TezosConfig map[string]*TezosPolicy
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
 	AllowedOperations []string `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
-	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=transaction proposal ballot reveal delegation"`
+	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=endorsement seed_nonce_revelation activate_account ballot reveal transaction origination delegation"`
 	LogPayloads       bool     `yaml:"log_payloads"`
 }
 

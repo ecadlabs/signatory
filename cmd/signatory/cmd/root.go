@@ -88,7 +88,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 			}()
 
 			utilityConf := server.UtilityServer{
-				Address: c.config.Server.Address,
+				Address: c.config.Server.UtilityAddress,
 				Health:  c.signatory,
 			}
 			utilitySrv := utilityConf.New()
