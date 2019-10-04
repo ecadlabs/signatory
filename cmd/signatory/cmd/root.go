@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -110,12 +111,12 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 			defer cancel()
 
 			utilitySrv.Shutdown(ctx)
-			if err := <-utilityErrCh; err != nil && err != context.Canceled {
+			if err := <-utilityErrCh; err != nil && err != context.Canceled && err != http.ErrServerClosed {
 				return err
 			}
 
 			srv.Shutdown(ctx)
-			if err := <-srvErrCh; err != nil && err != context.Canceled {
+			if err := <-srvErrCh; err != nil && err != context.Canceled && err != http.ErrServerClosed {
 				return err
 			}
 
