@@ -3,12 +3,15 @@ package signatory
 import (
 	"context"
 	"encoding/hex"
+	stderr "errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
@@ -16,9 +19,9 @@ import (
 
 var (
 	// ErrVaultNotFound error return when a vault is not found
-	ErrVaultNotFound = fmt.Errorf("This key not found in any vault")
+	ErrVaultNotFound = errors.Wrap(stderr.New("This key not found in any vault"), http.StatusNotFound)
 	// ErrNotSafeToSign error returned when an operation is a potential duplicate
-	ErrNotSafeToSign = fmt.Errorf("Not safe to sign")
+	ErrNotSafeToSign = errors.Wrap(stderr.New("Not safe to sign"), http.StatusForbidden)
 )
 
 const (
@@ -165,13 +168,13 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if policy == nil {
 		err := fmt.Errorf("%s is not listed in config", keyHash)
 		l.WithField("raw", hex.EncodeToString(message)).Error(err)
-		return "", err
+		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseUnsignedMessage(message)
 	if err != nil {
 		l.WithField("raw", hex.EncodeToString(message)).Error(err)
-		return "", err
+		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
 	l = l.WithField(logOp, msg.MessageKind())
