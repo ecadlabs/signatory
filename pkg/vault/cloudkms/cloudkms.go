@@ -16,6 +16,7 @@ import (
 	kms "cloud.google.com/go/kms/apiv1"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/google/tink/go/subtle/kwp"
 	"github.com/pkg/errors"
 	"github.com/segmentio/ksuid"
@@ -27,10 +28,11 @@ import (
 
 // Config contains Google Cloud KMS backend configuration
 type Config struct {
-	ServiceAccountKey string `yaml:"service_account_key"`
-	Project           string `yaml:"project" validate:"required"`
-	Location          string `yaml:"location" validate:"required"`
-	KeyRing           string `yaml:"key_ring" validate:"required"`
+	ApplicationCredentialsData string `yaml:"application_credentials_data"`
+	ApplicationCredentials     string `yaml:"application_credentials"`
+	Project                    string `yaml:"project" validate:"required"`
+	Location                   string `yaml:"location" validate:"required"`
+	KeyRing                    string `yaml:"key_ring" validate:"required"`
 }
 
 // KeyRingName returns full Google Cloud KMS key ring path
@@ -88,7 +90,7 @@ func (c *CloudKMSVault) getPublicKey(ctx context.Context, name string) (*ecdsa.P
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
-func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []StoredKey, err error) {
+func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []vault.StoredKey, err error) {
 	it := c.client.ListCryptoKeys(ctx, &kmspb.ListCryptoKeysRequest{Parent: c.config.keyRingName()})
 	for {
 		resp, err := it.Next()
@@ -134,7 +136,7 @@ func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []StoredKey, e
 }
 
 // GetPublicKey returns a public key by given ID
-func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (StoredKey, error) {
+func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
 	req := kmspb.GetCryptoKeyVersionRequest{
 		Name: keyID,
 	}
@@ -160,7 +162,7 @@ func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (StoredK
 }
 
 // Sign performs signing operation
-func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key StoredKey) (cryptoutils.Signature, error) {
+func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 	kmsKey, ok := key.(*cloudKMSKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key)
@@ -225,7 +227,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 }
 
 // Import impurts a private key
-func (c *CloudKMSVault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (StoredKey, error) {
+func (c *CloudKMSVault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s) Unsupported key type: %T", c.config.keyRingName(), pk)
@@ -345,8 +347,11 @@ func (c *CloudKMSVault) VaultName() string {
 // NewCloudKMSVault creates new Google Cloud KMS backend
 func NewCloudKMSVault(ctx context.Context, config *Config) (*CloudKMSVault, error) {
 	var opts []option.ClientOption
-	if config.ServiceAccountKey != "" {
-		opts = []option.ClientOption{option.WithCredentialsJSON([]byte(config.ServiceAccountKey))}
+
+	if config.ApplicationCredentialsData != "" {
+		opts = []option.ClientOption{option.WithCredentialsJSON([]byte(config.ApplicationCredentialsData))}
+	} else if config.ApplicationCredentials != "" {
+		opts = []option.ClientOption{option.WithCredentialsFile(config.ApplicationCredentials)}
 	}
 
 	client, err := kms.NewKeyManagementClient(ctx, opts...)
@@ -361,7 +366,7 @@ func NewCloudKMSVault(ctx context.Context, config *Config) (*CloudKMSVault, erro
 }
 
 func init() {
-	RegisterVault("cloudkms", func(ctx context.Context, node *yaml.Node) (Vault, error) {
+	vault.RegisterVault("cloudkms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(CloudKMS): config is missing")
@@ -377,5 +382,3 @@ func init() {
 		return NewCloudKMSVault(ctx, &conf)
 	})
 }
-
-var _ Importer = &CloudKMSVault{}
