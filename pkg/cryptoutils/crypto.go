@@ -12,27 +12,6 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1"
 )
 
-/*
-const (
-	// CurveED25519
-	CurveED25519 = "ed25519"
-
-	// CurveP256 is the standard name for P256 Curve
-	CurveP256 = "P-256"
-	// SigP256 is the standard name for ES256 Signature algorithm
-	SigP256 = "ES256"
-
-	// CurveP256K is the standard name for P256K Curve
-	CurveP256K = "P-256K"
-	// CurveP256KAlternate is the an alternate name for P256K Curve
-	CurveP256KAlternate = "SECP256K1"
-	// SigP256K is the standard name for ES256K Signature algorithm
-	SigP256K = "ES256K"
-	// SigP256KAlternate is the an alternate name for ES256K Signature algorithm
-	SigP256KAlternate = "ECDSA256"
-)
-*/
-
 // CanonizeECDSASignature returns the canonical versions of the signature
 // the canonical version enforce low S values
 // if S is above order / 2 it negating the S (modulo the order (N))
@@ -123,4 +102,22 @@ func CurveEqual(a, b elliptic.Curve) bool {
 // PrivateKey is omplemented by private key types
 type PrivateKey interface {
 	Public() crypto.PublicKey
+}
+
+// NamedCurve returns curve by its standard name or nil
+func NamedCurve(name string) elliptic.Curve {
+	switch name {
+	case "P-224":
+		return elliptic.P224()
+	case "P-256":
+		return elliptic.P256()
+	case "P-384":
+		return elliptic.P384()
+	case "P-521":
+		return elliptic.P521()
+	case "P-256K", "SECP256K1":
+		return S256()
+	default:
+		return nil
+	}
 }

@@ -1,4 +1,4 @@
-package azure
+package auth
 
 import (
 	"context"
@@ -32,7 +32,7 @@ const (
 	envClientCertificate           = "AZURE_CLIENT_CERTIFICATE"
 	envClientCertificateThumbprint = "AZURE_CLIENT_CERTIFICATE_THUMBPRINT"
 	envPrivateKey                  = "AZURE_CLIENT_PRIVATE_KEY"
-	envPrivateKeyPassword          = "AZURE_CLIENT_PRIVATE_KEY_PASSWORD"
+	envPrivateKeyPassword          = "AZURE_DECRYPT_PASSWORD"
 )
 
 const assertionTokenDuration = time.Hour * 24
@@ -41,14 +41,14 @@ const assertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 
 // Config is the configuration for using Azure authentication
 type Config struct {
-	Tenant                      string
-	ClientID                    string
-	ClientSecret                string
-	ClientPKCS12Certificate     string
-	ClientCertificate           string
-	ClientCertificateThumbprint string
-	PrivateKey                  string
-	PrivateKeyPassword          string
+	Tenant                      string `yaml:"tenant_id" validate:"required,uuid4"`
+	ClientID                    string `yaml:"client_id" validate:"required,uuid4"`
+	ClientSecret                string `yaml:"client_secret"`
+	ClientPKCS12Certificate     string `yaml:"client_pkcs12_certificate"`
+	ClientCertificate           string `yaml:"client_certificate"`
+	ClientCertificateThumbprint string `yaml:"client_certificate_thumbprint"`
+	PrivateKey                  string `yaml:"client_private_key"`
+	PrivateKeyPassword          string `yaml:"decrypt_password"`
 }
 
 func (c *Config) tokenURL() string {
@@ -209,13 +209,13 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 	client := oauth2.NewClient(ctx, nil)
 	resp, err := client.PostForm(url, v)
 	if err != nil {
-		return nil, fmt.Errorf("(Azure): cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("(Azure): cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
 	}
 
 	if resp.StatusCode/100 != 2 {
@@ -232,7 +232,7 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 	}
 
 	if err := json.Unmarshal(body, &res); err != nil {
-		return nil, fmt.Errorf("(Azure): cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
 	}
 
 	token := oauth2.Token{
@@ -261,7 +261,7 @@ func (j *jwtTokenSource) Token() (*oauth2.Token, error) {
 	jti := make([]byte, 20)
 	_, err := rand.Read(jti)
 	if err != nil {
-		return nil, fmt.Errorf("(Azure): %v", err)
+		return nil, fmt.Errorf("auth: %v", err)
 	}
 
 	now := time.Now()
@@ -277,13 +277,13 @@ func (j *jwtTokenSource) Token() (*oauth2.Token, error) {
 
 	assertionToken := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 
-	kid := base64.URLEncoding.EncodeToString(j.certThumbprint)
+	kid := base64.RawURLEncoding.EncodeToString(j.certThumbprint)
 	assertionToken.Header["kid"] = kid
 	assertionToken.Header["x5t"] = kid
 
 	assertion, err := assertionToken.SignedString(j.key)
 	if err != nil {
-		return nil, fmt.Errorf("(Azure): %v", err)
+		return nil, fmt.Errorf("auth: %v", err)
 	}
 
 	v := url.Values{
@@ -323,7 +323,7 @@ func (c *Config) TokenSource(ctx context.Context, scopes []string) (ts oauth2.To
 			ctx:    ctx,
 		}
 	} else if ts, err = c.jwtTokenSource(ctx, scopes); err != nil {
-		return nil, fmt.Errorf("(Azure): %v", err)
+		return nil, fmt.Errorf("auth: %v", err)
 	}
 
 	return oauth2.ReuseTokenSource(nil, ts), nil

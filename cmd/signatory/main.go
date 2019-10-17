@@ -7,7 +7,8 @@ import (
 	"syscall"
 
 	"github.com/ecadlabs/signatory/cmd/signatory/cmd"
-
+	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
+	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
 	log "github.com/sirupsen/logrus"
 )
 

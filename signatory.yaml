@@ -12,10 +12,13 @@ vaults:
       project: signatory-testing
       location: europe-north1
       key_ring: hsm-ring
-#  azure:
-#    driver: azure
-#  yubi:
-#    driver: yubihsm
+  azure:
+    driver: azure
+    config:
+      vault: https://signatory.vault.azure.net/
+      tenant_id: 50c46f11-1d0a-4c56-b468-1bcb03a8f69e
+      client_id: b7ddefbb-fcac-4068-813b-b3450c36b9a7
+      client_pkcs12_certificate: /Users/asphyx/Projects/signatory/service-principal.pfx
 
 # List enabled hashes here
 tezos:

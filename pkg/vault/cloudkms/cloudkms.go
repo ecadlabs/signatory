@@ -40,8 +40,8 @@ func (c *Config) keyRingName() string {
 	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s", c.Project, c.Location, c.KeyRing)
 }
 
-// CloudKMSVault is a Google Cloud KMS backend
-type CloudKMSVault struct {
+// Vault is a Google Cloud KMS backend
+type Vault struct {
 	client *kms.KeyManagementClient
 	config Config
 }
@@ -69,7 +69,7 @@ func getAlgorithm(curve elliptic.Curve) kmspb.CryptoKeyVersion_CryptoKeyVersionA
 	return 0
 }
 
-func (c *CloudKMSVault) getPublicKey(ctx context.Context, name string) (*ecdsa.PublicKey, error) {
+func (c *Vault) getPublicKey(ctx context.Context, name string) (*ecdsa.PublicKey, error) {
 	pk, err := c.client.GetPublicKey(ctx, &kmspb.GetPublicKeyRequest{Name: name})
 	if err != nil {
 		return nil, err
@@ -89,54 +89,82 @@ func (c *CloudKMSVault) getPublicKey(ctx context.Context, name string) (*ecdsa.P
 	return ecKey, nil
 }
 
-// ListPublicKeys returns a list of keys stored under the backend
-func (c *CloudKMSVault) ListPublicKeys(ctx context.Context) (keys []vault.StoredKey, err error) {
-	it := c.client.ListCryptoKeys(ctx, &kmspb.ListCryptoKeysRequest{Parent: c.config.keyRingName()})
+type cloudKMSIterator struct {
+	ctx context.Context
+	v   *Vault
+	ki  *kms.CryptoKeyIterator
+	vi  *kms.CryptoKeyVersionIterator
+}
+
+// Next implements vault.StoredKeysIterator
+func (c *cloudKMSIterator) Next() (key vault.StoredKey, err error) {
+	if c.ki == nil {
+		return nil, vault.ErrDone
+	}
+
+	var ver *kmspb.CryptoKeyVersion
 	for {
-		resp, err := it.Next()
-		if err == iterator.Done {
+		if c.vi != nil {
+			ver, err = c.vi.Next()
+		}
+		if c.vi == nil || err == iterator.Done {
+			for {
+				var resp *kmspb.CryptoKey
+				for {
+					resp, err = c.ki.Next()
+					if err == iterator.Done {
+						c.ki = nil
+						return nil, vault.ErrDone
+					}
+					if err != nil {
+						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %v", c.v.config.keyRingName(), err)
+					}
+					// List signing EC keys only
+					if resp.Purpose == kmspb.CryptoKey_ASYMMETRIC_SIGN {
+						break
+					}
+				}
+
+				// Get key versions
+				c.vi = c.v.client.ListCryptoKeyVersions(c.ctx, &kmspb.ListCryptoKeyVersionsRequest{Parent: resp.Name})
+				ver, err = c.vi.Next()
+				if err == nil {
+					break
+				} else if err != iterator.Done {
+					return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.v.config.keyRingName(), err)
+				}
+			}
+		} else if err != nil {
+			return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.v.config.keyRingName(), err)
+		}
+
+		if ver.State == kmspb.CryptoKeyVersion_ENABLED {
 			break
 		}
-		if err != nil {
-			return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %v", c.config.keyRingName(), err)
-		}
-
-		// List signing EC keys only
-		if resp.Purpose != kmspb.CryptoKey_ASYMMETRIC_SIGN {
-			continue
-		}
-
-		// Get key versions
-		vit := c.client.ListCryptoKeyVersions(ctx, &kmspb.ListCryptoKeyVersionsRequest{Parent: resp.Name})
-		for {
-			ver, err := vit.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.config.keyRingName(), err)
-			}
-
-			if ver.State != kmspb.CryptoKeyVersion_ENABLED {
-				continue
-			}
-
-			ecKey, err := c.getPublicKey(ctx, ver.Name)
-			if err != nil {
-				return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %v", c.config.keyRingName(), err)
-			}
-
-			keys = append(keys, &cloudKMSKey{
-				key: ver,
-				pub: ecKey,
-			})
-		}
 	}
-	return
+
+	ecKey, err := c.v.getPublicKey(c.ctx, ver.Name)
+	if err != nil {
+		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %v", c.v.config.keyRingName(), err)
+	}
+
+	return &cloudKMSKey{
+		key: ver,
+		pub: ecKey,
+	}, nil
+}
+
+// ListPublicKeys returns a list of keys stored under the backend
+func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+	return &cloudKMSIterator{
+		ctx: ctx,
+		v:   c,
+		ki:  c.client.ListCryptoKeys(ctx, &kmspb.ListCryptoKeysRequest{Parent: c.config.keyRingName()}),
+	}
 }
 
 // GetPublicKey returns a public key by given ID
-func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
+func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
 	req := kmspb.GetCryptoKeyVersionRequest{
 		Name: keyID,
 	}
@@ -162,7 +190,7 @@ func (c *CloudKMSVault) GetPublicKey(ctx context.Context, keyID string) (vault.S
 }
 
 // Sign performs signing operation
-func (c *CloudKMSVault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 	kmsKey, ok := key.(*cloudKMSKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key)
@@ -227,7 +255,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 }
 
 // Import impurts a private key
-func (c *CloudKMSVault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s) Unsupported key type: %T", c.config.keyRingName(), pk)
@@ -335,17 +363,17 @@ func (c *CloudKMSVault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (
 }
 
 // Name returns backend name
-func (c *CloudKMSVault) Name() string {
+func (c *Vault) Name() string {
 	return "CloudKMS"
 }
 
 // VaultName returns vault name
-func (c *CloudKMSVault) VaultName() string {
+func (c *Vault) VaultName() string {
 	return c.config.keyRingName()
 }
 
-// NewCloudKMSVault creates new Google Cloud KMS backend
-func NewCloudKMSVault(ctx context.Context, config *Config) (*CloudKMSVault, error) {
+// NewVault creates new Google Cloud KMS backend
+func NewVault(ctx context.Context, config *Config) (*Vault, error) {
 	var opts []option.ClientOption
 
 	if config.ApplicationCredentialsData != "" {
@@ -359,7 +387,7 @@ func NewCloudKMSVault(ctx context.Context, config *Config) (*CloudKMSVault, erro
 		return nil, fmt.Errorf("(CloudKMS/%s): %v", config.keyRingName(), err)
 	}
 
-	return &CloudKMSVault{
+	return &Vault{
 		client: client,
 		config: *config,
 	}, nil
@@ -379,6 +407,8 @@ func init() {
 			return nil, err
 		}
 
-		return NewCloudKMSVault(ctx, &conf)
+		return NewVault(ctx, &conf)
 	})
 }
+
+var _ vault.Importer = &Vault{}

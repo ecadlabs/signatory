@@ -61,6 +61,7 @@ type Signatory struct {
 }
 
 type keyVaultPair struct {
+	pkh   string
 	key   vault.StoredKey
 	vault vault.Vault
 	name  string
@@ -246,46 +247,53 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	return encodedSig, nil
 }
 
-func (s *Signatory) listPublicKeys(ctx context.Context) (map[string]*keyVaultPair, error) {
-	ret := make(map[string]*keyVaultPair)
-	for name, vault := range s.vaults {
-		keys, err := vault.ListPublicKeys(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, key := range keys {
+func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaultPair, list []*keyVaultPair, err error) {
+	ret = make(map[string]*keyVaultPair)
+	for name, v := range s.vaults {
+		iter := v.ListPublicKeys(ctx)
+		for {
+			key, err := iter.Next()
+			if err == vault.ErrDone {
+				break
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+
 			pkh, err := tezos.EncodePublicKeyHash(key.PublicKey())
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-			p := &keyVaultPair{key: key, vault: vault, name: name}
+			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(pkh, p)
+
 			ret[pkh] = p
+			list = append(list, p)
 		}
 	}
-	return ret, nil
+	return ret, list, nil
 }
 
 // ListPublicKeys retrieve the list of all public keys supported by the current configuration
 func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
-	list, err := s.listPublicKeys(ctx)
+	_, list, err := s.listPublicKeys(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ret := make([]*PublicKey, 0, len(list))
-	for hash, p := range list {
+	ret := make([]*PublicKey, len(list))
+	for i, p := range list {
 		enc, err := tezos.EncodePublicKey(p.key.PublicKey())
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, &PublicKey{
+		ret[i] = &PublicKey{
 			PublicKey:     enc,
-			PublicKeyHash: hash,
+			PublicKeyHash: p.pkh,
 			VaultName:     p.vault.Name(),
 			ID:            p.key.ID(),
-			Policy:        s.fetchPolicyOrDefault(hash),
-		})
+			Policy:        s.fetchPolicyOrDefault(p.pkh),
+		}
 	}
 	return ret, nil
 }
@@ -298,12 +306,12 @@ func (s *Signatory) getPublicKey(ctx context.Context, keyHash string) (*keyVault
 
 	s.logger().WithField(logPKH, keyHash).Debugf("Fetching public key for: %s", keyHash)
 
-	list, err := s.listPublicKeys(ctx)
+	keys, _, err := s.listPublicKeys(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if p, ok := list[keyHash]; ok {
+	if p, ok := keys[keyHash]; ok {
 		return p, nil
 	}
 	return nil, ErrVaultNotFound

@@ -3,6 +3,7 @@ package vault
 import (
 	"context"
 	"crypto"
+	"errors"
 	"fmt"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -15,10 +16,15 @@ type StoredKey interface {
 	ID() string
 }
 
+// StoredKeysIterator is used to iterate over stored public keys
+type StoredKeysIterator interface {
+	Next() (StoredKey, error)
+}
+
 // Vault interface that represent a secure key store
 type Vault interface {
 	GetPublicKey(ctx context.Context, id string) (StoredKey, error)
-	ListPublicKeys(ctx context.Context) ([]StoredKey, error)
+	ListPublicKeys(ctx context.Context) StoredKeysIterator
 	Sign(ctx context.Context, digest []byte, key StoredKey) (cryptoutils.Signature, error)
 	Name() string
 }
@@ -38,6 +44,9 @@ type VaultNamer interface {
 type ReadinessChecker interface {
 	Ready(ctx context.Context) (bool, error)
 }
+
+// ErrDone is the error returned by iterator when the iteration is done.
+var ErrDone = errors.New("done")
 
 type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
 

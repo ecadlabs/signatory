@@ -12,6 +12,7 @@ require (
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/google/tink v1.3.0-rc1
 	github.com/gorilla/mux v1.7.3
+	github.com/jfcote87/oauth2 v0.2.3
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.1.0 // indirect
 	github.com/pkg/errors v0.8.1
@@ -23,11 +24,11 @@ require (
 	github.com/stretchr/testify v1.3.0
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
-	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2 // indirect
+	golang.org/x/net v0.0.0-20191011234655-491137f69257 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20191002091554-b397fe3ad8ed // indirect
 	google.golang.org/api v0.10.0
-	google.golang.org/appengine v1.6.2 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20190911173649-1774047e7e51
 	google.golang.org/grpc v1.23.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
