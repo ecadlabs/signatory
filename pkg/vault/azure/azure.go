@@ -1,12 +1,15 @@
 package azure
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/ecdsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -91,6 +94,9 @@ func (v *Vault) request(ctx context.Context, method, url string, body io.Reader,
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return status, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	}
 
 	res, err := v.client.Do(req)
@@ -259,8 +265,71 @@ func (v *Vault) VaultName() string {
 }
 
 // Sign performs signing operation
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return nil, nil
+func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
+	azureKey, ok := key.(*azureKey)
+	if !ok {
+		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T ", v.config.Vault, key), http.StatusBadRequest)
+	}
+
+	var req signRequest
+	if req.Algorithm = algByCurveName(azureKey.bundle.Key.Curve); req.Algorithm == "" {
+		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): can't find corresponding signature algorithm for %s curve", v.config.Vault, azureKey.bundle.Key.Curve), http.StatusBadRequest)
+	}
+	req.Value = base64.RawURLEncoding.EncodeToString(digest)
+
+	u, err := v.makeURL(azureKey.bundle.Key.KeyID, "/sign")
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	r, err := json.Marshal(&req)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	var res keyOperationResult
+	status, err := v.request(ctx, "POST", u, bytes.NewReader(r), &res)
+	if err != nil {
+		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+		if status != 0 {
+			err = errors.Wrap(err, status)
+		}
+		return nil, err
+	}
+
+	b, err := base64.RawURLEncoding.DecodeString(res.Value)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	byteLen := (azureKey.pub.Params().BitSize + 7) >> 3
+	if len(b) != byteLen*2 {
+		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(b))
+	}
+
+	s := cryptoutils.ECDSASignature{
+		R: new(big.Int).SetBytes(b[:byteLen]),
+		S: new(big.Int).SetBytes(b[byteLen:]),
+	}
+
+	return &s, nil
+}
+
+func algByCurveName(name string) string {
+	switch name {
+	case "P-256":
+		return "ES256"
+	case "P-384":
+		return "ES384"
+	case "P-521":
+		return "ES512"
+	case "P-256K":
+		return "ES256K"
+	case "SECP256K1":
+		return "ECDSA256"
+	default:
+		return ""
+	}
 }
 
 func init() {

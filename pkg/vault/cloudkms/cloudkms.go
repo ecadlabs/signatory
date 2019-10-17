@@ -12,13 +12,14 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"net/http"
 
 	kms "cloud.google.com/go/kms/apiv1"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/google/tink/go/subtle/kwp"
-	"github.com/pkg/errors"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -193,7 +194,7 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 	kmsKey, ok := key.(*cloudKMSKey)
 	if !ok {
-		return nil, fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key)
+		return nil, errors.Wrap(fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key), http.StatusBadRequest)
 	}
 
 	req := kmspb.AsymmetricSignRequest{

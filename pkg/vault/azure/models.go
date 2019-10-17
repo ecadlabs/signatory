@@ -41,3 +41,13 @@ type keyAttributes struct {
 	RecoveryLevel string `json:"recoveryLevel"`
 	Updated       int    `json:"updated"`
 }
+
+type signRequest struct {
+	Algorithm string `json:"alg"`
+	Value     string `json:"value"`
+}
+
+type keyOperationResult struct {
+	KeyID string `json:"kid"`
+	Value string `json:"value"`
+}
