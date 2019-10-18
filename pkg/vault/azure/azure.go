@@ -26,19 +26,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const apiVersion = "7.0"
+const (
+	apiVersion    = "7.0"
+	managementURL = "https://management.azure.com/"
+)
 
-var scopes = []string{"https://vault.azure.net/.default"}
+var (
+	vaultScopes      = []string{"https://vault.azure.net/.default"}
+	managementScopes = []string{managementURL + ".default"}
+)
 
 // Config contains Azure KeyVault backend configuration
 type Config struct {
 	auth.Config `yaml:",inline"`
 	Vault       string `yaml:"vault" validate:"required,url"`
+	//SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
+	//ResourceGroup  string `yaml:"resource_group"`
 }
 
 // Vault is a Azure KeyVault backend
 type Vault struct {
 	client *http.Client
+	//managementClient *http.Client
 	config *Config
 }
 
@@ -51,16 +60,24 @@ func (a *azureKey) PublicKey() crypto.PublicKey { return a.pub }
 func (a *azureKey) ID() string                  { return a.bundle.Key.KeyID }
 
 // NewVault creates new Azure KeyVault backend
-func NewVault(ctx context.Context, config *Config) (*Vault, error) {
-	client, err := config.Client(context.Background(), scopes)
-	if err != nil {
+func NewVault(ctx context.Context, config *Config) (vault *Vault, err error) {
+	v := Vault{
+		config: config,
+	}
+
+	if v.client, err = config.Client(context.Background(), vaultScopes); err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 	}
 
-	return &Vault{
-		client: client,
-		config: config,
-	}, nil
+	/*
+		if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
+			if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
+				return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
+			}
+		}
+	*/
+
+	return &v, nil
 }
 
 func (v *Vault) makeURL(baseURL, p string) (string, error) {
@@ -92,7 +109,7 @@ func (v *Vault) vaultError(res *http.Response) error {
 	return errors.New(msg)
 }
 
-func (v *Vault) request(ctx context.Context, method, url string, body io.Reader, result interface{}) (status int, err error) {
+func (v *Vault) request(ctx context.Context, client *http.Client, method, url string, body io.Reader, result interface{}) (status int, err error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return status, err
@@ -101,7 +118,7 @@ func (v *Vault) request(ctx context.Context, method, url string, body io.Reader,
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	}
 
-	res, err := v.client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return status, err
 	}
@@ -164,7 +181,7 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 					}
 				}
 
-				status, err := a.v.request(a.ctx, "GET", u, nil, &res)
+				status, err := a.v.request(a.ctx, a.v.client, "GET", u, nil, &res)
 				if err != nil {
 					err = fmt.Errorf("(Azure/%s): %v", a.v.config.Vault, err)
 					if status != 0 {
@@ -194,7 +211,7 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 		a.i++
 
 		var bundle keyBundle
-		status, err := a.v.request(a.ctx, "GET", u, nil, &bundle)
+		status, err := a.v.request(a.ctx, a.v.client, "GET", u, nil, &bundle)
 		if err != nil {
 			err = fmt.Errorf("(Azure/%s): %v", a.v.config.Vault, err)
 			if status != 0 {
@@ -233,7 +250,7 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 	}
 
 	var bundle keyBundle
-	status, err := v.request(ctx, "GET", u, nil, &bundle)
+	status, err := v.request(ctx, v.client, "GET", u, nil, &bundle)
 	if err != nil {
 		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
 		if status != 0 {
@@ -290,7 +307,7 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (s
 	}
 
 	var res keyOperationResult
-	status, err := v.request(ctx, "POST", u, bytes.NewReader(r), &res)
+	status, err := v.request(ctx, v.client, "POST", u, bytes.NewReader(r), &res)
 	if err != nil {
 		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
 		if status != 0 {
@@ -345,7 +362,7 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 	}
 
 	var bundle keyBundle
-	status, err := v.request(ctx, "PUT", u, bytes.NewReader(r), &bundle)
+	status, err := v.request(ctx, v.client, "PUT", u, bytes.NewReader(r), &bundle)
 	if err != nil {
 		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
 		if status != 0 {
@@ -367,6 +384,39 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 	}
 	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
 }
+
+/*
+// Ready implements vault.ReadinessChecker
+func (v *Vault) Ready(ctx context.Context) (bool, error) {
+	if v.managementClient == nil {
+		return true, nil // ignore
+	}
+
+	u, err := url.Parse(v.config.Vault)
+	if err != nil {
+		return false, err
+	}
+	vault := u.Host
+	if s := strings.SplitN(vault, ".", 2); len(s) == 2 {
+		vault = s[0]
+	}
+
+	resourceURI := url.PathEscape("/subscriptions/" + v.config.SubscriptionID + "/resourceGroups/" + v.config.ResourceGroup + "/providers/Microsoft.KeyVault/vaults/" + vault)
+	uri := managementURL + resourceURI + "/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2018-08-01-preview"
+
+	var res map[string]interface{}
+	status, err := v.request(ctx, v.managementClient, "GET", uri, nil, &res)
+	if err != nil {
+		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+		if status != 0 {
+			err = errors.Wrap(err, status)
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+*/
 
 func algByCurveName(name string) string {
 	switch name {

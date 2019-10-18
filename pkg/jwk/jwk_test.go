@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func TestParse(t *testing.T) {
 
 	cases := []testCase{
 		{
-			jsonData: `{"kty":"EC","crv":"P-256","x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE","use":"enc","kid":"1"}`,
+			jsonData: `{"kty":"EC","crv":"P-256","x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"}`,
 			expectPriv: &ecdsa.PrivateKey{
 				PublicKey: ecdsa.PublicKey{
 					Curve: elliptic.P256(),
@@ -70,12 +71,12 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			jsonData:      `{"kty":"EC","crv":"P-256K","x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE","use":"enc","kid":"1"}`,
+			jsonData:      `{"kty":"EC","crv":"P-256K","x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"}`,
 			expectPrivErr: errors.New("jwk: invalid point: 21994169848703329112137818087919262246467304847122821377551355163096090930238, 101451294974385619524093058399734017814808930032421185206609461750712400090915"),
 			expectPubErr:  errors.New("jwk: invalid point: 21994169848703329112137818087919262246467304847122821377551355163096090930238, 101451294974385619524093058399734017814808930032421185206609461750712400090915"),
 		},
 		{
-			jsonData:      `{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0","kid":"Public key used in JWS spec Appendix A.3 example"}`,
+			jsonData:      `{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"}`,
 			expectPrivErr: ErrPublic,
 			expectPub: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
@@ -84,7 +85,7 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			jsonData:      `{"kty":"RSA","kid":"355yz0KQszupu6RzXFxtYCAsp4HMyUQVPKCKPlsgRD4","n":"sux5uN1IxBJcJzkKvw-whhZ6nilpQPdRPikVZHvysoTpO5qXlqfXWiZNX_Jbt-7wN0QvxROfiE1VYg05bXV-6FWFkUug7bPwCno3YfxzfsHauPkzm0Agst6IrORClcRKAeACdsUJQJoNEa2Bo1K2G8BRAAFDB-hV4ru7njM4Qs4iJMWyL80aNZrOkHXnYGn9n0bXTTRuxkJ4xwoLML126beTig2dn8iCxBXZdmNbzMhHun_sDi8D0ezGwengFHxQvQ-hBKXLD08W9VfzpzbH6r5JjhPotT85yPpPsxkxrd80ppkxphuYRlHCZk87vXfDBvcu8onuNhJf27Q-wlvydQ","e":"AQAB"}`,
+			jsonData:      `{"kty":"RSA","n":"sux5uN1IxBJcJzkKvw-whhZ6nilpQPdRPikVZHvysoTpO5qXlqfXWiZNX_Jbt-7wN0QvxROfiE1VYg05bXV-6FWFkUug7bPwCno3YfxzfsHauPkzm0Agst6IrORClcRKAeACdsUJQJoNEa2Bo1K2G8BRAAFDB-hV4ru7njM4Qs4iJMWyL80aNZrOkHXnYGn9n0bXTTRuxkJ4xwoLML126beTig2dn8iCxBXZdmNbzMhHun_sDi8D0ezGwengFHxQvQ-hBKXLD08W9VfzpzbH6r5JjhPotT85yPpPsxkxrd80ppkxphuYRlHCZk87vXfDBvcu8onuNhJf27Q-wlvydQ","e":"AQAB"}`,
 			expectPrivErr: ErrPublic,
 			expectPubPem: `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsux5uN1IxBJcJzkKvw+w
@@ -98,7 +99,7 @@ dQIDAQAB
 `,
 		},
 		{
-			jsonData: `{"kty":"RSA","kid":"355yz0KQszupu6RzXFxtYCAsp4HMyUQVPKCKPlsgRD4","n":"sux5uN1IxBJcJzkKvw-whhZ6nilpQPdRPikVZHvysoTpO5qXlqfXWiZNX_Jbt-7wN0QvxROfiE1VYg05bXV-6FWFkUug7bPwCno3YfxzfsHauPkzm0Agst6IrORClcRKAeACdsUJQJoNEa2Bo1K2G8BRAAFDB-hV4ru7njM4Qs4iJMWyL80aNZrOkHXnYGn9n0bXTTRuxkJ4xwoLML126beTig2dn8iCxBXZdmNbzMhHun_sDi8D0ezGwengFHxQvQ-hBKXLD08W9VfzpzbH6r5JjhPotT85yPpPsxkxrd80ppkxphuYRlHCZk87vXfDBvcu8onuNhJf27Q-wlvydQ","e":"AQAB","d":"XgfdKIRS24hymcJmnWaXdMCXjEtjH1tafPqGXZquP5eOI17pT6nBiYUboNLz1MRjxge1uzLG4pER0Ef26EmZemyHl4ZRetrXygnU1VAhOnqSgielMXAQPzCoT4ReYesYoceiQ9zlMehD-ghfWv_66La3WvNO0PcPO-tBfLCaXrCpSRhCawwm3q_L9zhsLLIkJgE-CPwb4NNVh1fiV-bN4fnUFiIPdArdqoJAAPG0U1WN2BGVNE18UKgy1t5-HuPyRxk3oVAFbK3HPHDlhLx1dGaqKJXOG-TtyMch8YOzBStJm5WeisrzPFZgqUUajZFC0LJGNPAjq3jr8OwkXjp9-Q","p":"2xm3pujqmKd3D3ecdYyynG_Nx5YAApmwEQ5zw8WrbLhhT3pmVH7HpOZkn_43uOyn0jTm_LGslvJhS_fbDD_60Ph5pBX9Tj6Yn8FqVC6TS5-nAb0bSSbimK2hoL0Il2-jeRd50nP4TuwVF61i5BFiWqgEAEUlsg-d53CYolnEtUc","q":"0Q6U1XQtCuv3VpHWXzjMw9FCak4D0hIWWW4hNwXqpcy6m6Y9mDK4hKHyu7ZxytOQ98MOUadDZ9Ffx1L9WmIKW5PNA9NxH2jh9oKNHa7DqwY3xcNTKg-UnY5ekJnTnrYP-j2e0D7WOSOytPtyybsRyuKmmmJcyGUYFdDzhhezaGM","dp":"d51jsSDpqquKiYwwg9BrVpKHUpYmrUTAZZ9xPgk1nGZQ4fYd1bVdQz5w4xQD0daJjG5LSNurMMFksve-w8JOKTXuGtHSd5we8ODELu86hQfFQmK-ecJb5SSt37Yz8ZEGOz7AyE992YBzx3hmS8Ld4kZl4MvfV4XFHCxReBjwFlM","dq":"qgdH-Ytxju53zgry5aNWtvSdJcSpytM3JikyDoRbYdnu8-TzN7QY6pakyxMJ3cLQpxIXtUVqxyc81OqkcDxI3E6Lcc8otDkjftCTYU7giVqXRdsk6pKddr9yHf1eZjkBKa-wWQKiTPrBv_y6UWQ6hl5sziet-rZuLmAxkB_6pK0","qi":"N8TmYY5rLGS8GPIhzS66WSe6cc0qh0Gn7-fMc1dr_0pPOk0hckucMMHkwYFsujarRXqYDBgM8BZt2yv1ERJwOI0s8YomiLi99orQr45_69dH9P3yXLKYpQGuTYwznfsQ2ZrE8IUQV36gZV7_9uVyqKAmAgzMcVMWd_xMn7SNubk"}`,
+			jsonData: `{"kty":"RSA","n":"sux5uN1IxBJcJzkKvw-whhZ6nilpQPdRPikVZHvysoTpO5qXlqfXWiZNX_Jbt-7wN0QvxROfiE1VYg05bXV-6FWFkUug7bPwCno3YfxzfsHauPkzm0Agst6IrORClcRKAeACdsUJQJoNEa2Bo1K2G8BRAAFDB-hV4ru7njM4Qs4iJMWyL80aNZrOkHXnYGn9n0bXTTRuxkJ4xwoLML126beTig2dn8iCxBXZdmNbzMhHun_sDi8D0ezGwengFHxQvQ-hBKXLD08W9VfzpzbH6r5JjhPotT85yPpPsxkxrd80ppkxphuYRlHCZk87vXfDBvcu8onuNhJf27Q-wlvydQ","e":"AQAB","d":"XgfdKIRS24hymcJmnWaXdMCXjEtjH1tafPqGXZquP5eOI17pT6nBiYUboNLz1MRjxge1uzLG4pER0Ef26EmZemyHl4ZRetrXygnU1VAhOnqSgielMXAQPzCoT4ReYesYoceiQ9zlMehD-ghfWv_66La3WvNO0PcPO-tBfLCaXrCpSRhCawwm3q_L9zhsLLIkJgE-CPwb4NNVh1fiV-bN4fnUFiIPdArdqoJAAPG0U1WN2BGVNE18UKgy1t5-HuPyRxk3oVAFbK3HPHDlhLx1dGaqKJXOG-TtyMch8YOzBStJm5WeisrzPFZgqUUajZFC0LJGNPAjq3jr8OwkXjp9-Q","p":"2xm3pujqmKd3D3ecdYyynG_Nx5YAApmwEQ5zw8WrbLhhT3pmVH7HpOZkn_43uOyn0jTm_LGslvJhS_fbDD_60Ph5pBX9Tj6Yn8FqVC6TS5-nAb0bSSbimK2hoL0Il2-jeRd50nP4TuwVF61i5BFiWqgEAEUlsg-d53CYolnEtUc","q":"0Q6U1XQtCuv3VpHWXzjMw9FCak4D0hIWWW4hNwXqpcy6m6Y9mDK4hKHyu7ZxytOQ98MOUadDZ9Ffx1L9WmIKW5PNA9NxH2jh9oKNHa7DqwY3xcNTKg-UnY5ekJnTnrYP-j2e0D7WOSOytPtyybsRyuKmmmJcyGUYFdDzhhezaGM","dp":"d51jsSDpqquKiYwwg9BrVpKHUpYmrUTAZZ9xPgk1nGZQ4fYd1bVdQz5w4xQD0daJjG5LSNurMMFksve-w8JOKTXuGtHSd5we8ODELu86hQfFQmK-ecJb5SSt37Yz8ZEGOz7AyE992YBzx3hmS8Ld4kZl4MvfV4XFHCxReBjwFlM","dq":"qgdH-Ytxju53zgry5aNWtvSdJcSpytM3JikyDoRbYdnu8-TzN7QY6pakyxMJ3cLQpxIXtUVqxyc81OqkcDxI3E6Lcc8otDkjftCTYU7giVqXRdsk6pKddr9yHf1eZjkBKa-wWQKiTPrBv_y6UWQ6hl5sziet-rZuLmAxkB_6pK0","qi":"N8TmYY5rLGS8GPIhzS66WSe6cc0qh0Gn7-fMc1dr_0pPOk0hckucMMHkwYFsujarRXqYDBgM8BZt2yv1ERJwOI0s8YomiLi99orQr45_69dH9P3yXLKYpQGuTYwznfsQ2ZrE8IUQV36gZV7_9uVyqKAmAgzMcVMWd_xMn7SNubk"}`,
 			expectPubPem: `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsux5uN1IxBJcJzkKvw+w
 hhZ6nilpQPdRPikVZHvysoTpO5qXlqfXWiZNX/Jbt+7wN0QvxROfiE1VYg05bXV+
@@ -147,23 +148,30 @@ rk2MM537ENmaxPCFEFd+oGVe//blcqigJgIMzHFTFnf8TJ+0jbm5
 		priv, err := j.PrivateKey()
 		as.Equal(tst.expectPrivErr, err)
 
+		var expect interface{}
 		if tst.expectPrivPem != "" {
-			expect, err := parsePrivateKey([]byte(tst.expectPrivPem))
+			expect, err = parsePrivateKey([]byte(tst.expectPrivPem))
 			require.NoError(t, err)
-			as.Equal(expect, priv)
 		} else {
-			as.Equal(tst.expectPriv, priv)
+			expect = tst.expectPriv
+		}
+		as.Equal(expect, priv)
+
+		if expect != nil {
+			jj, err := EncodePrivateKey(expect.(cryptoutils.PrivateKey))
+			require.NoError(t, err)
+			as.Equal(&j, jj)
 		}
 
 		pub, err := j.PublicKey()
 		as.Equal(tst.expectPubErr, err)
 
 		if tst.expectPubPem != "" {
-			expect, err := parsePublicKey([]byte(tst.expectPubPem))
+			expect, err = parsePublicKey([]byte(tst.expectPubPem))
 			require.NoError(t, err)
-			as.Equal(expect, pub)
 		} else {
-			as.Equal(tst.expectPub, pub)
+			expect = tst.expectPub
 		}
+		as.Equal(expect, pub)
 	}
 }

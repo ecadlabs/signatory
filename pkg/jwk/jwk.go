@@ -35,9 +35,9 @@ type JWK struct {
 	E   string      `json:"e,omitempty"`
 	P   string      `json:"p,omitempty"`
 	Q   string      `json:"q,omitempty"`
-	DP  string      `json:"dp,omitempty"`
-	DQ  string      `json:"dq,omitempty"`
-	QI  string      `json:"qi,omitempty"`
+	Dp  string      `json:"dp,omitempty"`
+	Dq  string      `json:"dq,omitempty"`
+	Qi  string      `json:"qi,omitempty"`
 	Oth []*RSAPrime `json:"oth,omitempty"`
 
 	// Same name, different meaning for EC and RSA
@@ -61,8 +61,10 @@ type RSAPrime struct {
 // ErrPublic is returned if no private part is present in the JWK
 var ErrPublic = errors.New("public key")
 
+var b64 = base64.RawURLEncoding
+
 func parseBase64UInt(s string) (*big.Int, error) {
-	buf, err := base64.RawURLEncoding.DecodeString(s)
+	buf, err := b64.DecodeString(s)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +200,14 @@ func (j *JWK) PrivateKey() (cryptoutils.PrivateKey, error) {
 func (j *JWK) populateECPublicKey(key *ecdsa.PublicKey) {
 	j.KeyType = "EC"
 	j.Curve = key.Params().Name
-	j.X = base64.RawURLEncoding.EncodeToString(key.X.Bytes())
-	j.Y = base64.RawURLEncoding.EncodeToString(key.Y.Bytes())
+	j.X = b64.EncodeToString(key.X.Bytes())
+	j.Y = b64.EncodeToString(key.Y.Bytes())
+}
+
+func (j *JWK) populateRSAPublicKey(key *rsa.PublicKey) {
+	j.KeyType = "RSA"
+	j.N = b64.EncodeToString(key.N.Bytes())
+	j.E = b64.EncodeToString(big.NewInt(int64(key.E)).Bytes())
 }
 
 // EncodePrivateKey returns a JWT populated with data from the private key
@@ -208,7 +216,30 @@ func EncodePrivateKey(key cryptoutils.PrivateKey) (jwk *JWK, err error) {
 	switch k := key.(type) {
 	case *ecdsa.PrivateKey:
 		jwk.populateECPublicKey(&k.PublicKey)
-		jwk.D = base64.RawURLEncoding.EncodeToString(k.D.Bytes())
+		jwk.D = b64.EncodeToString(k.D.Bytes())
+
+	case *rsa.PrivateKey:
+		jwk.populateRSAPublicKey(&k.PublicKey)
+		jwk.D = b64.EncodeToString(k.D.Bytes())
+		if len(k.Primes) < 2 || len(k.Precomputed.CRTValues) != len(k.Primes)-2 {
+			return nil, errors.New("jwk: invalid RSA primes number")
+		}
+		jwk.P = b64.EncodeToString(k.Primes[0].Bytes())
+		jwk.Q = b64.EncodeToString(k.Primes[1].Bytes())
+		jwk.Dp = b64.EncodeToString(k.Precomputed.Dp.Bytes())
+		jwk.Dq = b64.EncodeToString(k.Precomputed.Dq.Bytes())
+		jwk.Qi = b64.EncodeToString(k.Precomputed.Qinv.Bytes())
+
+		if len(k.Primes) > 2 {
+			jwk.Oth = make([]*RSAPrime, len(k.Primes)-2)
+			for i := 0; i < len(k.Primes)-2; i++ {
+				jwk.Oth[i] = &RSAPrime{
+					R: b64.EncodeToString(k.Primes[i+2].Bytes()),
+					D: b64.EncodeToString(k.Precomputed.CRTValues[i].Exp.Bytes()),
+					T: b64.EncodeToString(k.Precomputed.CRTValues[i].Coeff.Bytes()),
+				}
+			}
+		}
 
 	default:
 		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
@@ -218,11 +249,14 @@ func EncodePrivateKey(key cryptoutils.PrivateKey) (jwk *JWK, err error) {
 }
 
 // EncodePublicKey returns a JWT populated with data from the private key
-func EncodePublicKey(key crypto.PublicKey, hsm bool) (jwk *JWK, err error) {
+func EncodePublicKey(key crypto.PublicKey) (jwk *JWK, err error) {
 	jwk = new(JWK)
 	switch k := key.(type) {
 	case *ecdsa.PublicKey:
 		jwk.populateECPublicKey(k)
+
+	case *rsa.PublicKey:
+		jwk.populateRSAPublicKey(k)
 
 	default:
 		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
