@@ -51,3 +51,10 @@ type keyOperationResult struct {
 	KeyID string `json:"kid"`
 	Value string `json:"value"`
 }
+
+type importRequest struct {
+	Attributes *keyAttributes         `json:"attributes,omitempty"`
+	Key        *jwk.JWK               `json:"key"`
+	Tags       map[string]interface{} `json:"tags,omitempty"`
+	Hsm        bool                   `json:"hsm"`
+}

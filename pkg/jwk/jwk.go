@@ -194,3 +194,39 @@ func (j *JWK) PrivateKey() (cryptoutils.PrivateKey, error) {
 
 	return nil, fmt.Errorf("jwk: unknown key type: %s", j.KeyType)
 }
+
+func (j *JWK) populateECPublicKey(key *ecdsa.PublicKey) {
+	j.KeyType = "EC"
+	j.Curve = key.Params().Name
+	j.X = base64.RawURLEncoding.EncodeToString(key.X.Bytes())
+	j.Y = base64.RawURLEncoding.EncodeToString(key.Y.Bytes())
+}
+
+// EncodePrivateKey returns a JWT populated with data from the private key
+func EncodePrivateKey(key cryptoutils.PrivateKey) (jwk *JWK, err error) {
+	jwk = new(JWK)
+	switch k := key.(type) {
+	case *ecdsa.PrivateKey:
+		jwk.populateECPublicKey(&k.PublicKey)
+		jwk.D = base64.RawURLEncoding.EncodeToString(k.D.Bytes())
+
+	default:
+		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
+	}
+
+	return jwk, nil
+}
+
+// EncodePublicKey returns a JWT populated with data from the private key
+func EncodePublicKey(key crypto.PublicKey, hsm bool) (jwk *JWK, err error) {
+	jwk = new(JWK)
+	switch k := key.(type) {
+	case *ecdsa.PublicKey:
+		jwk.populateECPublicKey(k)
+
+	default:
+		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
+	}
+
+	return jwk, nil
+}

@@ -255,7 +255,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 	return res, nil
 }
 
-// Import impurts a private key
+// Import imports a private key
 func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {

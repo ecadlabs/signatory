@@ -18,8 +18,10 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/jwk"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/azure/auth"
+	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -315,6 +317,57 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (s
 	return &s, nil
 }
 
+// Import imports a private key
+func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("(Azure/%s) Unsupported key type: %T", v.config.Vault, pk)
+	}
+
+	key, err := jwk.EncodePrivateKey(ecdsaKey)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	req := importRequest{
+		Key: key,
+		Hsm: true,
+	}
+
+	r, err := json.Marshal(&req)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	u, err := v.makeURL(v.config.Vault, "/keys/signatory-imported-"+ksuid.New().String())
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	var bundle keyBundle
+	status, err := v.request(ctx, "PUT", u, bytes.NewReader(r), &bundle)
+	if err != nil {
+		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+		if status != 0 {
+			err = errors.Wrap(err, status)
+		}
+		return nil, err
+	}
+
+	pub, err := bundle.Key.PublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+
+	if ecpub, ok := pub.(*ecdsa.PublicKey); ok {
+		return &azureKey{
+			bundle: &bundle,
+			pub:    ecpub,
+		}, nil
+	}
+	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
+}
+
 func algByCurveName(name string) string {
 	switch name {
 	case "P-256":
@@ -350,4 +403,4 @@ func init() {
 	})
 }
 
-var _ vault.Vault = &Vault{}
+var _ vault.Importer = &Vault{}

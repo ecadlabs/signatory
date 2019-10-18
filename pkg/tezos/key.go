@@ -223,3 +223,32 @@ func EncodePublicKeyHash(pub crypto.PublicKey) (hash string, err error) {
 
 	return encodeBase58(prefix, h)
 }
+
+// EncodePrivateKey returns base58 encoded private key
+func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
+	var (
+		prefix  tzPrefix
+		payload []byte
+	)
+
+	switch key := priv.(type) {
+	case *ecdsa.PrivateKey:
+		switch {
+		case key.Curve == elliptic.P256():
+			prefix = pP256SecretKey
+		case key.Curve == cryptoutils.S256() || key.Curve == secp256k1.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+			prefix = pSECP256K1SecretKey
+		default:
+			return "", fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
+		}
+		b := key.D.Bytes()
+		payload = make([]byte, (key.Params().N.BitLen()+7)>>3)
+		copy(payload[len(payload)-len(b):], b)
+
+	case ed25519.PrivateKey:
+		prefix = pED25519Seed
+		payload = key.Seed()
+	}
+
+	return encodeBase58(prefix, payload)
+}
