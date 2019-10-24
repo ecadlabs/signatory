@@ -14,7 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"path"
-
+	"strings"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -40,14 +40,14 @@ var (
 type Config struct {
 	auth.Config `yaml:",inline"`
 	Vault       string `yaml:"vault" validate:"required,url"`
-	//SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
-	//ResourceGroup  string `yaml:"resource_group"`
+	SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
+	ResourceGroup  string `yaml:"resource_group"`
 }
 
 // Vault is a Azure KeyVault backend
 type Vault struct {
 	client *http.Client
-	//managementClient *http.Client
+	managementClient *http.Client
 	config *Config
 }
 
@@ -69,13 +69,11 @@ func NewVault(ctx context.Context, config *Config) (vault *Vault, err error) {
 		return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 	}
 
-	/*
-		if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
-			if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
-				return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
-			}
+	if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
+		if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
+			return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 		}
-	*/
+	}
 
 	return &v, nil
 }
@@ -385,7 +383,6 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
 }
 
-/*
 // Ready implements vault.ReadinessChecker
 func (v *Vault) Ready(ctx context.Context) (bool, error) {
 	if v.managementClient == nil {
@@ -416,7 +413,6 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 
 	return true, nil
 }
-*/
 
 func algByCurveName(name string) string {
 	switch name {
