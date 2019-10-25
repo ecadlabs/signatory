@@ -17,7 +17,7 @@ vaults:
     config:
       vault: https://signatory.vault.azure.net/
       tenant_id: 50c46f11-1d0a-4c56-b468-1bcb03a8f69e
-      client_id: b7ddefbb-fcac-4068-813b-b3450c36b9a7
+      client_id: e4c95b71-588e-40ea-a999-fff08d5a35e3
       client_pkcs12_certificate: /Users/asphyx/Projects/signatory/service-principal.pfx
 
 # List enabled hashes here

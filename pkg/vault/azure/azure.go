@@ -14,6 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -27,8 +28,10 @@ import (
 )
 
 const (
-	apiVersion    = "7.0"
 	managementURL = "https://management.azure.com/"
+
+	keyVaultAPIVersion       = "7.0"
+	resourceHealthAPIVersion = "2018-08-01-rc"
 )
 
 var (
@@ -38,17 +41,17 @@ var (
 
 // Config contains Azure KeyVault backend configuration
 type Config struct {
-	auth.Config `yaml:",inline"`
-	Vault       string `yaml:"vault" validate:"required,url"`
-	//SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
-	//ResourceGroup  string `yaml:"resource_group"`
+	auth.Config    `yaml:",inline"`
+	Vault          string `yaml:"vault" validate:"required,url"`
+	SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
+	ResourceGroup  string `yaml:"resource_group"`
 }
 
 // Vault is a Azure KeyVault backend
 type Vault struct {
-	client *http.Client
-	//managementClient *http.Client
-	config *Config
+	client           *http.Client
+	managementClient *http.Client
+	config           *Config
 }
 
 type azureKey struct {
@@ -69,13 +72,11 @@ func NewVault(ctx context.Context, config *Config) (vault *Vault, err error) {
 		return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 	}
 
-	/*
-		if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
-			if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
-				return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
-			}
+	if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
+		if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
+			return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 		}
-	*/
+	}
 
 	return &v, nil
 }
@@ -89,7 +90,7 @@ func (v *Vault) makeURL(baseURL, p string) (string, error) {
 		u.Path = path.Join(u.Path, p)
 	}
 	u.RawQuery = url.Values{
-		"api-version": []string{apiVersion},
+		"api-version": []string{keyVaultAPIVersion},
 	}.Encode()
 	return u.String(), nil
 }
@@ -385,7 +386,6 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
 }
 
-/*
 // Ready implements vault.ReadinessChecker
 func (v *Vault) Ready(ctx context.Context) (bool, error) {
 	if v.managementClient == nil {
@@ -401,10 +401,13 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 		vault = s[0]
 	}
 
-	resourceURI := url.PathEscape("/subscriptions/" + v.config.SubscriptionID + "/resourceGroups/" + v.config.ResourceGroup + "/providers/Microsoft.KeyVault/vaults/" + vault)
-	uri := managementURL + resourceURI + "/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2018-08-01-preview"
+	uri := managementURL +
+		"/subscriptions/" + v.config.SubscriptionID +
+		"/resourceGroups/" + v.config.ResourceGroup +
+		"/providers/Microsoft.KeyVault/vaults/" + vault +
+		"/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=" + resourceHealthAPIVersion
 
-	var res map[string]interface{}
+	var res resourceHealthAvailabilityStatus
 	status, err := v.request(ctx, v.managementClient, "GET", uri, nil, &res)
 	if err != nil {
 		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
@@ -414,9 +417,12 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
+	if res.Properties.AvailabilityState != availabilityStatusAvailable {
+		return false, nil
+	}
+
 	return true, nil
 }
-*/
 
 func algByCurveName(name string) string {
 	switch name {
