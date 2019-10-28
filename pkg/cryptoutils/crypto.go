@@ -3,7 +3,9 @@ package cryptoutils
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -120,4 +122,20 @@ func NamedCurve(name string) elliptic.Curve {
 	default:
 		return nil
 	}
+}
+
+// Sign sign a hash using this private key
+func Sign(priv PrivateKey, hash []byte) (Signature, error) {
+	switch key := priv.(type) {
+	case *ecdsa.PrivateKey:
+		r, s, err := ecdsa.Sign(rand.Reader, key, hash)
+		if err != nil {
+			return nil, err
+		}
+		return &ECDSASignature{R: r, S: s}, nil
+	case ed25519.PrivateKey:
+		return ED25519Signature(ed25519.Sign(key, hash)), nil
+	}
+
+	return nil, fmt.Errorf("Unsupported key type")
 }

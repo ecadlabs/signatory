@@ -71,6 +71,11 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 				return err
 			}
 
+			err = sig.Unlock(ctx)
+			if err != nil {
+				return err
+			}
+
 			c.config = &conf
 			c.signatory = sig
 			return nil
