@@ -217,7 +217,7 @@ func (v *Vault) Unlock(ctx context.Context) error {
 	for _, e := range v.keys {
 		if e.Value.scheme() == ENCRYPTED {
 			passCB := func() ([]byte, error) {
-				fmt.Printf("Enter Password for %s from Vault (%s):", e.Name, v.Name())
+				fmt.Printf("Enter Password to unlock %s on %s backend:", e.Name, v.Name())
 				defer fmt.Println()
 				return terminal.ReadPassword(int(syscall.Stdin))
 			}
