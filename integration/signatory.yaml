@@ -9,7 +9,7 @@ vaults:
     driver: file
     config:
       vault: test
-      file: /integration-tests/signatory/integration/client_data/secret_keys
+      file: ~/integration-tests/signatory/integration/client_data/secret_keys
       read_encrypted: true
 
 # List enabled hashes here

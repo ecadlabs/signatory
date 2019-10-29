@@ -36,10 +36,10 @@ jobs:
   integration:
     machine:
         enabled: true
-    working_directory: /integration-tests/signatory
+    working_directory: ~/integration-tests/signatory
     steps:
       - checkout:
-          path: /integration-tests/signatory
+          path: ~/integration-tests/signatory
       - run:
           name: Pull Tezos
           command: docker pull tezos/tezos:babylonnet
