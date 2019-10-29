@@ -50,6 +50,7 @@ jobs:
           name: Run integration test
           command: |
             docker run \
+            --network host \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -e AZURE_CLIENT_ID=$AZURE_CLIENT_ID \
             -e AZURE_CLIENT_SECRET=$AZURE_CLIENT_SECRET \
