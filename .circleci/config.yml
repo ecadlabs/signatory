@@ -35,12 +35,11 @@ jobs:
             ./cc-test-reporter -p "${mod}/" after-build
   integration:
     working_directory: /integration-tests/signatory
-    docker:
-      - image: docker:17.05.0-ce-git
+    machine:
+      - image: circleci/classic:latest
     steps:
       - checkout:
           path: /integration-tests/signatory
-      - setup_remote_docker
       - run:
           name: Pull Tezos
           command: docker pull tezos/tezos:babylonnet
