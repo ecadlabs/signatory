@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(60 * time.Second)
+	time.Sleep(5 * time.Second)
 	code := m.Run()
 
 	defer func() {

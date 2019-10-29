@@ -17,4 +17,6 @@ COPY --from=tezos /usr/local/bin/tezos-client /usr/local/bin/tezos-client
 
 COPY . .
 
+RUN go mod download
+
 ENTRYPOINT ["go", "test", "-v", "--count", "1", "./integration"]
