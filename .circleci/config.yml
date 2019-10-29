@@ -33,6 +33,23 @@ jobs:
             fi
 
             ./cc-test-reporter -p "${mod}/" after-build
+  integration:
+    working_directory: /integration-tests/signatory
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout:
+          path: /integration-tests
+      - setup_remote_docker
+      - run:
+          name: Pull Tezos
+          command: docker pull tezos/tezos:babylonnet
+      - run:
+          name: Build integration test image
+          command: docker build -t signatory-integration -f integration/Dockerfile .
+      - run:
+          name: Run integration test
+          command: docker run -v /var/run/docker.sock:/var/run/docker.sock signatory-integration    
   publish:
     docker:
       - image: docker:17.05.0-ce-git
@@ -56,6 +73,7 @@ workflows:
   test:
     jobs:
       - test
+      - integration
   publish:
     jobs:
       - test:

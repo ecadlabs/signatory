@@ -1,14 +1,14 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	yaml "gopkg.in/yaml.v3"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
-	// "path"
-	yaml "gopkg.in/yaml.v3"
 	"strings"
 	"syscall"
 	"testing"
@@ -45,10 +45,7 @@ func (c *Config) Read(file string) error {
 }
 
 var config *Config = &Config{
-	Signatory:                 "/home/simon/Source/ecad/signatory/cmd/signatory/main.go",
-	SignatoryWorkingDirectory: "/home/simon/Source/ecad/signatory",
-	TezosClientDir:            "/home/simon/.tezos-alpha-client",
-	SignatoryURL:              "http://localhost:6732",
+	SignatoryURL: "http://localhost:6732",
 }
 
 func TestMain(m *testing.M) {
@@ -60,20 +57,27 @@ func TestMain(m *testing.M) {
 	cmd := exec.Command("go", "run", config.Signatory, "-c", config.SignatoryConfig)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Dir = config.SignatoryWorkingDirectory
-	err = cmd.Start()
+	buf := new(bytes.Buffer)
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = buf
+
+	err = cmd.Start()
+	fmt.Fprintln(cmd.Stderr)
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(60 * time.Second)
 	code := m.Run()
+
+	defer func() {
+		fmt.Printf("Signatory output: \n%s", buf.String())
+		os.Exit(code)
+	}()
 	// Do not close the underlying go process
 	err = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	if err != nil {
 		panic(err)
 	}
-	os.Exit(code)
 }
 
 func VerifySignature(data string, account string, signature string) error {

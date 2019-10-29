@@ -1,7 +1,7 @@
-signatory: /home/simon/Source/ecad/signatory/cmd/signatory/main.go
-signatory_wdir: /home/simon/Source/ecad/signatory
-tezos_client_dir: /home/simon/.tezos-alpha-client
-signatory_config: ./signatory.yaml
+signatory: /integration-tests/signatory/cmd/signatory/main.go
+signatory_wdir: /integration-tests/signatory
+tezos_client_dir: /integration-tests/signatory/integration/client_data
+signatory_config: /integration-tests/signatory/signatory.yaml
 test_cases:
   # File 
   - account: test123

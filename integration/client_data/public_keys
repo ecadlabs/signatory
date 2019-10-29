@@ -1,0 +1,72 @@
+[ { "name": "test500",
+    "value":
+      "unencrypted:edpkvZSHbyLCUsPUZKvPPjPNP4q2HHQRWbyVT42hrzePBgT3ThWu3N" },
+  { "name": "test-faucet",
+    "value":
+      { "locator":
+          "unencrypted:edpkv1on4CX2nWnTWKchVKfq3yueR6NMgPAhAXu7U1a9CiXfKpfnxz",
+        "key": "edpkv1on4CX2nWnTWKchVKfq3yueR6NMgPAhAXu7U1a9CiXfKpfnxz" } },
+  { "name": "test12345",
+    "value":
+      "unencrypted:p2pk65zwHGP9MdvANKkp267F4VzoKqL8DMNpPfTHUNKbm8S9DUqqdpw" },
+  { "name": "test1234",
+    "value":
+      "unencrypted:p2pk66tTYL5EvahKAXncbtbRPBkAnxo3CszzUho5wPCgWauBMyvybuB" },
+  { "name": "testhsm2",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp",
+        "key": "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU" } },
+  { "name": "test123",
+    "value":
+      "unencrypted:p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU" },
+  { "name": "testhsm1",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU",
+        "key": "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD" } },
+  { "name": "test2",
+    "value":
+      { "locator":
+          "http://127.0.0.1:8003/tz3jbFvkPL3asPSYFnCsFeCzciqmtGB2GSXF",
+        "key": "p2pk67PsiUBJZq9twKoFAWt8fSSVn53BR31dxKnTeLirLxHqB8gSnCq" } },
+  { "name": "bootstrap6",
+    "value":
+      { "locator":
+          "http://127.0.0.1:8003/tz3jbFvkPL3asPSYFnCsFeCzciqmtGB2GSXF",
+        "key": "p2pk67PsiUBJZq9twKoFAWt8fSSVn53BR31dxKnTeLirLxHqB8gSnCq" } },
+  { "name": "test60",
+    "value":
+      { "locator":
+          "unencrypted:p2pk66doEREqPyu5yn97JN9y4HRuBLSnKejQCEijgLRyyGM5hJpLDqL",
+        "key": "p2pk66doEREqPyu5yn97JN9y4HRuBLSnKejQCEijgLRyyGM5hJpLDqL" } },
+  { "name": "test61",
+    "value":
+      { "locator":
+          "unencrypted:sppk7cN5uL7Gn7yVn3QmMpQvJJDzo8RN65LJMxa1ZLXsHgPffdpMUMk",
+        "key": "sppk7cN5uL7Gn7yVn3QmMpQvJJDzo8RN65LJMxa1ZLXsHgPffdpMUMk" } },
+  { "name": "test62",
+    "value":
+      { "locator":
+          "unencrypted:edpkvKAC955fQqn65E2GCFhD7ncXx1xG5iC1Y9KZcmr6avhTkekr2V",
+        "key": "edpkvKAC955fQqn65E2GCFhD7ncXx1xG5iC1Y9KZcmr6avhTkekr2V" } },
+  { "name": "test12",
+    "value":
+      { "locator":
+          "unencrypted:sppk7b4TURq2T9rhPLFaSz6mkBCzKzfiBjctQSMorvLD5GSgCduvKuf",
+        "key": "sppk7b4TURq2T9rhPLFaSz6mkBCzKzfiBjctQSMorvLD5GSgCduvKuf" } },
+  { "name": "test11",
+    "value":
+      { "locator":
+          "unencrypted:sppk7aqSksZan1AGXuKtCz9UBLZZ77e3ZWGpFxR7ig1Z17GneEhSSbH",
+        "key": "sppk7aqSksZan1AGXuKtCz9UBLZZ77e3ZWGpFxR7ig1Z17GneEhSSbH" } },
+  { "name": "test10",
+    "value":
+      { "locator":
+          "unencrypted:sppk7b66BhTvYZm5iPds9at3bzhEMt94qF32WJKFcFkQHy2PkDENBTj",
+        "key": "sppk7b66BhTvYZm5iPds9at3bzhEMt94qF32WJKFcFkQHy2PkDENBTj" } },
+  { "name": "test1",
+    "value":
+      { "locator":
+          "unencrypted:edpkuhmrbunxumoiVdQuxBZUPMmwkPt7yLtY5Qnua3VJVTLWr3vXXa",
+        "key": "edpkuhmrbunxumoiVdQuxBZUPMmwkPt7yLtY5Qnua3VJVTLWr3vXXa" } } ]

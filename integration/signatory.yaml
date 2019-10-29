@@ -1,0 +1,67 @@
+server:
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+
+vaults:
+  file:
+    driver: file
+    config:
+      vault: test
+      file: ./secret_keys
+      read_encrypted: true
+
+# List enabled hashes here
+tezos:
+  # Explicit policy
+  tz2UBGrEBKzzW6hjXjxxiQFJNg6WR2bm6GEN:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz1b9kV41KV9N3sp69ycLdSoZ2Ak8jXwtNPv:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3hFR7NZtjT2QtzgMQnWb4xMuD6yt2YzXUt:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
