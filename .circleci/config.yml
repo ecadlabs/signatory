@@ -39,7 +39,7 @@ jobs:
       - image: docker:17.05.0-ce-git
     steps:
       - checkout:
-          path: /integration-tests
+          path: /integration-tests/signatory
       - setup_remote_docker
       - run:
           name: Pull Tezos
