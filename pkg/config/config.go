@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"net"
+	"os"
 
 	"gopkg.in/go-playground/validator.v9"
 	yaml "gopkg.in/yaml.v3"
@@ -67,7 +68,7 @@ func (c *Config) Read(file string) error {
 	if err != nil {
 		return err
 	}
-	if err = yaml.Unmarshal(yamlFile, c); err != nil {
+	if err = yaml.Unmarshal([]byte(os.ExpandEnv(string(yamlFile))), c); err != nil {
 		return err
 	}
 

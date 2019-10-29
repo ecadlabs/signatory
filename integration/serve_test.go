@@ -37,7 +37,7 @@ func (c *Config) Read(file string) error {
 	if err != nil {
 		return err
 	}
-	if err = yaml.Unmarshal(yamlFile, c); err != nil {
+	if err = yaml.Unmarshal([]byte(os.ExpandEnv(string(yamlFile))), c); err != nil {
 		return err
 	}
 

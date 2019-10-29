@@ -5,6 +5,15 @@ server:
   utility_address: :9583
 
 vaults:
+  azure:
+    driver: azure
+    config:
+      vault: ${AZURE_VAULT}
+      tenant_id: ${AZURE_TENANT_ID}
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE}
   file:
     driver: file
     config:

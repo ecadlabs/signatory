@@ -20,16 +20,16 @@ test_cases:
     expect_signature_valid: true
     public_key: "edpkuhmrbunxumoiVdQuxBZUPMmwkPt7yLtY5Qnua3VJVTLWr3vXXa"
   # Azure
-  # - account: "testhsm1"
-  #   address: "tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU"
-  #   http_code: 200
-  #   expect_signature_valid: true
-  #   public_key: "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD"
-  # - account: "testhsm2"
-  #   address: "tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp"
-  #   http_code: 200
-  #   expect_signature_valid: true
-  #   public_key: "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU"
+  - account: "testhsm1"
+    address: "tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD"
+  - account: "testhsm2"
+    address: "tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU"
   # Invalid  
   - account: "test1"
     address: "tz1b9kV41KV9N3sp69ycLdSoZ2Ak8jXwtNPw"
