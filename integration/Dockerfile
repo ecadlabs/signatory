@@ -2,7 +2,7 @@ FROM tezos/tezos:babylonnet as tezos
 
 FROM golang:1.13.2-buster
 
-WORKDIR /integration-tests/signatory
+WORKDIR /circleci/integration-tests/signatory
 ENV GO111MODULE="on"
 
 RUN apt-get update && apt-get install -y build-essential

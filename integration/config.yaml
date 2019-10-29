@@ -1,7 +1,7 @@
 signatory:  
-signatory_wdir: ~/integration-tests/signatory
-tezos_client_dir: ~/integration-tests/signatory/integration/client_data
-signatory_config: ~/integration-tests/signatory/integration/signatory.yaml
+signatory_wdir: /circleci/integration-tests/signatory
+tezos_client_dir: /circleci/integration-tests/signatory/integration/client_data
+signatory_config: /circleci/integration-tests/signatory/integration/signatory.yaml
 test_cases:
   # File 
   - account: test123
