@@ -34,9 +34,9 @@ jobs:
 
             ./cc-test-reporter -p "${mod}/" after-build
   integration:
-    working_directory: /integration-tests/signatory
     machine:
-      - image: circleci/classic:latest
+        enabled: true
+    working_directory: /integration-tests/signatory
     steps:
       - checkout:
           path: /integration-tests/signatory
