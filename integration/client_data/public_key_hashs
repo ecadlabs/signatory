@@ -1,6 +1,4 @@
-[ { "name": "test500", "value": "tz1P8vyYr35GyoTFXw98StzygDrxUsKKLKjD" },
-  { "name": "test-faucet", "value": "tz1UbbpwwefHU7N7EiHr6hiyFA2sDJi5vXkq" },
-  { "name": "test12345", "value": "tz3hFR7NZtjT2QtzgMQnWb4xMuD6yt2YzXUt" },
+[ { "name": "test-faucet", "value": "tz1UbbpwwefHU7N7EiHr6hiyFA2sDJi5vXkq" },
   { "name": "test1234", "value": "tz3Lfm6CyfSTZ7EgMckptZZGiPxzs9GK59At" },
   { "name": "test123", "value": "tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp" },
   { "name": "testhsm1", "value": "tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU" },

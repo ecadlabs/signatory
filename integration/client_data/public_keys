@@ -1,14 +1,8 @@
-[ { "name": "test500",
-    "value":
-      "unencrypted:edpkvZSHbyLCUsPUZKvPPjPNP4q2HHQRWbyVT42hrzePBgT3ThWu3N" },
-  { "name": "test-faucet",
+[ { "name": "test-faucet",
     "value":
       { "locator":
           "unencrypted:edpkv1on4CX2nWnTWKchVKfq3yueR6NMgPAhAXu7U1a9CiXfKpfnxz",
         "key": "edpkv1on4CX2nWnTWKchVKfq3yueR6NMgPAhAXu7U1a9CiXfKpfnxz" } },
-  { "name": "test12345",
-    "value":
-      "unencrypted:p2pk65zwHGP9MdvANKkp267F4VzoKqL8DMNpPfTHUNKbm8S9DUqqdpw" },
   { "name": "test1234",
     "value":
       "unencrypted:p2pk66tTYL5EvahKAXncbtbRPBkAnxo3CszzUho5wPCgWauBMyvybuB" },
