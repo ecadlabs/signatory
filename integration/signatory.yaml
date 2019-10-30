@@ -8,7 +8,7 @@ vaults:
   kms:
     driver: cloudkms
     config:
-      application_credentials_data: ${KMS_CREDENTIALS}
+      application_credentials_data: '${KMS_CREDENTIALS}'
       project: ${KMS_PROJECT}
       location: ${KMS_LOCATION}
       key_ring: ${KMS_KEY_RING}
