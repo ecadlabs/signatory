@@ -42,7 +42,7 @@ jobs:
           path: ~/integration-tests/signatory
       - run:
           name: Pull Tezos
-          command: docker pull tezos/tezos:babylonnet
+          command: docker pull tezos/tezos:mainnet-staging
       - run:
           name: Build integration test image
           command: docker build -t signatory-integration -f integration/Dockerfile .
