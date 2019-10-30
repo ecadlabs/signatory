@@ -5,6 +5,13 @@ server:
   utility_address: :9583
 
 vaults:
+  kms:
+    driver: cloudkms
+    config:
+      application_credentials_data: ${KMS_CREDENTIALS}
+      project: ${KMS_PROJECT}
+      location: ${KMS_LOCATION}
+      key_ring: ${KMS_KEY_RING}
   azure:
     driver: azure
     config:
@@ -65,6 +72,16 @@ tezos:
       - transaction
       - endorsement
   tz3hFR7NZtjT2QtzgMQnWb4xMuD6yt2YzXUt:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q:
     allowed_operations:
       # List of [generic, block, endorsement]
       - generic

@@ -11,6 +11,11 @@
       { "locator":
           "http://127.0.0.1:6732/tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp",
         "key": "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU" } },
+  { "name": "testkms",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q",
+        "key": "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU" } },        
   { "name": "test123",
     "value":
       "unencrypted:p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU" },

@@ -30,6 +30,12 @@ test_cases:
     http_code: 200
     expect_signature_valid: true
     public_key: "p2pk67qRiKaQAxLBRfmnfvQHTTsZQEJrHhEteM3pZr1suJ8SXAt42sU"
+  # KMS
+  - account: "testkms"
+    address: "tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "p2pk66vAYU7rN1ckJMp38Z9pXCrkiZCVyi6KyeMwhY69h5WDPHdMecH"
   # Invalid  
   - account: "test1"
     address: "tz1b9kV41KV9N3sp69ycLdSoZ2Ak8jXwtNPw"
