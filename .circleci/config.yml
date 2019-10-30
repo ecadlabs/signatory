@@ -58,6 +58,10 @@ jobs:
             -e AZURE_SUBSCRIPTION_ID=$AZURE_SUBSCRIPTION_ID \
             -e AZURE_TENANT_ID=$AZURE_TENANT_ID \
             -e AZURE_VAULT=$AZURE_VAULT \
+            -e KMS_CREDENTIALS=$KMS_CREDENTIALS \
+            -e KMS_PROJECT=$KMS_PROJECT \
+            -e KMS_LOCATION=$KMS_LOCATION \
+            -e KMS_KEY_RING=$KMS_KEY_RING \
             signatory-integration    
   publish:
     docker:
