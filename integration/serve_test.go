@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 
 func VerifySignature(data string, account string, signature string) error {
 	cliCmd := fmt.Sprintf("check that 0x%s was signed by %s to produce %s", data, account, signature)
-	cmd := exec.Command("docker", strings.Fields("run -t --network host -v "+config.TezosClientDir+":/var/run/tezos/client tezos/tezos:babylonnet tezos-client -A rpcalpha.tzbeta.net -P 443 -S "+cliCmd)...)
+	cmd := exec.Command("docker", strings.Fields("run -t --network host -v "+config.TezosClientDir+":/var/run/tezos/client tezos/tezos:mainnet-staging tezos-client -A rpcalpha.tzbeta.net -P 443 -S "+cliCmd)...)
 	return cmd.Run()
 }
 
