@@ -6,19 +6,25 @@ server:
 
 vaults:
   # Name is used to identify backend during import process
-  kms:
-    driver: cloudkms
+  #kms:
+  #  driver: cloudkms
+  #  config:
+  #    project: signatory-testing
+  #    location: europe-north1
+  #    key_ring: hsm-ring
+  #azure:
+  #  driver: azure
+  #  config:
+  #    vault: https://signatory.vault.azure.net/
+  #    tenant_id: 50c46f11-1d0a-4c56-b468-1bcb03a8f69e
+  #    client_id: e4c95b71-588e-40ea-a999-fff08d5a35e3
+  #    client_pkcs12_certificate: /Users/asphyx/Projects/signatory/service-principal.pfx
+  yubi:
+    driver: yubihsm
     config:
-      project: signatory-testing
-      location: europe-north1
-      key_ring: hsm-ring
-  azure:
-    driver: azure
-    config:
-      vault: https://signatory.vault.azure.net/
-      tenant_id: 50c46f11-1d0a-4c56-b468-1bcb03a8f69e
-      client_id: e4c95b71-588e-40ea-a999-fff08d5a35e3
-      client_pkcs12_certificate: /Users/asphyx/Projects/signatory/service-principal.pfx
+      address: localhost:12345
+      password: password
+      auth_key_id: 1
 
 # List enabled hashes here
 tezos:

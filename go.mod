@@ -5,6 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.45.1
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
 	github.com/davecgh/go-spew v1.1.1
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -23,7 +24,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.3.0
 	go.opencensus.io v0.22.1 // indirect
-	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
+	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf
 	golang.org/x/net v0.0.0-20191011234655-491137f69257 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20191002091554-b397fe3ad8ed // indirect

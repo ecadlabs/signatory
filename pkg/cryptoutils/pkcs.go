@@ -7,8 +7,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
-
-	"github.com/decred/dcrd/dcrec/secp256k1"
 )
 
 // partially copied from crypto/x509
@@ -32,7 +30,7 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 		return oidNamedCurveP384, true
 	case curve == elliptic.P521():
 		return oidNamedCurveP521, true
-	case curve == S256() || curve == secp256k1.S256() || CurveEqual(curve, S256()):
+	case curve == S256() || CurveEqual(curve, S256()):
 		return oidNamedCurveS256, true
 	}
 

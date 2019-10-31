@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/decred/dcrd/dcrec/secp256k1"
-
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -176,7 +174,7 @@ func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, p
 		case key.Curve == elliptic.P256():
 			hashPrefix = pP256PublicKeyHash
 			pubPrefix = pP256PublicKey
-		case key.Curve == cryptoutils.S256() || key.Curve == secp256k1.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case key.Curve == cryptoutils.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
 			hashPrefix = pSECP256K1PublicKeyHash
 			pubPrefix = pSECP256K1PublicKey
 		default:
@@ -236,7 +234,7 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 		switch {
 		case key.Curve == elliptic.P256():
 			prefix = pP256SecretKey
-		case key.Curve == cryptoutils.S256() || key.Curve == secp256k1.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case key.Curve == cryptoutils.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
 			prefix = pSECP256K1SecretKey
 		default:
 			return "", fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)

@@ -43,8 +43,8 @@ var (
 type Config struct {
 	auth.Config    `yaml:",inline"`
 	Vault          string `yaml:"vault" validate:"required,url"`
-	SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
-	ResourceGroup  string `yaml:"resource_group"`
+	SubscriptionID string `yaml:"subscription_id" validate:"omitempty,uuid4"` // Optional
+	ResourceGroup  string `yaml:"resource_group"`                             // Optional
 }
 
 // Vault is a Azure KeyVault backend
@@ -62,8 +62,8 @@ type azureKey struct {
 func (a *azureKey) PublicKey() crypto.PublicKey { return a.pub }
 func (a *azureKey) ID() string                  { return a.bundle.Key.KeyID }
 
-// NewVault creates new Azure KeyVault backend
-func NewVault(ctx context.Context, config *Config) (vault *Vault, err error) {
+// New creates new Azure KeyVault backend
+func New(ctx context.Context, config *Config) (vault *Vault, err error) {
 	v := Vault{
 		config: config,
 	}
@@ -288,7 +288,7 @@ func (v *Vault) VaultName() string {
 func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
 	azureKey, ok := key.(*azureKey)
 	if !ok {
-		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T ", v.config.Vault, key), http.StatusBadRequest)
+		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
 	}
 
 	var req signRequest
@@ -455,7 +455,7 @@ func init() {
 			return nil, err
 		}
 
-		return NewVault(ctx, &conf)
+		return New(ctx, &conf)
 	})
 }
 
