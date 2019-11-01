@@ -57,7 +57,7 @@ type ECDSASignature struct {
 }
 
 func (e *ECDSASignature) String() string {
-	return fmt.Sprintf("ecdsa:[r:%X,s:%X]", e.R, e.S)
+	return fmt.Sprintf("ecdsa:[r:%x,s:%x]", e.R, e.S)
 }
 
 // ED25519Signature is a type representing an Ed25519 signature

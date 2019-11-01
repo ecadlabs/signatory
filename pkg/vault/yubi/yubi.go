@@ -89,10 +89,10 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 		x := new(big.Int).SetBytes(r.KeyData[:byteLen])
 		y := new(big.Int).SetBytes(r.KeyData[byteLen:])
 		if x.Cmp(p) >= 0 || y.Cmp(p) >= 0 {
-			return nil, false, fmt.Errorf("invalid EC point [%X, %X]", x, y)
+			return nil, false, fmt.Errorf("invalid EC point [%x,%x]", x, y)
 		}
 		if !curve.IsOnCurve(x, y) {
-			return nil, false, fmt.Errorf("invalid EC point [%X, %X]", x, y)
+			return nil, false, fmt.Errorf("invalid EC point [%x,%x]", x, y)
 		}
 
 		return &ecdsa.PublicKey{
