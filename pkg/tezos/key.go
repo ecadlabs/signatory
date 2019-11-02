@@ -174,7 +174,7 @@ func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, p
 		case key.Curve == elliptic.P256():
 			hashPrefix = pP256PublicKeyHash
 			pubPrefix = pP256PublicKey
-		case key.Curve == cryptoutils.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
 			hashPrefix = pSECP256K1PublicKeyHash
 			pubPrefix = pSECP256K1PublicKey
 		default:
@@ -234,7 +234,7 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 		switch {
 		case key.Curve == elliptic.P256():
 			prefix = pP256SecretKey
-		case key.Curve == cryptoutils.S256() || cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
 			prefix = pSECP256K1SecretKey
 		default:
 			return "", fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)

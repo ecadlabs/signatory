@@ -12,6 +12,8 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/certusone/yubihsm-go"
 	"github.com/certusone/yubihsm-go/commands"
@@ -24,16 +26,20 @@ import (
 )
 
 const (
-	envAddress   = "YUBIHSM_CONNECT_ADDRESS"
-	envPassword  = "YUBIHSM_PASSWORD"
-	envAuthKeyID = "YUBIHSM_AUTH_KEY_ID"
+	envAddress          = "YUBIHSM_CONNECT_ADDRESS"
+	envPassword         = "YUBIHSM_PASSWORD"
+	envAuthKeyID        = "YUBIHSM_AUTH_KEY_ID"
+	envKeyImportDomains = "YUBIHSM_KEY_IMPORT_DOMAINS"
 )
+
+const defaultDomains = 1
 
 // Config contains YubiHSM backend configuration
 type Config struct {
-	Address   string `yaml:"address" validate:"omitempty,hostport"`
-	Password  string `yaml:"password"`
-	AuthKeyID uint16 `yaml:"auth_key_id"`
+	Address          string `yaml:"address" validate:"omitempty,hostport"`
+	Password         string `yaml:"password"`
+	AuthKeyID        uint16 `yaml:"auth_key_id"`
+	KeyImportDomains uint16 `yaml:"key_import_domains"`
 }
 
 func (c *Config) id() string {
@@ -46,7 +52,7 @@ type hsmKey struct {
 }
 
 func (h *hsmKey) PublicKey() crypto.PublicKey { return h.pub }
-func (h *hsmKey) ID() string                  { return strconv.FormatUint(uint64(h.id), 10) }
+func (h *hsmKey) ID() string                  { return fmt.Sprintf("%04x", h.id) }
 
 // HSM struct containing information required to interrogate a YubiHSM
 type HSM struct {
@@ -111,19 +117,26 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 	return nil, false, nil
 }
 
+func (h *HSM) listObjects(options ...commands.ListCommandOption) ([]commands.Object, error) {
+	command, err := commands.CreateListObjectsCommand(options...)
+	res, err := h.session.SendEncryptedCommand(command)
+	if err != nil {
+		return nil, fmt.Errorf("ListObjects: %v", err)
+	}
+	listObjectsResponse, ok := res.(*commands.ListObjectsResponse)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response type: %T", res)
+	}
+	return listObjectsResponse.Objects, nil
+}
+
 // Next implements vault.StoredKeysIterator
 func (y *yubihsmStoredKeysIterator) Next() (key vault.StoredKey, err error) {
 	if y.objects == nil {
-		command, err := commands.CreateListObjectsCommand(commands.NewObjectTypeOption(commands.ObjectTypeAsymmetricKey))
-		res, err := y.hsm.session.SendEncryptedCommand(command)
+		y.objects, err = y.hsm.listObjects(commands.NewObjectTypeOption(commands.ObjectTypeAsymmetricKey))
 		if err != nil {
-			return nil, fmt.Errorf("(YubiHSM/%s): ListObjects: %v", y.hsm.conf.id(), err)
+			return nil, fmt.Errorf("(YubiHSM/%s): %v", y.hsm.conf.id(), err)
 		}
-		listObjectsResponse, ok := res.(*commands.ListObjectsResponse)
-		if !ok {
-			return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", y.hsm.conf.id(), res)
-		}
-		y.objects = listObjectsResponse.Objects
 	}
 
 	for {
@@ -166,7 +179,7 @@ func (h *HSM) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 
 // GetPublicKey returns a public key by given ID
 func (h *HSM) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
-	id, err := strconv.ParseUint(keyID, 10, 16)
+	id, err := strconv.ParseUint(keyID, 16, 16)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}
@@ -196,7 +209,7 @@ func (h *HSM) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, 
 	}, nil
 }
 
-func (h *HSM) signECDSA(ctx context.Context, digest []byte, id uint16) (*cryptoutils.ECDSASignature, error) {
+func (h *HSM) signECDSA(digest []byte, id uint16) (*cryptoutils.ECDSASignature, error) {
 	command, err := commands.CreateSignDataEcdsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
@@ -219,7 +232,7 @@ func (h *HSM) signECDSA(ctx context.Context, digest []byte, id uint16) (*cryptou
 	return &sig, nil
 }
 
-func (h *HSM) signED25519(ctx context.Context, digest []byte, id uint16) (cryptoutils.ED25519Signature, error) {
+func (h *HSM) signED25519(digest []byte, id uint16) (cryptoutils.ED25519Signature, error) {
 	command, err := commands.CreateSignDataEddsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
@@ -250,9 +263,9 @@ func (h *HSM) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig c
 
 	switch key.pub.(type) {
 	case *ecdsa.PublicKey:
-		return h.signECDSA(ctx, digest, key.id)
+		return h.signECDSA(digest, key.id)
 	case ed25519.PublicKey:
-		return h.signED25519(ctx, digest, key.id)
+		return h.signED25519(digest, key.id)
 	}
 
 	return nil, fmt.Errorf("(YubiHSM/%s): unexpected key type: %T", h.conf.id(), key.pub)
@@ -284,6 +297,55 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+func getPrivateKeyData(pk cryptoutils.PrivateKey) (name string, alg commands.Algorithm, caps uint64, p []byte, err error) {
+	switch key := pk.(type) {
+	case *ecdsa.PrivateKey:
+		switch {
+		case key.Curve == elliptic.P256():
+			alg = commands.AlgorithmP256
+		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+			alg = commands.AlgorithmSecp256k1
+		default:
+			return "", 0, 0, nil, fmt.Errorf("unsupported curve: %s", key.Params().Name)
+		}
+		return strings.ToLower(key.Params().Name), alg, commands.CapabilityAsymmetricSignEcdsa, key.D.Bytes(), nil
+
+	case ed25519.PrivateKey:
+		return "ed25519", commands.AlgorighmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
+	}
+
+	return "", 0, 0, nil, fmt.Errorf("unsupported private key type: %T", pk)
+}
+
+// Import imports a private key
+func (h *HSM) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+	name, alg, caps, p, err := getPrivateKeyData(pk)
+	if err != nil {
+		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
+	}
+
+	label := fmt.Sprintf("signatory-%s-%d", name, time.Now().Unix())
+	command, err := commands.CreatePutAsymmetricKeyCommand(0, []byte(label), h.conf.KeyImportDomains, caps, alg, p, nil)
+	if err != nil {
+		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
+	}
+
+	res, err := h.session.SendEncryptedCommand(command)
+	if err != nil {
+		return nil, fmt.Errorf("(YubiHSM/%s): PutAsymmetricKey: %v", h.conf.id(), err)
+	}
+
+	keyResponse, ok := res.(*commands.PutAsymmetricKeyResponse)
+	if !ok {
+		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
+	}
+
+	return &hsmKey{
+		id:  keyResponse.KeyID,
+		pub: pk.Public(),
+	}, nil
+}
+
 // New creates new YubiHSM backend
 func New(ctx context.Context, config *Config) (*HSM, error) {
 	c := *config
@@ -296,17 +358,26 @@ func New(ctx context.Context, config *Config) (*HSM, error) {
 	}
 
 	if c.AuthKeyID == 0 {
-		v, err := strconv.ParseUint(os.Getenv(envAuthKeyID), 10, 16)
+		v, err := strconv.ParseUint(os.Getenv(envAuthKeyID), 0, 16)
 		if err != nil {
 			return nil, fmt.Errorf("(YubiHSM): %v", err)
 		}
 		c.AuthKeyID = uint16(v)
 	}
 
+	if c.KeyImportDomains == 0 {
+		v, _ := strconv.ParseUint(os.Getenv(envKeyImportDomains), 0, 16)
+		c.KeyImportDomains = uint16(v)
+	}
+
+	if c.KeyImportDomains == 0 {
+		c.KeyImportDomains = defaultDomains
+	}
+
 	conn := connector.NewHTTPConnector(config.Address)
 	sm, err := yubihsm.NewSessionManager(conn, config.AuthKeyID, config.Password)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("(YubiHSM): %v", err)
 	}
 
 	return &HSM{
@@ -332,3 +403,5 @@ func init() {
 		return New(ctx, &conf)
 	})
 }
+
+var _ vault.Importer = &HSM{}

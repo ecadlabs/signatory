@@ -90,6 +90,9 @@ func S256() *secp256k1.KoblitzCurve {
 
 // CurveEqual returns true if curves are equal regardless of names and pointer values
 func CurveEqual(a, b elliptic.Curve) bool {
+	if a == b {
+		return true
+	}
 	ap, bp := a.Params(), b.Params()
 	return ap.P.Cmp(bp.P) == 0 &&
 		ap.N.Cmp(bp.N) == 0 &&
