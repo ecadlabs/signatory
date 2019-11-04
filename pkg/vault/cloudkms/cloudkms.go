@@ -176,7 +176,7 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 	}
 
 	if resp.State != kmspb.CryptoKeyVersion_ENABLED {
-		return nil, fmt.Errorf("(CloudKMS/%s) Key version is not enabled: %s", c.config.keyRingName(), keyID)
+		return nil, fmt.Errorf("(CloudKMS/%s) key version is not enabled: %s", c.config.keyRingName(), keyID)
 	}
 
 	ecKey, err := c.getPublicKey(ctx, resp.Name)
@@ -213,7 +213,7 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 
 	var sig cryptoutils.ECDSASignature
 	if _, err = asn1.Unmarshal(resp.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
 	}
 
 	return &sig, nil
@@ -259,12 +259,12 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
-		return nil, fmt.Errorf("(CloudKMS/%s) Unsupported key type: %T", c.config.keyRingName(), pk)
+		return nil, fmt.Errorf("(CloudKMS/%s) unsupported key type: %T", c.config.keyRingName(), pk)
 	}
 
 	algo := getAlgorithm(ecdsaKey.Curve)
 	if algo == 0 {
-		return nil, fmt.Errorf("(CloudKMS/%s) Unsupported curve: %s", c.config.keyRingName(), ecdsaKey.Params().Name)
+		return nil, fmt.Errorf("(CloudKMS/%s) unsupported curve: %s", c.config.keyRingName(), ecdsaKey.Params().Name)
 	}
 
 	// Create a key
@@ -373,8 +373,8 @@ func (c *Vault) VaultName() string {
 	return c.config.keyRingName()
 }
 
-// NewVault creates new Google Cloud KMS backend
-func NewVault(ctx context.Context, config *Config) (*Vault, error) {
+// New creates new Google Cloud KMS backend
+func New(ctx context.Context, config *Config) (*Vault, error) {
 	var opts []option.ClientOption
 
 	if config.ApplicationCredentialsData != "" {
@@ -408,7 +408,7 @@ func init() {
 			return nil, err
 		}
 
-		return NewVault(ctx, &conf)
+		return New(ctx, &conf)
 	})
 }
 

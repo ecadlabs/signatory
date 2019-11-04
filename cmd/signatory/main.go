@@ -8,9 +8,10 @@ import (
 
 	"github.com/ecadlabs/signatory/cmd/signatory/cmd"
 	_ "github.com/ecadlabs/signatory/pkg/vault/file"
+	log "github.com/sirupsen/logrus"
 	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
 	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
-	log "github.com/sirupsen/logrus"
+	_ "github.com/ecadlabs/signatory/pkg/vault/yubi"
 )
 
 func main() {

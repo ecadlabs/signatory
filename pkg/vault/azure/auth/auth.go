@@ -41,8 +41,8 @@ const assertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 
 // Config is the configuration for using Azure authentication
 type Config struct {
-	Tenant                      string `yaml:"tenant_id" validate:"required,uuid4"`
-	ClientID                    string `yaml:"client_id" validate:"required,uuid4"`
+	Tenant                      string `yaml:"tenant_id" validate:"omitempty,uuid4"`
+	ClientID                    string `yaml:"client_id" validate:"omitempty,uuid4"`
 	ClientSecret                string `yaml:"client_secret"`
 	ClientPKCS12Certificate     string `yaml:"client_pkcs12_certificate"`
 	ClientCertificate           string `yaml:"client_certificate"`

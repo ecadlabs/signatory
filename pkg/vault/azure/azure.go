@@ -8,13 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/big"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"path"
-	"strings"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -24,11 +17,20 @@ import (
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+	"io"
+	"math/big"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"path"
+	"strings"
 )
 
 const (
-	apiVersion    = "7.0"
 	managementURL = "https://management.azure.com/"
+
+	keyVaultAPIVersion       = "7.0"
+	resourceHealthAPIVersion = "2018-08-01-rc"
 )
 
 var (
@@ -38,17 +40,17 @@ var (
 
 // Config contains Azure KeyVault backend configuration
 type Config struct {
-	auth.Config `yaml:",inline"`
-	Vault       string `yaml:"vault" validate:"required,url"`
-	SubscriptionID string `yaml:"subscription_id" validate:"uuid4"`
-	ResourceGroup  string `yaml:"resource_group"`
+	auth.Config    `yaml:",inline"`
+	Vault          string `yaml:"vault" validate:"required,url"`
+	SubscriptionID string `yaml:"subscription_id" validate:"omitempty,uuid4"` // Optional
+	ResourceGroup  string `yaml:"resource_group"`                             // Optional
 }
 
 // Vault is a Azure KeyVault backend
 type Vault struct {
-	client *http.Client
+	client           *http.Client
 	managementClient *http.Client
-	config *Config
+	config           *Config
 }
 
 type azureKey struct {
@@ -59,8 +61,8 @@ type azureKey struct {
 func (a *azureKey) PublicKey() crypto.PublicKey { return a.pub }
 func (a *azureKey) ID() string                  { return a.bundle.Key.KeyID }
 
-// NewVault creates new Azure KeyVault backend
-func NewVault(ctx context.Context, config *Config) (vault *Vault, err error) {
+// New creates new Azure KeyVault backend
+func New(ctx context.Context, config *Config) (vault *Vault, err error) {
 	v := Vault{
 		config: config,
 	}
@@ -87,7 +89,7 @@ func (v *Vault) makeURL(baseURL, p string) (string, error) {
 		u.Path = path.Join(u.Path, p)
 	}
 	u.RawQuery = url.Values{
-		"api-version": []string{apiVersion},
+		"api-version": []string{keyVaultAPIVersion},
 	}.Encode()
 	return u.String(), nil
 }
@@ -285,7 +287,7 @@ func (v *Vault) VaultName() string {
 func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
 	azureKey, ok := key.(*azureKey)
 	if !ok {
-		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T ", v.config.Vault, key), http.StatusBadRequest)
+		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
 	}
 
 	var req signRequest
@@ -398,10 +400,13 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 		vault = s[0]
 	}
 
-	resourceURI := url.PathEscape("/subscriptions/" + v.config.SubscriptionID + "/resourceGroups/" + v.config.ResourceGroup + "/providers/Microsoft.KeyVault/vaults/" + vault)
-	uri := managementURL + resourceURI + "/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2018-08-01-preview"
+	uri := managementURL +
+		"/subscriptions/" + v.config.SubscriptionID +
+		"/resourceGroups/" + v.config.ResourceGroup +
+		"/providers/Microsoft.KeyVault/vaults/" + vault +
+		"/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=" + resourceHealthAPIVersion
 
-	var res map[string]interface{}
+	var res resourceHealthAvailabilityStatus
 	status, err := v.request(ctx, v.managementClient, "GET", uri, nil, &res)
 	if err != nil {
 		err = fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
@@ -409,6 +414,10 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 			err = errors.Wrap(err, status)
 		}
 		return false, err
+	}
+
+	if res.Properties.AvailabilityState != availabilityStatusAvailable {
+		return false, nil
 	}
 
 	return true, nil
@@ -445,7 +454,7 @@ func init() {
 			return nil, err
 		}
 
-		return NewVault(ctx, &conf)
+		return New(ctx, &conf)
 	})
 }
 

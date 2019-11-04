@@ -59,7 +59,7 @@ type ECDSASignature struct {
 }
 
 func (e *ECDSASignature) String() string {
-	return fmt.Sprintf("ecdsa:[r:%s,s:%s]", hex.EncodeToString(e.R.Bytes()), hex.EncodeToString(e.S.Bytes()))
+	return fmt.Sprintf("ecdsa:[r:%x,s:%x]", e.R, e.S)
 }
 
 // ED25519Signature is a type representing an Ed25519 signature
@@ -92,6 +92,9 @@ func S256() *secp256k1.KoblitzCurve {
 
 // CurveEqual returns true if curves are equal regardless of names and pointer values
 func CurveEqual(a, b elliptic.Curve) bool {
+	if a == b {
+		return true
+	}
 	ap, bp := a.Params(), b.Params()
 	return ap.P.Cmp(bp.P) == 0 &&
 		ap.N.Cmp(bp.N) == 0 &&
