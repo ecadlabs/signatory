@@ -27,6 +27,12 @@ vaults:
       vault: test
       file: /home/circleci/integration-tests/signatory/integration/client_data/secret_keys
       read_encrypted: true
+  yubi:
+    driver: yubihsm
+    config:
+      address: ${YUBI_ADDRESS}
+      password: ${YUBI_PASSWORD}
+      auth_key_id: ${YUBI_AUTH_KEY_ID}
 
 # List enabled hashes here
 tezos:
@@ -82,6 +88,36 @@ tezos:
       - transaction
       - endorsement
   tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz1U8bnXWZqLQ8d3ZMMa1HztzxP24rykZk8z:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz2HPh4i5csBt8zhaDnhnt3mZMzuaauMgydF:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3Lfm6CyfSTZ7EgMckptZZGiPxzs9GK59At:
     allowed_operations:
       # List of [generic, block, endorsement]
       - generic

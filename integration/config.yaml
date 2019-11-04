@@ -36,6 +36,22 @@ test_cases:
     http_code: 200
     expect_signature_valid: true
     public_key: "p2pk66vAYU7rN1ckJMp38Z9pXCrkiZCVyi6KyeMwhY69h5WDPHdMecH"
+  # Yubi
+  - account: "testyubi1"
+    address: "tz1U8bnXWZqLQ8d3ZMMa1HztzxP24rykZk8z"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "edpku13b6aZfMZyq1m5MWv3j68SozAgxvSwR17dArSCY5czLrSJoG6"
+  - account: "testyubi2"
+    address: "tz2HPh4i5csBt8zhaDnhnt3mZMzuaauMgydF"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "sppk7bZ7kUCokYJbMPEHsDG1R8jko4XLzZFYh8Bdk92TkzBSefveZSB"
+  - account: "testyubi3"
+    address: "tz3Lfm6CyfSTZ7EgMckptZZGiPxzs9GK59At"
+    http_code: 200
+    expect_signature_valid: true
+    public_key: "p2pk66tTYL5EvahKAXncbtbRPBkAnxo3CszzUho5wPCgWauBMyvybuB"
   # Invalid  
   - account: "test1"
     address: "tz1b9kV41KV9N3sp69ycLdSoZ2Ak8jXwtNPw"

@@ -24,6 +24,21 @@
       { "locator":
           "http://127.0.0.1:6732/tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU",
         "key": "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD" } },
+    { "name": "testyubi1",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz1U8bnXWZqLQ8d3ZMMa1HztzxP24rykZk8z",
+        "key": "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD" } },
+    { "name": "testyubi2",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz2HPh4i5csBt8zhaDnhnt3mZMzuaauMgydF",
+        "key": "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD" } },
+    { "name": "testyubi3",
+    "value":
+      { "locator":
+          "http://127.0.0.1:6732/tz3Lfm6CyfSTZ7EgMckptZZGiPxzs9GK59At",
+        "key": "sppk7bhADQLEc6umGxm817seoomyYNsCquV7Fqxh1Qvttu4HjiSfomD" } },
   { "name": "test2",
     "value":
       { "locator":

@@ -62,6 +62,9 @@ jobs:
             -e KMS_PROJECT=$KMS_PROJECT \
             -e KMS_LOCATION=$KMS_LOCATION \
             -e KMS_KEY_RING=$KMS_KEY_RING \
+            -e YUBI_ADDRESS=$YUBI_ADDRESS \
+            -e YUBI_PASSWORD=$YUBI_PASSWORD \
+            -e YUBI_AUTH_KEY_ID=$YUBI_AUTH_KEY_ID \
             signatory-integration    
   publish:
     docker:

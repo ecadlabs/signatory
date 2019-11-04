@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 
 	defer func() {
 		fmt.Printf("Signatory output: \n%s", buf.String())
-		os.Exit(code)
+	 os.Exit(code)
 	}()
 	// Do not close the underlying go process
 	err = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
@@ -110,7 +110,7 @@ type SigCase struct {
 	CheckWatermark bool
 }
 
-func TestFileBackendSign(t *testing.T) {
+func TestSign(t *testing.T) {
 	f := []SigCase{
 		SigCase{
 			Name:           "Block",
