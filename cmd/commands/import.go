@@ -1,4 +1,4 @@
-package cmd
+package commands
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-func newImportCommand(c *rootContext) *cobra.Command {
+func NewImportCommand(c *Context) *cobra.Command {
 	var (
 		vaultName string
 		password  string
@@ -30,7 +30,7 @@ func newImportCommand(c *rootContext) *cobra.Command {
 			}
 
 			for _, key := range args {
-				_, err := c.signatory.Import(c.context, vaultName, key, passCB)
+				_, err := c.signatory.Import(c.Context, vaultName, key, passCB)
 				if err != nil {
 					return err
 				}

@@ -20,10 +20,9 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	rootCtx := commands.Context{
 		Context: ctx,
 	}
-	rootCmd := commands.NewRootCommand(&rootCtx, "signatory")
-	serve := commands.NewServeCommand(&rootCtx)
-	rootCmd.AddCommand(serve)
-	rootCmd.RunE = serve.RunE
+	rootCmd := commands.NewRootCommand(&rootCtx, "signatory-cli")
+	rootCmd.AddCommand(commands.NewListCommand(&rootCtx))
+	rootCmd.AddCommand(commands.NewImportCommand(&rootCtx))
 
 	return rootCmd
 }

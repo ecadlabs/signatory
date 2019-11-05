@@ -1,4 +1,4 @@
-package cmd
+package commands
 
 import (
 	"os"
@@ -24,12 +24,12 @@ var (
 	listTpl = template.Must(template.New("list").Parse(listTemplateSrc))
 )
 
-func newListCommand(c *rootContext) *cobra.Command {
+func NewListCommand(c *Context) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List public keys",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			keys, err := c.signatory.ListPublicKeys(c.context)
+			keys, err := c.signatory.ListPublicKeys(c.Context)
 			if err != nil {
 				return err
 			}
