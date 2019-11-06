@@ -6,32 +6,39 @@ server:
 
 vaults:
   # Name is used to identify backend during import process
-  #kms:
-  #  driver: cloudkms
-  #  config:
-  #    project: signatory-testing
-  #    location: europe-north1
-  #    key_ring: hsm-ring
-  #azure:
-  #  driver: azure
-  #  config:
-  #    vault: https://signatory.vault.azure.net/
-  #    tenant_id: 50c46f11-1d0a-4c56-b468-1bcb03a8f69e
-  #    client_id: e4c95b71-588e-40ea-a999-fff08d5a35e3
-  #    client_pkcs12_certificate: /Users/asphyx/Projects/signatory/service-principal.pfx
+  kms:
+    driver: cloudkms
+    config:
+      # See backend specific documentation
+      project: signatory
+      location: europe-north1
+      key_ring: hsm-ring
+  azure:
+    driver: azure
+    config:
+      # See backend specific documentation
+      vault: https://signatory.vault.azure.net/
+      tenant_id: cf5dd0ba-d3a3-4f3f-a688-06d12672f8ed
+      client_id: 5d29a974-edd0-4659-b933-7d9c56726649
+      client_pkcs12_certificate: principal.pfx
   yubi:
     driver: yubihsm
     config:
+      # See backend specific documentation
       address: localhost:12345
       password: password
       auth_key_id: 1
 
-# List enabled hashes here
+# List enabled public keys hashes here
 tezos:
-  # Default policy
-  tz3VfoCwiQyMNYnaseFLFAjN9AQJQnhvddjG:
+  # Default policy allows "block" and "endorsement" operations
+  tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
   # Explicit policy
-  tz3aTwpna6m9qsw4YZVFad1nsm5cGgWHVQ8R:
+  tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
+    # Setting `log_payloads` to `true` will cause Signatory to log operation
+    # payloads to `stdout`. This may be desirable for audit and investigative
+    # purposes.
+    log_payloads: true
     allowed_operations:
       # List of [generic, block, endorsement]
       - generic
