@@ -65,9 +65,9 @@ tezos:
 
 ## Backends
 
-* [Google Cloud KMS](pkg/vault/cloudkms/README.md)
-* [Azure](pkg/vault/azure/README.md)
-* [YubiHSM2](pkg/vault/yubi/README.md)
+* [Google Cloud KMS](/pkg/vault/cloudkms/README.md)
+* [Azure](/pkg/vault/azure/README.md)
+* [YubiHSM2](/pkg/vault/yubi/README.md)
 
 ---
 

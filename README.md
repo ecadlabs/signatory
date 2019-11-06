@@ -22,7 +22,7 @@ Security and convenience are typically at odds with each other. Signatory makes 
 
 ## Quick Start
 
-[See docs](docs/README.md)
+[See docs](/docs/README.md)
 
 ---
 
