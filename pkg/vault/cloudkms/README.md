@@ -41,3 +41,9 @@ key_ring | string | ✅ | Key ring name
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS=signatory-testing-a7fd9625aecb.json
 ```
+
+## Import options
+
+Name | Type | Description
+-----|------|------------
+name | string | New key name. Otherwise will be auto generated.

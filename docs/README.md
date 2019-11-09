@@ -138,16 +138,16 @@ Signatory service is used for importing of private keys and obtaining informatio
 A Tezos Remote Signer for signing block-chain operations with private keys
 
 Usage:
-  signatory-cli [command]
-
-Available Commands:
-  help        Help about any command
-  import      Import Tezos private keys (edsk..., spsk..., p2sk...)
-  list        List public keys
+  signatory-cli import [flags]
 
 Flags:
+  -h, --help              help for import
+  -o, --opt string        Options to be passed to the backend. Syntax: key:val[,...]
+      --password string   Password for private key(s)
+      --vault string      Vault name for importing
+
+Global Flags:
   -c, --config string   Config file path (default "signatory.yaml")
-  -h, --help            help for signatory-cli
       --log string      Log level: [error, warn, info, debug, trace] (default "info")
 ```
 

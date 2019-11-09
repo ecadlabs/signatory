@@ -251,3 +251,8 @@ client_certificate_thumbprint: 6B7DDE60582104C37600BB337555E7517F5B834C
 * `AZURE_CLIENT_CERTIFICATE_THUMBPRINT`
 * `AZURE_CLIENT_PRIVATE_KEY`
 
+## Import options
+
+Name | Type | Description
+-----|------|------------
+name | string | New key name. Otherwise will be auto generated.

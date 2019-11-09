@@ -64,3 +64,10 @@ auth_key_id: 2
 * `YUBIHSM_PASSWORD`
 * `YUBIHSM_AUTH_KEY_ID`
 * `YUBIHSM_KEY_IMPORT_DOMAINS`
+
+## Import options
+
+Name | Type | Description
+-----|------|------------
+name | string | New key name (label). Otherwise will be auto generated.
+domains | uint16 | Domains mask to be assigned to the newly imported key. `key_import_domains` parameter value will be used by default.
