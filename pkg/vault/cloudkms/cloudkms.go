@@ -18,6 +18,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/google/tink/go/subtle/kwp"
 	"github.com/segmentio/ksuid"
@@ -256,7 +257,15 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 }
 
 // Import imports a private key
-func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	keyName, ok, err := opt.GetString("name")
+	if err != nil {
+		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
+	}
+	if !ok {
+		keyName = "signatory-imported-" + ksuid.New().String()
+	}
+
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s) unsupported key type: %T", c.config.keyRingName(), pk)
@@ -270,7 +279,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 	// Create a key
 	newKeyReq := kmspb.CreateCryptoKeyRequest{
 		Parent:      c.config.keyRingName(),
-		CryptoKeyId: "signatory-imported-" + ksuid.New().String(),
+		CryptoKeyId: keyName,
 		CryptoKey: &kmspb.CryptoKey{
 			Purpose: kmspb.CryptoKey_ASYMMETRIC_SIGN,
 			VersionTemplate: &kmspb.CryptoKeyVersionTemplate{

@@ -21,6 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"gopkg.in/yaml.v3"
 )
@@ -297,7 +298,7 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func getPrivateKeyData(pk cryptoutils.PrivateKey) (name string, alg commands.Algorithm, caps uint64, p []byte, err error) {
+func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algorithm, caps uint64, p []byte, err error) {
 	switch key := pk.(type) {
 	case *ecdsa.PrivateKey:
 		switch {
@@ -318,14 +319,30 @@ func getPrivateKeyData(pk cryptoutils.PrivateKey) (name string, alg commands.Alg
 }
 
 // Import imports a private key
-func (h *HSM) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
-	name, alg, caps, p, err := getPrivateKeyData(pk)
+func (h *HSM) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	typ, alg, caps, p, err := getPrivateKeyData(pk)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}
 
-	label := fmt.Sprintf("signatory-%s-%d", name, time.Now().Unix())
-	command, err := commands.CreatePutAsymmetricKeyCommand(0, []byte(label), h.conf.KeyImportDomains, caps, alg, p, nil)
+	domains := h.conf.KeyImportDomains
+	d, ok, err := opt.GetInt("domains")
+	if err != nil {
+		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
+	}
+	if ok {
+		domains = uint16(d)
+	}
+
+	label, ok, err := opt.GetString("name")
+	if err != nil {
+		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
+	}
+	if !ok {
+		label = fmt.Sprintf("signatory-%s-%d", typ, time.Now().Unix())
+	}
+
+	command, err := commands.CreatePutAsymmetricKeyCommand(0, []byte(label), domains, caps, alg, p, nil)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}

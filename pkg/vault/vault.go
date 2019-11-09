@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,7 +33,7 @@ type Vault interface {
 // Importer interface representing an importer backend
 type Importer interface {
 	Vault
-	Import(ctx context.Context, pk cryptoutils.PrivateKey) (StoredKey, error)
+	Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (StoredKey, error)
 }
 
 // VaultNamer might be implemented by some backends which can handle multiple vaults under single account

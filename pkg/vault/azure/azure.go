@@ -20,6 +20,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/jwk"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/azure/auth"
 	"github.com/segmentio/ksuid"
@@ -336,7 +337,15 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (s
 }
 
 // Import imports a private key
-func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	keyName, ok, err := opt.GetString("name")
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
+	}
+	if !ok {
+		keyName = "signatory-imported-" + ksuid.New().String()
+	}
+
 	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(Azure/%s) Unsupported key type: %T", v.config.Vault, pk)
@@ -357,7 +366,7 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.St
 		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
 	}
 
-	u, err := v.makeURL(v.config.Vault, "/keys/signatory-imported-"+ksuid.New().String())
+	u, err := v.makeURL(v.config.Vault, "/keys/"+keyName)
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %v", v.config.Vault, err)
 	}

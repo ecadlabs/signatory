@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
 
 // Import a keyPair inside the vault
-func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB tezos.PassphraseFunc) (*PublicKey, error) {
+func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB tezos.PassphraseFunc, opt utils.Options) (*PublicKey, error) {
 	v, ok := s.vaults[importerName]
 	if !ok {
 		return nil, fmt.Errorf("import: vault %s is not found", importerName)
@@ -45,7 +46,7 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 
 	l.Info("Requesting import operation")
 
-	stored, err := importer.Import(ctx, pk)
+	stored, err := importer.Import(ctx, pk, opt)
 	if err != nil {
 		return nil, err
 	}
