@@ -232,7 +232,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", err
 	}
 
-	sig = cryptoutils.CanonizeSignature(p.key, sig)
+	sig = cryptoutils.CanonizeSignature(p.key.PublicKey(), sig)
 
 	l.WithField("raw", sig).Debug("Signed bytes")
 
@@ -336,6 +336,18 @@ func (s *Signatory) GetPublicKey(ctx context.Context, keyHash string) (*PublicKe
 		ID:            p.key.ID(),
 		Policy:        s.fetchPolicyOrDefault(keyHash),
 	}, nil
+}
+
+// Unlock unlock all the vaults
+func (s *Signatory) Unlock(ctx context.Context) error {
+	for _, v := range s.vaults {
+		if unlocker, ok := v.(vault.Unlocker); ok {
+			if err := unlocker.Unlock(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Config represents Signatory configuration

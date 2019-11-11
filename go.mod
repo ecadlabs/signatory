@@ -6,17 +6,14 @@ require (
 	cloud.google.com/go v0.45.1
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
-	github.com/davecgh/go-spew v1.1.1
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/google/tink v1.3.0-rc1
 	github.com/gorilla/mux v1.7.3
-	github.com/jfcote87/oauth2 v0.2.3
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.1.0 // indirect
-	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/segmentio/ksuid v1.0.2
 	github.com/sirupsen/logrus v1.4.2

@@ -36,6 +36,12 @@ type Importer interface {
 	Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (StoredKey, error)
 }
 
+// Unlocker interface representing an unlocker backend
+type Unlocker interface {
+	Vault
+	Unlock(ctx context.Context) error
+}
+
 // VaultNamer might be implemented by some backends which can handle multiple vaults under single account
 type VaultNamer interface {
 	VaultName() string

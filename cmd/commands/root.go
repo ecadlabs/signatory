@@ -59,6 +59,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
+			if err = sig.Unlock(c.Context); err != nil {
+				return err
+			}
+
 			c.config = &conf
 			c.signatory = sig
 			return nil
