@@ -139,6 +139,5 @@ func Sign(priv PrivateKey, hash []byte) (Signature, error) {
 	case ed25519.PrivateKey:
 		return ED25519Signature(ed25519.Sign(key, hash)), nil
 	}
-
-	return nil, fmt.Errorf("Unsupported key type")
+	return nil, fmt.Errorf("unsupported key type: %T", priv)
 }

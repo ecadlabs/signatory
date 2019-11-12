@@ -93,6 +93,12 @@ func (k *keyCache) get(pkh string) *keyVaultPair {
 	return nil
 }
 
+func (k *keyCache) drop() {
+	k.mtx.Lock()
+	defer k.mtx.Unlock()
+	k.cache = nil
+}
+
 func (s *Signatory) logger() log.FieldLogger {
 	if s.config.Logger != nil {
 		return s.config.Logger
@@ -347,6 +353,7 @@ func (s *Signatory) Unlock(ctx context.Context) error {
 			}
 		}
 	}
+	s.cache.drop()
 	return nil
 }
 

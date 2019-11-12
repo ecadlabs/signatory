@@ -146,6 +146,16 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 	return nil, ErrPrivateKey
 }
 
+// IsEncryptedPrivateKey returns true if the private key is encrypted
+func IsEncryptedPrivateKey(data string) (bool, error) {
+	prefix, _, err := decodeBase58(data)
+	if err != nil {
+		return false, err
+	}
+	_, ok := isEncrypted(prefix)
+	return ok, nil
+}
+
 // SEC1 compressed point form https://www.secg.org/sec1-v2.pdf
 // See https://github.com/decred/dcrd/blob/master/dcrec/secp256k1/pubkey.go#L144
 func serializeCoordinates(x, y *big.Int) ([]byte, error) {
