@@ -7,11 +7,26 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
+
+type noopIterator struct {
+	keys []*keyMock
+	idx  int
+}
+
+func (i *noopIterator) Next() (key vault.StoredKey, err error) {
+	if i.idx == len(i.keys) {
+		return nil, vault.ErrDone
+	}
+	key = i.keys[i.idx]
+	i.idx++
+	return key, nil
+}
 
 type vaultMock struct {
 	keys map[string]cryptoutils.PrivateKey
@@ -33,12 +48,12 @@ func (v *vaultMock) GetPublicKey(ctx context.Context, id string) (vault.StoredKe
 	return &keyMock{id: id, key: pk.Public()}, nil
 }
 
-func (v *vaultMock) ListPublicKeys(ctx context.Context) ([]vault.StoredKey, error) {
-	ret := make([]vault.StoredKey, 0)
+func (v *vaultMock) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+	ret := make([]*keyMock, 0)
 	for id, key := range v.keys {
 		ret = append(ret, &keyMock{id: id, key: key.Public()})
 	}
-	return ret, nil
+	return &noopIterator{keys: ret}
 }
 
 func (v *vaultMock) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
@@ -47,7 +62,7 @@ func (v *vaultMock) Sign(ctx context.Context, digest []byte, key vault.StoredKey
 
 func (v *vaultMock) Name() string { return "mock" }
 
-func (v *vaultMock) Import(ctx context.Context, pk cryptoutils.PrivateKey) (vault.StoredKey, error) {
+func (v *vaultMock) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	id := ksuid.New().String()
 	v.keys[id] = pk
 	return &keyMock{id: id, key: pk.Public()}, nil
@@ -72,7 +87,7 @@ func TestSignatory(t *testing.T) {
 
 	pk := "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
 
-	imported, err := s.Import(context.Background(), "mock", pk, nil)
+	imported, err := s.Import(context.Background(), "mock", pk, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey)
 	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.PublicKeyHash)
