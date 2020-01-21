@@ -22,7 +22,7 @@ Security and convenience are typically at odds with each other. Signatory makes 
 
 ## Quick Start
 
-Coming soon
+[See docs](/docs/README.md)
 
 ---
 
@@ -64,7 +64,7 @@ By supporting multiple Cloud KMS/HSM systems, we hope to help the network from c
 | ---------------- | ----------- |
 | Azure KMS        | In Testing  |
 | YubiHSM2         | In Testing  |
-| Google Cloud KMS | Planned     |
+| Google Cloud KMS | In Testing  |
 | AWS KMS          | Planned     |
 
 ### Tezos Address Types
@@ -79,10 +79,10 @@ In Tezos, the signing algorithm you can infer from the first three characters of
 
 |                  | tz1 | tz2 | tz3 |
 | ---------------- | --- | --- | --- |
-| Google Cloud KMS | ☒   | ☒   | ☑   |
-| AWS KMS          | ☒   | ☑   | ☑   |
-| Azure KMS        | ☒   | ☑   | ☑   |
-| YubiHSM2         | ☑   | ☑   | ☑   |
+| Google Cloud KMS | ❌   | ❌   | ✅   |
+| AWS KMS          | ❌   | ✅   | ✅   |
+| Azure KMS        | ❌   | ✅   | ✅   |
+| YubiHSM2         | ✅   | ✅   | ✅   |
 
 ---
 

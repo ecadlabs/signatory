@@ -1,92 +1,70 @@
 package signatory
 
 import (
-	"encoding/base64"
+	"context"
+	"fmt"
 
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
 
-// Importer interface representing an importer backend
-type Importer interface {
-	Import(jwk *JWK) (string, error)
-	Name() string
-}
-
-// JWK struct containing a standard key format
-type JWK struct {
-	KeyType string `json:"kty"`
-	D       string `json:"d"`
-	X       string `json:"x"`
-	Y       string `json:"y"`
-	Curve   string `json:"crv"`
-}
-
-// ImportedKey struct containing information about an imported key
-type ImportedKey struct {
-	Hash  string
-	KeyID string
-}
-
-// KeyPair interface that represent an elliptic curve key pair
-type KeyPair interface {
-	X() []byte
-	Y() []byte
-	D() []byte
-	CurveName() string
-}
-
 // Import a keyPair inside the vault
-func (s *Signatory) Import(pubkey string, secretKey string, importer Importer) (*ImportedKey, error) {
-	keyPair := tezos.NewKeyPair(pubkey, secretKey)
-	err := keyPair.Validate()
+func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB tezos.PassphraseFunc, opt utils.Options) (*PublicKey, error) {
+	v, ok := s.vaults[importerName]
+	if !ok {
+		return nil, fmt.Errorf("import: vault %s is not found", importerName)
+	}
+
+	importer, ok := v.(vault.Importer)
+	if !ok {
+		return nil, fmt.Errorf("import: vault %s doesn't support import operation", importerName)
+	}
+
+	pk, err := tezos.ParsePrivateKey(secretKey, passCB)
 	if err != nil {
 		return nil, err
 	}
 
-	jwk, err := ToJWK(keyPair)
+	pub := pk.Public()
+
+	hash, err := tezos.EncodePublicKeyHash(pub)
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := keyPair.PubKeyHash()
-	if err != nil {
-		return nil, err
+	l := s.logger().WithFields(log.Fields{
+		logPKH:   hash,
+		logVault: importer.Name(),
+	})
+	if n, ok := importer.(vault.VaultNamer); ok {
+		l = l.WithField(logVaultName, n.VaultName())
+	} else {
+		l = l.WithField(logVaultName, importerName)
 	}
-
-	logfields := log.Fields{
-		LogPKH:   hash,
-		LogVault: importer.Name(),
-	}
-	if n, ok := importer.(VaultNamer); ok {
-		logfields[LogVaultName] = n.VaultName()
-	}
-	l := s.logger.WithFields(logfields)
 
 	l.Info("Requesting import operation")
 
-	keyID, err := importer.Import(jwk)
+	stored, err := importer.Import(ctx, pk, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	l.WithField(LogKeyID, keyID).Info("Successfully imported")
+	s.cache.push(hash, &keyVaultPair{key: stored, vault: importer})
 
-	importedKey := &ImportedKey{
-		KeyID: keyID,
-		Hash:  hash,
+	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
+
+	enc, err := tezos.EncodePublicKey(pub)
+	if err != nil {
+		return nil, err
 	}
 
-	return importedKey, nil
-}
-
-// ToJWK Convert a keyPair to a JWK
-func ToJWK(k KeyPair) (*JWK, error) {
-	return &JWK{
-		X:       base64.StdEncoding.EncodeToString(k.X()),
-		Y:       base64.StdEncoding.EncodeToString(k.Y()),
-		D:       base64.StdEncoding.EncodeToString(k.D()),
-		KeyType: "EC",
-		Curve:   k.CurveName(),
+	return &PublicKey{
+		PublicKey:     enc,
+		PublicKeyHash: hash,
+		VaultName:     importer.Name(),
+		ID:            stored.ID(),
+		Policy:        s.fetchPolicyOrDefault(hash),
 	}, nil
 }

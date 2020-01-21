@@ -3,184 +3,116 @@ package server
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strings"
-	"time"
 
-	"encoding/json"
-
+	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/ecadlabs/signatory/pkg/config"
 )
 
-const (
-	msgErrReadingRequest  = "error reading the request"
-	msgErrSigningRequest  = "error signing the request"
-	msgErrFetchingRequest = "error fetching key the request"
-)
+const defaultAddr = ":6732"
 
-// Signer interface representing a Signer
+// Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
 	Sign(ctx context.Context, keyHash string, message []byte) (string, error)
-	GetPublicKey(ctx context.Context, keyHash string) (string, error)
+	GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error)
 }
 
 // Server struct containing the information necessary to run a tezos remote signers
 type Server struct {
-	signatory Signer
-	config    *config.ServerConfig
-	srv       *http.Server
-	logger    log.FieldLogger
+	Signer  Signer
+	Address string
+	Logger  log.FieldLogger
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
-type signResponse struct {
-	Signature string `json:"signature"`
-}
-
-type pubKeyResponse struct {
-	PublicKey string `json:"public_key"`
-}
-
-// NewServer create a new server struct
-func NewServer(signatory Signer, config *config.ServerConfig, logger log.FieldLogger) *Server {
-	s := &Server{signatory: signatory, config: config, logger: logger}
-	if s.logger == nil {
-		s.logger = log.StandardLogger()
+func (s *Server) logger() log.FieldLogger {
+	if s.Logger != nil {
+		return s.Logger
 	}
-	return s
+	return log.StandardLogger()
 }
 
-func (server *Server) handleError(w http.ResponseWriter, msg string) {
-	response := errorResponse{Error: msg}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		server.logger.Error("Error encoding error response")
-	}
-}
-
-func (server *Server) validateOperation(op []byte) ([]byte, error) {
-	// Must begin and end with quotes
-	opString := strings.TrimSpace(string(op))
-	if !strings.HasPrefix(opString, "\"") || !strings.HasSuffix(opString, "\"") {
-		return nil, fmt.Errorf("Invalid operation")
-	}
-	opString = strings.Trim(opString, "\"")
-
-	// Must be valid hex chars
-	parsedHex, err := hex.DecodeString(opString)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid operation")
-	}
-	return parsedHex, nil
-}
-
-// Sign is the HTTP request handler that signs operations
-func (server *Server) Sign(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	params := mux.Vars(r)
-	requestedKeyHash := params["key"]
+func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	keyHash := mux.Vars(r)["key"]
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
-		server.logger.Error("Error reading POST content: ", err)
-
-		w.WriteHeader(http.StatusInternalServerError)
-		server.handleError(w, msgErrReadingRequest)
+		s.logger().Errorf("Error reading POST content: %v", err)
+		jsonError(w, err)
 		return
 	}
 
-	parsedHex, err := server.validateOperation(body)
-
-	if err != nil {
-		server.logger.Error("Error reading POST content: ", err)
-
-		w.WriteHeader(http.StatusBadRequest)
-		server.handleError(w, msgErrReadingRequest)
+	var req string
+	if err := json.Unmarshal(body, &req); err != nil {
+		jsonError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
-	signed, err := server.signatory.Sign(r.Context(), requestedKeyHash, parsedHex)
-
+	data, err := hex.DecodeString(req)
 	if err != nil {
-		server.logger.Error("Error signing request:", err)
-
-		w.WriteHeader(http.StatusInternalServerError)
-		server.handleError(w, msgErrSigningRequest)
-	} else {
-		response := signResponse{Signature: signed}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			server.logger.Error("Error encoding signing response")
-		}
+		jsonError(w, errors.Wrap(err, http.StatusBadRequest))
+		return
 	}
-}
 
-// GetKey s the HTTP request handler that get the public key from a public key hash
-func (server *Server) GetKey(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	params := mux.Vars(r)
-	requestedKeyHash := params["key"]
-
-	pubKey, err := server.signatory.GetPublicKey(r.Context(), requestedKeyHash)
+	signature, err := s.Signer.Sign(r.Context(), keyHash, data)
 	if err != nil {
-		server.logger.Println("Error fetching key:", err)
-
-		w.WriteHeader(http.StatusInternalServerError)
-		server.handleError(w, msgErrFetchingRequest)
-	} else {
-		response := pubKeyResponse{PublicKey: pubKey}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			server.logger.Error("Error encoding public key response")
-		}
+		s.logger().Errorf("Error signing request: %v", err)
+		jsonError(w, err)
+		return
 	}
+
+	resp := struct {
+		Signature string `json:"signature"`
+	}{
+		Signature: signature,
+	}
+	jsonResponse(w, http.StatusOK, &resp)
 }
 
-func (server *Server) authorizedKeys(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, "{}")
+func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
+	keyHash := mux.Vars(r)["key"]
+
+	key, err := s.Signer.GetPublicKey(r.Context(), keyHash)
+	if err != nil {
+		jsonError(w, err)
+		return
+	}
+
+	resp := struct {
+		PublicKey string `json:"public_key"`
+	}{
+		PublicKey: key.PublicKey,
+	}
+	jsonResponse(w, http.StatusOK, &resp)
 }
 
-func (server *Server) createRootHandler() http.Handler {
+func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResponse(w, http.StatusOK, &struct{}{})
+}
+
+// New returns a new http server with registered routes
+func (s *Server) New() HTTPServer {
 	r := mux.NewRouter()
 	r.Use((&Logging{}).Handler)
-	r.HandleFunc("/keys/{key}", server.Sign).Methods("POST")
-	r.HandleFunc("/keys/{key}", server.GetKey).Methods("GET")
-	r.HandleFunc("/authorized_keys", server.authorizedKeys).Methods("GET")
-	return r
-}
 
-// Serve start the server and register route
-func (server *Server) Serve() error {
-	handlers := server.createRootHandler()
+	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
+	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
+	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
 
-	binding := fmt.Sprintf(":%d", server.config.Port)
+	addr := s.Address
+	if addr == "" {
+		addr = defaultAddr
+	}
 
 	srv := &http.Server{
-		Handler:      handlers,
-		Addr:         binding,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Handler: r,
+		Addr:    addr,
 	}
 
-	server.srv = srv
-
-	return srv.ListenAndServe()
-}
-
-// Shutdown the server
-func (server *Server) Shutdown(ctx context.Context) error {
-	if server.srv != nil {
-		return server.srv.Shutdown(ctx)
-	}
-	return nil
+	s.logger().Printf("HTTP server is listening for connections on %s", addr)
+	return srv
 }

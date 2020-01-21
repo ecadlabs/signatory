@@ -46,7 +46,7 @@ type responseWriterHijacker struct {
 	http.Hijacker
 }
 
-func NewResponseStatusWriter(w http.ResponseWriter) ResponseStatusWriter {
+func newResponseStatusWriter(w http.ResponseWriter) ResponseStatusWriter {
 	ret := &responseWriter{
 		ResponseWriter: w,
 	}
@@ -78,7 +78,7 @@ func (l *Logging) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timestamp := time.Now()
 
-		rw := NewResponseStatusWriter(w)
+		rw := newResponseStatusWriter(w)
 		h.ServeHTTP(rw, r)
 
 		fields := log.Fields{
