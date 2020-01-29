@@ -1,0 +1,129 @@
+server:
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+
+vaults:
+  kms:
+    driver: cloudkms
+    config:
+      application_credentials_data: '${KMS_CREDENTIALS}'
+      project: ${KMS_PROJECT}
+      location: ${KMS_LOCATION}
+      key_ring: ${KMS_KEY_RING}
+  azure:
+    driver: azure
+    config:
+      vault: ${AZURE_VAULT}
+      tenant_id: ${AZURE_TENANT_ID}
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE}
+  file:
+    driver: file
+    config:
+      vault: test
+      file: /home/circleci/integration-tests/signatory/integration/client_data/secret_keys
+      read_encrypted: true
+  yubi:
+    driver: yubihsm
+    config:
+      address: ${YUBI_ADDRESS}
+      password: ${YUBI_PASSWORD}
+      auth_key_id: ${YUBI_AUTH_KEY_ID}
+
+# List enabled hashes here
+tezos:
+  # Explicit policy
+  tz2UBGrEBKzzW6hjXjxxiQFJNg6WR2bm6GEN:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz1b9kV41KV9N3sp69ycLdSoZ2Ak8jXwtNPv:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3hRZUScFCcEVhdDjXWoyekbgd1Gatga6mp:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz29DwfjrzrMXoktq2V74aV5HV997AczJhvU:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3hFR7NZtjT2QtzgMQnWb4xMuD6yt2YzXUt:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3Qa3kjWa6B3XgvZcVe24gTfjkc5WZRz59Q:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz1U8bnXWZqLQ8d3ZMMa1HztzxP24rykZk8z:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz2HPh4i5csBt8zhaDnhnt3mZMzuaauMgydF:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3Lfm6CyfSTZ7EgMckptZZGiPxzs9GK59At:
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement

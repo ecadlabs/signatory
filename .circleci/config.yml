@@ -33,6 +33,39 @@ jobs:
             fi
 
             ./cc-test-reporter -p "${mod}/" after-build
+  integration:
+    machine:
+        enabled: true
+    working_directory: ~/integration-tests/signatory
+    steps:
+      - checkout:
+          path: ~/integration-tests/signatory
+      - run:
+          name: Pull Tezos
+          command: docker pull tezos/tezos:mainnet-staging
+      - run:
+          name: Build integration test image
+          command: docker build -t signatory-integration -f integration/Dockerfile .
+      - run:
+          name: Run integration test
+          command: |
+            docker run \
+            --network host \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -e AZURE_CLIENT_ID=$AZURE_CLIENT_ID \
+            -e AZURE_CLIENT_SECRET=$AZURE_CLIENT_SECRET \
+            -e AZURE_RESOURCE=$AZURE_RESOURCE \
+            -e AZURE_SUBSCRIPTION_ID=$AZURE_SUBSCRIPTION_ID \
+            -e AZURE_TENANT_ID=$AZURE_TENANT_ID \
+            -e AZURE_VAULT=$AZURE_VAULT \
+            -e KMS_CREDENTIALS="$KMS_CREDENTIALS" \
+            -e KMS_PROJECT=$KMS_PROJECT \
+            -e KMS_LOCATION=$KMS_LOCATION \
+            -e KMS_KEY_RING=$KMS_KEY_RING \
+            -e YUBI_ADDRESS=$YUBI_ADDRESS \
+            -e YUBI_PASSWORD=$YUBI_PASSWORD \
+            -e YUBI_AUTH_KEY_ID=$YUBI_AUTH_KEY_ID \
+            signatory-integration    
   publish:
     docker:
       - image: docker:17.05.0-ce-git
@@ -56,6 +89,7 @@ workflows:
   test:
     jobs:
       - test
+      - integration
   publish:
     jobs:
       - test:
