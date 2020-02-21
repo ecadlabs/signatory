@@ -30,8 +30,10 @@ jobs:
 
           mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
-          echo "Generating coverage report..."
-          [[ ! -z "$CC_TEST_REPORTER_ID" ]] && ./cc-test-reporter after-build -p "${mod}/" -t gocov
+          if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
+            echo "Generating coverage report..."
+            ./cc-test-reporter after-build -p "${mod}/" -t gocov
+          fi
 
   publish:
     name: Publish
