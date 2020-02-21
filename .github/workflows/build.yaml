@@ -23,11 +23,15 @@ jobs:
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
 
           ./cc-test-reporter before-build
+
+          echo "Running tests..."
           go test -coverprofile c.out ./...
-          mod=$(cat go.mod | awk '/^module/ {print $2}')
+
+          echo "Generating coverage report..."
+          MOD="$(cat go.mod | awk '/^module/ {print $2}')"
 
           export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
-          [[ ! -z "$CC_TEST_REPORTER_ID" ]] && ./cc-test-reporter after-build -p "${mod}/" -t gocov
+          [[ ! -z "$CC_TEST_REPORTER_ID" ]] && ./cc-test-reporter after-build -p "${MOD}/" -t gocov
 
   publish:
     name: Publish
