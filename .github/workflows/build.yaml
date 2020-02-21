@@ -19,8 +19,8 @@ jobs:
           chmod +x ./cc-test-reporter
       - name: Run tests
         run: |
-          export GIT_COMMIT_SHA=${{ github.sha }}
-          export GIT_BRANCH=$(echo ${{ github.ref }} | sed -E -e 's/.*\/(.*)/\1/')
+          export GIT_COMMIT_SHA='${{ github.sha }}'
+          export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
 
           ./cc-test-reporter before-build
           go test -coverprofile c.out ./...
@@ -39,25 +39,25 @@ jobs:
 
       - name: Build image
         run: |
-          REF=$(echo ${{ github.ref }} | sed -E -e 's/.*\/(.*)/\1/')
-          if [[ ${{ github.ref }} == refs/tags/* ]]; then
-            GIT_VERSION=$REF
+          REF="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
+          if [[ '${{ github.ref }}' == refs/tags/* ]]; then
+            GIT_VERSION="$REF"
           else
-            GIT_BRANCH=$REF
+            GIT_BRANCH="$REF"
           fi
           docker build \
-          --build-arg GIT_REVISION=${{ github.sha }} \
-          --build-arg GIT_BRANCH=$GIT_BRANCH \
-          --build-arg GIT_VERSION=$GIT_VERSION \
+          --build-arg "GIT_REVISION=${{ github.sha }}" \
+          --build-arg "GIT_BRANCH=$GIT_BRANCH" \
+          --build-arg "GIT_VERSION=$GIT_VERSION" \
           --tag $IMAGE_NAME:latest \
           --file Dockerfile .
 
       - name: Log into registry
-        run: echo ${{ secrets.DOCKER_PASS }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+        run: echo '${{ secrets.DOCKER_PASS }}' | docker login -u '${{ secrets.DOCKER_USER }}' --password-stdin
 
       - name: Push image
         run: |
-          VERSION=$(echo "${{ github.ref }}" |  sed -E -e 's/.*\/v?(.*)/\1/')
+          VERSION="$(echo '${{ github.ref }}' |  sed -E -e 's/.*\/v?(.*)/\1/')"
           docker tag $IMAGE_NAME:latest $IMAGE_NAME:$VERSION
           docker push $IMAGE_NAME:$VERSION
           docker push $IMAGE_NAME:latest
