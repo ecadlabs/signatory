@@ -18,7 +18,10 @@ jobs:
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
           chmod +x ./cc-test-reporter
       - name: Run tests
-      - run: |
+        run: |
+          export GIT_COMMIT_SHA=${{ github.sha }}
+          export GIT_BRANCH=$(echo ${{ github.ref }} | sed -E -e 's/.*\/(.*)/\1/')
+
           ./cc-test-reporter before-build
           go test -coverprofile c.out ./...
           mod=$(cat go.mod | awk '/^module/ {print $2}')
@@ -38,14 +41,14 @@ jobs:
         run: |
           REF=$(echo ${{ github.ref }} | sed -E -e 's/.*\/(.*)/\1/')
           if [[ ${{ github.ref }} == refs/tags/* ]]; then
-            VERSION=$REF
+            GIT_VERSION=$REF
           else
-            BRANCH=$REF
+            GIT_BRANCH=$REF
           fi
           docker build \
           --build-arg GIT_REVISION=${{ github.sha }} \
-          --build-arg GIT_BRANCH=$BRANCH \
-          --build-arg GIT_VERSION=$VERSION \
+          --build-arg GIT_BRANCH=$GIT_BRANCH \
+          --build-arg GIT_VERSION=$GIT_VERSION \
           --tag $IMAGE_NAME:latest \
           --file Dockerfile .
 
