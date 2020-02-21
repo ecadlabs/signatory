@@ -1,0 +1,60 @@
+on: push
+
+env:
+  CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+  IMAGE_NAME: ecadlabs/signatory
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+      - uses: actions/checkout@v2
+      - name: Setup Code Climate test-reporter
+        run: |
+          curl -L "$CC_BINARY_URL" > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+      - name: Run tests
+      - run: |
+          ./cc-test-reporter before-build
+          go test -coverprofile c.out ./...
+          mod=$(cat go.mod | awk '/^module/ {print $2}')
+
+          export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
+          [[ ! -z "$CC_TEST_REPORTER_ID" ]] && ./cc-test-reporter after-build -p "${mod}/" -t gocov
+
+  publish:
+    name: Publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: |
+          REF=$(echo ${{ github.ref }} | sed -E -e 's/.*\/(.*)/\1/')
+          if [[ ${{ github.ref }} == refs/tags/* ]]; then
+            VERSION=$REF
+          else
+            BRANCH=$REF
+          fi
+          docker build \
+          --build-arg GIT_REVISION=${{ github.sha }} \
+          --build-arg GIT_BRANCH=$BRANCH \
+          --build-arg GIT_VERSION=$VERSION \
+          --tag $IMAGE_NAME:latest \
+          --file Dockerfile .
+
+      - name: Log into registry
+        run: echo ${{ secrets.DOCKER_PASS }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+
+      - name: Push image
+        run: |
+          VERSION=$(echo "${{ github.ref }}" |  sed -E -e 's/.*\/v?(.*)/\1/')
+          docker tag $IMAGE_NAME:latest $IMAGE_NAME:$VERSION
+          docker push $IMAGE_NAME:$VERSION
+          docker push $IMAGE_NAME:latest

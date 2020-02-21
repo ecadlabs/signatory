@@ -5,7 +5,7 @@ ENV GO111MODULE="on"
 WORKDIR /build/signatory
 RUN apk update && apk add git openssh bash
 ADD . .
-RUN go build -ldflags "-X ${COLLECTOR_PKG}.GitRevision=${GIT_REVISION} -X ${COLLECTOR_PKG}.GitBranch=${GIT_REVISION} -X ${COLLECTOR_PKG}.GitVersion=${GIT_VERSION}" ./cmd/signatory
+RUN go build -ldflags "-X ${COLLECTOR_PKG}.GitRevision=${GIT_REVISION} -X ${COLLECTOR_PKG}.GitBranch=${GIT_BRANCH} -X ${COLLECTOR_PKG}.GitVersion=${GIT_VERSION}" ./cmd/signatory
 
 # final stage
 FROM alpine
