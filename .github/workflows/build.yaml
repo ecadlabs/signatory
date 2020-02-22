@@ -56,7 +56,7 @@ jobs:
           --build-arg "GIT_BRANCH=$GIT_BRANCH" \
           --build-arg "GIT_VERSION=$GIT_VERSION" \
           --tag $IMAGE_NAME:latest \
-          --file Dockerfile .
+          --file ./cmd/signatory/Dockerfile .
 
       - name: Log into registry
         run: echo '${{ secrets.DOCKER_PASS }}' | docker login -u '${{ secrets.DOCKER_USER }}' --password-stdin
