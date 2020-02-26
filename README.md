@@ -3,7 +3,7 @@
 #### A Tezos Remote Signer
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2778/badge)](https://bestpractices.coreinfrastructure.org/projects/2778)
-[![CircleCI](https://circleci.com/gh/ecadlabs/signatory.svg?style=svg)](https://circleci.com/gh/ecadlabs/signatory)
+[![GitHub Actions](https://github.com/ecadlabs/signatory/workflows/Test%20and%20publish/badge.svg)](https://github.com/ecadlabs/signatory/actions)
 [![Maintainability](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/maintainability)](https://codeclimate.com/github/ecadlabs/signatory/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/test_coverage)](https://codeclimate.com/github/ecadlabs/signatory/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ecadlabs/signatory)](https://goreportcard.com/report/github.com/ecadlabs/signatory)
