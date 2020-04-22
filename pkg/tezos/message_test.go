@@ -141,6 +141,36 @@ func TestUnsignedOperations(t *testing.T) {
 	}
 }
 
+func TestParseUnsignedMessage(t *testing.T) {
+	type testCase struct {
+		data []byte
+		op   *UnsignedEndorsement
+	}
+
+	var cases = []testCase{
+		{
+
+			data: mustHex("029caecab9c1f5142a0e842be39063c79c6d8952fd74f7957e1d471ffe14bb45c0faa130200000058213"),
+			op: &UnsignedEndorsement{
+				ChainID: "NetXjD3HPJJjmcd",
+				OpEndorsement: OpEndorsement{
+					Level: 360979,
+				},
+			},
+		},
+	}
+	as := assert.New(t)
+
+	for _, tst := range cases {
+		buf := tst.data
+		op, err := ParseUnsignedMessage(buf)
+		if !as.NoError(err) {
+			continue
+		}
+		as.Equal(tst.op, op)
+	}
+}
+
 func mustTime(s string) time.Time {
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {

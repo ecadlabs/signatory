@@ -763,7 +763,9 @@ func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
 			}, nil
 
 		case wmEndorsement:
-			level, err := getInt32(&buf)
+			// level is the last 4 bytes
+			l := buf[len(buf)-4:]
+			level, err := getInt32(&l)
 			if err != nil {
 				return nil, err
 			}
