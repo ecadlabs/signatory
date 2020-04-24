@@ -22,12 +22,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       - name: install npm deps
-        run: npm install
-      - name: build site
+        run: npm ci
+      - name: Publish to Github pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
+          GITHUB_EMAIL: ${{ secrets.DEPLOY_GITHUB_EMAIL }}
+          GIT_USER: ${{ secrets.DEPLOY_GITHUB_USER }}
+          CURRENT_BRANCH: $GITHUB_REF
         run: |
-          npm run build
-      - name: deploy docusarus site to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./website/build
+          git config --global user.email "$GITHUB_EMAIL"
+          git config --global user.name "$GITHUB_ACTOR"
+          echo "machine github.com login $GIT_USER password $GITHUB_TOKEN" > ~/.netrc
+          cat ~/.netrc
+          GIT_USER=${GIT_USER} npm run deploy
