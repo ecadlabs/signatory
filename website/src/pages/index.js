@@ -9,7 +9,7 @@ import styles from './styles.module.css';
 const features = [
   {
     title: <>Easy to start, trivial to secure</>,
-    imageUrl: 'img/undraw_docusaurus_mountain.svg',
+    imageUrl: 'img/undraw_security_o890.svg',
     description: (
       <>
         Start prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense
@@ -18,7 +18,7 @@ const features = [
   },
   {
     title: <>Signatory signs only the operations you want</>,
-    imageUrl: 'img/undraw_docusaurus_tree.svg',
+    imageUrl: 'img/undraw_data_processing_yrrv.svg',
     description: (
       <>
         Set policy on the type of Tezos Operations you want to allow signing. Are you running a baker? Limit it to blocks and endorsements. Institution? Signatory can enforce policies.
@@ -27,7 +27,7 @@ const features = [
   },
   {
     title: <>Built with observability</>,
-    imageUrl: 'img/undraw_docusaurus_react.svg',
+    imageUrl: 'img/undraw_observations_mejb.svg',
     description: (
       <>
         Critical infrastructure monitoring is crucial. Signatory exposes operational metrics for Prometheus allowing teams to monitor operations with the tools they have already invested in
