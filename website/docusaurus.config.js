@@ -38,6 +38,10 @@ module.exports = {
               to: 'docs/start',
             },
             {
+              label: 'Local Secret',
+              to: 'docs/filebased',
+            },
+            {
               label: 'YubiHSM',
               to: 'docs/yubihsm',
             },
