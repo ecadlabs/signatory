@@ -21,7 +21,7 @@ utility_address: :9583
 
 vaults:
 # Name of vault
-local_file_keys:
+  local_file_keys:
     driver: file
     config:
     file: /etc/secret.json
@@ -67,6 +67,11 @@ You can test that signatory is working making a GET request using the Public Key
 
 ```sh
 curl signatory:6732/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm
+* signatory should be defined in the /etc/hosts file as a custome domain url as below:
+  192.168.10.3  signatory
+
+In case of using signatory installed on the local host, try this:
+curl localhost:6732/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm
 ```
 
 A response such as the following should be expected:
