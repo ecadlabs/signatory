@@ -33,6 +33,7 @@ const (
 // UnsignedMessage is implemented by all kinds of sign request payloads
 type UnsignedMessage interface {
 	MessageKind() string
+	getChainID() string
 }
 
 // UnsignedOperation represents operation without a signature

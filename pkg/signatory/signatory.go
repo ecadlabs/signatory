@@ -94,7 +94,7 @@ func (k *keyCache) get(pkh string) *keyVaultPair {
 	defer k.mtx.Unlock()
 
 	if pair, ok := k.cache[pkh]; ok {
-		return pairS
+		return pair
 	}
 
 	return nil
