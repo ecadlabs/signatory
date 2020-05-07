@@ -197,7 +197,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 
 	switch msgKind {
 	case opEndorsement:
-		l = l.WithField(logChainID, msg.getChainID())
+		l = l.WithField(logChainID, msg.GetChainID())
 	// case opBlock:
 	}
 	
