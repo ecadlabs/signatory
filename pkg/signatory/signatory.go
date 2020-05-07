@@ -31,6 +31,13 @@ const (
 	logOp        = "op"
 	logKind      = "kind"
 	logKeyID     = "key_id"
+	logChainID	 = "chain_id"
+)
+
+// operation kinds
+const (
+	opEndorsement	= "endorsement"
+	opBlock			= "block"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -87,7 +94,7 @@ func (k *keyCache) get(pkh string) *keyVaultPair {
 	defer k.mtx.Unlock()
 
 	if pair, ok := k.cache[pkh]; ok {
-		return pair
+		return pairS
 	}
 
 	return nil
@@ -183,15 +190,23 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		l.WithField("raw", hex.EncodeToString(message)).Error(err)
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
+	
+// l = l.WithField(logOp, msg.MessageKind())	
+	msgKind := msg.MessageKind()  // operation: endorsement, block
+	l = l.WithField(logOp, msgKind)
 
-	l = l.WithField(logOp, msg.MessageKind())
-
+	switch msgKind {
+	case opEndorsement:
+		l = l.WithField(logChainID, msg.getChainID())
+	// case opBlock:
+	}
+	
 	var opKind []string
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
 	}
-
+	
 	p, err := s.getPublicKey(ctx, keyHash)
 	if err != nil {
 		l.Error(err)
