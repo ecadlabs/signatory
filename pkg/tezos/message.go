@@ -32,14 +32,13 @@ const (
 
 // UnsignedMessage is implemented by all kinds of sign request payloads
 type UnsignedMessage interface {
-	MessageKind() string
-	GetChainID() string
+	MessageKind() string	
 }
 
 // UnsignedOperation represents operation without a signature
 type UnsignedOperation struct {
 	Branch   string
-	Contents []OperationContents
+	Contents []OperationContents	
 }
 
 // MessageKind returns unsigned message kind name i.e. "generic"

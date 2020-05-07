@@ -34,12 +34,6 @@ const (
 	logChainID	 = "chain_id"
 )
 
-// operation kinds
-const (
-	opEndorsement	= "endorsement"
-	opBlock			= "block"
-)
-
 // SignInterceptor is an observer function for signing request
 type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 
@@ -191,22 +185,20 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 	
-// l = l.WithField(logOp, msg.MessageKind())	
-	msgKind := msg.MessageKind()  // operation: endorsement, block
-	l = l.WithField(logOp, msgKind)
-
-	switch msgKind {
-	case opEndorsement:
-		l = l.WithField(logChainID, msg.GetChainID())
-	// case opBlock:
-	}
-	
+	l = l.WithField(logOp, msg.MessageKind())	
+		
 	var opKind []string
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
 	}
 	
+	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
+		chainID := msgWithChainID.GetChainID()
+		l = l.WithField(logChainID, chainID)
+	}
+
+
 	p, err := s.getPublicKey(ctx, keyHash)
 	if err != nil {
 		l.Error(err)
