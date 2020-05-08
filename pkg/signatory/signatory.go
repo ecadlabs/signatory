@@ -195,7 +195,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 
 	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
 		chainID := msgWithChainID.GetChainID()
-		l = l.WithField(logChainID, chainID)
+		l = l.WithField(logChainID, "chain_id_should_be_here")
 	}
 
 	p, err := s.getPublicKey(ctx, keyHash)
