@@ -31,6 +31,7 @@ const (
 	logOp        = "op"
 	logKind      = "kind"
 	logKeyID     = "key_id"
+	logChainID   = "chain_id"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -190,6 +191,11 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
+	}
+
+	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
+		chainID := msgWithChainID.GetChainID()
+		l = l.WithField(logChainID, chainID)
 	}
 
 	p, err := s.getPublicKey(ctx, keyHash)
