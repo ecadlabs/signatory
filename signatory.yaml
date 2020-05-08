@@ -1,0 +1,26 @@
+server:
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+
+vaults:
+  # Name is used to identify backend during import process
+  local_file_keys:
+    driver: file
+    config:
+      file: ./secret.json
+
+# List enabled public keys hashes here
+tezos:
+  # Default policy allows "block" and "endorsement" operations
+  tz1SVwdLNf3ANMQE1AXrxS1pBG8tcn2joVZg:
+    # Setting `log_payloads` to `true` will cause Signatory to log operation
+    # payloads to `stdout`. This may be desirable for audit and investigative
+    # purposes.
+    log_payloads: true
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
