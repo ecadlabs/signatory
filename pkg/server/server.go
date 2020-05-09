@@ -59,23 +59,17 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    p, _ := s.Signer.GetPublicKey(r.Context(), keyHash)
-	vaultName := p.VaultName
-	msg, _ := tezos.ParseUnsignedMessage(data)
-	msgWithChainID := msg.(tezos.MessageWithLevelAndChainID)
-	level := msgWithChainID.GetLevel()
-	chainID := msgWithChainID.GetChainID()
-    s.logger().Printf("[TEST]  Vault Name: %v, Public Key Hash: %v, Level: %v, Chain ID: %v\n", vaultName, keyHash, level, chainID)
-
 	signature, err := s.Signer.Sign(r.Context(), keyHash, data)
 	if err != nil {
 		p, _ := s.Signer.GetPublicKey(r.Context(), keyHash)
 		vaultName := p.VaultName
 		msg, _ := tezos.ParseUnsignedMessage(data)
-		msgWithChainID = msg.(tezos.MessageWithLevelAndChainID)
-		level := msgWithChainID.GetLevel()
-		chainID := msgWithChainID.GetChainID()
-		s.logger().Errorf("Error signing request: %v, Vault Name: %v, keyHash: %v, Level: %v, ChainID: %v", err, vaultName, keyHash, level, chainID)
+		if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
+			level := msgWithChainID.GetLevel()
+			chainID := msgWithChainID.GetChainID()
+			s.logger().Errorf("Error signing request: %v, Vault Name: %v, keyHash: %v, Level: %v, ChainID: %v", err, vaultName, keyHash, level, chainID)
+		}
+
 		jsonError(w, err)
 		return
 	}
