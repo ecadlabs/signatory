@@ -20,7 +20,7 @@ const (
 	logVaultName	= "vault_name"
 	logOp		= "op"
 	logChainID	= "chain_id"
-	logLevel	= "level"
+	logLevel	= "lvl"
 )
 
 // Signer interface representing a Signer (currently implemented by Signatory)
