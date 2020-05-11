@@ -52,6 +52,7 @@ type PublicKey struct {
 	VaultName     string
 	ID            string
 	Policy        *config.TezosPolicy
+    Status        string
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -305,7 +306,11 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			VaultName:     p.vault.Name(),
 			ID:            p.key.ID(),
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
+            Status:        "FOUND_NOT_CONFIGURED",
 		}
+        if  ret[i].Policy != nil {
+            ret[i].Status = "ACTIVE"
+        }
 	}
 	return ret, nil
 }

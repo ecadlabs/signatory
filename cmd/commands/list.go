@@ -11,11 +11,10 @@ const listTemplateSrc = `{{range . -}}
 Public Key Hash:    {{.PublicKeyHash}}
 Vault:              {{.VaultName}}
 ID:                 {{.ID}}
+Status:		    {{.Status}}
 {{with .Policy -}}
 Allowed Operations: {{.AllowedOperations}}
 Allowed Kinds:      {{.AllowedKinds}}
-{{else -}}
-*DISABLED*
 {{end}}
 {{end -}}
 `
