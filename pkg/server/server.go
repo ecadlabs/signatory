@@ -18,6 +18,7 @@ const defaultAddr = ":6732"
 const (
 	logPKH		= "pkh"
 	logVaultName	= "vault_name"
+	logOp		= "op"
 	logChainID	= "chain_id"
 	logLevel	= "level"
 )
@@ -71,15 +72,16 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		vaultName := p.VaultName
 		msg, _ := tezos.ParseUnsignedMessage(data)
 		if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
+			op := msg.MessageKind()
 			level := msgWithChainID.GetLevel()
 			chainID := msgWithChainID.GetChainID()
 			l := s.logger().WithFields(log.Fields{
 				logVaultName:	vaultName,
+				logOp:		op,
 				logPKH:		keyHash,
 				logLevel:	level,
 				logChainID:	chainID,
 			})
-//			s.logger().Errorf("Error signing request: %v, Vault Name: %v, keyHash: %v, Level: %v, ChainID: %v", err, vaultName, keyHash, level, chainID)
 			l.Errorf("Error signing request: %v", err)
 		}
 
