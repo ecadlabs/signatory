@@ -172,7 +172,6 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
 	l := s.logger().WithField(logPKH, keyHash)
 
-
 	policy := s.fetchPolicyOrDefault(keyHash)
 	if policy == nil {
 		err := fmt.Errorf("%s is not listed in config", keyHash)
