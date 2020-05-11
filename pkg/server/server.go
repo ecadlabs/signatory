@@ -15,6 +15,12 @@ import (
 )
 
 const defaultAddr = ":6732"
+const (
+	logPKH		= "pkh"
+	logVaultName	= "vault_name"
+	logChainID	= "chain_id"
+	logLevel	= "level"
+)
 
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
@@ -67,7 +73,14 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
 			level := msgWithChainID.GetLevel()
 			chainID := msgWithChainID.GetChainID()
-			s.logger().Errorf("Error signing request: %v, Vault Name: %v, keyHash: %v, Level: %v, ChainID: %v", err, vaultName, keyHash, level, chainID)
+			l := s.logger().WithFields(log.Fields{
+				logVaultName:	vaultName,
+				logPKH:		keyHash,
+				logLevel:	level,
+				logChainID:	chainID,
+			})
+//			s.logger().Errorf("Error signing request: %v, Vault Name: %v, keyHash: %v, Level: %v, ChainID: %v", err, vaultName, keyHash, level, chainID)
+			l.Errorf("Error signing request: %v", err)
 		}
 
 		jsonError(w, err)
