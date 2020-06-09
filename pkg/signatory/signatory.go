@@ -185,7 +185,11 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logOp, msg.MessageKind())
+	err = s.matchFilter(msg, policy)
+	if err != nil {
+		l = l.WithField(logOp, msg.MessageKind())
+		return "", errors.Wrap(err, http.StatusBadRequest)
+	}
 
 	var opKind []string
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
