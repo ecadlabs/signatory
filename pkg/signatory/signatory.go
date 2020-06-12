@@ -152,16 +152,19 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		for _, op := range ops.Contents {
-			kind := op.OperationKind()
+			opKind := op.OperationKind()
+            if (kind != "generic" && opKind != "") {
+                return fmt.Errorf("request kind `%s' can not have operations", kind)
+            }
 			allowed = false
 			for _, k := range policy.AllowedKinds {
-				if kind == k {
+				if opKind == k {
 					allowed = true
 					break
 				}
 			}
 			if !allowed {
-				return fmt.Errorf("operation `%s' is not allowed", kind)
+				return fmt.Errorf("operation `%s' is not allowed", opKind)
 			}
 		}
 	}
