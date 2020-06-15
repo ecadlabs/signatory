@@ -6,15 +6,35 @@ server:
 
 vaults:
   # Name is used to identify backend during import process
-  local_file_keys:
-    driver: file
+  kms:
+    driver: cloudkms
     config:
-      file: ./secret.json
+      # See backend specific documentation
+      project: signatory
+      location: europe-north1
+      key_ring: hsm-ring
+  azure:
+    driver: azure
+    config:
+      # See backend specific documentation
+      vault: https://signatory.vault.azure.net/
+      tenant_id: cf5dd0ba-d3a3-4f3f-a688-06d12672f8ed
+      client_id: 5d29a974-edd0-4659-b933-7d9c56726649
+      client_pkcs12_certificate: principal.pfx
+  yubi:
+    driver: yubihsm
+    config:
+      # See backend specific documentation
+      address: localhost:12345
+      password: password
+      auth_key_id: 1
 
 # List enabled public keys hashes here
 tezos:
   # Default policy allows "block" and "endorsement" operations
-  tz1SVwdLNf3ANMQE1AXrxS1pBG8tcn2joVZg:
+  tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
+  # Explicit policy
+  tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     # Setting `log_payloads` to `true` will cause Signatory to log operation
     # payloads to `stdout`. This may be desirable for audit and investigative
     # purposes.
@@ -23,4 +43,8 @@ tezos:
       # List of [generic, block, endorsement]
       - generic
       - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
       - endorsement
