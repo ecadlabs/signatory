@@ -56,14 +56,18 @@ Signatory currently supports [Azure Key Vault][0]. Other backend signing service
 
 We are adding support for additional backend Key Management Systems (KMS) for the secure handling of private keys. Most cloud-based KMS systems offer an HSM backed mode, which we strongly recommended.
 
-By supporting multiple Cloud KMS/HSM systems, we hope to help the network from centralization on a particular Cloud offering. In the first year of the Tezos network operation, there was anecdotal evidence that many bakers run on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable.
+Our goal in supporting multiple Cloud KMS/HSM services is to help in preventing centralization on the _network_ or _infrastructure_ level. It is not optimal for Tezos to have the most decentralized network in terms of bakers, and of those bakers, a large majority operate on single infrastructure provider.
+
+In the first year of the Tezos network operation, there was anecdotal evidence that a lot of bakers run on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable.
+
+By supporting multiple Cloud KMS/HSM systems, we hope to help the network from centralization on a particular Cloud offering. In the first year of the Tezos network operation, there was anecdotal evidence that many bakers run on AWS.  AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable.
 
 ### Backend KMS/HSM Support Status
 
 |                  | Status      |
 | ---------------- | ----------- |
+| YubiHSM2         | Implemented |
 | Azure KMS        | In Testing  |
-| YubiHSM2         | In Testing  |
 | Google Cloud KMS | In Testing  |
 | AWS KMS          | Planned     |
 
@@ -113,6 +117,19 @@ At least three other remote signers are available to use with Tezos. Tezos also 
 * [Tezzigators Azure remote signer](https://github.com/tezzigator/azure-tezos-signer)
 * [Tacoinfra's remote signer](https://github.com/tacoinfra/remote-signer)
 * [Polychain Lab's remote signer](https://gitlab.com/polychainlabs/tezos-hsm-signer)
+
+## Disclaimer
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGE.
 
 [0]: https://azure.microsoft.com/en-ca/services/key-vault/
 [1]: https://keybase.io/jevonearth
