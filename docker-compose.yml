@@ -1,7 +1,7 @@
 version: '3'
 services:
   signatory:
-      build: .
+      image: ecadlabs/signatory
       ports:
         - "80:80"
       volumes: 

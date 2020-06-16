@@ -1,0 +1,37 @@
+name: Publish signatory.io website
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: install npm deps
+        run: npm ci
+      - name: Publish to Github pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
+          GITHUB_EMAIL: ${{ secrets.DEPLOY_GITHUB_EMAIL }}
+          GIT_USER: ${{ secrets.DEPLOY_GITHUB_USER }}
+          CURRENT_BRANCH: $GITHUB_REF
+        run: |
+          git config --global user.email "$GITHUB_EMAIL"
+          git config --global user.name "$GITHUB_ACTOR"
+          echo "machine github.com login $GIT_USER password $GITHUB_TOKEN" > ~/.netrc
+          cat ~/.netrc
+          GIT_USER=${GIT_USER} npm run deploy

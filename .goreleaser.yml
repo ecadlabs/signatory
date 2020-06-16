@@ -1,0 +1,42 @@
+# goreleaser documentation at http://goreleaser.com
+before:
+  hooks:
+    # you may remove this if you don't use vgo
+    - go mod download
+builds:
+- env:
+  - CGO_ENABLED=0
+  main: ./cmd/signatory/main.go
+  ldflags:
+  - -X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}
+  - -X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}
+  goos:
+    - freebsd
+    - linux
+    - windows
+    - darwin
+  goarch:
+    - amd64
+    - arm
+  ignore:
+        - goos: darwin
+          goarch: 386
+        - goos: windows
+          goarch: 386
+archives:
+- replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'

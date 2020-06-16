@@ -1,47 +1,98 @@
-package signatory_test
+package signatory
 
 import (
 	"context"
-	"fmt"
+	"crypto"
 	"testing"
 
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/watermark"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/segmentio/ksuid"
+	"github.com/stretchr/testify/require"
+	yaml "gopkg.in/yaml.v3"
 )
 
-type FakeVault struct {
-	ContainsFunc func(keyHash string) bool
+type noopIterator struct {
+	keys []*keyMock
+	idx  int
 }
 
-func (v *FakeVault) Contains(keyHash string) bool { return v.ContainsFunc(keyHash) }
-func (v *FakeVault) GetPublicKey(ctx context.Context, keyHash string) (signatory.StoredKey, error) {
-	return nil, nil
-}
-func (v *FakeVault) ListPublicKeys(ctx context.Context) ([]signatory.StoredKey, error) {
-	return []signatory.StoredKey{}, nil
-}
-func (v *FakeVault) Import(jwk *signatory.JWK) (string, error) { return "", nil }
-func (v *FakeVault) Name() string                              { return "Mock" }
-func (v *FakeVault) Sign(ctx context.Context, message []byte, storedKey signatory.StoredKey) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func TestGetPublicKeyNoVault(t *testing.T) {
-	s := signatory.NewSignatory(
-		[]signatory.Vault{&FakeVault{
-			ContainsFunc: func(keyHash string) bool { return false },
-		}},
-		make(config.TezosConfig),
-		nil,
-		watermark.NewIgnore(),
-		nil,
-	)
-
-	_, err := s.GetPublicKey(context.TODO(), "Unkown address")
-
-	if err != signatory.ErrVaultNotFound {
-		fmt.Printf("Unexpected error was thrown: %s\n", err.Error())
-		t.Fail()
+func (i *noopIterator) Next() (key vault.StoredKey, err error) {
+	if i.idx == len(i.keys) {
+		return nil, vault.ErrDone
 	}
+	key = i.keys[i.idx]
+	i.idx++
+	return key, nil
+}
+
+type vaultMock struct {
+	keys map[string]cryptoutils.PrivateKey
+}
+
+type keyMock struct {
+	id  string
+	key crypto.PublicKey
+}
+
+func (k *keyMock) PublicKey() crypto.PublicKey { return k.key }
+func (k *keyMock) ID() string                  { return k.id }
+
+func (v *vaultMock) GetPublicKey(ctx context.Context, id string) (vault.StoredKey, error) {
+	pk, ok := v.keys[id]
+	if !ok {
+		return nil, ErrVaultNotFound
+	}
+	return &keyMock{id: id, key: pk.Public()}, nil
+}
+
+func (v *vaultMock) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+	ret := make([]*keyMock, 0)
+	for id, key := range v.keys {
+		ret = append(ret, &keyMock{id: id, key: key.Public()})
+	}
+	return &noopIterator{keys: ret}
+}
+
+func (v *vaultMock) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	return nil, ErrVaultNotFound
+}
+
+func (v *vaultMock) Name() string { return "mock" }
+
+func (v *vaultMock) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	id := ksuid.New().String()
+	v.keys[id] = pk
+	return &keyMock{id: id, key: pk.Public()}, nil
+}
+
+var _ vault.Importer = &vaultMock{}
+
+func init() {
+	vault.RegisterVault("mock", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+		return &vaultMock{keys: make(map[string]cryptoutils.PrivateKey)}, nil
+	})
+}
+
+func TestSignatory(t *testing.T) {
+	conf := Config{
+		Vaults:    map[string]*config.VaultConfig{"mock": &config.VaultConfig{Driver: "mock"}},
+		Watermark: NewIgnoreWatermark(),
+	}
+
+	s, err := NewSignatory(context.Background(), &conf)
+	require.NoError(t, err)
+
+	pk := "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
+
+	imported, err := s.Import(context.Background(), "mock", pk, nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey)
+	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.PublicKeyHash)
+
+	list, err := s.ListPublicKeys(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, []*PublicKey{imported}, list)
 }

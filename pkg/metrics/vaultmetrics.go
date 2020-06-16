@@ -42,7 +42,7 @@ var (
 )
 
 // Interceptor function collects sing operation metrics
-func Interceptor(opt *signatory.SingInterceptorOptions, sing func() error) error {
+func Interceptor(opt *signatory.SignInterceptorOptions, sing func() error) error {
 	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(seconds float64) {
 		vaultSigningHist.WithLabelValues(opt.Vault).Observe(seconds * 1000)
 	}))
@@ -59,7 +59,9 @@ func Interceptor(opt *signatory.SingInterceptorOptions, sing func() error) error
 		vaultErrorCounter.WithLabelValues(opt.Vault, code).Inc()
 	}
 
-	signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Op, opt.Kind).Inc()
+	for _, k := range opt.Kind {
+		signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Op, k).Inc()
+	}
 
 	return err
 }

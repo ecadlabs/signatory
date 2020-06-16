@@ -1,41 +1,50 @@
----
-azure:
-  # The name of your Azure `sp` or service principal. Must be prefixed with
-  # `http://`
-  - client_id: http://spname91
-    # client_secret is the `password` field of the azure `sp` record
-    client_secret: 6cf08fc2-..YOUR_UUID...
-    # directory_id is on the Key Vault signing overview page
-    tenant_id: 50c46f11-..YOUR_TENANT_ID...
-    # The name of our Key Vault signer. This is part of Azures URL 
-    # for your keys, ex; https://YOUR_VAULT_NAME.vault.azure.net
-    vault: YOUR_VAULT_NAME
-    # The resource group name in which your Key Vault was created
-    resource_group: YOUR_RESOURCE_GROUP_NAME
-    # Your subscription UUID
-    subscription: be273d20-...YOUR_SUBSCRIPTION_UUID...
-    # You must list the keys you wish signatory to operate with
-    keys:
-      - https://YOUR_VAULT_NAME.vault.azure.net/keys/YOUR_KEY_NAME
-
 server:
-  # Default port 6732
-  port: 6732
-  # Default port 9583
-  utility_port: 9583
-tezos:
-  tz1_YOUR_TZ_ADDRESS_HERE:
-    # Control if operations for signing should be logged
-    log_payloads: yes
-    # Allow list for operations controls what type of operations signatory will sign.
-    # A baker should be able to endorse and produce blocks, but would not require `transactions`.
-    allowed_operations:
-      - endorsement
-      - block
-      - generic
-    allowed_kinds:
-      - ballot
-      # - delegation
-      # - reveal
-      # - transaction
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
 
+vaults:
+  # Name is used to identify backend during import process
+  kms:
+    driver: cloudkms
+    config:
+      # See backend specific documentation
+      project: signatory
+      location: europe-north1
+      key_ring: hsm-ring
+  azure:
+    driver: azure
+    config:
+      # See backend specific documentation
+      vault: https://signatory.vault.azure.net/
+      tenant_id: cf5dd0ba-d3a3-4f3f-a688-06d12672f8ed
+      client_id: 5d29a974-edd0-4659-b933-7d9c56726649
+      client_pkcs12_certificate: principal.pfx
+  yubi:
+    driver: yubihsm
+    config:
+      # See backend specific documentation
+      address: localhost:12345
+      password: password
+      auth_key_id: 1
+
+# List enabled public keys hashes here
+tezos:
+  # Default policy allows "block" and "endorsement" operations
+  tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
+  # Explicit policy
+  tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
+    # Setting `log_payloads` to `true` will cause Signatory to log operation
+    # payloads to `stdout`. This may be desirable for audit and investigative
+    # purposes.
+    log_payloads: true
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement

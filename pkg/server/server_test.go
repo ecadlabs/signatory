@@ -1,32 +1,32 @@
-package server_test
+package server
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/server"
+	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/stretchr/testify/require"
 )
 
-type FakeSignatory struct {
-	Response string
-	Error    error
-
-	ReadResponse string
-	ReadError    error
+type fakeSignatory struct {
+	SignResponse      string
+	SignError         error
+	PublicKeyResponse *signatory.PublicKey
+	PublicKeyError    error
 }
 
-func (c *FakeSignatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
-	return c.Response, c.Error
+func (c *fakeSignatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
+	return c.SignResponse, c.SignError
 }
-func (c *FakeSignatory) GetPublicKey(ctx context.Context, keyHash string) (string, error) {
-	return c.ReadResponse, c.ReadError
+
+func (c *fakeSignatory) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+	return c.PublicKeyResponse, c.PublicKeyError
 }
 
 func toReadCloser(str string) io.ReadCloser {
@@ -34,98 +34,128 @@ func toReadCloser(str string) io.ReadCloser {
 }
 
 func TestSign(t *testing.T) {
-	type Case struct {
-		Name        string
-		StatusCode  int
-		Body        io.ReadCloser
-		SigResponse string
-		SigError    error
-		Expected    string
+	type testCase struct {
+		Name       string
+		Request    []byte
+		StatusCode int
+		Response   string
+		Error      error
+		Expected   []byte
 	}
 
-	sampleSig := "sig"
-
-	errReading := "{\"error\":\"error reading the request\"}\n"
-	errSig := "{\"error\":\"error signing the request\"}\n"
-	expectedSig := fmt.Sprintf("{\"signature\":\"%s\"}\n", sampleSig)
-
-	cases := []Case{
-		Case{Name: "Bad request", StatusCode: http.StatusBadRequest, Expected: errReading},
-		Case{Name: "Invalid body", StatusCode: http.StatusBadRequest, Expected: errReading, Body: toReadCloser("03")},
-		Case{Name: "Invalid hex", StatusCode: http.StatusBadRequest, Expected: errReading, Body: toReadCloser("\"03ZZZZ\"")},
-		Case{Name: "Ok", StatusCode: http.StatusOK, Expected: expectedSig, SigResponse: sampleSig, Body: toReadCloser("\"03123453\"")},
-		Case{Name: "Signature error", StatusCode: http.StatusInternalServerError, Expected: errSig, SigError: errors.New("test"), Body: toReadCloser("\"03123453\"")},
+	cases := []testCase{
+		{
+			Name:       "Bad request",
+			StatusCode: http.StatusBadRequest,
+			Expected:   []byte("{\"error\":\"unexpected end of JSON input\"}\n"),
+		},
+		{
+			Name:       "Invalid body",
+			Request:    []byte("03"),
+			StatusCode: http.StatusBadRequest,
+			Expected:   []byte("{\"error\":\"invalid character '3' after top-level value\"}\n"),
+		},
+		{
+			Name:       "Invalid hex",
+			Request:    []byte("\"03ZZZZ\""),
+			StatusCode: http.StatusBadRequest,
+			Expected:   []byte("{\"error\":\"encoding/hex: invalid byte: U+005A 'Z'\"}\n"),
+		},
+		{
+			Name:       "Ok",
+			Request:    []byte("\"03123453\""),
+			StatusCode: http.StatusOK,
+			Response:   "signature",
+			Expected:   []byte("{\"signature\":\"signature\"}\n"),
+		},
+		{
+			Name:       "Signature error",
+			Request:    []byte("\"03123453\""),
+			StatusCode: http.StatusInternalServerError,
+			Error:      errors.New("error"),
+			Expected:   []byte("{\"error\":\"error\"}\n"),
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &FakeSignatory{
-				Error:    c.SigError,
-				Response: c.SigResponse,
-			}
-			srv := server.NewServer(sig, nil, nil)
-			r := httptest.NewRequest("POST", "http://irrelevant.com", c.Body)
-			rr := httptest.NewRecorder()
-			srv.Sign(rr, r)
-
-			if status := rr.Code; status != c.StatusCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, c.StatusCode)
+			sig := &fakeSignatory{
+				SignError:    c.Error,
+				SignResponse: c.Response,
 			}
 
-			body, err := ioutil.ReadAll(rr.Body)
+			srv := &Server{
+				Signer: sig,
+			}
+
+			var body io.Reader
+			if c.Request != nil {
+				body = bytes.NewReader(c.Request)
+			}
+
+			r := httptest.NewRequest("POST", "http://irrelevant.com", body)
+			resp := httptest.NewRecorder()
+			srv.signHandler(resp, r)
+
+			require.Equal(t, resp.Code, c.StatusCode)
+
+			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Errorf(err.Error())
 			}
 
-			if string(body) != c.Expected {
-				t.Errorf("handler returned wrong body: got %v want %v", string(body), c.Expected)
-			}
+			require.Equal(t, b, c.Expected)
 		})
 	}
 }
 
 func TestGetPublicKey(t *testing.T) {
-	type Case struct {
+	type testCase struct {
 		Name       string
 		StatusCode int
-		Response   string
+		Response   *signatory.PublicKey
 		Error      error
-		Expected   string
+		Expected   []byte
 	}
 
-	samplePubkey := "pubkey"
-
-	errReading := "{\"error\":\"error fetching key the request\"}\n"
-	expectedRead := fmt.Sprintf("{\"public_key\":\"%s\"}\n", samplePubkey)
-
-	cases := []Case{
-		Case{Name: "Read Error", Error: errors.New("test"), StatusCode: http.StatusInternalServerError, Expected: errReading},
-		Case{Name: "Normal case", StatusCode: http.StatusOK, Response: samplePubkey, Expected: expectedRead},
+	cases := []testCase{
+		{
+			Name:       "Read Error",
+			StatusCode: http.StatusInternalServerError,
+			Error:      errors.New("test"),
+			Expected:   []byte("{\"error\":\"test\"}\n"),
+		},
+		{
+			Name:       "Normal case",
+			StatusCode: http.StatusOK,
+			Response:   &signatory.PublicKey{PublicKey: "key"},
+			Expected:   []byte("{\"public_key\":\"key\"}\n"),
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &FakeSignatory{
-				ReadError:    c.Error,
-				ReadResponse: c.Response,
+			sig := &fakeSignatory{
+				PublicKeyError:    c.Error,
+				PublicKeyResponse: c.Response,
 			}
-			srv := server.NewServer(sig, nil, nil)
+
+			srv := &Server{
+				Signer: sig,
+			}
+
 			r := httptest.NewRequest("GET", "http://irrelevant.com", nil)
-			rr := httptest.NewRecorder()
-			srv.GetKey(rr, r)
+			resp := httptest.NewRecorder()
+			srv.getKeyHandler(resp, r)
 
-			if status := rr.Code; status != c.StatusCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, c.StatusCode)
-			}
+			require.Equal(t, resp.Code, c.StatusCode)
 
-			body, err := ioutil.ReadAll(rr.Body)
+			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Errorf(err.Error())
 			}
 
-			if string(body) != c.Expected {
-				t.Errorf("handler returned wrong body: got %v want %v", string(body), c.Expected)
-			}
+			require.Equal(t, b, c.Expected)
 		})
 	}
 }
