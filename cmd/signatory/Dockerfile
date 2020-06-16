@@ -1,4 +1,4 @@
-FROM golang:alpine AS build-env
+FROM golang:1.14-alpine AS build-env
 
 ENV COLLECTOR_PKG="github.com/ecadlabs/signatory/pkg/metrics"
 ENV GO111MODULE="on"
