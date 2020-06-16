@@ -9,11 +9,19 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
 const defaultAddr = ":6732"
+const (
+	logPKH       = "pkh"
+	logVaultName = "vault_name"
+	logOp        = "op"
+	logChainID   = "chain_id"
+	logLevel     = "lvl"
+)
 
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
@@ -60,9 +68,40 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signature, err := s.Signer.Sign(r.Context(), keyHash, data)
 	if err != nil {
-		s.logger().Errorf("Error signing request: %v", err)
-		jsonError(w, err)
-		return
+		p, e := s.Signer.GetPublicKey(r.Context(), keyHash)
+		if e != nil {
+			s.logger().Errorf("Error signing request: %v", err)
+			jsonError(w, err)
+			return
+		}
+
+		vaultName := p.VaultName
+		msg, e := tezos.ParseUnsignedMessage(data)
+		if e != nil {
+			s.logger().Errorf("Error signing request: %v", err)
+			jsonError(w, err)
+			return
+		}
+
+		if msgWithChainID, e := msg.(tezos.MessageWithLevelAndChainID); e {
+			op := msg.MessageKind()
+			level := msgWithChainID.GetLevel()
+			chainID := msgWithChainID.GetChainID()
+			l := s.logger().WithFields(log.Fields{
+				logVaultName: vaultName,
+				logOp:        op,
+				logPKH:       keyHash,
+				logLevel:     level,
+				logChainID:   chainID,
+			})
+			l.Errorf("Error signing request: %v", err)
+			jsonError(w, err)
+			return
+		} else {
+			s.logger().Errorf("Error signing request: %v", err)
+			jsonError(w, err)
+			return
+		}
 	}
 
 	resp := struct {

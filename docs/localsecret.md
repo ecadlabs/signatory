@@ -21,7 +21,7 @@ utility_address: :9583
 
 vaults:
 # Name of vault
-local_file_keys:
+  local_file_keys:
     driver: file
     config:
     file: /etc/secret.json
@@ -30,12 +30,12 @@ local_file_keys:
 tezos:
 # Default policy allows "block" and "endorsement" operations
 tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm:
-    log_payloads: true
-    allowed_operations:
-    # List of [generic, block, endorsement]
-    - generic
-    - block
-    - endorsement
+  log_payloads: true
+  allowed_operations:
+  # List of [generic, block, endorsement]
+  - generic
+  - block
+  - endorsement
 ```
 
 The `tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm` key corresponds to the secret key that you will put in `/etc/secret.json`
@@ -52,8 +52,10 @@ Contents of `/etc/secret.json` is:
 
 Next, you want to run the signatory docker image as follows:
 
+_Remember to secure the network where Signatory is running_
+
 ```sh
-docker run -it --rm \ 
+docker run -it --rm \
     -v "$(realpath file.yaml):/app/signatory.yaml" \
     -v "$(realpath tezkeys/secret_keys):/etc/secret.json" \
     -p 6732:6732 \
@@ -63,7 +65,7 @@ docker run -it --rm \
 
 ### Verify that signatory is working
 
-You can test that signatory is working making a GET request using the Public Key Hash (PKH). Signatory will return a json payload containing the public key. 
+You can test that signatory is working, making a GET request using the Public Key Hash (PKH). Signatory will return a JSON payload containing the public key.
 
 ```sh
 curl signatory:6732/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm
@@ -83,11 +85,12 @@ curl -XPOST \
     signatory:6732/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm
 ```
 
-
-Which should return an HTTP 200 OK with a payload similar to (this will only work once): 
+Which should return an HTTP 200 OK with a payload similar to:
 
 ```json
 {"signature":"sigWetzF5zVM2qdYt8QToj7e5cNBm9neiPRc3rpePBDrr8N1brFbErv2YfXMSoSgemJ8AwZcLfmkBDg78bmUEzF1sf1YotnS"}
 ```
 
-The payload on this request resembels a Tezos endorsement that would be emitted from a Tezos Baker node.
+If you repeat the same signing operation more than once, you will get an error from the High-Watermark feature. This is a safety measure to prevent injection of duplicate operations.
+
+The payload on this request resembles a Tezos endorsement that would be emitted from a Tezos Baker node.
