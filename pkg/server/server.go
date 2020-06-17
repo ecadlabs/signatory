@@ -68,14 +68,14 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signature, err := s.Signer.Sign(r.Context(), keyHash, data)
 	if err != nil {
-		p, e := s.Signer.GetPublicKey(r.Context(), keyHash)
+		_, e := s.Signer.GetPublicKey(r.Context(), keyHash)
 		if e != nil {
 			s.logger().Errorf("Error signing request: %v", err)
 			jsonError(w, err)
 			return
 		}
 
-		vaultName := p.VaultName
+		vaultName := "mock"
 		msg, e := tezos.ParseUnsignedMessage(data)
 		if e != nil {
 			s.logger().Errorf("Error signing request: %v", err)
