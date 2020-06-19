@@ -15,4 +15,4 @@ RUN apk --no-cache add ca-certificates
 COPY --from=build-env /build/signatory/signatory /bin
 COPY --from=build-env /build/signatory/signatory-cli /bin
 
-ENTRYPOINT ["/app/signatory"]
+ENTRYPOINT ["/bin/signatory"]
