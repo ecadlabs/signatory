@@ -154,9 +154,9 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		for _, op := range ops.Contents {
 			opKind := op.OperationKind()
-            if (kind != "generic" && opKind != "") {
-                return fmt.Errorf("request kind `%s' can not have operations", kind)
-            }
+			if kind != "generic" && opKind != "" {
+				return fmt.Errorf("request kind `%s' can not have operations", kind)
+			}
 			allowed = false
 			for _, k := range policy.AllowedKinds {
 				if opKind == k {
@@ -177,20 +177,20 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	l := s.logger().WithField(logPKH, keyHash)
 
 	policy := s.fetchPolicyOrDefault(keyHash)
-	err := fmt.Errorf("%s is not listed in config", keyHash)
-    l.WithField("raw", hex.EncodeToString(message)).Error(err)
 	if policy == nil {
+		err := fmt.Errorf("%s is not listed in config", keyHash)
+		l.WithField("raw", hex.EncodeToString(message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseUnsignedMessage(message)
-	l.WithField("raw", hex.EncodeToString(message)).Error(err)
 	if err != nil {
+		l.WithField("raw", hex.EncodeToString(message)).Error(err)
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	err = s.matchFilter(msg, policy)
 	l = l.WithField(logOp, msg.MessageKind())
+	err = s.matchFilter(msg, policy)
 	if err != nil {
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
@@ -199,18 +199,12 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
-	} else {
-        err := fmt.Errorf("Operation kind is not appropriate")
-        return "", errors.Wrap(err, http.StatusBadRequest)
-    }
+	}
 
 	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
 		chainID := msgWithChainID.GetChainID()
 		l = l.WithField(logChainID, chainID)
-	} else {
-        err := fmt.Errorf("ChainID is not appropriate")
-        return "", errors.Wrap(err, http.StatusBadRequest)
-    }
+	}
 
 	p, err := s.getPublicKey(ctx, keyHash)
 	if err != nil {
