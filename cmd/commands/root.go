@@ -71,7 +71,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 	f := rootCmd.PersistentFlags()
 
-	f.StringVarP(&configFile, "config", "c", "signatory.yaml", "Config file path")
+	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
 
 	return &rootCmd
