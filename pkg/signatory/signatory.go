@@ -154,9 +154,9 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		for _, op := range ops.Contents {
 			opKind := op.OperationKind()
-            if (kind != "generic" && opKind != "") {
-                return fmt.Errorf("request kind `%s' can not have operations", kind)
-            }
+			if kind != "generic" && opKind != "" {
+				return fmt.Errorf("request kind `%s' can not have operations", kind)
+			}
 			allowed = false
 			for _, k := range policy.AllowedKinds {
 				if opKind == k {
@@ -189,9 +189,9 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
+	l = l.WithField(logOp, msg.MessageKind())
 	err = s.matchFilter(msg, policy)
 	if err != nil {
-		l = l.WithField(logOp, msg.MessageKind())
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
