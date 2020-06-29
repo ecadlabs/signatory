@@ -50,6 +50,9 @@ dockers:
     binaries:
     - signatory
     - signatory-cli
+    builds:
+    - signatory
+    - signatory-cli
     image_templates:
     - "technomad21c/signatory:latest"
     - "technomad21c/signatory:{{ .Tag }}"
