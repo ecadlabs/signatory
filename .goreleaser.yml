@@ -4,7 +4,9 @@ before:
     # you may remove this if you don't use vgo
     - go mod download
 builds:
-- env:
+- id: signatory
+  binary: signatory
+  env:
   - CGO_ENABLED=0
   main: ./cmd/signatory/main.go
   ldflags:
@@ -23,6 +25,39 @@ builds:
           goarch: 386
         - goos: windows
           goarch: 386
+- id: signatory-cli
+  binary: signatory-cli
+  env:
+    - CGO_ENABLED=0
+  main: ./cmd/signatory-cli/main.go
+  ldflags:
+    - -X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}
+    - -X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}
+  goos:
+    - freebsd
+    - linux
+    - windows
+    - darwin
+  goarch:
+    - amd64
+    - arm
+  ignore:
+    - goos: darwin
+      goarch: 386
+    - goos: windows
+      goarch: 386
+dockers:
+  - 
+    binaries:
+    - signatory
+    - signatory-cli
+    builds:
+    - signatory
+    - signatory-cli
+    image_templates:
+    - "ecadlabs/signatory:latest"
+    - "ecadlabs/signatory:{{ .Tag }}"
+    dockerfile: Dockerfile
 archives:
 - replacements:
     darwin: Darwin

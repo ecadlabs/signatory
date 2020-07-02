@@ -17,3 +17,5 @@ sig
 vendor/
 .vscode
 .devcontainer
+
+dist
