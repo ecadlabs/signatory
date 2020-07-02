@@ -5,6 +5,7 @@ before:
     - go mod download
 builds:
 - id: signatory
+  binary: signatory
   env:
   - CGO_ENABLED=0
   main: ./cmd/signatory/main.go
@@ -54,8 +55,9 @@ dockers:
     - signatory
     - signatory-cli
     image_templates:
-    - "technomad21c/signatory:latest"
-    - "technomad21c/signatory:{{ .Tag }}"
+    - "ecadlabs/signatory:latest"
+    - "ecadlabs/signatory:{{ .Tag }}"
+    dockerfile: Dockerfile
 archives:
 - replacements:
     darwin: Darwin
