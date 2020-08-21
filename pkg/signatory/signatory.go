@@ -32,6 +32,7 @@ const (
 	logKind      = "kind"
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
+	logLevel     = "lvl"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -52,7 +53,6 @@ type PublicKey struct {
 	VaultName     string
 	ID            string
 	Policy        *config.TezosPolicy
-	Status        string
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -153,19 +153,16 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		for _, op := range ops.Contents {
-			opKind := op.OperationKind()
-			if kind != "generic" && opKind != "" {
-				return fmt.Errorf("request kind `%s' can not have operations", kind)
-			}
+			kind := op.OperationKind()
 			allowed = false
 			for _, k := range policy.AllowedKinds {
-				if opKind == k {
+				if kind == k {
 					allowed = true
 					break
 				}
 			}
 			if !allowed {
-				return fmt.Errorf("operation `%s' is not allowed", opKind)
+				return fmt.Errorf("operation `%s' is not allowed", kind)
 			}
 		}
 	}
@@ -190,20 +187,19 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	}
 
 	l = l.WithField(logOp, msg.MessageKind())
-	err = s.matchFilter(msg, policy)
-	if err != nil {
-		return "", errors.Wrap(err, http.StatusBadRequest)
+
+	if m, ok := msg.(tezos.MessageWithChainID); ok {
+		l = l.WithField(logChainID, m.GetChainID())
+	}
+
+	if m, ok := msg.(tezos.MessageWithLevel); ok {
+		l = l.WithField(logLevel, m.GetLevel())
 	}
 
 	var opKind []string
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
-	}
-
-	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
-		chainID := msgWithChainID.GetChainID()
-		l = l.WithField(logChainID, chainID)
 	}
 
 	p, err := s.getPublicKey(ctx, keyHash)
@@ -219,6 +215,11 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		l = l.WithField(logVaultName, p.name)
 	}
 
+	if err = s.matchFilter(msg, policy); err != nil {
+		l.Error(err)
+		return "", errors.Wrap(err, http.StatusForbidden)
+	}
+
 	l.Info("Requesting signing operation")
 
 	level := log.DebugLevel
@@ -228,7 +229,9 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")
 
 	if !s.config.Watermark.IsSafeToSign(keyHash, msg) {
-		return "", ErrNotSafeToSign
+		err = ErrNotSafeToSign
+		l.Error(err)
+		return "", err
 	}
 
 	// Not nil if vault found
@@ -313,10 +316,6 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			VaultName:     p.vault.Name(),
 			ID:            p.key.ID(),
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
-			Status:        "FOUND_NOT_CONFIGURED",
-		}
-		if ret[i].Policy != nil {
-			ret[i].Status = "ACTIVE"
 		}
 	}
 	return ret, nil
