@@ -97,7 +97,6 @@ func TestSignatory(t *testing.T) {
 
 	list, err := s.ListPublicKeys(context.Background())
 	require.NoError(t, err)
-	imported.Status = "FOUND_NOT_CONFIGURED"
 	require.Equal(t, []*PublicKey{imported}, list)
 }
 
