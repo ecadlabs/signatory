@@ -74,7 +74,7 @@ var (
 	s256Curve secp256k1.KoblitzCurve
 )
 
-// S256 S256 returns a Curve which implements secp256k1 with correct name
+// S256 returns a Curve which implements secp256k1 with correct name
 func S256() *secp256k1.KoblitzCurve {
 	initS256.Do(func() {
 		s256Curve = *secp256k1.S256()
@@ -104,7 +104,7 @@ func CurveEqual(a, b elliptic.Curve) bool {
 		ap.BitSize == bp.BitSize
 }
 
-// PrivateKey is omplemented by private key types
+// PrivateKey is implemented by private key types
 type PrivateKey interface {
 	Public() crypto.PublicKey
 }
