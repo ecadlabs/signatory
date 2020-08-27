@@ -1,4 +1,4 @@
-on: 
+on:
   push:
   pull_request:
     types:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: 1.15
       - uses: actions/checkout@v2
       - name: Setup Code Climate test-reporter
         run: |
@@ -53,7 +53,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.15
       - name: Docker login
         run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: Run GoReleaser
