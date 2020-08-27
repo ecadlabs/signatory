@@ -316,3 +316,29 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 
 	return encodeBase58(prefix, payload)
 }
+
+// EncodeBinaryPublicKeyHash returns binary representation of the public key hash
+func EncodeBinaryPublicKeyHash(s string) (data []byte, err error) {
+	prefix, payload, err := decodeBase58(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var tag byte
+	switch prefix {
+	case pED25519PublicKeyHash:
+		tag = tagPublicKeyHashED25519
+	case pSECP256K1PublicKeyHash:
+		tag = tagPublicKeyHashSECP256K1
+	case pP256PublicKeyHash:
+		tag = tagPublicKeyP256
+	default:
+		return nil, errors.New("tezos: unknown public key type")
+	}
+
+	data = make([]byte, 1+len(payload))
+	data[0] = tag
+	copy(data[1:], payload)
+
+	return data, nil
+}

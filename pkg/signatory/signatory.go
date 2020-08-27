@@ -255,7 +255,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", err
 	}
 
-	sig = cryptoutils.CanonizeSignature(p.key.PublicKey(), sig)
+	sig = cryptoutils.CanonizeSignature(sig)
 
 	l.WithField("raw", sig).Debug("Signed bytes")
 

@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	stderr "errors"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,6 +27,7 @@ type Signer interface {
 
 // Server struct containing the information necessary to run a tezos remote signers
 type Server struct {
+	Auth    auth.AuthorizedKeysStorage
 	Signer  Signer
 	Address string
 	Logger  log.FieldLogger
@@ -35,6 +40,19 @@ func (s *Server) logger() log.FieldLogger {
 	return log.StandardLogger()
 }
 
+func signRequestToSign(payload []byte, keyHash string) ([]byte, error) {
+	keyHashBytes, err := tezos.EncodeBinaryPublicKeyHash(keyHash)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]byte, 2+len(payload)+len(keyHashBytes))
+	data[0] = 4
+	data[1] = 1
+	copy(data[2:], keyHashBytes)
+	copy(data[2+len(keyHashBytes):], payload)
+	return data, nil
+}
+
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	keyHash := mux.Vars(r)["key"]
 
@@ -42,26 +60,81 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		s.logger().Errorf("Error reading POST content: %v", err)
-		jsonError(w, err)
+		tezosJSONError(w, err)
 		return
 	}
 
 	var req string
 	if err := json.Unmarshal(body, &req); err != nil {
-		jsonError(w, errors.Wrap(err, http.StatusBadRequest))
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
 	data, err := hex.DecodeString(req)
 	if err != nil {
-		jsonError(w, errors.Wrap(err, http.StatusBadRequest))
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
+	}
+
+	if s.Auth != nil {
+		v := r.FormValue("authentication")
+		if v == "" {
+			tezosJSONError(w, errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized))
+			return
+		}
+
+		signed, err := signRequestToSign(data, keyHash)
+		if err != nil {
+			s.logger().Error(err)
+			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+			return
+		}
+		digest := tezos.DigestFunc(signed)
+
+		sig, err := tezos.ParseSignature(v, nil)
+		if err != nil {
+			s.logger().Error(err)
+			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+			return
+		}
+
+		hashes, err := s.Auth.ListPublicKeys(r.Context())
+		if err != nil {
+			s.logger().Error(err)
+			tezosJSONError(w, err)
+			return
+		}
+
+		ok := false
+		for _, pkh := range hashes {
+			pub, err := s.Auth.GetPublicKey(r.Context(), pkh)
+			if err != nil {
+				s.logger().Error(err)
+				tezosJSONError(w, err)
+				return
+			}
+
+			err = cryptoutils.Verify(pub, digest[:], sig)
+			if err == nil {
+				ok = true
+				break
+			} else if err != cryptoutils.ErrSignature {
+				s.logger().Error(err)
+				tezosJSONError(w, err)
+				return
+			}
+		}
+
+		if !ok {
+			tezosJSONError(w, errors.Wrap(stderr.New("invalid authentication signature"), http.StatusForbidden))
+			return
+		}
 	}
 
 	signature, err := s.Signer.Sign(r.Context(), keyHash, data)
 	if err != nil {
 		s.logger().Errorf("Error signing request: %v", err)
-		jsonError(w, err)
+		tezosJSONError(w, err)
 		return
 	}
 
@@ -78,7 +151,7 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	key, err := s.Signer.GetPublicKey(r.Context(), keyHash)
 	if err != nil {
-		jsonError(w, err)
+		tezosJSONError(w, err)
 		return
 	}
 
@@ -91,11 +164,26 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResponse(w, http.StatusOK, &struct{}{})
+	if s.Auth == nil {
+		jsonResponse(w, http.StatusOK, &struct{}{})
+	}
+
+	hashes, err := s.Auth.ListPublicKeys(r.Context())
+	if err != nil {
+		tezosJSONError(w, err)
+		return
+	}
+
+	resp := struct {
+		AuthorizedKeys []string `json:"authorized_keys"`
+	}{
+		AuthorizedKeys: hashes,
+	}
+	jsonResponse(w, http.StatusOK, &resp)
 }
 
 // New returns a new http server with registered routes
-func (s *Server) New() HTTPServer {
+func (s *Server) New() *http.Server {
 	r := mux.NewRouter()
 	r.Use((&Logging{}).Handler)
 
@@ -113,6 +201,5 @@ func (s *Server) New() HTTPServer {
 		Addr:    addr,
 	}
 
-	s.logger().Printf("HTTP server is listening for connections on %s", addr)
 	return srv
 }

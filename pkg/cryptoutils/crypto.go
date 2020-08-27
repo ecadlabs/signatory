@@ -110,8 +110,10 @@ func Sign(priv PrivateKey, hash []byte) (Signature, error) {
 	return nil, fmt.Errorf("unsupported key type: %T", priv)
 }
 
-// ErrSignature error returned by Verify if signature is invalid
-var ErrSignature = errors.New("invalid signature")
+var (
+	// ErrSignature error returned by Verify if signature is invalid
+	ErrSignature = errors.New("invalid signature")
+)
 
 // Verify verifies the signature
 func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
@@ -119,7 +121,7 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 	case *ecdsa.PublicKey:
 		s, ok := sig.(*ECDSASignature)
 		if !ok {
-			return fmt.Errorf("ecdsa: unsupported signature type: %T", sig)
+			return ErrSignature
 		}
 		if ok = ecdsa.Verify(key, hash, s.R, s.S); !ok {
 			return ErrSignature
@@ -127,7 +129,7 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 	case ed25519.PublicKey:
 		s, ok := sig.(ED25519Signature)
 		if !ok {
-			return fmt.Errorf("ed25519: unsupported signature type: %T", sig)
+			return ErrSignature
 		}
 		if ok = ed25519.Verify(key, hash, s); !ok {
 			return ErrSignature

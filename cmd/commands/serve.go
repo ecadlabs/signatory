@@ -21,6 +21,8 @@ func NewServeCommand(c *Context) *cobra.Command {
 				Signer:  c.signatory,
 			}
 			srv := srvConf.New()
+			log.Printf("HTTP server is listening for connections on %s", srv.Addr)
+
 			srvErrCh := make(chan error)
 			go func() {
 				srvErrCh <- srv.ListenAndServe()
