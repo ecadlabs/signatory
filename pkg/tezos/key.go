@@ -18,15 +18,15 @@ import (
 
 var (
 	// ErrPrivateKey is returned when private key type is unknown
-	ErrPrivateKey = errors.New("unknown private key type")
+	ErrPrivateKey = errors.New("tezos: unknown private key type")
 	// ErrPublicKey is returned when private key type is unknown
-	ErrPublicKey = errors.New("unknown public key type")
+	ErrPublicKey = errors.New("tezos: unknown public key type")
 	// ErrPrivateKeyValue is returned when elliptic D value of unexpected order is provided
-	ErrPrivateKeyValue = errors.New("invalid elliptic curve private key value")
+	ErrPrivateKeyValue = errors.New("tezos: invalid elliptic curve private key value")
 	// ErrPassphrase is returned when required passphrase is not provided
-	ErrPassphrase = errors.New("passphrase required")
+	ErrPassphrase = errors.New("tezos: passphrase required")
 	// ErrPrivateKeyDecrypt is returned if attempt to decrypt the private key has been failed
-	ErrPrivateKeyDecrypt = errors.New("unable to decrypt the private key")
+	ErrPrivateKeyDecrypt = errors.New("tezos: unable to decrypt the private key")
 )
 
 const (

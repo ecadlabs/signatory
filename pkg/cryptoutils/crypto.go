@@ -17,34 +17,31 @@ import (
 // CanonizeECDSASignature returns the canonical versions of the signature
 // the canonical version enforce low S values
 // if S is above order / 2 it negating the S (modulo the order (N))
-func CanonizeECDSASignature(curve elliptic.Curve, sig *ECDSASignature) *ECDSASignature {
+func CanonizeECDSASignature(sig *ECDSASignature) *ECDSASignature {
 	r := new(big.Int).Set(sig.R)
 	s := new(big.Int).Set(sig.S)
 
-	order := curve.Params().N
+	order := sig.Curve.Params().N
 	quo := new(big.Int).Quo(order, new(big.Int).SetInt64(2))
 	if s.Cmp(quo) > 0 {
 		s = s.Sub(order, s)
 	}
 
 	return &ECDSASignature{
-		R: r,
-		S: s,
+		R:     r,
+		S:     s,
+		Curve: sig.Curve,
 	}
 }
 
 // CanonizeSignature returns the canonical versions of the ECDSA signature if one is given
-func CanonizeSignature(pub crypto.PublicKey, sig Signature) Signature {
-	epub, ok := pub.(*ecdsa.PublicKey)
-	if !ok {
-		return sig
-	}
+func CanonizeSignature(sig Signature) Signature {
 	s, ok := sig.(*ECDSASignature)
 	if !ok {
 		return sig
 	}
 
-	return CanonizeECDSASignature(epub.Curve, s)
+	return CanonizeECDSASignature(s)
 }
 
 // Signature is a type representing a digital signature.
@@ -54,12 +51,13 @@ type Signature interface {
 
 // ECDSASignature is a type representing an ecdsa signature.
 type ECDSASignature struct {
-	R *big.Int
-	S *big.Int
+	R     *big.Int
+	S     *big.Int
+	Curve elliptic.Curve
 }
 
 func (e *ECDSASignature) String() string {
-	return fmt.Sprintf("ecdsa:[r:%x,s:%x]", e.R, e.S)
+	return fmt.Sprintf("ecdsa:[c:%s,r:%x,s:%x]", e.Curve.Params().Name, e.R, e.S)
 }
 
 // ED25519Signature is a type representing an Ed25519 signature
@@ -105,7 +103,7 @@ func Sign(priv PrivateKey, hash []byte) (Signature, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ECDSASignature{R: r, S: s}, nil
+		return &ECDSASignature{R: r, S: s, Curve: key.Curve}, nil
 	case ed25519.PrivateKey:
 		return ED25519Signature(ed25519.Sign(key, hash)), nil
 	}
