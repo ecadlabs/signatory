@@ -20,7 +20,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
-	"github.com/google/tink/go/subtle/kwp"
+	kwp "github.com/google/tink/go/kwp/subtle"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"

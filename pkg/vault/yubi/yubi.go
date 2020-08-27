@@ -301,10 +301,10 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algorithm, caps uint64, p []byte, err error) {
 	switch key := pk.(type) {
 	case *ecdsa.PrivateKey:
-		switch {
-		case key.Curve == elliptic.P256():
+		switch key.Curve {
+		case elliptic.P256():
 			alg = commands.AlgorithmP256
-		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.S256():
 			alg = commands.AlgorithmSecp256k1
 		default:
 			return "", 0, 0, nil, fmt.Errorf("unsupported curve: %s", key.Params().Name)
