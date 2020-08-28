@@ -53,6 +53,50 @@ func signRequestToSign(payload []byte, keyHash string) ([]byte, error) {
 	return data, nil
 }
 
+func (s *Server) authenticateSignRequest(r *http.Request, pkh string, data []byte) error {
+	v := r.FormValue("authentication")
+	if v == "" {
+		return errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized)
+	}
+
+	signed, err := signRequestToSign(data, pkh)
+	if err != nil {
+		return errors.Wrap(err, http.StatusBadRequest)
+	}
+	digest := tezos.DigestFunc(signed)
+
+	sig, err := tezos.ParseSignature(v, nil)
+	if err != nil {
+		return errors.Wrap(err, http.StatusBadRequest)
+	}
+
+	hashes, err := s.Auth.ListPublicKeys(r.Context())
+	if err != nil {
+		return err
+	}
+
+	ok := false
+	for _, pkh := range hashes {
+		pub, err := s.Auth.GetPublicKey(r.Context(), pkh)
+		if err != nil {
+			return err
+		}
+
+		err = cryptoutils.Verify(pub, digest[:], sig)
+		if err == nil {
+			ok = true
+			break
+		} else if err != cryptoutils.ErrSignature {
+			return err
+		}
+	}
+
+	if !ok {
+		return errors.Wrap(stderr.New("invalid authentication signature"), http.StatusForbidden)
+	}
+	return nil
+}
+
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	keyHash := mux.Vars(r)["key"]
 
@@ -77,56 +121,9 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.Auth != nil {
-		v := r.FormValue("authentication")
-		if v == "" {
-			tezosJSONError(w, errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized))
-			return
-		}
-
-		signed, err := signRequestToSign(data, keyHash)
-		if err != nil {
-			s.logger().Error(err)
-			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-			return
-		}
-		digest := tezos.DigestFunc(signed)
-
-		sig, err := tezos.ParseSignature(v, nil)
-		if err != nil {
-			s.logger().Error(err)
-			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-			return
-		}
-
-		hashes, err := s.Auth.ListPublicKeys(r.Context())
-		if err != nil {
+		if err = s.authenticateSignRequest(r, keyHash, data); err != nil {
 			s.logger().Error(err)
 			tezosJSONError(w, err)
-			return
-		}
-
-		ok := false
-		for _, pkh := range hashes {
-			pub, err := s.Auth.GetPublicKey(r.Context(), pkh)
-			if err != nil {
-				s.logger().Error(err)
-				tezosJSONError(w, err)
-				return
-			}
-
-			err = cryptoutils.Verify(pub, digest[:], sig)
-			if err == nil {
-				ok = true
-				break
-			} else if err != cryptoutils.ErrSignature {
-				s.logger().Error(err)
-				tezosJSONError(w, err)
-				return
-			}
-		}
-
-		if !ok {
-			tezosJSONError(w, errors.Wrap(stderr.New("invalid authentication signature"), http.StatusForbidden))
 			return
 		}
 	}
@@ -164,21 +161,19 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
-	if s.Auth == nil {
-		jsonResponse(w, http.StatusOK, &struct{}{})
-	}
-
-	hashes, err := s.Auth.ListPublicKeys(r.Context())
-	if err != nil {
-		tezosJSONError(w, err)
-		return
-	}
-
 	resp := struct {
-		AuthorizedKeys []string `json:"authorized_keys"`
-	}{
-		AuthorizedKeys: hashes,
+		AuthorizedKeys []string `json:"authorized_keys,omitempty"`
+	}{}
+
+	if s.Auth != nil {
+		var err error
+		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
+		if err != nil {
+			tezosJSONError(w, err)
+			return
+		}
 	}
+
 	jsonResponse(w, http.StatusOK, &resp)
 }
 
