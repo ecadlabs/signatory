@@ -33,6 +33,7 @@ const (
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
+	logClient    = "client_pkh"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -46,13 +47,20 @@ type SignInterceptorOptions struct {
 	Kind    []string
 }
 
+type Policy struct {
+	AllowedOperations []string `yaml:"allowed_operations"`
+	AllowedKinds      []string `yaml:"allowed_kinds"`
+	LogPayloads       bool     `yaml:"log_payloads"`
+	AuthorizedKeys    []string `yaml:"authorized_keys"`
+}
+
 // PublicKey contains base58 encoded public key with its hash
 type PublicKey struct {
 	PublicKey     string
 	PublicKeyHash string
 	VaultName     string
 	ID            string
-	Policy        *config.TezosPolicy
+	Policy        *Policy
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -60,6 +68,13 @@ type Signatory struct {
 	config Config
 	vaults map[string]vault.Vault
 	cache  keyCache
+}
+
+// SignRequest represents a sing request which may be authenticated with the client key
+type SignRequest struct {
+	ClientPublicKeyHash string // optional, see policy
+	PublicKeyHash       string
+	Message             []byte
 }
 
 type keyVaultPair struct {
@@ -108,36 +123,40 @@ func (s *Signatory) logger() log.FieldLogger {
 	return log.StandardLogger()
 }
 
-var defaultPolicy = config.TezosPolicy{
+var defaultPolicy = Policy{
 	AllowedOperations: []string{"block", "endorsement"},
 }
 
-func (s *Signatory) fetchPolicyOrDefault(keyHash string) *config.TezosPolicy {
+func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
 	val, ok := s.config.Policy[keyHash]
 	if !ok {
 		return nil
 	}
 	if val != nil {
-		pol := config.TezosPolicy{
-			LogPayloads: val.LogPayloads,
-		}
-		if val.AllowedKinds != nil {
-			pol.AllowedKinds = make([]string, len(val.AllowedKinds))
-			copy(pol.AllowedKinds, val.AllowedKinds)
-			sort.Strings(pol.AllowedKinds)
-		}
-		if val.AllowedOperations != nil {
-			pol.AllowedOperations = make([]string, len(val.AllowedOperations))
-			copy(pol.AllowedOperations, val.AllowedOperations)
-			sort.Strings(pol.AllowedOperations)
-		}
-
-		return &pol
+		return val
 	}
 	return &defaultPolicy
 }
 
-func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosPolicy) error {
+func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) error {
+	if policy.AuthorizedKeys != nil {
+		if req.ClientPublicKeyHash == "" {
+			return errors.New("authentication required")
+		}
+
+		var allowed bool
+		for _, k := range policy.AuthorizedKeys {
+			if k == req.ClientPublicKeyHash {
+				allowed = true
+				break
+			}
+		}
+
+		if !allowed {
+			return fmt.Errorf("client `%s' is not allowed", req.ClientPublicKeyHash)
+		}
+	}
+
 	kind := msg.MessageKind()
 	var allowed bool
 	for _, k := range policy.AllowedOperations {
@@ -170,19 +189,23 @@ func (s *Signatory) matchFilter(msg tezos.UnsignedMessage, policy *config.TezosP
 }
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
-func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
-	l := s.logger().WithField(logPKH, keyHash)
+func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) {
+	l := s.logger().WithField(logPKH, req.PublicKeyHash)
 
-	policy := s.fetchPolicyOrDefault(keyHash)
+	if req.ClientPublicKeyHash != "" {
+		l = l.WithField(logClient, req.ClientPublicKeyHash)
+	}
+
+	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
-		err := fmt.Errorf("%s is not listed in config", keyHash)
-		l.WithField("raw", hex.EncodeToString(message)).Error(err)
+		err := fmt.Errorf("%s is not listed in config", req.PublicKeyHash)
+		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
-	msg, err := tezos.ParseUnsignedMessage(message)
+	msg, err := tezos.ParseUnsignedMessage(req.Message)
 	if err != nil {
-		l.WithField("raw", hex.EncodeToString(message)).Error(err)
+		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
@@ -202,7 +225,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		l = l.WithField(logKind, opKind)
 	}
 
-	p, err := s.getPublicKey(ctx, keyHash)
+	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
 	if err != nil {
 		l.Error(err)
 		return "", err
@@ -215,7 +238,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		l = l.WithField(logVaultName, p.name)
 	}
 
-	if err = s.matchFilter(msg, policy); err != nil {
+	if err = matchFilter(policy, req, msg); err != nil {
 		l.Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
@@ -226,21 +249,21 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(message)).Log(level, "About to sign raw bytes")
+	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
-	if !s.config.Watermark.IsSafeToSign(keyHash, msg) {
+	if !s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg) {
 		err = ErrNotSafeToSign
 		l.Error(err)
 		return "", err
 	}
 
 	// Not nil if vault found
-	digest := tezos.DigestFunc(message)
+	digest := tezos.DigestFunc(req.Message)
 
 	var sig cryptoutils.Signature
 	if s.config.Interceptor != nil {
 		err = s.config.Interceptor(&SignInterceptorOptions{
-			Address: keyHash,
+			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
 			Op:      msg.MessageKind(),
 			Kind:    opKind,
@@ -376,7 +399,7 @@ func (s *Signatory) Unlock(ctx context.Context) error {
 
 // Config represents Signatory configuration
 type Config struct {
-	Policy      config.TezosConfig
+	Policy      map[string]*Policy
 	Vaults      map[string]*config.VaultConfig
 	Interceptor SignInterceptor
 	Watermark   Watermark
@@ -419,4 +442,43 @@ func (s *Signatory) Ready(ctx context.Context) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// PreparePolicy prepares policy data by hashing keys etc
+func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
+	policy := make(map[string]*Policy, len(src))
+	for k, v := range src {
+		pol := Policy{
+			LogPayloads: v.LogPayloads,
+		}
+
+		if v.AllowedKinds != nil {
+			pol.AllowedKinds = make([]string, len(v.AllowedKinds))
+			copy(pol.AllowedKinds, v.AllowedKinds)
+			sort.Strings(pol.AllowedKinds)
+		}
+
+		if v.AllowedOperations != nil {
+			pol.AllowedOperations = make([]string, len(v.AllowedOperations))
+			copy(pol.AllowedOperations, v.AllowedOperations)
+			sort.Strings(pol.AllowedOperations)
+		}
+
+		if v.AuthorizedKeys != nil {
+			keys := v.AuthorizedKeys.List()
+			pol.AuthorizedKeys = make([]string, len(keys))
+			for i, k := range keys {
+				pub, err := tezos.ParsePublicKey(k)
+				if err != nil {
+					return nil, err
+				}
+				pol.AuthorizedKeys[i], err = tezos.EncodePublicKeyHash(pub)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		policy[k] = &pol
+	}
+	return policy, nil
 }

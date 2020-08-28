@@ -24,7 +24,7 @@ type fakeSignatory struct {
 	PublicKeyError    error
 }
 
-func (c *fakeSignatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
+func (c *fakeSignatory) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
 	return c.SignResponse, c.SignError
 }
 
@@ -98,13 +98,17 @@ func TestSign(t *testing.T) {
 
 			r := httptest.NewRequest("POST", "http://irrelevant.com/keys/03123453", body)
 			resp := httptest.NewRecorder()
-			srv.New().Handler.ServeHTTP(resp, r)
+			s, err := srv.New()
+			if err != nil {
+				t.Error(err)
+			}
+			s.Handler.ServeHTTP(resp, r)
 
 			require.Equal(t, c.StatusCode, resp.Code)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -149,13 +153,17 @@ func TestGetPublicKey(t *testing.T) {
 
 			r := httptest.NewRequest("GET", "http://irrelevant.com/keys/03123453", nil)
 			resp := httptest.NewRecorder()
-			srv.New().Handler.ServeHTTP(resp, r)
+			s, err := srv.New()
+			if err != nil {
+				t.Error(err)
+			}
+			s.Handler.ServeHTTP(resp, r)
 
 			require.Equal(t, c.StatusCode, resp.Code)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -210,7 +218,11 @@ func TestSignedRequest(t *testing.T) {
 			r := httptest.NewRequest("POST", u.String(), body)
 
 			resp := httptest.NewRecorder()
-			srv.New().Handler.ServeHTTP(resp, r)
+			s, err := srv.New()
+			if err != nil {
+				t.Error(err)
+			}
+			s.Handler.ServeHTTP(resp, r)
 
 			require.Equal(t, c.StatusCode, resp.Code)
 		})

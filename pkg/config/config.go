@@ -1,17 +1,19 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
 	"io/ioutil"
-	"net"
 
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
 )
 
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
-	Address        string `yaml:"address" validate:"required,hostport"`
-	UtilityAddress string `yaml:"utility_address" validate:"required,hostport"`
+	Address        string          `yaml:"address" validate:"required,hostname_port"`
+	UtilityAddress string          `yaml:"utility_address" validate:"required,hostname_port"`
+	AuthorizedKeys *AuthorizedKeys `yaml:"authorized_keys"`
 }
 
 // TezosConfig contains the configuration related to tezos network
@@ -19,9 +21,10 @@ type TezosConfig map[string]*TezosPolicy
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
-	AllowedOperations []string `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
-	AllowedKinds      []string `yaml:"allowed_kinds" validate:"dive,oneof=endorsement seed_nonce_revelation activate_account ballot reveal transaction origination delegation"`
-	LogPayloads       bool     `yaml:"log_payloads"`
+	AllowedOperations []string        `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
+	AllowedKinds      []string        `yaml:"allowed_kinds" validate:"dive,oneof=endorsement seed_nonce_revelation activate_account ballot reveal transaction origination delegation"`
+	LogPayloads       bool            `yaml:"log_payloads"`
+	AuthorizedKeys    *AuthorizedKeys `yaml:"authorized_keys"`
 }
 
 // VaultConfig represents single vault instance
@@ -50,11 +53,47 @@ func (c *Config) Read(file string) error {
 	return nil
 }
 
+// Validator returns new validator instance
 func Validator() *validator.Validate {
-	validate := validator.New()
-	validate.RegisterValidation("hostport", func(fl validator.FieldLevel) bool {
-		_, _, err := net.SplitHostPort(fl.Field().String())
-		return err == nil
-	})
-	return validate
+	return validator.New()
+}
+
+// AuthorizedKeys keeps list of authorized public keys
+type AuthorizedKeys struct {
+	value string
+	list  []*AuthorizedKeys
+}
+
+// List returns all keys as a string slice
+func (a *AuthorizedKeys) List() []string {
+	if a.list != nil {
+		var ret []string
+		for _, v := range a.list {
+			ret = append(ret, v.List()...)
+		}
+		return ret
+	}
+	return []string{a.value}
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler
+func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) error {
+	var target interface{}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		target = &a.value
+	case yaml.SequenceNode:
+		target = &a.list
+	default:
+		return errors.New("can't decode YAML node")
+	}
+	if err := value.Decode(target); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler
+func (a *AuthorizedKeys) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.List())
 }

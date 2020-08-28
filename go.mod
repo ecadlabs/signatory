@@ -8,11 +8,10 @@ require (
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/go-playground/universal-translator v0.17.0 // indirect
+	github.com/go-playground/validator/v10 v10.3.0
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/tink/go v1.4.0
 	github.com/gorilla/mux v1.8.0
-	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.13.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
@@ -27,7 +26,5 @@ require (
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987
 	google.golang.org/grpc v1.31.1 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
-	gopkg.in/go-playground/validator.v9 v9.31.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )

@@ -37,7 +37,7 @@ const defaultDomains = 1
 
 // Config contains YubiHSM backend configuration
 type Config struct {
-	Address          string `yaml:"address" validate:"omitempty,hostport"`
+	Address          string `yaml:"address" validate:"omitempty,hostname_port"`
 	Password         string `yaml:"password"`
 	AuthKeyID        uint16 `yaml:"auth_key_id"`
 	KeyImportDomains uint16 `yaml:"key_import_domains"`
