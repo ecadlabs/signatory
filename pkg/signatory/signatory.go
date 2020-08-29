@@ -47,6 +47,7 @@ type SignInterceptorOptions struct {
 	Kind    []string
 }
 
+// Policy contains policy data related to the key
 type Policy struct {
 	AllowedOperations []string `yaml:"allowed_operations"`
 	AllowedKinds      []string `yaml:"allowed_kinds"`
@@ -70,7 +71,7 @@ type Signatory struct {
 	cache  keyCache
 }
 
-// SignRequest represents a sing request which may be authenticated with the client key
+// SignRequest represents a sign request which may be authenticated with the client key
 type SignRequest struct {
 	ClientPublicKeyHash string // optional, see policy
 	PublicKeyHash       string
