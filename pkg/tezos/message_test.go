@@ -17,6 +17,7 @@ func mustHex(s string) []byte {
 	return buf
 }
 
+// Forged test cases
 func TestUnsignedOperations(t *testing.T) {
 	type testCase struct {
 		data []byte
@@ -127,6 +128,72 @@ func TestUnsignedOperations(t *testing.T) {
 				},
 			},
 		},
+		{
+			data: mustHex("12758196431d8beaa7e644993007477150da3355d363c8266ced8951404711db03000000ce00108f94061536a898fa5b5f71f33303e6c81c5b974fb7acb81fb969eb3e8d2d019446932d000000005f37de3c04e9c17220fde68b1c5cca2ad49ab6bbfd91c665a4687d223bacf1c93975503c22000000110000000101000000080000000000068f943745c4cde8b4437f5a13703497a8f27f27dcd07a00212b8226060e1f95fa62680000ba45727c8e3d040000158204f817c93ff4e500a877b89935d7769690c19f4155cca5f0c7b838d1a18fdc5fa452903ba5a5fbcf5fe391a55c192a31ee22d82c1ba59af0f9304f52470c000000ce00108f94061536a898fa5b5f71f33303e6c81c5b974fb7acb81fb969eb3e8d2d019446932d000000005f37de3c0461d368abdc29209a178f37b8af74fc2740c0380678644a65bb057452055b7664000000110000000101000000080000000000068f943745c4cde8b4437f5a13703497a8f27f27dcd07a00212b8226060e1f95fa62680000ba45727cfecf070000881c83aa3283505caa813d738206d9e47313837c04bf3ce69a3eed452355c34f1e2d523eb07e53588e6e2cf0567400bc8c153e61dae3ab94876b75497b88c706"),
+			op: &UnsignedOperation{
+				Branch: "BKrQr2tzLfwpu77h7wb8vJmAiZrD7vhBKHj3WJBnH2Wcj1Gwoqe",
+				Contents: []OperationContents{
+					&OpDoubleBakingEvidence{
+						BlockHeader1: &BlockHeader{
+							Level:          1085332,
+							Proto:          6,
+							Predecessor:    "BKsdCv5tsbZ8bYYW5pfkhxDrusgGrEbCczH7GetyofAZPPRgnjn",
+							Timestamp:      mustTime("2020-08-15T13:08:12Z"),
+							ValidationPass: 4,
+							OperationsHash: "LLob6ezDsDXTAN2ew6VDEzmz5NpMfi3wdiYjPesWV6FgkcRtEqXZT",
+							Fitness: [][]uint8{
+								[]uint8{0x01},
+								[]uint8{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
+							},
+							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
+							Priority:         0,
+							ProofOfWorkNonce: []uint8{0xba, 0x45, 0x72, 0x7c, 0x8e, 0x3d, 0x04, 0x00},
+							Signature:        "sigQoVq2enb3a9QuT16K7eYgAQ8GLVkPHm6H3ziaqvvP3njRX38LcZS76cS5TQ3xXmuePZupcPxkpXUbFb72jn8ePCxFZqV8",
+						},
+						BlockHeader2: &BlockHeader{
+							Level:          1085332,
+							Proto:          6,
+							Predecessor:    "BKsdCv5tsbZ8bYYW5pfkhxDrusgGrEbCczH7GetyofAZPPRgnjn",
+							Timestamp:      mustTime("2020-08-15T13:08:12Z"),
+							ValidationPass: 4,
+							OperationsHash: "LLoa4nqohFX77Mkhj89SriZtRGQFkagaZC7AdGHjkhifMmdEhM7gL",
+							Fitness: [][]uint8{
+								[]uint8{0x01},
+								[]uint8{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
+							},
+							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
+							Priority:         0,
+							ProofOfWorkNonce: []uint8{0xba, 0x45, 0x72, 0x7c, 0xfe, 0xcf, 0x07, 0x00},
+							Signature:        "sigfo7dKzzFdS1x5Ygbf8RBqt32zckgQ2qV9SEhEnSWg7KEH16dMr2dTiz9EjUUVckZeMiZoeaTFF1r1DQk1F93wiwM3VC3e",
+						},
+					},
+				},
+			},
+		},
+		{
+			data: mustHex("8bec704d3e1c4a027e07f2f8f7d009cce48338e715fb819d3c8724a6a50d24f40200000065a60703a9567bf69ec66b368c3d8562eba4cbf29278c2c10447a684e3aa143685000008773bd3a9e1467b32104921d4e2dd93265739c1a5faee7a7f8880842b096c0b6714200c43fd5872f82581dfe1cb3a76ccdadaa4d6361d72b4abee6884cb7ed87f0b04000000656280d069cca0c2c8c97c172cc0530e3861cf8050d80970866a388c19bcbbf15f000008773b0ef3e51b218d04c29211b89f5b7582a7169b4810e6dbe46732b44c84331ae6cb32ced7c53ef55e7a2358ed66dedcb98daff1d8ec4f0638f74f215083526d2e03"),
+			op: &UnsignedOperation{
+				Branch: "BLmuViQ4BUbLcuku4pXHxZz8YbecVSD5e2srQtMWFdVy2e8bgPL",
+				Contents: []OperationContents{
+					&OpDoubleEndorsementEvidence{
+						Op1: &InlinedEndorsement{
+							OpEndorsement: OpEndorsement{
+								Level: 554811,
+							},
+							Branch:    "BLyQHMFeNzZEKHmKgfD9imcowLm8hc4aUo16QtYZcS5yvx7RFqQ",
+							Signature: "sigqgQgW5qQCsuHP5HhMhAYR2HjcChUE7zAczsyCdF681rfZXpxnXFHu3E6ycmz4pQahjvu3VLfa7FMCxZXmiMiuZFQS4MHy",
+						},
+						Op2: &InlinedEndorsement{
+							OpEndorsement: OpEndorsement{
+								Level: 554811,
+							},
+							Branch:    "BLTfU3iAfPFMuHTmC1F122AHqdhqnFTfkxBmzYCWtCkBMpYNjxw",
+							Signature: "sigPwkrKhsDdEidvvUgEEtsaVhyiGmzhCYqCJGKqbYMtH8KxkrFds2HmpDCpRxSTnehKoSC8XKCs9eej6PEzcZoy6fqRAPEZ",
+						},
+					},
+				},
+			},
+		},
 	}
 	as := assert.New(t)
 
@@ -149,7 +216,6 @@ func TestParseUnsignedMessage(t *testing.T) {
 
 	var cases = []testCase{
 		{
-
 			data: mustHex("029caecab9c1f5142a0e842be39063c79c6d8952fd74f7957e1d471ffe14bb45c0faa130200000058213"),
 			msg: &UnsignedEndorsement{
 				ChainID: "NetXjD3HPJJjmcd",
@@ -176,10 +242,11 @@ func TestParseUnsignedMessage(t *testing.T) {
 
 	for _, tst := range cases {
 		buf := tst.data
-		msg, err := ParseUnsignedMessage(buf)
+		msg, err := parseUnsignedMessage(&buf)
 		if !as.NoError(err) {
 			continue
 		}
+		as.Empty(buf)
 		as.Equal(tst.msg, msg)
 	}
 }
@@ -223,7 +290,7 @@ func TestBlockHeader(t *testing.T) {
 
 	for _, tst := range cases {
 		buf := tst.data
-		b, err := parseBlockHeader(&buf)
+		b, err := parseBlockHeader(&buf, false)
 		if !as.NoError(err) {
 			continue
 		}

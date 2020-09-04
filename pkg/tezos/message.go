@@ -81,6 +81,31 @@ func (o *OpSeedNonceRevelation) GetLevel() int32 { return o.Level }
 // OperationKind returns operation name i.e. "seed_nonce_revelation"
 func (o *OpSeedNonceRevelation) OperationKind() string { return "seed_nonce_revelation" }
 
+// InlinedEndorsement represents inlined endorsement operation with signature
+type InlinedEndorsement struct {
+	OpEndorsement
+	Branch    string
+	Signature string
+}
+
+// OpDoubleEndorsementEvidence represents "double_endorsement_evidence" operation
+type OpDoubleEndorsementEvidence struct {
+	Op1 *InlinedEndorsement
+	Op2 *InlinedEndorsement
+}
+
+// OperationKind returns operation name i.e. "double_endorsement_evidence"
+func (o *OpDoubleEndorsementEvidence) OperationKind() string { return "double_endorsement_evidence" }
+
+// OpDoubleBakingEvidence represents "double_baking_evidence" operation
+type OpDoubleBakingEvidence struct {
+	BlockHeader1 *BlockHeader
+	BlockHeader2 *BlockHeader
+}
+
+// OperationKind returns operation name i.e. "double_baking_evidence"
+func (o *OpDoubleBakingEvidence) OperationKind() string { return "double_baking_evidence" }
+
 // OpActivateAccount represents "activate_account" operation
 type OpActivateAccount struct {
 	PublicKeyHash string
@@ -204,8 +229,70 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 		return &op, nil
 
-	// case tagOperationDoubleEndorsementEvidence:
-	// case tagOperationDoubleBakingEvidence:
+	case tagOpDoubleEndorsementEvidence:
+		var ee [2]InlinedEndorsement
+		for i := range ee {
+			ln, err := getUint32(buf)
+			if err != nil {
+				return nil, err
+			}
+			tmpBuf, err := getBytes(buf, int(ln))
+			if err != nil {
+				return nil, err
+			}
+			opBuf, err := getBytes(&tmpBuf, 37)
+			if err != nil {
+				return nil, err
+			}
+			tmp, err := parseUnsignedOperation(&opBuf)
+			if err != nil {
+				return nil, err
+			}
+			if len(tmp.Contents) != 1 {
+				return nil, fmt.Errorf("tezos: single operation expected, got: %d", len(tmp.Contents))
+			}
+			o, ok := tmp.Contents[0].(*OpEndorsement)
+			if !ok {
+				return nil, fmt.Errorf("tezos: endorsement operation expected, got: %T", tmp)
+			}
+			ee[i].Branch = tmp.Branch
+			ee[i].Level = o.Level
+			sig, err := getBytes(&tmpBuf, 64)
+			if err != nil {
+				return nil, err
+			}
+			if ee[i].Signature, err = encodeBase58(pGenericSignature, sig); err != nil {
+				return nil, err
+			}
+		}
+		return &OpDoubleEndorsementEvidence{
+			Op1: &ee[0],
+			Op2: &ee[1],
+		}, nil
+
+	case tagOpDoubleBakingEvidence:
+		var op OpDoubleBakingEvidence
+		ln, err := getUint32(buf)
+		if err != nil {
+			return nil, err
+		}
+		bhbuf, err := getBytes(buf, int(ln))
+		if err != nil {
+			return nil, err
+		}
+		if op.BlockHeader1, err = parseBlockHeader(&bhbuf, true); err != nil {
+			return nil, err
+		}
+		if ln, err = getUint32(buf); err != nil {
+			return nil, err
+		}
+		if bhbuf, err = getBytes(buf, int(ln)); err != nil {
+			return nil, err
+		}
+		if op.BlockHeader2, err = parseBlockHeader(&bhbuf, true); err != nil {
+			return nil, err
+		}
+		return &op, nil
 
 	case tagOpActivateAccount:
 		var op OpActivateAccount
@@ -638,14 +725,15 @@ type BlockHeader struct {
 	Fitness          [][]byte
 	Context          string
 	Priority         uint16
-	NonceHash        []byte
 	ProofOfWorkNonce []byte
+	NonceHash        []byte
+	Signature        string
 }
 
 // GetLevel returns block level
 func (b *BlockHeader) GetLevel() int32 { return b.Level }
 
-func parseBlockHeader(buf *[]byte) (b *BlockHeader, err error) {
+func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 	b = new(BlockHeader)
 
 	if b.Level, err = getInt32(buf); err != nil {
@@ -716,6 +804,16 @@ func parseBlockHeader(buf *[]byte) (b *BlockHeader, err error) {
 			return nil, err
 		}
 	}
+	if sig {
+		s, err := getBytes(buf, 64)
+		if err != nil {
+			return nil, err
+		}
+		if b.Signature, err = encodeBase58(pGenericSignature, s); err != nil {
+			return nil, err
+		}
+	}
+
 	return b, nil
 }
 
@@ -770,17 +868,15 @@ const (
 	wmGenericOperation = 3
 )
 
-// ParseUnsignedMessage returns parsed sign request
-func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
-	buf := data
-	t, err := getByte(&buf)
+func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
+	t, err := getByte(buf)
 	if err != nil {
 		return nil, err
 	}
 
 	switch t {
 	case wmBlockHeader, wmEndorsement:
-		b, err := getBytes(&buf, 4)
+		b, err := getBytes(buf, 4)
 		if err != nil {
 			return nil, err
 		}
@@ -790,7 +886,7 @@ func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
 		}
 		switch t {
 		case wmBlockHeader:
-			bh, err := parseBlockHeader(&buf)
+			bh, err := parseBlockHeader(buf, false)
 			if err != nil {
 				return nil, err
 			}
@@ -801,8 +897,8 @@ func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
 
 		case wmEndorsement:
 			// level is the last 4 bytes
-			l := buf[len(buf)-4:]
-			level, err := getInt32(&l)
+			*buf = (*buf)[len(*buf)-4:]
+			level, err := getInt32(buf)
 			if err != nil {
 				return nil, err
 			}
@@ -814,9 +910,15 @@ func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
 			}, nil
 		}
 	case wmGenericOperation:
-		return parseUnsignedOperation(&buf)
+		return parseUnsignedOperation(buf)
 	}
 	return nil, fmt.Errorf("tezos: unknown watermark tag: %d", t)
+}
+
+// ParseUnsignedMessage returns parsed sign request
+func ParseUnsignedMessage(data []byte) (u UnsignedMessage, err error) {
+	var buf = data
+	return parseUnsignedMessage(&buf)
 }
 
 var (
