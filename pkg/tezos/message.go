@@ -101,6 +101,16 @@ type OpBallot struct {
 // OperationKind returns operation name i.e. "ballot"
 func (o *OpBallot) OperationKind() string { return "ballot" }
 
+// OpProposals represents "proposals" operation
+type OpProposals struct {
+	Source    string
+	Period    int32
+	Proposals []string
+}
+
+// OperationKind returns operation name i.e. "proposals"
+func (o *OpProposals) OperationKind() string { return "proposals" }
+
 // Manager has fields common for all manager operations
 type Manager struct {
 	Source       string
@@ -194,8 +204,8 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 		return &op, nil
 
-	//case tagOperationDoubleEndorsementEvidence:
-	//case tagOperationDoubleBakingEvidence:
+	// case tagOperationDoubleEndorsementEvidence:
+	// case tagOperationDoubleBakingEvidence:
 
 	case tagOpActivateAccount:
 		var op OpActivateAccount
@@ -211,7 +221,34 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 		return &op, nil
 
-	// case tagOpProposals:
+	case tagOpProposals:
+		var op OpProposals
+		if op.Source, err = parsePublicKeyHash(buf); err != nil {
+			return nil, err
+		}
+		if op.Period, err = getInt32(buf); err != nil {
+			return nil, err
+		}
+		ln, err := getUint32(buf)
+		if err != nil {
+			return nil, err
+		}
+		pbuf, err := getBytes(buf, int(ln))
+		if err != nil {
+			return nil, err
+		}
+		for len(pbuf) != 0 {
+			prop, err := getBytes(&pbuf, 32)
+			if err != nil {
+				return nil, err
+			}
+			pstr, err := encodeBase58(pProtocolHash, prop)
+			if err != nil {
+				return nil, err
+			}
+			op.Proposals = append(op.Proposals, pstr)
+		}
+		return &op, nil
 
 	case tagOpBallot:
 		var op OpBallot

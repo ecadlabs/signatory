@@ -144,17 +144,30 @@ func TestUnsignedOperations(t *testing.T) {
 func TestParseUnsignedMessage(t *testing.T) {
 	type testCase struct {
 		data []byte
-		op   *UnsignedEndorsement
+		msg  UnsignedMessage
 	}
 
 	var cases = []testCase{
 		{
 
 			data: mustHex("029caecab9c1f5142a0e842be39063c79c6d8952fd74f7957e1d471ffe14bb45c0faa130200000058213"),
-			op: &UnsignedEndorsement{
+			msg: &UnsignedEndorsement{
 				ChainID: "NetXjD3HPJJjmcd",
 				OpEndorsement: OpEndorsement{
 					Level: 360979,
+				},
+			},
+		},
+		{
+			data: mustHex("039146a3769e88e5af02f4789dfb23090c7b601d26a81c4cd114c26cfc42050ce8050010f65c7e592ac9e222ca88d959d6dc1020885390000000210000002040cab83d3f37a64da26b57ad3d0432ae881293a25169ada387bfc74a1cbf9e6e"),
+			msg: &UnsignedOperation{
+				Branch: "BLpGDPAutvEr8MNBm8nzpMLSY5F1tb5MEX9x5sQ6LqtR5TgnmFz",
+				Contents: []OperationContents{
+					&OpProposals{
+						Source:    "tz1MBidfvWhJ64MuJapKExcP5SV4HQWyiJwS",
+						Period:    33,
+						Proposals: []string{"PsDELPH1Kxsxt8f9eWbxQeRxkjfbxoqM52jvs5Y5fBxWWh4ifpo"},
+					},
 				},
 			},
 		},
@@ -163,11 +176,11 @@ func TestParseUnsignedMessage(t *testing.T) {
 
 	for _, tst := range cases {
 		buf := tst.data
-		op, err := ParseUnsignedMessage(buf)
+		msg, err := ParseUnsignedMessage(buf)
 		if !as.NoError(err) {
 			continue
 		}
-		as.Equal(tst.op, op)
+		as.Equal(tst.msg, msg)
 	}
 }
 
