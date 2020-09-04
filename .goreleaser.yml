@@ -1,77 +1,74 @@
-# goreleaser documentation at http://goreleaser.com
 before:
   hooks:
-    # you may remove this if you don't use vgo
     - go mod download
 builds:
-- id: signatory
-  binary: signatory
-  env:
-  - CGO_ENABLED=0
-  main: ./cmd/signatory/main.go
-  ldflags:
-  - -X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}
-  - -X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}
-  goos:
-    - freebsd
-    - linux
-    - windows
-    - darwin
-  goarch:
-    - amd64
-    - arm
-  ignore:
-        - goos: darwin
-          goarch: 386
-        - goos: windows
-          goarch: 386
-- id: signatory-cli
-  binary: signatory-cli
-  env:
-    - CGO_ENABLED=0
-  main: ./cmd/signatory-cli/main.go
-  ldflags:
-    - -X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}
-    - -X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}
-  goos:
-    - freebsd
-    - linux
-    - windows
-    - darwin
-  goarch:
-    - amd64
-    - arm
-  ignore:
-    - goos: darwin
-      goarch: 386
-    - goos: windows
-      goarch: 386
+  - id: signatory
+    binary: signatory
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - freebsd
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 386
+  - id: signatory-cli
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - freebsd
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 386
 dockers:
-  - 
-    binaries:
-    - signatory
-    - signatory-cli
+  - binaries:
+      - signatory
+      - signatory-cli
     builds:
-    - signatory
-    - signatory-cli
+      - signatory
+      - signatory-cli
     image_templates:
-    - "ecadlabs/signatory:latest"
-    - "ecadlabs/signatory:{{ .Tag }}"
+      - 'ecadlabs/signatory:latest'
+      - 'ecadlabs/signatory:{{ .Tag }}'
     dockerfile: Dockerfile
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    386: i386
-    amd64: x86_64
+  - replacements:
+      '386': i386
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
 checksum:
-  name_template: 'checksums.txt'
+  name_template: checksums.txt
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: '{{ .Tag }}-next'
 changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - '^docs:'
+      - '^test:'
