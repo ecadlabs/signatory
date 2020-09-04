@@ -83,9 +83,9 @@ func (o *OpSeedNonceRevelation) OperationKind() string { return "seed_nonce_reve
 
 // InlinedEndorsement represents inlined endorsement operation with signature
 type InlinedEndorsement struct {
-	OpEndorsement
 	Branch    string
 	Signature string
+	OpEndorsement
 }
 
 // OpDoubleEndorsementEvidence represents "double_endorsement_evidence" operation
@@ -230,7 +230,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		return &op, nil
 
 	case tagOpDoubleEndorsementEvidence:
-		var ee [2]InlinedEndorsement
+		var ee [2]*InlinedEndorsement
 		for i := range ee {
 			ln, err := getUint32(buf)
 			if err != nil {
@@ -240,23 +240,14 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			if err != nil {
 				return nil, err
 			}
-			opBuf, err := getBytes(&tmpBuf, 37)
+			branch, op, err := parseUnsignedEndorsement(&tmpBuf)
 			if err != nil {
 				return nil, err
 			}
-			tmp, err := parseUnsignedOperation(&opBuf)
-			if err != nil {
-				return nil, err
+			ee[i] = &InlinedEndorsement{
+				Branch:        branch,
+				OpEndorsement: *op,
 			}
-			if len(tmp.Contents) != 1 {
-				return nil, fmt.Errorf("tezos: single operation expected, got: %d", len(tmp.Contents))
-			}
-			o, ok := tmp.Contents[0].(*OpEndorsement)
-			if !ok {
-				return nil, fmt.Errorf("tezos: endorsement operation expected, got: %T", tmp)
-			}
-			ee[i].Branch = tmp.Branch
-			ee[i].Level = o.Level
 			sig, err := getBytes(&tmpBuf, 64)
 			if err != nil {
 				return nil, err
@@ -266,8 +257,8 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			}
 		}
 		return &OpDoubleEndorsementEvidence{
-			Op1: &ee[0],
-			Op2: &ee[1],
+			Op1: ee[0],
+			Op2: ee[1],
 		}, nil
 
 	case tagOpDoubleBakingEvidence:
@@ -714,6 +705,26 @@ func parseUnsignedOperation(buf *[]byte) (op *UnsignedOperation, err error) {
 	}, nil
 }
 
+func parseUnsignedEndorsement(buf *[]byte) (branch string, op *OpEndorsement, err error) {
+	opBuf, err := getBytes(buf, 37)
+	if err != nil {
+		return
+	}
+	tmp, err := parseUnsignedOperation(&opBuf)
+	if err != nil {
+		return
+	}
+	if len(tmp.Contents) != 1 {
+		// unlikely
+		return "", nil, fmt.Errorf("tezos: single operation expected, got: %d", len(tmp.Contents))
+	}
+	op, ok := tmp.Contents[0].(*OpEndorsement)
+	if !ok {
+		return "", nil, fmt.Errorf("tezos: endorsement operation expected, got: %T", tmp)
+	}
+	return tmp.Branch, op, nil
+}
+
 // BlockHeader represents unsigned block header
 type BlockHeader struct {
 	Level            int32
@@ -848,6 +859,7 @@ func (u *UnsignedBlockHeader) GetChainID() string { return u.ChainID }
 // UnsignedEndorsement represents unsigned endorsement
 type UnsignedEndorsement struct {
 	ChainID string
+	Branch  string
 	OpEndorsement
 }
 
@@ -896,17 +908,14 @@ func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
 			}, nil
 
 		case wmEndorsement:
-			// level is the last 4 bytes
-			*buf = (*buf)[len(*buf)-4:]
-			level, err := getInt32(buf)
+			branch, op, err := parseUnsignedEndorsement(buf)
 			if err != nil {
 				return nil, err
 			}
 			return &UnsignedEndorsement{
-				ChainID: chainID,
-				OpEndorsement: OpEndorsement{
-					Level: level,
-				},
+				ChainID:       chainID,
+				Branch:        branch,
+				OpEndorsement: *op,
 			}, nil
 		}
 	case wmGenericOperation:

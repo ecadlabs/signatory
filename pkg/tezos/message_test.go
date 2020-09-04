@@ -219,6 +219,7 @@ func TestParseUnsignedMessage(t *testing.T) {
 			data: mustHex("029caecab9c1f5142a0e842be39063c79c6d8952fd74f7957e1d471ffe14bb45c0faa130200000058213"),
 			msg: &UnsignedEndorsement{
 				ChainID: "NetXjD3HPJJjmcd",
+				Branch:  "BMBhiTEp4X5mqqHJPFUK87GoV3ojoABGyqgDSQnUhJtVtwa3zdi",
 				OpEndorsement: OpEndorsement{
 					Level: 360979,
 				},
