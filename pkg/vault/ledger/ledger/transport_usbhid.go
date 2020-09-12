@@ -1,7 +1,6 @@
 package ledger
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -78,20 +77,21 @@ func (u *usbHIDRoundTripper) writePacket(p *packet) error {
 	pkt[3] = uint8((p.seq >> 8) & 0xff)
 	pkt[4] = uint8(p.seq & 0xff)
 	copy(pkt[5:], p.data)
-	_, err := u.dev.Write(pkt[:])
-	return err
+	if _, err := u.dev.Write(pkt[:]); err != nil {
+		return fmt.Errorf("ledger: %w", err)
+	}
+	return nil
 }
 
 func (u *usbHIDRoundTripper) readPacket() (*packet, error) {
 	var pkt [packetSize]byte
 	sz, err := u.dev.Read(pkt[:])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ledger: %w", err)
 	}
 	var pl = pkt[:sz]
-	fmt.Println(hex.Dump(pl))
 	if len(pl) < 5 {
-		return nil, fmt.Errorf("packet is too short: %d", sz)
+		return nil, fmt.Errorf("ledger: packet is too short: %d", sz)
 	}
 	return &packet{
 		channel: uint16(pl[0])<<8 | uint16(pl[1]),
@@ -146,7 +146,7 @@ func (u *usbHIDRoundTripper) readCommand() (channel uint16, cmd uint8, data []by
 			channel = pkt.channel
 			if cmd == cmdAPDU {
 				if len(pl) < 2 {
-					err = fmt.Errorf("packet is too short: %d", len(pl))
+					err = fmt.Errorf("ledger: packet is too short: %d", len(pl))
 					return
 				}
 				dataLen = int(pl[0])<<8 | int(pl[1])
@@ -155,15 +155,15 @@ func (u *usbHIDRoundTripper) readCommand() (channel uint16, cmd uint8, data []by
 		}
 		// subsequent packages must have the same channel and command ids
 		if pkt.seq != idx {
-			err = fmt.Errorf("invalid packet index: %d", pkt.seq)
+			err = fmt.Errorf("ledger: invalid packet index: %d", pkt.seq)
 			return
 		}
 		if pkt.cmd != cmd {
-			err = fmt.Errorf("unexpected command: %d", pkt.cmd)
+			err = fmt.Errorf("ledger: unexpected command: %d", pkt.cmd)
 			return
 		}
 		if pkt.channel != channel {
-			err = fmt.Errorf("unexpected channel: %d", pkt.channel)
+			err = fmt.Errorf("ledger: unexpected channel: %d", pkt.channel)
 			return
 		}
 		ln := len(pl)
@@ -181,7 +181,6 @@ func (u *usbHIDRoundTripper) readCommand() (channel uint16, cmd uint8, data []by
 
 func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
 	r := req.Bytes()
-	fmt.Println(hex.Dump(r))
 	if err := u.writeCommand(cmdAPDU, r); err != nil {
 		return nil, err
 	}
@@ -190,14 +189,14 @@ func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
 		return nil, err
 	}
 	if ch != u.channel {
-		return nil, fmt.Errorf("invalid channel in reply: %d", ch)
+		return nil, fmt.Errorf("ledger: invalid channel in reply: %d", ch)
 	}
 	if cmd != cmdAPDU {
-		return nil, fmt.Errorf("invalid command: %d", cmd)
+		return nil, fmt.Errorf("ledger: invalid command: %d", cmd)
 	}
 	apdu := parseAPDUResponse(data)
 	if apdu == nil {
-		return nil, errors.New("error parsing APDU response")
+		return nil, errors.New("ledger: error parsing APDU response")
 	}
 	return apdu, nil
 }
@@ -212,23 +211,24 @@ func (u *usbHIDRoundTripper) Ping() error {
 	}
 	if cmd == cmdPing {
 		if ch != u.channel {
-			return fmt.Errorf("invalid channel in reply: %d", ch)
+			return fmt.Errorf("ledger: invalid channel in reply: %d", ch)
 		}
 		return nil
 	} else if cmd == cmdAPDU {
 		apdu := parseAPDUResponse(data)
 		if apdu == nil {
-			return errors.New("error parsing APDU response")
+			return errors.New("ledger: error parsing APDU response")
 		}
 		return APDUError(apdu.SW)
 	}
-	return fmt.Errorf("invalid command: %d", cmd)
+	return fmt.Errorf("ledger: invalid command: %d", cmd)
 }
 
 func (u *usbHIDRoundTripper) Close() error {
 	return u.dev.Close()
 }
 
+// Open returns a new Exchanger
 func (u *USBHIDTransport) Open(path string) (Exchanger, error) {
 	if path == "" {
 		devs, err := u.Enumerate()
@@ -236,14 +236,14 @@ func (u *USBHIDTransport) Open(path string) (Exchanger, error) {
 			return nil, err
 		}
 		if len(devs) == 0 {
-			return nil, errors.New("no Ledger devices found")
+			return nil, errors.New("ledger: no Ledger devices found")
 		}
 		path = devs[0].Path
 	}
 
 	dev, err := hid.DeviceInfo{Path: path}.Open()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ledger: %w", err)
 	}
 
 	rt := usbHIDRoundTripper{

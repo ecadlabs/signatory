@@ -70,11 +70,11 @@ type TezosError uint16
 
 func (l TezosError) Error() string {
 	if desc, ok := errDesc[uint16(l)]; ok {
-		return fmt.Sprintf("[%#04x]: %s", l, desc)
+		return fmt.Sprintf("[%#04x]: %s", uint16(l), desc)
 	} else if l&0xfff0 == 0x63c0 {
-		return fmt.Sprintf("[%#04x]: Invalid pin %d", l, l&0xf)
+		return fmt.Sprintf("[%#04x]: Invalid pin %d", uint16(l), l&0xf)
 	} else if l&0xff00 == 0x6f00 {
-		return fmt.Sprintf("[%#04x]: Technical problem %d", l, l&0xff)
+		return fmt.Sprintf("[%#04x]: Technical problem %d", uint16(l), l&0xff)
 	}
-	return fmt.Sprintf("[%#04x]: Unknown error", l)
+	return fmt.Sprintf("[%#04x]: Unknown error", uint16(l))
 }

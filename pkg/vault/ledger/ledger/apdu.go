@@ -57,5 +57,5 @@ func parseAPDUResponse(buf []byte) *APDUResponse {
 type APDUError uint16
 
 func (a APDUError) Error() string {
-	return fmt.Sprintf("APDU status: %#04x", uint16(a))
+	return fmt.Sprintf("ledger: APDU %#04x", uint16(a))
 }

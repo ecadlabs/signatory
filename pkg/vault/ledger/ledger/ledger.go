@@ -46,7 +46,7 @@ const (
 	insQuit    = 0xa7
 )
 
-var errMsgUnexpectedEnd = errors.New("unexpected end of the message")
+var errMsgUnexpectedEnd = errors.New("ledger: unexpected end of the message")
 
 func getByte(buf *[]byte) (b byte, err error) {
 	if len(*buf) < 1 {
@@ -85,7 +85,7 @@ func (a *App) GetAppVersion() (*Version, error) {
 		return nil, err
 	}
 	if f != 1 {
-		return nil, fmt.Errorf("invalid version info format: %d", f)
+		return nil, fmt.Errorf("ledger: invalid version info format: %d", f)
 	}
 	ln, err := getByte(&d)
 	if err != nil {
