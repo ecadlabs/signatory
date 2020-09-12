@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"encoding/asn1"
 	"errors"
 	"fmt"
 	"math/big"
@@ -69,13 +70,15 @@ func (t *TezosApp) GetVersion() (*Version, error) {
 	}, nil
 }
 
-// Curve types with different derivation methods
+// DerivationType represents key derivation method and determines the curve to use
+type DerivationType uint8
+
 const (
-	DerivationTypeED25519 = iota
-	DerivationTypeSECP256K1
-	DerivationTypeSECP256R1
-	DerivationTypeBIP32ED25519
-	DerivationTypeP256 = DerivationTypeSECP256R1
+	DerivationED25519      DerivationType        = iota // ED25519
+	DerivationSECP256K1                                 // SECP256K1
+	DerivationSECP256R1                                 // SECP256R1 aka P256
+	DerivationBIP32ED25519                              // BIP32-ED25519
+	DerivationP256         = DerivationSECP256R1        // SECP256R1 aka P256
 )
 
 // TezosBIP32Root is a Tezos BIP32 root key path i.e. 44'/1729'
@@ -87,17 +90,15 @@ const (
 )
 
 // GetPublicKey returns a public key for a newly derived pair
-func (t *TezosApp) GetPublicKey(derivation uint8, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
-	var ins uint8
+func (t *TezosApp) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
+	ins := insGetPublicKey
 	if prompt {
 		ins = insPromptPublicKey
-	} else {
-		ins = insGetPublicKey
 	}
 	res, err := t.Exchange(&ledger.APDUCommand{
 		Cla:  claTezos,
-		Ins:  ins,
-		P2:   derivation,
+		Ins:  uint8(ins),
+		P2:   uint8(derivation),
 		Data: path.Bytes(),
 	})
 	if err != nil {
@@ -119,7 +120,7 @@ func (t *TezosApp) GetPublicKey(derivation uint8, path BIP32, prompt bool) (pub 
 	data := res.Data[2 : ln+1]
 
 	switch derivation {
-	case DerivationTypeED25519, DerivationTypeBIP32ED25519:
+	case DerivationED25519, DerivationBIP32ED25519:
 		if comp != tagCompressed {
 			return nil, fmt.Errorf("invalid compression tag: %d", comp)
 		}
@@ -128,7 +129,7 @@ func (t *TezosApp) GetPublicKey(derivation uint8, path BIP32, prompt bool) (pub 
 		}
 		return ed25519.PublicKey(data), nil
 
-	case DerivationTypeSECP256K1, DerivationTypeSECP256R1:
+	case DerivationSECP256K1, DerivationSECP256R1:
 		if comp != tagUncompressed {
 			return nil, fmt.Errorf("invalid compression tag: %d", comp)
 		}
@@ -137,7 +138,7 @@ func (t *TezosApp) GetPublicKey(derivation uint8, path BIP32, prompt bool) (pub 
 		}
 
 		var curve elliptic.Curve
-		if derivation == DerivationTypeSECP256K1 {
+		if derivation == DerivationSECP256K1 {
 			curve = cryptoutils.S256()
 		} else {
 			curve = elliptic.P256()
@@ -155,6 +156,92 @@ func (t *TezosApp) GetPublicKey(derivation uint8, path BIP32, prompt bool) (pub 
 			X:     x,
 			Y:     y,
 		}, nil
+
+	default:
+		return nil, fmt.Errorf("invalid derivation type: %d", derivation)
+	}
+}
+
+// fragmentation is handled by the app itself and varies between different apps
+const maxAPDUSize = 230
+
+const (
+	p1Next = 0x01
+	p1Last = 0x80
+)
+
+// Sign signs the message or precalculated hash
+func (t *TezosApp) Sign(derivation DerivationType, path BIP32, data []byte, prehashed bool) (sig cryptoutils.Signature, err error) {
+	ins := insSign
+	if prehashed {
+		ins = insSignUnsafe
+	}
+
+	apdu := ledger.APDUCommand{
+		Cla:  claTezos,
+		Ins:  uint8(ins),
+		P2:   uint8(derivation),
+		Data: path.Bytes(),
+	}
+	res, err := t.Exchange(&apdu)
+	if err != nil {
+		return nil, err
+	}
+	if res.SW != errOk {
+		return nil, TezosError(res.SW)
+	}
+
+	off := 0
+	apdu.P1 = p1Next
+
+	for off < len(data) {
+		sz := maxAPDUSize
+		if sz > len(data)-off {
+			sz = len(data) - off
+		}
+		apdu.Data = data[off : off+sz]
+		off += sz
+		if off == len(data) {
+			apdu.P1 |= p1Last
+		}
+		if res, err = t.Exchange(&apdu); err != nil {
+			return nil, err
+		}
+		if res.SW != errOk {
+			return nil, TezosError(res.SW)
+		}
+	}
+
+	switch derivation {
+	case DerivationED25519, DerivationBIP32ED25519:
+		if len(res.Data) != ed25519.SignatureSize {
+			return nil, fmt.Errorf("invalid signature length: %d", len(res.Data))
+		}
+		return cryptoutils.ED25519Signature(res.Data), nil
+
+	case DerivationSECP256K1, DerivationSECP256R1:
+		/*
+			var curve elliptic.Curve
+			if derivation == DerivationSECP256K1 {
+				curve = cryptoutils.S256()
+			} else {
+				curve = elliptic.P256()
+			}
+		*/
+
+		if len(res.Data) != 0 {
+			// remove the parity flag which interfere with ASN.1
+			// see https://github.com/obsidiansystems/ledger-app-tezos/blob/58797b2f9606c5a30dd1ccc9e5b9962e45e10356/src/keys.c#L176
+			res.Data[0] &= 0xfe
+		}
+		var sig struct {
+			R *big.Int
+			S *big.Int
+		}
+		if _, err = asn1.Unmarshal(res.Data, &sig); err != nil {
+			return nil, err
+		}
+		return (*cryptoutils.ECDSASignature)(&sig), nil // TODO curve type
 
 	default:
 		return nil, fmt.Errorf("invalid derivation type: %d", derivation)

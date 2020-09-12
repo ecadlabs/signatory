@@ -1,6 +1,7 @@
 package ledger
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -77,6 +78,10 @@ func (u *usbHIDRoundTripper) writePacket(p *packet) error {
 	pkt[3] = uint8((p.seq >> 8) & 0xff)
 	pkt[4] = uint8(p.seq & 0xff)
 	copy(pkt[5:], p.data)
+
+	fmt.Println(">>>")
+	fmt.Println(hex.Dump(pkt[:]))
+
 	if _, err := u.dev.Write(pkt[:]); err != nil {
 		return fmt.Errorf("ledger: %w", err)
 	}
@@ -90,6 +95,9 @@ func (u *usbHIDRoundTripper) readPacket() (*packet, error) {
 		return nil, fmt.Errorf("ledger: %w", err)
 	}
 	var pl = pkt[:sz]
+	fmt.Println("<<<")
+	fmt.Println(hex.Dump(pl))
+
 	if len(pl) < 5 {
 		return nil, fmt.Errorf("ledger: packet is too short: %d", sz)
 	}
@@ -110,17 +118,22 @@ func (u *usbHIDRoundTripper) writeCommand(cmd uint8, data []byte) error {
 		return u.writePacket(&pkt)
 	}
 
-	off := 0
 	buf := make([]byte, len(data)+2)
 	buf[0] = uint8((len(data) >> 8) & 0xff)
 	buf[1] = uint8(len(data) & 0xff)
 	copy(buf[2:], data)
 
-	numPackets := (len(buf) + chunkSize - 1) / chunkSize
-	for i := 0; i < numPackets; i++ {
+	i := 0
+	off := 0
+	for off < len(buf) {
+		sz := chunkSize
+		if sz > len(buf)-off {
+			sz = len(buf) - off
+		}
 		pkt.seq = uint16(i)
-		pkt.data = buf[off:]
-		off += chunkSize
+		pkt.data = buf[off : off+sz]
+		off += sz
+		i++
 		if err := u.writePacket(&pkt); err != nil {
 			return err
 		}
@@ -180,6 +193,7 @@ func (u *usbHIDRoundTripper) readCommand() (channel uint16, cmd uint8, data []by
 }
 
 func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
+	fmt.Printf("%#v\n", req)
 	r := req.Bytes()
 	if err := u.writeCommand(cmdAPDU, r); err != nil {
 		return nil, err
@@ -194,11 +208,12 @@ func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
 	if cmd != cmdAPDU {
 		return nil, fmt.Errorf("ledger: invalid command: %d", cmd)
 	}
-	apdu := parseAPDUResponse(data)
-	if apdu == nil {
+	res := parseAPDUResponse(data)
+	if res == nil {
 		return nil, errors.New("ledger: error parsing APDU response")
 	}
-	return apdu, nil
+	fmt.Printf("%#v\n", res)
+	return res, nil
 }
 
 func (u *usbHIDRoundTripper) Ping() error {
