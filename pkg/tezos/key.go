@@ -232,6 +232,21 @@ func EncodePublicKeyHash(pub crypto.PublicKey) (hash string, err error) {
 	return encodeBase58(prefix, h)
 }
 
+// GetPublicKeyHash returns BLAKE2B public key hash
+func GetPublicKeyHash(pub crypto.PublicKey) (hash []byte, err error) {
+	_, _, payload, err := serializePublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	digest, err := blake2b.New(20, nil)
+	if err != nil {
+		return nil, err
+	}
+	digest.Write(payload)
+	return digest.Sum(nil), nil
+}
+
 // EncodePrivateKey returns base58 encoded private key
 func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 	var (

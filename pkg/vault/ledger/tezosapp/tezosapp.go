@@ -16,7 +16,7 @@ import (
 
 // TezosApp represents Tezos application client
 type TezosApp struct {
-	ledger.App
+	ledger.Exchanger
 }
 
 // Tezos application types
@@ -31,6 +31,7 @@ type Version struct {
 	Major    uint8
 	Minor    uint8
 	Patch    uint8
+	Git      string
 }
 
 func (v *Version) String() string {
@@ -43,7 +44,7 @@ func (v *Version) String() string {
 	default:
 		class = "Unknown"
 	}
-	return fmt.Sprintf("%s %d.%d.%d", class, v.Major, v.Minor, v.Patch)
+	return fmt.Sprintf("%s %d.%d.%d %s", class, v.Major, v.Minor, v.Patch, v.Git)
 }
 
 // GetVersion returns Tezos app version
@@ -62,12 +63,27 @@ func (t *TezosApp) GetVersion() (*Version, error) {
 	if len(res.Data) < 4 {
 		return nil, errors.New("invalid version length")
 	}
-	return &Version{
+	ver := Version{
 		AppClass: res.Data[0],
 		Major:    res.Data[1],
 		Minor:    res.Data[2],
 		Patch:    res.Data[3],
-	}, nil
+	}
+
+	res, err = t.Exchange(&ledger.APDUCommand{
+		Cla:     claTezos,
+		Ins:     insGit,
+		ForceLc: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.SW != errOk {
+		return nil, TezosError(res.SW)
+	}
+	ver.Git = string(res.Data)
+
+	return &ver, nil
 }
 
 // DerivationType represents key derivation method and determines the curve to use
@@ -89,12 +105,26 @@ const (
 	tagUncompressed = 4
 )
 
+func pathValid(path BIP32) error {
+	for _, p := range path {
+		if p&BIP32H == 0 {
+			return errors.New("only hardened derivation supported")
+		}
+	}
+	return nil
+}
+
 // GetPublicKey returns a public key for a newly derived pair
 func (t *TezosApp) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
 	ins := insGetPublicKey
 	if prompt {
 		ins = insPromptPublicKey
 	}
+
+	if err := pathValid(path); err != nil {
+		return nil, err
+	}
+
 	res, err := t.Exchange(&ledger.APDUCommand{
 		Cla:  claTezos,
 		Ins:  uint8(ins),
