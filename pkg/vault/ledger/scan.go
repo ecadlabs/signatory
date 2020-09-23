@@ -30,12 +30,11 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	}
 	app = &tezosapp.App{Exchanger: ex}
 
-	defer func() {
-		if err != nil && app != nil {
-			app.Close()
-			app = nil
+	defer func(a *tezosapp.App) {
+		if err != nil {
+			a.Close()
 		}
-	}()
+	}(app)
 
 	ver, err := app.GetVersion()
 	if err != nil {
