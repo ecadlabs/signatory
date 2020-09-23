@@ -9,13 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 )
 
-// TezosApp represents Tezos application client
-type TezosApp struct {
+// App represents Tezos application client
+type App struct {
 	ledger.Exchanger
 }
 
@@ -48,7 +49,7 @@ func (v *Version) String() string {
 }
 
 // GetVersion returns Tezos app version
-func (t *TezosApp) GetVersion() (*Version, error) {
+func (t *App) GetVersion() (*Version, error) {
 	res, err := t.Exchange(&ledger.APDUCommand{
 		Cla:     claTezos,
 		Ins:     insVersion,
@@ -90,12 +91,44 @@ func (t *TezosApp) GetVersion() (*Version, error) {
 type DerivationType uint8
 
 const (
-	DerivationED25519      DerivationType        = iota // ED25519
-	DerivationSECP256K1                                 // SECP256K1
-	DerivationSECP256R1                                 // SECP256R1 aka P256
-	DerivationBIP32ED25519                              // BIP32-ED25519
-	DerivationP256         = DerivationSECP256R1        // SECP256R1 aka P256
+	DerivationED25519      DerivationType = iota                // ED25519
+	DerivationSECP256K1                                         // SECP256K1
+	DerivationSECP256R1                                         // SECP256R1 aka P256
+	DerivationBIP32ED25519                                      // BIP32-ED25519
+	DerivationP256                        = DerivationSECP256R1 // SECP256R1 aka P256
+	DerivationInvalid      DerivationType = 0xff
 )
+
+func (d DerivationType) String() string {
+	switch d {
+	case DerivationED25519:
+		return "ed25519"
+	case DerivationSECP256K1:
+		return "secp256k1"
+	case DerivationSECP256R1:
+		return "P-256"
+	case DerivationBIP32ED25519:
+		return "bip32-ed25519"
+	default:
+		return fmt.Sprintf("(%d)", uint8(d))
+	}
+}
+
+// DerivationTypeFromString returns a derivation type id for specified name
+func DerivationTypeFromString(str string) (DerivationType, error) {
+	switch strings.ToLower(str) {
+	case "ed25519":
+		return DerivationED25519, nil
+	case "secp256k1":
+		return DerivationSECP256K1, nil
+	case "p-256", "secp256r1":
+		return DerivationSECP256R1, nil
+	case "bip25519", "bip32-ed25519":
+		return DerivationBIP32ED25519, nil
+	default:
+		return DerivationInvalid, fmt.Errorf("unknown key derivation type: %s", str)
+	}
+}
 
 // TezosBIP32Root is a Tezos BIP32 root key path i.e. 44'/1729'
 var TezosBIP32Root = BIP32{44 | BIP32H, 1729 | BIP32H}
@@ -115,7 +148,7 @@ func pathValid(path BIP32) error {
 }
 
 // GetPublicKey returns a public key for a newly derived pair
-func (t *TezosApp) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
+func (t *App) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
 	ins := insGetPublicKey
 	if prompt {
 		ins = insPromptPublicKey
@@ -201,7 +234,7 @@ const (
 )
 
 // Sign signs the message or precalculated hash
-func (t *TezosApp) Sign(derivation DerivationType, path BIP32, data []byte, prehashed bool) (sig cryptoutils.Signature, err error) {
+func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed bool) (sig cryptoutils.Signature, err error) {
 	ins := insSign
 	if prehashed {
 		ins = insSignUnsafe

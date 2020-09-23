@@ -1,12 +1,11 @@
 package ledger
 
 import (
-	"encoding/hex"
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"runtime"
-	"time"
 
 	"github.com/karalabe/hid"
 )
@@ -79,8 +78,8 @@ func (u *usbHIDRoundTripper) writePacket(p *packet) error {
 	pkt[4] = uint8(p.seq & 0xff)
 	copy(pkt[5:], p.data)
 
-	fmt.Println(">>>")
-	fmt.Println(hex.Dump(pkt[:]))
+	//fmt.Println(">>>")
+	//fmt.Println(hex.Dump(pkt[:]))
 
 	if _, err := u.dev.Write(pkt[:]); err != nil {
 		return fmt.Errorf("ledger: %w", err)
@@ -95,8 +94,8 @@ func (u *usbHIDRoundTripper) readPacket() (*packet, error) {
 		return nil, fmt.Errorf("ledger: %w", err)
 	}
 	var pl = pkt[:sz]
-	fmt.Println("<<<")
-	fmt.Println(hex.Dump(pl))
+	//fmt.Println("<<<")
+	//fmt.Println(hex.Dump(pl))
 
 	if len(pl) < 5 {
 		return nil, fmt.Errorf("ledger: packet is too short: %d", sz)
@@ -193,7 +192,7 @@ func (u *usbHIDRoundTripper) readCommand() (channel uint16, cmd uint8, data []by
 }
 
 func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
-	fmt.Printf("%#v\n", req)
+	//fmt.Printf("%#v\n", req)
 	r := req.Bytes()
 	if err := u.writeCommand(cmdAPDU, r); err != nil {
 		return nil, err
@@ -212,7 +211,7 @@ func (u *usbHIDRoundTripper) Exchange(req *APDUCommand) (*APDUResponse, error) {
 	if res == nil {
 		return nil, errors.New("ledger: error parsing APDU response")
 	}
-	fmt.Printf("%#v\n", res)
+	//fmt.Printf("%#v\n", res)
 	return res, nil
 }
 
@@ -261,16 +260,17 @@ func (u *USBHIDTransport) Open(path string) (Exchanger, error) {
 		return nil, fmt.Errorf("ledger: %w", err)
 	}
 
+	n, err := rand.Int(rand.Reader, big.NewInt(0x10000))
+	if err != nil {
+		return nil, fmt.Errorf("ledger: %w", err)
+	}
+
 	rt := usbHIDRoundTripper{
 		dev:     dev,
-		channel: uint16(rand.Int31n(1 << 16)),
+		channel: uint16(n.Uint64()),
 	}
 
 	return &rt, nil
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
 var _ Transport = &USBHIDTransport{}
