@@ -10,37 +10,37 @@ For evaluation and prototyping purposes, Signatory file-based signer mode allows
 
 The documentation assumes you will use the official Signatory docker image, and that you have a Linux server operably configured with docker installed.
 
-Place the following YAML in a file `/etc/signatory.yaml`
+Place the following YAML in a file named `signatory.yaml`
 
 ```yaml
 server:
-# Address/Port that Signatory listens on
-address: :6732
-# Address/Port that Signatory serves prometheus metrics on
-utility_address: :9583
+  # Address/Port that Signatory listens on
+  address: :6732
+  # Address/Port that Signatory serves prometheus metrics on
+  utility_address: :9583
 
 vaults:
 # Name of vault
   local_file_keys:
     driver: file
     config:
-    file: /etc/secret.json
+      file: /etc/secret.json
 
 # List enabled public keys hashes here
 tezos:
-# Default policy allows "block" and "endorsement" operations
-tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm:
-  log_payloads: true
-  allowed_operations:
-  # List of [generic, block, endorsement]
-  - generic
-  - block
-  - endorsement
+  # Default policy allows "block" and "endorsement" operations
+  tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm:
+    log_payloads: true
+    allowed_operations:
+    # List of [generic, block, endorsement]
+    - generic
+    - block
+    - endorsement
 ```
 
 The `tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm` key corresponds to the secret key that you will put in `/etc/secret.json`
 
-Contents of `/etc/secret.json` is:
+Contents of `secret.json` is:
 
 ```json
 [ { "name": "your_secret_key",
@@ -56,11 +56,11 @@ _Remember to secure the network where Signatory is running_
 
 ```sh
 docker run -it --rm \
-    -v "$(realpath file.yaml):/app/signatory.yaml" \
-    -v "$(realpath tezkeys/secret_keys):/etc/secret.json" \
+    -v "$(realpath signatory.yaml):/etc/signatory.yaml" \
+    -v "$(realpath secret.json):/etc/secret.json" \
     -p 6732:6732 \
     -p 9583:9583 \
-    ecadlabs/signatory:latest serve -config /app/signatory.yaml
+    ecadlabs/signatory:latest serve -c /etc/signatory.yaml
 ```
 
 ### Verify that signatory is working
