@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/server"
+	"github.com/ecadlabs/signatory/pkg/server/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,21 @@ func NewServeCommand(c *Context) *cobra.Command {
 				Address: c.config.Server.Address,
 				Signer:  c.signatory,
 			}
-			srv := srvConf.New()
+
+			if c.config.Server.AuthorizedKeys != nil {
+				ak, err := auth.StaticAuthorizedKeysFromString(c.config.Server.AuthorizedKeys.List()...)
+				if err != nil {
+					return err
+				}
+				srvConf.Auth = ak
+			}
+
+			srv, err := srvConf.New()
+			if err != nil {
+				return err
+			}
+			log.Printf("HTTP server is listening for connections on %s", srv.Addr)
+
 			srvErrCh := make(chan error)
 			go func() {
 				srvErrCh <- srv.ListenAndServe()

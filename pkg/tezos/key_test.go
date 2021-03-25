@@ -64,6 +64,11 @@ func TestTZKey(t *testing.T) {
 			continue
 		}
 
+		_, err = ParsePublicKey(tst.pub)
+		if !as.NoError(err, i) {
+			continue
+		}
+
 		pub := pk.Public()
 		hash, err := EncodePublicKeyHash(pub)
 		if !as.NoError(err) {

@@ -16,6 +16,13 @@ server:
   address: :6732
   # Address for the utility HTTP server to listen on
   utility_address: :9583
+  # List of authorized public keys. Sign operation must be authenticated if present
+  # Nested lists are allowed
+  authorized_keys:
+    - &authorized_key edpktpQKJF4vRodmSfT3h6LrYisshQuJeoybUxB9c8s3b1QymvisHC
+    - &authorized_keys_list
+      - edpkubVAm7SttSV2WigeSoB7fAnr612PJo9DnhCgQyXakjaMeweN1D
+      - &picked_key edpkuNVUYqMD61DyQ7N378nGCjCnQ3h2BiEsfeeY64kwKVJAJ4C9sY
 
 vaults:
   # Name is used to identify backend during import process
@@ -61,6 +68,9 @@ tezos:
       # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
       - transaction
       - endorsement
+    authorized_keys:
+      # Allow sign operation only for clients specified below. Same syntax as `server/authorized_key`
+      - *authorized_key
 ```
 
 ## Backends
