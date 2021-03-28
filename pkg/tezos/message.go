@@ -45,10 +45,17 @@ type UnsignedOperation struct {
 // MessageKind returns unsigned message kind name i.e. "generic"
 func (u *UnsignedOperation) MessageKind() string { return "generic" }
 
-// OperationKinds returns list of uperation kinds for logging purposes
-func (u *UnsignedOperation) OperationKinds() []string {
+// Contains total operations on each kind and total amount of transaction
+type OpsAmount struct {
+	Ops    []string
+	Amount string
+}
+
+// OperationKinds returns list of operation kinds for logging purposes
+func (u *UnsignedOperation) OperationKinds() OpsAmount {
 	kindCount := make(map[string]int)
-	ops := make([]string, len(u.Contents))
+	var ops OpsAmount
+	totamount := big.NewInt(0)
 	for _, o := range u.Contents {
 		key := o.OperationKind()
 		if _, ok := kindCount[key]; !ok {
@@ -56,10 +63,14 @@ func (u *UnsignedOperation) OperationKinds() []string {
 		} else {
 			kindCount[key]++
 		}
+		if key == "transaction" {
+			totamount.Add(totamount, o.(*OpTransaction).Amount)
+		}
 	}
+	ops.Amount = "(OpTransaction)" + totamount.String()
 	i := 0
 	for k, v := range kindCount {
-		ops[i] = k + "=" + strconv.Itoa(v)
+		ops.Ops[i] = k + "=" + strconv.Itoa(v)
 		i++
 	}
 	return ops

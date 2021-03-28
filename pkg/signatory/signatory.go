@@ -42,7 +42,7 @@ type SignInterceptorOptions struct {
 	Address string
 	Vault   string
 	Op      string
-	Kind    []string
+	Kind    tezos.OpsAmount
 }
 
 // PublicKey contains base58 encoded public key with its hash
@@ -195,10 +195,10 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	var opKind []string
+	var opKindAmt tezos.OpsAmount
 	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
-		opKind = ops.OperationKinds()
-		l = l.WithField(logKind, opKind)
+		opKindAmt = ops.OperationKinds()
+		l = l.WithField(logKind, opKindAmt)
 	}
 
 	if msgWithChainID, ok := msg.(tezos.MessageWithLevelAndChainID); ok {
@@ -240,7 +240,7 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 			Address: keyHash,
 			Vault:   p.vault.Name(),
 			Op:      msg.MessageKind(),
-			Kind:    opKind,
+			Kind:    opKindAmt,
 		}, func() (err error) {
 			sig, err = p.vault.Sign(ctx, digest[:], p.key)
 			return err
