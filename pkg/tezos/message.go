@@ -3,6 +3,7 @@ package tezos
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 )
 
@@ -46,9 +47,20 @@ func (u *UnsignedOperation) MessageKind() string { return "generic" }
 
 // OperationKinds returns list of uperation kinds for logging purposes
 func (u *UnsignedOperation) OperationKinds() []string {
+	kindCount := make(map[string]int)
 	ops := make([]string, len(u.Contents))
-	for i, o := range u.Contents {
-		ops[i] = o.OperationKind()
+	for _, o := range u.Contents {
+		key := o.OperationKind()
+		if _, ok := kindCount[key]; !ok {
+			kindCount[key] = 1
+		} else {
+			kindCount[key]++
+		}
+	}
+	i := 0
+	for k, v := range kindCount {
+		ops[i] = k + "=" + strconv.Itoa(v)
+		i++
 	}
 	return ops
 }
