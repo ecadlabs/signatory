@@ -67,7 +67,7 @@ func (u *UnsignedOperation) OperationKinds() OpsAmount {
 			totamount.Add(totamount, o.(*OpTransaction).Amount)
 		}
 	}
-	ops.Amount = "(OpTransaction)" + totamount.String()
+	ops.Amount = "amount_total=" + totamount.String()
 	i := 0
 	for k, v := range kindCount {
 		ops.Ops[i] = k + "=" + strconv.Itoa(v)
