@@ -64,7 +64,10 @@ func (u *UnsignedOperation) OperationKinds() OpsAmount {
 			kindCount[key]++
 		}
 		if key == "transaction" {
-			totamount.Add(totamount, o.(*OpTransaction).Amount)
+			curAmount := o.(*OpTransaction).Amount
+			if curAmount != nil {
+				totamount.Add(totamount, curAmount)
+			}
 		}
 	}
 	ops.Amount = "amount_total=" + totamount.String()
