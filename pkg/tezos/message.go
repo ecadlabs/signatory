@@ -69,6 +69,7 @@ func (u *UnsignedOperation) OperationKinds() OpsAmount {
 	}
 	ops.Amount = "amount_total=" + totamount.String()
 	i := 0
+	ops.Ops = make([]string, 11)
 	for k, v := range kindCount {
 		ops.Ops[i] = k + "=" + strconv.Itoa(v)
 		i++
