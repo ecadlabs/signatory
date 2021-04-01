@@ -31,9 +31,10 @@ vaults:
 
 # List enabled public keys hashes here
 tezos:
-  # Default policy allows "block" and "endorsement" operations
+  # This example does not specifiy a policy, and be default will allow signing of "block" and "endorsement" operations only.
   tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
-  # Explicit policy
+
+  # This example specifies which operations and kinds Signatory will sign, and logs payloads. 
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     # Setting `log_payloads` to `true` will cause Signatory to log operation
     # payloads to `stdout`. This may be desirable for audit and investigative
