@@ -85,7 +85,7 @@ module.exports = {
           path: '../docs',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
-            'https://github.com/ecadlabs/signatory/edit/master/website/',
+            'https://github.com/ecadlabs/signatory/edit/main/website/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
