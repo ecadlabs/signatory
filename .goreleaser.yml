@@ -1,5 +1,6 @@
 before:
   hooks:
+    - go mod download
 builds:
   - id: signatory
     binary: signatory
@@ -10,13 +11,18 @@ builds:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
     goos:
+      - freebsd
       - linux
       - windows
       - darwin
     goarch:
       - amd64
       - arm
-      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 386
   - id: signatory-cli
     binary: signatory-cli
     env:
@@ -26,50 +32,32 @@ builds:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
     goos:
+      - freebsd
       - linux
       - windows
       - darwin
     goarch:
       - amd64
       - arm
-      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 386
 dockers:
-  - ids:
+  - binaries:
       - signatory
       - signatory-cli
-  - image_templates:
-    - 'ecadlabs/signatory:{{ .Tag }}-amd64'
-    - 'ecadlabs/signatory:latest-amd64'
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-amd64'
-    - 'ghcr.io/ecadlabs/signatory:latest-amd64'
+    builds:
+      - signatory
+      - signatory-cli
+    image_templates:
+      - 'ecadlabs/signatory:latest'
+      - 'ecadlabs/signatory:{{ .Tag }}'
     dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/amd64"
-  - image_templates:
-    - 'ecadlabs/signatory:{{ .Tag }}-arm64'
-    - 'ecadlabs/signatory:latest-arm64'
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-arm64'
-    - 'ghcr.io/ecadlabs/signatory:latest-arm64'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm64"
-    goarch: arm64
 archives:
   - replacements:
+      '386': i386
       darwin: Darwin
       linux: Linux
       windows: Windows
@@ -83,5 +71,4 @@ changelog:
   filters:
     exclude:
       - '^docs:'
-      - '^website:'
       - '^test:'
