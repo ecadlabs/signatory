@@ -10,8 +10,8 @@
     "gh-pages": "gh-pages"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-beta.0",
-    "@docusaurus/preset-classic": "^2.0.0-beta.0",
+    "@docusaurus/core": "^2.0.0-beta.3",
+    "@docusaurus/preset-classic": "^2.0.0-beta.3",
     "classnames": "^2.3.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
@@ -29,6 +29,6 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^3.2.1"
+    "gh-pages": "^3.2.3"
   }
 }
