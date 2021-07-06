@@ -13,7 +13,7 @@ module.exports = {
         alt: 'Signatory Signer for Tezos',
         src: 'img/logo_nib.png',
       },
-      links: [
+      items: [
         {
           to: 'docs/start',
           activeBasePath: 'docs',
