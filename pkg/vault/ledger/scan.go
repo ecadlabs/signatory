@@ -12,10 +12,10 @@ import (
 )
 
 type deviceInfo struct {
-	path    string
-	version *tezosapp.Version
-	id      string
-	shortID string
+	Path    string
+	Version *tezosapp.Version
+	ID      string
+	ShortID string
 }
 
 type scanner struct {
@@ -57,10 +57,10 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	}
 
 	dev = &deviceInfo{
-		path:    path,
-		version: ver,
-		id:      pkh,
-		shortID: hex.EncodeToString(hash[:4]),
+		Path:    path,
+		Version: ver,
+		ID:      pkh,
+		ShortID: hex.EncodeToString(hash[:4]),
 	}
 	return app, dev, nil
 }
@@ -83,7 +83,7 @@ func (s *scanner) open(id string) (*tezosapp.App, error) {
 		if err != nil {
 			continue
 		}
-		if id == "" || dev.shortID == id || dev.id == id {
+		if id == "" || dev.ShortID == id || dev.ID == id {
 			return app, nil
 		}
 		if err := app.Close(); err != nil {

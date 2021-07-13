@@ -30,13 +30,11 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			// cmd always points to the top level command!!!
-			var conf config.Config
-			if err := conf.Read(configFile); err != nil {
-				return err
-			}
+			conf := config.Default()
+			conf.Read(configFile)
 
 			validate := config.Validator()
-			if err := validate.Struct(&conf); err != nil {
+			if err := validate.Struct(conf); err != nil {
 				return err
 			}
 
@@ -63,7 +61,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
-			c.config = &conf
+			c.config = conf
 			c.signatory = sig
 			return nil
 		},

@@ -82,7 +82,7 @@ func (t *App) GetVersion() (*Version, error) {
 	if res.SW != errOk {
 		return nil, TezosError(res.SW)
 	}
-	ver.Git = string(res.Data)
+	ver.Git = strings.TrimRight(string(res.Data), "\x00")
 
 	return &ver, nil
 }
@@ -147,6 +147,61 @@ func pathValid(path BIP32) error {
 	return nil
 }
 
+func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKey, err error) {
+	if len(data) < 2 {
+		return nil, errors.New("public key reply is too short")
+	}
+
+	ln := int(data[0])
+	comp := data[1] // LCX specific compression tag
+	if ln > len(data)-1 {
+		return nil, errors.New("invalid public key reply length")
+	}
+	key := data[2 : ln+1]
+
+	switch derivation {
+	case DerivationED25519, DerivationBIP32ED25519:
+		if comp != tagCompressed {
+			return nil, fmt.Errorf("invalid compression tag: %d", comp)
+		}
+		if len(key) != ed25519.PublicKeySize {
+			return nil, fmt.Errorf("invalid public key length: %d", len(key))
+		}
+		return ed25519.PublicKey(key), nil
+
+	case DerivationSECP256K1, DerivationSECP256R1:
+		if comp != tagUncompressed {
+			return nil, fmt.Errorf("invalid compression tag: %d", comp)
+		}
+		if len(key) != 64 {
+			return nil, fmt.Errorf("invalid public key length: %d", len(key))
+		}
+
+		var curve elliptic.Curve
+		if derivation == DerivationSECP256K1 {
+			curve = cryptoutils.S256()
+		} else {
+			curve = elliptic.P256()
+		}
+
+		x := new(big.Int).SetBytes(key[:32])
+		y := new(big.Int).SetBytes(key[32:])
+
+		if !curve.IsOnCurve(x, y) {
+			return nil, fmt.Errorf("point is not on %s", curve.Params().Name)
+		}
+
+		return &ecdsa.PublicKey{
+			Curve: curve,
+			X:     x,
+			Y:     y,
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("invalid derivation type: %d", derivation)
+	}
+}
+
 // GetPublicKey returns a public key for a newly derived pair
 func (t *App) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
 	ins := insGetPublicKey
@@ -171,58 +226,7 @@ func (t *App) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (
 		return nil, TezosError(res.SW)
 	}
 
-	if len(res.Data) < 2 {
-		return nil, errors.New("public key reply is too short")
-	}
-
-	ln := int(res.Data[0])
-	comp := res.Data[1] // LCX specific compression tag
-	if ln > len(res.Data)-1 {
-		return nil, errors.New("invalid public key reply length")
-	}
-	data := res.Data[2 : ln+1]
-
-	switch derivation {
-	case DerivationED25519, DerivationBIP32ED25519:
-		if comp != tagCompressed {
-			return nil, fmt.Errorf("invalid compression tag: %d", comp)
-		}
-		if len(data) != ed25519.PublicKeySize {
-			return nil, fmt.Errorf("invalid public key length: %d", len(data))
-		}
-		return ed25519.PublicKey(data), nil
-
-	case DerivationSECP256K1, DerivationSECP256R1:
-		if comp != tagUncompressed {
-			return nil, fmt.Errorf("invalid compression tag: %d", comp)
-		}
-		if len(data) != 64 {
-			return nil, fmt.Errorf("invalid public key length: %d", len(data))
-		}
-
-		var curve elliptic.Curve
-		if derivation == DerivationSECP256K1 {
-			curve = cryptoutils.S256()
-		} else {
-			curve = elliptic.P256()
-		}
-
-		x := new(big.Int).SetBytes(data[:32])
-		y := new(big.Int).SetBytes(data[32:])
-
-		if !curve.IsOnCurve(x, y) {
-			return nil, fmt.Errorf("point is not on %s", curve.Params().Name)
-		}
-
-		return &ecdsa.PublicKey{
-			Curve: curve,
-			X:     x,
-			Y:     y,
-		}, nil
-
-	default:
-		return nil, fmt.Errorf("invalid derivation type: %d", derivation)
-	}
+	return parsePublicKey(res.Data, derivation)
 }
 
 // fragmentation is handled by the app itself and varies between different apps
@@ -309,4 +313,126 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed
 	default:
 		return nil, fmt.Errorf("invalid derivation type: %d", derivation)
 	}
+}
+
+type HWM struct {
+	ChainID [4]byte
+	Main    uint32
+	Test    uint32
+}
+
+func (t *App) SetupBaking(hwm *HWM, derivation DerivationType, path BIP32) (pub crypto.PublicKey, err error) {
+	if err := pathValid(path); err != nil {
+		return nil, err
+	}
+
+	data := make([]byte, 12, 12+10*4)
+	copy(data, hwm.ChainID[:])
+	data[4] = uint8(hwm.Main >> 24)
+	data[5] = uint8(hwm.Main >> 16)
+	data[6] = uint8(hwm.Main >> 8)
+	data[7] = uint8(hwm.Main)
+	data[8] = uint8(hwm.Test >> 24)
+	data[9] = uint8(hwm.Test >> 16)
+	data[10] = uint8(hwm.Test >> 8)
+	data[11] = uint8(hwm.Test)
+	data = append(data, path.Bytes()...)
+
+	res, err := t.Exchange(&ledger.APDUCommand{
+		Cla:  claTezos,
+		Ins:  uint8(insSetup),
+		P2:   uint8(derivation),
+		Data: data,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if res.SW != errOk {
+		return nil, TezosError(res.SW)
+	}
+
+	return parsePublicKey(res.Data, derivation)
+}
+
+func (t *App) DeauthorizeBaking() error {
+	res, err := t.Exchange(&ledger.APDUCommand{
+		Cla:     claTezos,
+		Ins:     uint8(insDeauthorize),
+		ForceLc: true,
+	})
+	if err != nil {
+		return err
+	}
+	if res.SW != errOk {
+		return TezosError(res.SW)
+	}
+	return nil
+}
+
+func (t *App) GetHighWatermarks() (*HWM, error) {
+	res, err := t.Exchange(&ledger.APDUCommand{
+		Cla:     claTezos,
+		Ins:     uint8(insQueryAllHWM),
+		ForceLc: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.SW != errOk {
+		return nil, TezosError(res.SW)
+	}
+
+	if len(res.Data) < 12 {
+		return nil, fmt.Errorf("invalid reply length: %d", len(res.Data))
+	}
+
+	hwm := HWM{
+		Main: uint32(res.Data[0])<<24 | uint32(res.Data[1])<<16 | uint32(res.Data[2])<<8 | uint32(res.Data[3]),
+		Test: uint32(res.Data[4])<<24 | uint32(res.Data[5])<<16 | uint32(res.Data[6])<<8 | uint32(res.Data[7]),
+	}
+	copy(hwm.ChainID[:], res.Data[8:])
+
+	return &hwm, nil
+}
+
+func (t *App) GetHighWatermark() (uint32, error) {
+	res, err := t.Exchange(&ledger.APDUCommand{
+		Cla:     claTezos,
+		Ins:     uint8(insQueryMainHWM),
+		ForceLc: true,
+	})
+	if err != nil {
+		return 0, err
+	}
+	if res.SW != errOk {
+		return 0, TezosError(res.SW)
+	}
+
+	if len(res.Data) < 4 {
+		return 0, fmt.Errorf("invalid reply length: %d", len(res.Data))
+	}
+
+	return uint32(res.Data[0])<<24 | uint32(res.Data[1])<<16 | uint32(res.Data[2])<<8 | uint32(res.Data[3]), nil
+}
+
+func (t *App) SetHighWatermark(hwm uint32) error {
+	data := [4]uint8{
+		uint8(hwm >> 24),
+		uint8(hwm >> 16),
+		uint8(hwm >> 8),
+		uint8(hwm),
+	}
+	res, err := t.Exchange(&ledger.APDUCommand{
+		Cla:  claTezos,
+		Ins:  uint8(insReset),
+		Data: data[:],
+	})
+	if err != nil {
+		return err
+	}
+	if res.SW != errOk {
+		return TezosError(res.SW)
+	}
+	return nil
 }

@@ -52,7 +52,7 @@ type PublicKey struct {
 	VaultName     string
 	ID            string
 	Policy        *config.TezosPolicy
-	Status        string
+	Active        bool
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -231,8 +231,15 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 		return "", ErrNotSafeToSign
 	}
 
-	// Not nil if vault found
-	digest := tezos.DigestFunc(message)
+	var signFunc func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error)
+	if rawSigner, ok := p.vault.(vault.RawSigner); ok {
+		signFunc = rawSigner.SignRaw
+	} else {
+		signFunc = func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+			digest := tezos.DigestFunc(message)
+			return p.vault.Sign(ctx, digest[:], p.key)
+		}
+	}
 
 	var sig cryptoutils.Signature
 	if s.config.Interceptor != nil {
@@ -242,11 +249,11 @@ func (s *Signatory) Sign(ctx context.Context, keyHash string, message []byte) (s
 			Op:      msg.MessageKind(),
 			Kind:    opKind,
 		}, func() (err error) {
-			sig, err = p.vault.Sign(ctx, digest[:], p.key)
+			sig, err = signFunc(ctx, message, p.key)
 			return err
 		})
 	} else {
-		sig, err = p.vault.Sign(ctx, digest[:], p.key)
+		sig, err = signFunc(ctx, message, p.key)
 	}
 	if err != nil {
 		return "", err
@@ -313,11 +320,8 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			VaultName:     p.vault.Name(),
 			ID:            p.key.ID(),
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
-			Status:        "FOUND_NOT_CONFIGURED",
 		}
-		if ret[i].Policy != nil {
-			ret[i].Status = "ACTIVE"
-		}
+		ret[i].Active = ret[i].Policy != nil
 	}
 	return ret, nil
 }

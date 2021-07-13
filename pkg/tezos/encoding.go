@@ -2,6 +2,7 @@ package tezos
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -154,4 +155,26 @@ func EncodeSignature(sig cryptoutils.Signature) (res string, err error) {
 		return "", fmt.Errorf("tezos: unknown signature type %T (%v)", sig, sig)
 	}
 	return encodeBase58(pGenericSignature, data)
+}
+
+func DecodeChainID(src string) (res [4]byte, err error) {
+	cid, err := hex.DecodeString(src)
+	if len(cid) != 4 {
+		return res, errors.New("tezos: invalid chain ID")
+	}
+	if err == nil {
+		copy(res[:], cid)
+		return
+	}
+
+	prefix, cid, err := decodeBase58(src)
+	if err != nil {
+		return
+	}
+
+	if prefix != pChainID {
+		return res, errors.New("tezos: invalid chain ID")
+	}
+	copy(res[:], cid)
+	return
 }

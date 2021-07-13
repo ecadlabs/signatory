@@ -10,8 +10,8 @@ import (
 
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
-	Address        string `yaml:"address" validate:"required,hostport"`
-	UtilityAddress string `yaml:"utility_address" validate:"required,hostport"`
+	Address        string `yaml:"address" validate:"hostport"`
+	UtilityAddress string `yaml:"utility_address" validate:"hostport"`
 }
 
 // TezosConfig contains the configuration related to tezos network
@@ -32,9 +32,16 @@ type VaultConfig struct {
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
-	Vaults map[string]*VaultConfig `yaml:"vaults" validate:"gt=0,dive,required"`
+	Vaults map[string]*VaultConfig `yaml:"vaults"`
 	Tezos  TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
 	Server ServerConfig            `yaml:"server"`
+}
+
+var defaultConfig = Config{
+	Server: ServerConfig{
+		Address:        ":6732",
+		UtilityAddress: ":9583",
+	},
 }
 
 // Read read the config from a file
@@ -48,6 +55,11 @@ func (c *Config) Read(file string) error {
 	}
 
 	return nil
+}
+
+func Default() *Config {
+	c := defaultConfig
+	return &c
 }
 
 func Validator() *validator.Validate {

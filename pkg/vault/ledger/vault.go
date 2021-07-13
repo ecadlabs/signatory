@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -28,11 +27,17 @@ var (
 	}
 )
 
+type devRequest interface {
+	devRequest()
+}
+
 type getKeyReq struct {
 	key *keyID
 	res chan<- *ledgerKey
 	err chan<- error
 }
+
+func (g *getKeyReq) devRequest() {}
 
 type signReq struct {
 	key       *keyID
@@ -43,6 +48,8 @@ type signReq struct {
 	err chan<- error
 }
 
+func (s *signReq) devRequest() {}
+
 type keyID struct {
 	path tezosapp.BIP32
 	dt   tezosapp.DerivationType
@@ -52,9 +59,7 @@ type keyID struct {
 type Vault struct {
 	config Config
 	keys   []*keyID
-
-	getKey chan *getKeyReq
-	sign   chan *signReq
+	req    chan devRequest
 }
 
 // Config represents Ledger signer backend configuration
@@ -96,7 +101,7 @@ func (v *Vault) getPublicKey(ctx context.Context, id *keyID) (vault.StoredKey, e
 	res := make(chan *ledgerKey, 1)
 	errCh := make(chan error, 1)
 
-	v.getKey <- &getKeyReq{
+	v.req <- &getKeyReq{
 		key: id,
 		res: res,
 		err: errCh,
@@ -129,8 +134,7 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	}
 }
 
-// Sign returns a signature
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+func (v *Vault) signData(ctx context.Context, digest []byte, key vault.StoredKey, prehashed bool) (cryptoutils.Signature, error) {
 	pk, ok := key.(*ledgerKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Ledger/%s): not a Ledger key: %T ", v.config.ID, key), http.StatusBadRequest)
@@ -139,10 +143,10 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 	res := make(chan cryptoutils.Signature, 1)
 	errCh := make(chan error, 1)
 
-	v.sign <- &signReq{
+	v.req <- &signReq{
 		key:       pk.id,
 		data:      digest,
-		prehashed: true,
+		prehashed: prehashed,
 		sig:       res,
 		err:       errCh,
 	}
@@ -155,6 +159,16 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// Sign returns a signature
+func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	return v.signData(ctx, digest, key, true)
+}
+
+// SignRaw implements RawSigner interface
+func (v *Vault) SignRaw(ctx context.Context, data []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	return v.signData(ctx, data, key, false)
 }
 
 // Name returns a backend name i.e. Ledger
@@ -202,32 +216,35 @@ func (v *Vault) worker() {
 
 	for {
 		select {
-		case req := <-v.getKey:
-			if err = openDev(); err != nil {
-				req.err <- err
-				break
-			}
-			pub, err := dev.GetPublicKey(req.key.dt, req.key.path, false)
-			if err != nil {
-				req.err <- err
-				break
-			}
-			req.res <- &ledgerKey{
-				pub: pub,
-				id:  req.key,
-			}
+		case req := <-v.req:
+			switch r := req.(type) {
+			case *getKeyReq:
+				if err = openDev(); err != nil {
+					r.err <- err
+					break
+				}
+				pub, err := dev.GetPublicKey(r.key.dt, r.key.path, false)
+				if err != nil {
+					r.err <- err
+					break
+				}
+				r.res <- &ledgerKey{
+					pub: pub,
+					id:  r.key,
+				}
 
-		case req := <-v.sign:
-			if err = openDev(); err != nil {
-				req.err <- err
-				break
+			case *signReq:
+				if err = openDev(); err != nil {
+					r.err <- err
+					break
+				}
+				sig, err := dev.Sign(r.key.dt, r.key.path, r.data, r.prehashed)
+				if err != nil {
+					r.err <- err
+					break
+				}
+				r.sig <- sig
 			}
-			sig, err := dev.Sign(req.key.dt, req.key.path, req.data, req.prehashed)
-			if err != nil {
-				req.err <- err
-				break
-			}
-			req.sig <- sig
 
 		case <-tch:
 			if err := dev.Close(); err != nil {
@@ -240,25 +257,8 @@ func (v *Vault) worker() {
 	}
 }
 
-var scanOnce sync.Once
-
 // New returns new Ledger signer
 func New(ctx context.Context, conf *Config) (*Vault, error) {
-	scanOnce.Do(func() {
-		devs, err := deviceScanner.scan()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		for _, d := range devs {
-			log.WithFields(log.Fields{
-				"path":     d.path,
-				"id":       d.id,
-				"short_id": d.shortID,
-			}).Infof("Found Ledger running %v", d.version)
-		}
-	})
-
 	keys := make([]*keyID, len(conf.Keys))
 	for i, k := range conf.Keys {
 		kid, err := parseKeyID(k)
@@ -271,8 +271,7 @@ func New(ctx context.Context, conf *Config) (*Vault, error) {
 	v := &Vault{
 		config: *conf,
 		keys:   keys,
-		getKey: make(chan *getKeyReq, 10),
-		sign:   make(chan *signReq, 10),
+		req:    make(chan devRequest, 10),
 	}
 
 	go v.worker()
@@ -333,4 +332,8 @@ func init() {
 
 		return New(ctx, &conf)
 	})
+
+	vault.RegisterCommand(newLedgerCommand())
 }
+
+var _ vault.RawSigner = (*Vault)(nil)
