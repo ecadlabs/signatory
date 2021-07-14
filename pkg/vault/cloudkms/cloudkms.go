@@ -12,6 +12,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net/http"
 
 	kms "cloud.google.com/go/kms/apiv1"
@@ -20,7 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
-	"github.com/google/tink/go/subtle/kwp"
+	kwp "github.com/google/tink/go/kwp/subtle"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -212,12 +213,18 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 		return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %v", c.config.keyRingName(), err)
 	}
 
-	var sig cryptoutils.ECDSASignature
+	var sig struct {
+		R *big.Int
+		S *big.Int
+	}
 	if _, err = asn1.Unmarshal(resp.Signature, &sig); err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
 	}
-
-	return &sig, nil
+	return &cryptoutils.ECDSASignature{
+		R:     sig.R,
+		S:     sig.S,
+		Curve: kmsKey.pub.Curve,
+	}, nil
 }
 
 // PKCS#11 CKM_RSA_AES_KEY_WRAP

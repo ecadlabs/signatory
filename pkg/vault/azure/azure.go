@@ -329,8 +329,9 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (s
 	}
 
 	s := cryptoutils.ECDSASignature{
-		R: new(big.Int).SetBytes(b[:byteLen]),
-		S: new(big.Int).SetBytes(b[byteLen:]),
+		R:     new(big.Int).SetBytes(b[:byteLen]),
+		S:     new(big.Int).SetBytes(b[byteLen:]),
+		Curve: cryptoutils.NamedCurve(azureKey.bundle.Key.Curve),
 	}
 
 	return &s, nil

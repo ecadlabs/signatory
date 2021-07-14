@@ -287,14 +287,12 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed
 		return cryptoutils.ED25519Signature(res.Data), nil
 
 	case DerivationSECP256K1, DerivationSECP256R1:
-		/*
-			var curve elliptic.Curve
-			if derivation == DerivationSECP256K1 {
-				curve = cryptoutils.S256()
-			} else {
-				curve = elliptic.P256()
-			}
-		*/
+		var curve elliptic.Curve
+		if derivation == DerivationSECP256K1 {
+			curve = cryptoutils.S256()
+		} else {
+			curve = elliptic.P256()
+		}
 
 		if len(res.Data) != 0 {
 			// remove the parity flag which interfere with ASN.1
@@ -308,7 +306,11 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed
 		if _, err = asn1.Unmarshal(res.Data, &sig); err != nil {
 			return nil, err
 		}
-		return (*cryptoutils.ECDSASignature)(&sig), nil // TODO curve type
+		return &cryptoutils.ECDSASignature{
+			R:     sig.R,
+			S:     sig.S,
+			Curve: curve,
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("invalid derivation type: %d", derivation)

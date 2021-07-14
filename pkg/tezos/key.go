@@ -18,13 +18,15 @@ import (
 
 var (
 	// ErrPrivateKey is returned when private key type is unknown
-	ErrPrivateKey = errors.New("unknown private key type")
+	ErrPrivateKey = errors.New("tezos: unknown private key type")
+	// ErrPublicKey is returned when private key type is unknown
+	ErrPublicKey = errors.New("tezos: unknown public key type")
 	// ErrPrivateKeyValue is returned when elliptic D value of unexpected order is provided
-	ErrPrivateKeyValue = errors.New("invalid elliptic curve private key value")
+	ErrPrivateKeyValue = errors.New("tezos: invalid elliptic curve private key value")
 	// ErrPassphrase is returned when required passphrase is not provided
-	ErrPassphrase = errors.New("passphrase required")
+	ErrPassphrase = errors.New("tezos: passphrase required")
 	// ErrPrivateKeyDecrypt is returned if attempt to decrypt the private key has been failed
-	ErrPrivateKeyDecrypt = errors.New("unable to decrypt the private key")
+	ErrPrivateKeyDecrypt = errors.New("tezos: unable to decrypt the private key")
 )
 
 const (
@@ -146,6 +148,81 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 	return nil, ErrPrivateKey
 }
 
+// See https://github.com/golang/go/blob/master/src/crypto/elliptic/elliptic.go
+func unmarshalCompressed(curve elliptic.Curve, data []byte) (x, y *big.Int, err error) {
+	byteLen := (curve.Params().BitSize + 7) / 8
+	if len(data) != 1+byteLen {
+		return nil, nil, fmt.Errorf("tezos: (%s) invalid public key length: %d", curve.Params().Name, len(data))
+	}
+	if data[0] != 2 && data[0] != 3 { // compressed form
+		return nil, nil, fmt.Errorf("tezos: (%s) invalid public key compression", curve.Params().Name)
+	}
+	p := curve.Params().P
+	x = new(big.Int).SetBytes(data[1:])
+	if x.Cmp(p) >= 0 {
+		return nil, nil, fmt.Errorf("tezos: (%s) invalid public key", curve.Params().Name)
+	}
+
+	// secp256k1 polynomial: x³ + b
+	// P-* polynomial: x³ - 3x + b
+	y = new(big.Int).Mul(x, x)
+	y.Mul(y, x)
+	if curve != cryptoutils.S256() {
+		x1 := new(big.Int).Lsh(x, 1)
+		x1.Add(x1, x)
+		y.Sub(y, x1)
+	}
+	y.Add(y, curve.Params().B)
+	y.Mod(y, curve.Params().P)
+	y.ModSqrt(y, p)
+
+	if y == nil {
+		return nil, nil, fmt.Errorf("tezos: (%s) invalid public key", curve.Params().Name)
+	}
+	if byte(y.Bit(0)) != data[0]&1 {
+		y.Neg(y).Mod(y, p)
+	}
+	if !curve.IsOnCurve(x, y) {
+		return nil, nil, fmt.Errorf("tezos: (%s) invalid public key", curve.Params().Name)
+	}
+	return
+}
+
+// ParsePublicKey parses base58 encoded public key
+func ParsePublicKey(data string) (pub crypto.PublicKey, err error) {
+	prefix, pl, err := decodeBase58(data)
+	if err != nil {
+		return
+	}
+
+	switch prefix {
+	case pSECP256K1PublicKey, pP256PublicKey:
+		var curve elliptic.Curve
+		if prefix == pSECP256K1PublicKey {
+			curve = cryptoutils.S256()
+		} else {
+			curve = elliptic.P256()
+		}
+		x, y, err := unmarshalCompressed(curve, pl)
+		if err != nil {
+			return nil, err
+		}
+		return &ecdsa.PublicKey{
+			Curve: curve,
+			X:     x,
+			Y:     y,
+		}, nil
+
+	case pED25519PublicKey:
+		if l := len(pl); l != ed25519.PublicKeySize {
+			return nil, fmt.Errorf("tezos: invalid ED25519 public key length: %d", l)
+		}
+		return ed25519.PublicKey(pl), nil
+	}
+
+	return nil, ErrPublicKey
+}
+
 // IsEncryptedPrivateKey returns true if the private key is encrypted
 func IsEncryptedPrivateKey(data string) (bool, error) {
 	prefix, _, err := decodeBase58(data)
@@ -156,42 +233,21 @@ func IsEncryptedPrivateKey(data string) (bool, error) {
 	return ok, nil
 }
 
-// SEC1 compressed point form https://www.secg.org/sec1-v2.pdf
-// See https://github.com/decred/dcrd/blob/master/dcrec/secp256k1/pubkey.go#L144
-func serializeCoordinates(x, y *big.Int) ([]byte, error) {
-	var format byte = 0x2
-	if y.Bit(0) == 1 {
-		format |= 0x1
-	}
-
-	b := make([]byte, 33)
-	b[0] = format
-	xx := x.Bytes()
-
-	i := 32 - len(xx)
-	if i < 0 {
-		return nil, fmt.Errorf("tezos: unexpected X value length: %d", len(xx))
-	}
-	copy(b[1+i:], xx)
-
-	return b, nil
-}
-
 func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, payload []byte, err error) {
 	switch key := pub.(type) {
 	case *ecdsa.PublicKey:
-		switch {
-		case key.Curve == elliptic.P256():
+		switch key.Curve {
+		case elliptic.P256():
 			hashPrefix = pP256PublicKeyHash
 			pubPrefix = pP256PublicKey
-		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.S256():
 			hashPrefix = pSECP256K1PublicKeyHash
 			pubPrefix = pSECP256K1PublicKey
 		default:
 			err = fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
 			return
 		}
-		payload, err = serializeCoordinates(key.X, key.Y)
+		payload = elliptic.MarshalCompressed(key.Curve, key.X, key.Y)
 		return
 
 	case ed25519.PublicKey:
@@ -256,10 +312,10 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 
 	switch key := priv.(type) {
 	case *ecdsa.PrivateKey:
-		switch {
-		case key.Curve == elliptic.P256():
+		switch key.Curve {
+		case elliptic.P256():
 			prefix = pP256SecretKey
-		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.S256():
 			prefix = pSECP256K1SecretKey
 		default:
 			return "", fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
@@ -274,4 +330,30 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 	}
 
 	return encodeBase58(prefix, payload)
+}
+
+// EncodeBinaryPublicKeyHash returns binary representation of the public key hash
+func EncodeBinaryPublicKeyHash(s string) (data []byte, err error) {
+	prefix, payload, err := decodeBase58(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var tag byte
+	switch prefix {
+	case pED25519PublicKeyHash:
+		tag = tagPublicKeyHashED25519
+	case pSECP256K1PublicKeyHash:
+		tag = tagPublicKeyHashSECP256K1
+	case pP256PublicKeyHash:
+		tag = tagPublicKeyP256
+	default:
+		return nil, errors.New("tezos: unknown public key type")
+	}
+
+	data = make([]byte, 1+len(payload))
+	data[0] = tag
+	copy(data[1:], payload)
+
+	return data, nil
 }

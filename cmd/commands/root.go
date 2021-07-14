@@ -45,8 +45,13 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 			log.SetLevel(lv)
 
+			pol, err := signatory.PreparePolicy(conf.Tezos)
+			if err != nil {
+				return err
+			}
+
 			sigConf := signatory.Config{
-				Policy:      conf.Tezos,
+				Policy:      pol,
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
 				Watermark:   signatory.NewInMemoryWatermark(),
@@ -74,10 +79,3 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 	return &rootCmd
 }
-
-/*
-// Execute executes root command
-func Execute(ctx context.Context) error {
-	return newRootCommand(ctx).Execute()
-}
-*/
