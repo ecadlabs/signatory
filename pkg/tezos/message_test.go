@@ -142,8 +142,8 @@ func TestUnsignedOperations(t *testing.T) {
 							ValidationPass: 4,
 							OperationsHash: "LLob6ezDsDXTAN2ew6VDEzmz5NpMfi3wdiYjPesWV6FgkcRtEqXZT",
 							Fitness: [][]uint8{
-								[]uint8{0x01},
-								[]uint8{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
+								{0x01},
+								{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
 							},
 							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
 							Priority:         0,
@@ -158,8 +158,8 @@ func TestUnsignedOperations(t *testing.T) {
 							ValidationPass: 4,
 							OperationsHash: "LLoa4nqohFX77Mkhj89SriZtRGQFkagaZC7AdGHjkhifMmdEhM7gL",
 							Fitness: [][]uint8{
-								[]uint8{0x01},
-								[]uint8{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
+								{0x01},
+								{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
 							},
 							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
 							Priority:         0,
@@ -277,8 +277,8 @@ func TestBlockHeader(t *testing.T) {
 				ValidationPass: 4,
 				OperationsHash: "LLoaZtCFHbHQoi797K93Gug9jwWP52iGoixzWBDTqEL717mvYBAAX",
 				Fitness: [][]uint8{
-					[]uint8{0x01},
-					[]uint8{0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x38, 0x15},
+					{0x01},
+					{0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x38, 0x15},
 				},
 				Context:          "CoUx4kRYc9xWSXFLAk3ukiJ3n7MLMVt3Pb3xH4WYqZiUZaiwd4JT",
 				Priority:         1234,
