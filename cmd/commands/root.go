@@ -31,7 +31,9 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			// cmd always points to the top level command!!!
 			conf := config.Default()
-			conf.Read(configFile)
+			if configFile != "" {
+				conf.Read(configFile)
+			}
 
 			validate := config.Validator()
 			if err := validate.Struct(conf); err != nil {
