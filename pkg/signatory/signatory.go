@@ -425,6 +425,10 @@ func NewSignatory(ctx context.Context, c *Config) (*Signatory, error) {
 
 	// Initialize vaults
 	for name, vc := range c.Vaults {
+		if vc == nil {
+			continue
+		}
+
 		l := s.logger().WithFields(log.Fields{
 			logVault:     vc.Driver,
 			logVaultName: name,
@@ -458,6 +462,11 @@ func (s *Signatory) Ready(ctx context.Context) (bool, error) {
 func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 	policy := make(map[string]*Policy, len(src))
 	for k, v := range src {
+		if v == nil {
+			policy[k] = nil // default policy
+			continue
+		}
+
 		pol := Policy{
 			LogPayloads: v.LogPayloads,
 		}
