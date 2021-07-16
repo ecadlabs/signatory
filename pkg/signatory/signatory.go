@@ -19,9 +19,9 @@ import (
 
 var (
 	// ErrVaultNotFound error return when a vault is not found
-	ErrVaultNotFound = errors.Wrap(stderr.New("This key not found in any vault"), http.StatusNotFound)
+	ErrVaultNotFound = errors.Wrap(stderr.New("this key not found in any vault"), http.StatusNotFound)
 	// ErrNotSafeToSign error returned when an operation is a potential duplicate
-	ErrNotSafeToSign = errors.Wrap(stderr.New("Not safe to sign"), http.StatusForbidden)
+	ErrNotSafeToSign = errors.Wrap(stderr.New("not safe to sign"), http.StatusForbidden)
 )
 
 const (
