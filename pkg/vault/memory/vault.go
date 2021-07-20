@@ -107,16 +107,28 @@ func (v *Vault) Unlock(ctx context.Context) error {
 
 	for i, entry := range v.raw {
 		pk, err := tezos.ParsePrivateKey(entry.Data, func() ([]byte, error) {
-			fmt.Printf("(%s): Enter password to unlock key `%s': ", v.name, entry.ID)
+			id := entry.ID
+			if id == "" {
+				id = "<unnamed>"
+			}
+			fmt.Printf("(%s): Enter password to unlock key `%s': ", v.name, id)
 			defer fmt.Println()
 			return terminal.ReadPassword(int(syscall.Stdin))
 		})
 		if err != nil {
 			return fmt.Errorf("(%s): %v", v.name, err)
 		}
+
+		id := entry.ID
+		if id == "" {
+			id, err = tezos.EncodePublicKeyHash(pk.Public())
+			if err != nil {
+				return fmt.Errorf("(%s): %v", v.name, err)
+			}
+		}
 		key := memKey{
 			privateKey: pk,
-			id:         entry.ID,
+			id:         id,
 		}
 		keys[i] = &key
 		index[key.id] = &key
