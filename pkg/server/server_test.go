@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -17,23 +16,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSignatory struct {
+type signatoryMock struct {
 	SignResponse      string
 	SignError         error
 	PublicKeyResponse *signatory.PublicKey
 	PublicKeyError    error
 }
 
-func (c *fakeSignatory) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
+func (c *signatoryMock) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
 	return c.SignResponse, c.SignError
 }
 
-func (c *fakeSignatory) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+func (c *signatoryMock) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
+		return nil, errors.New("key not found")
+	}
 	return c.PublicKeyResponse, c.PublicKeyError
-}
-
-func toReadCloser(str string) io.ReadCloser {
-	return ioutil.NopCloser(bytes.NewReader([]byte(str)))
 }
 
 func TestSign(t *testing.T) {
@@ -82,7 +80,7 @@ func TestSign(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &fakeSignatory{
+			sig := &signatoryMock{
 				SignError:    c.Error,
 				SignResponse: c.Response,
 			}
@@ -91,24 +89,37 @@ func TestSign(t *testing.T) {
 				Signer: sig,
 			}
 
+			handler, err := srv.Handler()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			s := httptest.NewServer(handler)
+			defer s.Close()
+
 			var body io.Reader
 			if c.Request != "" {
 				body = strings.NewReader(c.Request)
 			}
 
-			r := httptest.NewRequest("POST", "http://irrelevant.com/keys/03123453", body)
-			resp := httptest.NewRecorder()
-			s, err := srv.New()
+			req, err := http.NewRequest("POST", s.URL+"/keys/03123453", body)
 			if err != nil {
 				t.Error(err)
+				return
 			}
-			s.Handler.ServeHTTP(resp, r)
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
-			require.Equal(t, c.StatusCode, resp.Code)
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Error(err)
+				return
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -142,7 +153,7 @@ func TestGetPublicKey(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &fakeSignatory{
+			sig := &signatoryMock{
 				PublicKeyError:    c.Error,
 				PublicKeyResponse: c.Response,
 			}
@@ -151,19 +162,32 @@ func TestGetPublicKey(t *testing.T) {
 				Signer: sig,
 			}
 
-			r := httptest.NewRequest("GET", "http://irrelevant.com/keys/03123453", nil)
-			resp := httptest.NewRecorder()
-			s, err := srv.New()
+			handler, err := srv.Handler()
 			if err != nil {
 				t.Error(err)
+				return
 			}
-			s.Handler.ServeHTTP(resp, r)
 
-			require.Equal(t, c.StatusCode, resp.Code)
+			s := httptest.NewServer(handler)
+			defer s.Close()
+
+			req, err := http.NewRequest("GET", s.URL+"/keys/03123453", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Error(err)
+				return
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -197,7 +221,7 @@ func TestSignedRequest(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &fakeSignatory{
+			sig := &signatoryMock{
 				SignResponse: "signature",
 			}
 
@@ -206,25 +230,35 @@ func TestSignedRequest(t *testing.T) {
 				Auth:   auth.Must(auth.StaticAuthorizedKeysFromString("edpktpQKJF4vRodmSfT3h6LrYisshQuJeoybUxB9c8s3b1QymvisHC")),
 			}
 
-			body := strings.NewReader("\"03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00\"")
-			u, _ := url.Parse("http://irrelevant.com/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm")
+			handler, err := srv.Handler()
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
+			s := httptest.NewServer(handler)
+			defer s.Close()
+
+			body := strings.NewReader("\"03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00\"")
+			u, _ := url.Parse(s.URL + "/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm")
 			if c.Signature != "" {
 				u.RawQuery = url.Values{
 					"authentication": []string{c.Signature},
 				}.Encode()
 			}
 
-			r := httptest.NewRequest("POST", u.String(), body)
-
-			resp := httptest.NewRecorder()
-			s, err := srv.New()
+			req, err := http.NewRequest("POST", u.String(), body)
 			if err != nil {
 				t.Error(err)
+				return
 			}
-			s.Handler.ServeHTTP(resp, r)
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
-			require.Equal(t, c.StatusCode, resp.Code)
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 		})
 	}
 }

@@ -81,7 +81,7 @@ func init() {
 
 func TestSignatory(t *testing.T) {
 	conf := Config{
-		Vaults:    map[string]*config.VaultConfig{"mock": &config.VaultConfig{Driver: "mock"}},
+		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: NewIgnoreWatermark(),
 	}
 

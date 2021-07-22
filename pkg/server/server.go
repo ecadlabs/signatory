@@ -175,8 +175,8 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, &resp)
 }
 
-// New returns a new http server with registered routes
-func (s *Server) New() (*http.Server, error) {
+// Handler returns new Signatory HTTP API handler
+func (s *Server) Handler() (http.Handler, error) {
 	if s.Auth != nil {
 		hashes, err := s.Auth.ListPublicKeys(context.Background())
 		if err != nil {
@@ -192,15 +192,22 @@ func (s *Server) New() (*http.Server, error) {
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
 
+	return r, nil
+}
+
+// New returns a new http server with Signatory HTTP API handler. See Handler
+func (s *Server) New() (*http.Server, error) {
 	addr := s.Address
 	if addr == "" {
 		addr = defaultAddr
 	}
-
+	h, err := s.Handler()
+	if err != nil {
+		return nil, err
+	}
 	srv := &http.Server{
-		Handler: r,
+		Handler: h,
 		Addr:    addr,
 	}
-
 	return srv, nil
 }
