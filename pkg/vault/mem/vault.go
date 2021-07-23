@@ -3,11 +3,21 @@ package file
 import (
 	"context"
 
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"gopkg.in/yaml.v3"
 )
+
+type Vault struct {
+	*memory.Vault
+}
+
+func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	return v.ImportKey(ctx, pk, opt)
+}
 
 func init() {
 	vault.RegisterVault("mem", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
@@ -19,10 +29,12 @@ func init() {
 			return nil, err
 		}
 
-		data := make([]*memory.KeyData, len(conf))
+		data := make([]*memory.UnparsedKey, len(conf))
 		for i, v := range conf {
-			data[i] = &memory.KeyData{Data: v}
+			data[i] = &memory.UnparsedKey{Data: v}
 		}
-		return memory.New(data, "Mem"), nil
+		return &Vault{Vault: memory.NewUnparsed(data, "Mem")}, nil
 	})
 }
+
+var _ vault.Importer = (*Vault)(nil)

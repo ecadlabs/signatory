@@ -6,46 +6,46 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"syscall"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
-type memKey struct {
-	privateKey cryptoutils.PrivateKey
-	id         string
+type PrivateKey struct {
+	PrivateKey cryptoutils.PrivateKey
+	KeyID      string
 }
 
 // PublicKey get the public key associated with this key
-func (f *memKey) PublicKey() crypto.PublicKey {
-	return f.privateKey.Public()
+func (f *PrivateKey) PublicKey() crypto.PublicKey {
+	return f.PrivateKey.Public()
 }
 
 // ID get the id of this file key
-func (f *memKey) ID() string {
-	return f.id
+func (f *PrivateKey) ID() string {
+	return f.KeyID
 }
 
-type KeyData struct {
+type UnparsedKey struct {
 	Data string
 	ID   string
 }
 
 // Vault is a file system based vault
 type Vault struct {
-	raw   []*KeyData
-	keys  []*memKey
-	index map[string]*memKey
-	mtx   sync.Mutex
-	name  string
+	raw      []*UnparsedKey
+	keys     []*PrivateKey
+	index    map[string]*PrivateKey
+	mtx      sync.Mutex
+	name     string
+	unlocked bool
 }
 
 type iterator struct {
-	keys []*memKey
+	keys []*PrivateKey
 	idx  int
 }
 
@@ -58,12 +58,53 @@ func (i *iterator) Next() (key vault.StoredKey, err error) {
 	return key, nil
 }
 
-// New create a new file based vault
-func New(data []*KeyData, name string) *Vault {
+// NewUnparsed create a new in-mempory vault from Tezos encoded data. Call Unlock before use
+func NewUnparsed(data []*UnparsedKey, name string) *Vault {
+	if name == "" {
+		name = "Mem"
+	}
 	return &Vault{
 		raw:  data,
 		name: name,
 	}
+}
+
+// New create a new in-mempory vault. Call Unlock before use
+func New(src []*PrivateKey, name string) (*Vault, error) {
+	if name == "" {
+		name = "Mem"
+	}
+
+	keys := make([]*PrivateKey, len(src))
+	index := make(map[string]*PrivateKey, len(src))
+
+	for i, k := range src {
+		var key *PrivateKey
+		if k.KeyID != "" {
+			key = k
+		} else {
+			id := k.KeyID
+			var err error
+			if id == "" {
+				id, err = tezos.EncodePublicKeyHash(k.PrivateKey.Public())
+				if err != nil {
+					return nil, fmt.Errorf("(%s): %v", name, err)
+				}
+			}
+			key = &PrivateKey{
+				PrivateKey: k.PrivateKey,
+				KeyID:      id,
+			}
+		}
+		keys[i] = k
+		index[key.KeyID] = k
+	}
+
+	return &Vault{
+		name:  name,
+		keys:  keys,
+		index: index,
+	}, nil
 }
 
 // ListPublicKeys list all public key available on disk
@@ -89,11 +130,11 @@ func (v *Vault) Name() string { return v.name }
 
 // Sign sign using the specified key
 func (v *Vault) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
-	key, ok := k.(*memKey)
+	key, ok := k.(*PrivateKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(%s): invalid key type: %T ", v.name, k), http.StatusBadRequest)
 	}
-	signature, err := cryptoutils.Sign(key.privateKey, digest)
+	signature, err := cryptoutils.Sign(key.PrivateKey, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %v", v.name, err)
 	}
@@ -102,19 +143,23 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig
 
 // Unlock unlock all encrypted keys on disk
 func (v *Vault) Unlock(ctx context.Context) error {
-	keys := make([]*memKey, len(v.raw))
-	index := make(map[string]*memKey, len(v.raw))
+	v.mtx.Lock()
+	if v.unlocked {
+		v.mtx.Unlock()
+		return nil
+	}
+	v.mtx.Unlock()
+
+	keys := make([]*PrivateKey, len(v.raw))
+	index := make(map[string]*PrivateKey, len(v.raw))
 
 	for i, entry := range v.raw {
-		pk, err := tezos.ParsePrivateKey(entry.Data, func() ([]byte, error) {
-			id := entry.ID
-			if id == "" {
-				id = "<unnamed>"
-			}
-			fmt.Printf("(%s): Enter password to unlock key `%s': ", v.name, id)
-			defer fmt.Println()
-			return terminal.ReadPassword(int(syscall.Stdin))
-		})
+		name := entry.ID
+		if name == "" {
+			name = "<unnamed>"
+		}
+
+		pk, err := tezos.ParsePrivateKey(entry.Data, utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
 		if err != nil {
 			return fmt.Errorf("(%s): %v", v.name, err)
 		}
@@ -126,19 +171,47 @@ func (v *Vault) Unlock(ctx context.Context) error {
 				return fmt.Errorf("(%s): %v", v.name, err)
 			}
 		}
-		key := memKey{
-			privateKey: pk,
-			id:         id,
+		key := PrivateKey{
+			PrivateKey: pk,
+			KeyID:      id,
 		}
 		keys[i] = &key
-		index[key.id] = &key
+		index[key.KeyID] = &key
 	}
 
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
+
 	v.keys = keys
 	v.index = index
+	v.unlocked = true
+
 	return nil
+}
+
+func (v *Vault) ImportKey(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	id, ok, err := opt.GetString("name")
+	if err != nil {
+		return nil, fmt.Errorf("(%s): %v", v.name, err)
+	}
+
+	if !ok || id == "" {
+		id, err = tezos.EncodePublicKeyHash(pk.Public())
+		if err != nil {
+			return nil, fmt.Errorf("(%s): %v", v.name, err)
+		}
+	}
+	key := PrivateKey{
+		PrivateKey: pk,
+		KeyID:      id,
+	}
+
+	v.mtx.Lock()
+	defer v.mtx.Unlock()
+	v.keys = append(v.keys, &key)
+	v.index[key.KeyID] = &key
+
+	return &key, nil
 }
 
 var _ vault.Unlocker = (*Vault)(nil)

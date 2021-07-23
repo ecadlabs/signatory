@@ -409,11 +409,12 @@ func (s *Signatory) Unlock(ctx context.Context) error {
 
 // Config represents Signatory configuration
 type Config struct {
-	Policy      map[string]*Policy
-	Vaults      map[string]*config.VaultConfig
-	Interceptor SignInterceptor
-	Watermark   Watermark
-	Logger      log.FieldLogger
+	Policy       map[string]*Policy
+	Vaults       map[string]*config.VaultConfig
+	Interceptor  SignInterceptor
+	Watermark    Watermark
+	Logger       log.FieldLogger
+	VaultFactory vault.Factory
 }
 
 // NewSignatory returns Signatory instance
@@ -436,7 +437,11 @@ func NewSignatory(ctx context.Context, c *Config) (*Signatory, error) {
 
 		l.Info("Initializing vault")
 
-		v, err := vault.NewVault(ctx, vc.Driver, &vc.Config)
+		factory := c.VaultFactory
+		if factory == nil {
+			factory = vault.Registry()
+		}
+		v, err := factory.New(ctx, vc.Driver, &vc.Config)
 		if err != nil {
 			return nil, err
 		}

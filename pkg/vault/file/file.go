@@ -54,13 +54,13 @@ func init() {
 			return nil, fmt.Errorf("(File): %v", err)
 		}
 
-		data := make([]*memory.KeyData, len(entries))
+		data := make([]*memory.UnparsedKey, len(entries))
 		for i, e := range entries {
-			data[i] = &memory.KeyData{
+			data[i] = &memory.UnparsedKey{
 				Data: trimSecretKey(e.Value),
 				ID:   e.Name,
 			}
 		}
-		return memory.New(data, "File"), nil
+		return memory.NewUnparsed(data, "File"), nil
 	})
 }

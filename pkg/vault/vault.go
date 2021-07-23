@@ -63,10 +63,27 @@ var ErrDone = errors.New("done")
 
 type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
 
-var vaultRegistry = make(map[string]newVaultFunc)
+type Factory interface {
+	New(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+}
+
+type registry map[string]newVaultFunc
+
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+	if newFunc, ok := r[name]; ok {
+		return newFunc(ctx, conf)
+	}
+	return nil, fmt.Errorf("unknown vault driver: %s", name)
+}
+
+var vaultRegistry = make(registry)
 
 func RegisterVault(name string, newFunc newVaultFunc) {
 	vaultRegistry[name] = newFunc
+}
+
+func Registry() Factory {
+	return vaultRegistry
 }
 
 var commands []*cobra.Command
@@ -79,11 +96,4 @@ func Commands() []*cobra.Command {
 	return commands
 }
 
-// NewVault returns new vault instance
-func NewVault(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
-	if newFunc, ok := vaultRegistry[name]; ok {
-		return newFunc(ctx, conf)
-	}
-
-	return nil, fmt.Errorf("unknown vault driver: %s", name)
-}
+var _ Factory = (registry)(nil)

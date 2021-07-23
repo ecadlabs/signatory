@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/stretchr/testify/require"
@@ -85,7 +86,7 @@ func TestSign(t *testing.T) {
 				SignResponse: c.Response,
 			}
 
-			srv := &Server{
+			srv := &server.Server{
 				Signer: sig,
 			}
 
@@ -158,7 +159,7 @@ func TestGetPublicKey(t *testing.T) {
 				PublicKeyResponse: c.Response,
 			}
 
-			srv := &Server{
+			srv := &server.Server{
 				Signer: sig,
 			}
 
@@ -225,7 +226,7 @@ func TestSignedRequest(t *testing.T) {
 				SignResponse: "signature",
 			}
 
-			srv := &Server{
+			srv := &server.Server{
 				Signer: sig,
 				Auth:   auth.Must(auth.StaticAuthorizedKeysFromString("edpktpQKJF4vRodmSfT3h6LrYisshQuJeoybUxB9c8s3b1QymvisHC")),
 			}

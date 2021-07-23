@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"syscall"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -148,4 +151,12 @@ func ParseMap(s string, namevalSep, tuplesSep rune) (res map[string]string, err 
 		}
 	}
 	return res, nil
+}
+
+func KeyboardInteractivePassphraseFunc(prompt string) func() ([]byte, error) {
+	return func() ([]byte, error) {
+		fmt.Print(prompt)
+		defer fmt.Println()
+		return terminal.ReadPassword(int(syscall.Stdin))
+	}
 }
