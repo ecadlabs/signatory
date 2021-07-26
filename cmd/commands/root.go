@@ -56,10 +56,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Policy:      pol,
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
-				Watermark:   signatory.NewInMemoryWatermark(),
+				Watermark:   &signatory.InMemoryWatermark{},
 			}
 
-			sig, err := signatory.NewSignatory(c.Context, &sigConf)
+			sig, err := signatory.New(c.Context, &sigConf)
 			if err != nil {
 				return err
 			}

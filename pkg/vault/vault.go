@@ -67,6 +67,12 @@ type Factory interface {
 	New(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
 }
 
+type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+
+func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+	return f(ctx, name, conf)
+}
+
 type registry map[string]newVaultFunc
 
 func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {

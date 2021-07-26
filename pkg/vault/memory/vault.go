@@ -1,3 +1,4 @@
+// Package memory provides a basis for file based and in-memory vaults
 package memory
 
 import (
@@ -214,4 +215,13 @@ func (v *Vault) ImportKey(ctx context.Context, pk cryptoutils.PrivateKey, opt ut
 	return &key, nil
 }
 
+type Importer struct {
+	*Vault
+}
+
+func (i *Importer) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	return i.ImportKey(ctx, pk, opt)
+}
+
 var _ vault.Unlocker = (*Vault)(nil)
+var _ vault.Importer = (*Importer)(nil)

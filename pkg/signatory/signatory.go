@@ -253,8 +253,8 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	}
 	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
-	if !s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg) {
-		err = ErrNotSafeToSign
+	if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg); err != nil {
+		err = errors.Wrap(err, http.StatusForbidden)
 		l.Error(err)
 		return "", err
 	}
@@ -417,8 +417,8 @@ type Config struct {
 	VaultFactory vault.Factory
 }
 
-// NewSignatory returns Signatory instance
-func NewSignatory(ctx context.Context, c *Config) (*Signatory, error) {
+// New returns Signatory instance
+func New(ctx context.Context, c *Config) (*Signatory, error) {
 	s := &Signatory{
 		config: *c,
 		vaults: make(map[string]vault.Vault, len(c.Vaults)),

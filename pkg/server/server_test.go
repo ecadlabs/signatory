@@ -92,8 +92,7 @@ func TestSign(t *testing.T) {
 
 			handler, err := srv.Handler()
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			s := httptest.NewServer(handler)
@@ -106,21 +105,18 @@ func TestSign(t *testing.T) {
 
 			req, err := http.NewRequest("POST", s.URL+"/keys/03123453", body)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			resp, err := s.Client().Do(req)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -165,8 +161,7 @@ func TestGetPublicKey(t *testing.T) {
 
 			handler, err := srv.Handler()
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			s := httptest.NewServer(handler)
@@ -174,21 +169,18 @@ func TestGetPublicKey(t *testing.T) {
 
 			req, err := http.NewRequest("GET", s.URL+"/keys/03123453", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			resp, err := s.Client().Do(req)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			require.Equal(t, c.Expected, string(b))
@@ -233,8 +225,7 @@ func TestSignedRequest(t *testing.T) {
 
 			handler, err := srv.Handler()
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			s := httptest.NewServer(handler)
@@ -250,13 +241,11 @@ func TestSignedRequest(t *testing.T) {
 
 			req, err := http.NewRequest("POST", u.String(), body)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			resp, err := s.Client().Do(req)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 
 			require.Equal(t, c.StatusCode, resp.StatusCode)
