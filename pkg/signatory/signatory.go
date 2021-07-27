@@ -49,10 +49,10 @@ type SignInterceptorOptions struct {
 
 // Policy contains policy data related to the key
 type Policy struct {
-	AllowedOperations []string `yaml:"allowed_operations"`
-	AllowedKinds      []string `yaml:"allowed_kinds"`
-	LogPayloads       bool     `yaml:"log_payloads"`
-	AuthorizedKeys    []string `yaml:"authorized_keys"`
+	AllowedOperations   []string
+	AllowedKinds        []string
+	LogPayloads         bool
+	AuthorizedKeyHashes []string
 }
 
 // PublicKey contains base58 encoded public key with its hash
@@ -141,13 +141,13 @@ func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
 }
 
 func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) error {
-	if policy.AuthorizedKeys != nil {
+	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == "" {
 			return errors.New("authentication required")
 		}
 
 		var allowed bool
-		for _, k := range policy.AuthorizedKeys {
+		for _, k := range policy.AuthorizedKeyHashes {
 			if k == req.ClientPublicKeyHash {
 				allowed = true
 				break
@@ -291,7 +291,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	l.WithField("raw", sig).Debug("Signed bytes")
 
-	encodedSig, err := tezos.EncodeSignature(sig)
+	encodedSig, err := tezos.EncodeGenericSignature(sig)
 	if err != nil {
 		return "", err
 	}
@@ -490,13 +490,13 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 
 		if v.AuthorizedKeys != nil {
 			keys := v.AuthorizedKeys.List()
-			pol.AuthorizedKeys = make([]string, len(keys))
+			pol.AuthorizedKeyHashes = make([]string, len(keys))
 			for i, k := range keys {
 				pub, err := tezos.ParsePublicKey(k)
 				if err != nil {
 					return nil, err
 				}
-				pol.AuthorizedKeys[i], err = tezos.EncodePublicKeyHash(pub)
+				pol.AuthorizedKeyHashes[i], err = tezos.EncodePublicKeyHash(pub)
 				if err != nil {
 					return nil, err
 				}

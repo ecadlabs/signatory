@@ -40,26 +40,13 @@ func (s *Server) logger() log.FieldLogger {
 	return log.StandardLogger()
 }
 
-func signRequestToSign(req *signatory.SignRequest) ([]byte, error) {
-	keyHashBytes, err := tezos.EncodeBinaryPublicKeyHash(req.PublicKeyHash)
-	if err != nil {
-		return nil, err
-	}
-	data := make([]byte, 2+len(req.Message)+len(keyHashBytes))
-	data[0] = 4
-	data[1] = 1
-	copy(data[2:], keyHashBytes)
-	copy(data[2+len(keyHashBytes):], req.Message)
-	return data, nil
-}
-
 func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Request) error {
 	v := r.FormValue("authentication")
 	if v == "" {
 		return errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized)
 	}
 
-	signed, err := signRequestToSign(req)
+	signed, err := signatory.SignRequestAuthenticatedBytes(req)
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}

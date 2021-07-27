@@ -17,18 +17,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type signatoryMock struct {
+type signerMock struct {
 	SignResponse      string
 	SignError         error
 	PublicKeyResponse *signatory.PublicKey
 	PublicKeyError    error
 }
 
-func (c *signatoryMock) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
+func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
 	return c.SignResponse, c.SignError
 }
 
-func (c *signatoryMock) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+func (c *signerMock) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
 	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
 		return nil, errors.New("key not found")
 	}
@@ -81,7 +81,7 @@ func TestSign(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &signatoryMock{
+			sig := &signerMock{
 				SignError:    c.Error,
 				SignResponse: c.Response,
 			}
@@ -150,7 +150,7 @@ func TestGetPublicKey(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &signatoryMock{
+			sig := &signerMock{
 				PublicKeyError:    c.Error,
 				PublicKeyResponse: c.Response,
 			}
@@ -214,7 +214,7 @@ func TestSignedRequest(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &signatoryMock{
+			sig := &signerMock{
 				SignResponse: "signature",
 			}
 
