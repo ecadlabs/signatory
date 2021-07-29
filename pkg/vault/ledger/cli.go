@@ -1,14 +1,11 @@
 package ledger
 
 import (
-	"encoding/hex"
 	"fmt"
 	"html/template"
 	"os"
 	"strconv"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 	"github.com/spf13/cobra"
 )
 
@@ -36,37 +33,19 @@ func newListCommand() *cobra.Command {
 }
 
 func newSetupCommand() *cobra.Command {
-	var id string
-	var hwm tezosapp.HWM
-	var chainID string
+	var (
+		id      string
+		mainHWM uint32
+		testHWM uint32
+		chainID string
+	)
 
 	cmd := cobra.Command{
 		Use:   "setup-baking <key id>",
 		Short: "Authorize a key for baking",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-			if chainID != "" {
-				hwm.ChainID, err = tezos.DecodeChainID(chainID)
-				if err != nil {
-					return err
-				}
-			}
-			key, err := parseKeyID(args[0])
-			if err != nil {
-				return err
-			}
-			dev, err := deviceScanner.open(id)
-			if err != nil {
-				return err
-			}
-			defer dev.Close()
-
-			pub, err := dev.SetupBaking(&hwm, key.dt, key.path)
-			if err != nil {
-				return err
-			}
-			pkh, err := tezos.EncodePublicKeyHash(pub)
+			pkh, err := SetupBaking(id, args[0], chainID, mainHWM, testHWM)
 			if err != nil {
 				return err
 			}
@@ -76,10 +55,9 @@ func newSetupCommand() *cobra.Command {
 	}
 	f := cmd.Flags()
 	f.StringVarP(&id, "device", "d", "", "Ledger device ID")
-	f.Uint32Var(&hwm.Main, "main-hwm", 0, "Main high water mark")
-	f.Uint32Var(&hwm.Test, "test-hwm", 0, "Test high water mark")
+	f.Uint32Var(&mainHWM, "main-hwm", 0, "Main high water mark")
+	f.Uint32Var(&testHWM, "test-hwm", 0, "Test high water mark")
 	f.StringVar(&chainID, "chain-id", "", "Chain ID")
-
 	return &cmd
 }
 
@@ -89,21 +67,11 @@ func newDeuthorizeCommand() *cobra.Command {
 		Use:   "deauthorize-baking <key id>",
 		Short: "Deuthorize a key",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dev, err := deviceScanner.open(id)
-			if err != nil {
-				return err
-			}
-			defer dev.Close()
-			err = dev.DeauthorizeBaking()
-			if err != nil {
-				return err
-			}
-			return nil
+			return DeauthorizeBaking(id)
 		},
 	}
 	f := cmd.Flags()
 	f.StringVarP(&id, "device", "d", "", "Ledger device ID")
-
 	return &cmd
 }
 
@@ -115,12 +83,7 @@ func newSetHighWatermarkCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			hwm, _ := strconv.ParseUint(args[0], 10, 32)
-			dev, err := deviceScanner.open(id)
-			if err != nil {
-				return err
-			}
-			defer dev.Close()
-			return dev.SetHighWatermark(uint32(hwm))
+			return SetHighWatermark(id, uint32(hwm))
 		},
 	}
 	f := cmd.Flags()
@@ -134,12 +97,7 @@ func newGetHighWatermarkCommand() *cobra.Command {
 		Use:   "get-high-watermark",
 		Short: "Get high water mark",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dev, err := deviceScanner.open(id)
-			if err != nil {
-				return err
-			}
-			defer dev.Close()
-			hwm, err := dev.GetHighWatermark()
+			hwm, err := GetHighWatermark(id)
 			if err != nil {
 				return err
 			}
@@ -158,16 +116,11 @@ func newGetHighWatermarksCommand() *cobra.Command {
 		Use:   "get-high-watermarks",
 		Short: "Get all high water marks and chain ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dev, err := deviceScanner.open(id)
+			mainHWM, testHWM, chainID, err := GetHighWatermarks(id)
 			if err != nil {
 				return err
 			}
-			defer dev.Close()
-			hwm, err := dev.GetHighWatermarks()
-			if err != nil {
-				return err
-			}
-			fmt.Printf("Main: %d\nTest: %d\nChain ID: %s\n", hwm.Main, hwm.Test, hex.EncodeToString(hwm.ChainID[:]))
+			fmt.Printf("Main: %d\nTest: %d\nChain ID: %s\n", mainHWM, testHWM, chainID)
 			return nil
 		},
 	}

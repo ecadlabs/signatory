@@ -324,6 +324,9 @@ type HWM struct {
 }
 
 func (t *App) SetupBaking(hwm *HWM, derivation DerivationType, path BIP32) (pub crypto.PublicKey, err error) {
+	if hwm == nil {
+		hwm = &HWM{}
+	}
 	if err := pathValid(path); err != nil {
 		return nil, err
 	}
