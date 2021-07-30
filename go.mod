@@ -6,10 +6,10 @@ require (
 	cloud.google.com/go v0.65.0
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/validator/v10 v10.7.0
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/tink/go v1.6.1
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.3
@@ -24,5 +24,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	google.golang.org/api v0.32.0
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
+	google.golang.org/grpc v1.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )
