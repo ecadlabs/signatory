@@ -1,5 +1,6 @@
 # Ledger vault
-
+Connect the ledger device to the system in which signatory is running.
+Install tezos-wallet and tezos-baker apps from ledger live manager.
 ## Configuration
 
 | Name        | Type         | Description                                                   |
@@ -31,7 +32,18 @@ keys:
     - "bip25519/0'/0'"
     - "secp256k1/0'/1'"
 ```
-
+## Get Detils using:
+    % ./signatory-cli list -c ./sig-ledger.yaml 
+    INFO[0000] Initializing vault                            vault=ledger vault_name=ledger
+    Public Key Hash:    tz1TrrJS7XU2WGJJEZcPxaB7cXWLd8pCL7SW
+    Vault:              Ledger
+    ID:                 bip32-ed25519/44'/1729'/0'/0'
+    Active:             true
+    Allowed Operations: [block endorsement generic]
+    Allowed Kinds:      [delegation endorsement origination reveal transaction]
+    Public Key Hash:    tz2ByDXtXn3Wj4k6DoJnyKHMA68xJvL1nBmV
+    Vault:              Ledger
+    ID:                 secp256k1/44'/1729'/0'/1'
 ## Command line interface
 
 ### List all connected Ledgers
