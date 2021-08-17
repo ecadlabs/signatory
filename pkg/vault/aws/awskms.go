@@ -1,0 +1,154 @@
+package vault
+
+import (
+	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault"
+
+	"gopkg.in/yaml.v3"
+)
+
+// Config contains Google Cloud KMS backend configuration
+type Config struct {
+	// User name,Password,Access key ID,Secret access key,Console login link
+	UserName    string `yaml:"user_name" validate:"required"`
+	KeyID       string `yaml:"kms_key_id" validate:"required"`
+	AccessKeyID string `yaml:"access_key_id" validate:"required"`
+	AccessKey   string `yaml:"secret_access_key" validate:"required"`
+	Region      string `yaml:"region" validate:"required"`
+}
+
+type Vault struct {
+	kmsapi kmsiface.KMSAPI
+	config Config
+}
+
+// cloudKMSKey represents a key stored in Google Cloud KMS
+type awsKMSKey struct {
+	key *kms.GetPublicKeyOutput
+	pub *ecdsa.PublicKey
+}
+
+type awsKMSIterator struct {
+	ctx context.Context
+	v   *Vault
+	// ki  *kms.CryptoKeyIterator
+	// vi  *kms.CryptoKeyVersionIterator
+}
+
+// PublicKey returns encoded public key
+func (c *awsKMSKey) PublicKey() crypto.PublicKey {
+	return c.pub
+}
+
+// ID returnd a unique key ID
+func (c *awsKMSKey) ID() string {
+	return *c.key.KeyId
+}
+
+func (kv *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
+	pkresp, err := kv.kmsapi.GetPublicKeyWithContext(ctx, &kms.GetPublicKeyInput{
+		KeyId: &keyID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if *pkresp.KeyUsage != kms.KeyUsageTypeSignVerify {
+		return nil, errors.New("key usage must be SIGN_VERIFY")
+	}
+
+	pkixKey, err := x509.ParsePKIXPublicKey(pkresp.PublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	ecKey, ok := pkixKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("key is not EC: %T", ecKey)
+	}
+
+	return &awsKMSKey{
+		key: pkresp,
+		pub: ecKey,
+	}, nil
+}
+
+func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
+	return &awsKMSKey{
+		key: nil,
+		pub: nil,
+	}, nil
+}
+
+// ListPublicKeys returns a list of keys stored under the backend
+func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+	c.GetPublicKey(ctx, c.config.KeyID)
+	return &awsKMSIterator{
+		ctx: ctx,
+		v:   c,
+	}
+}
+
+func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+	return &awsKMSKey{
+		key: nil,
+		pub: nil,
+	}, nil
+}
+
+// Name returns backend name
+func (c *Vault) Name() string {
+	return "AWSKMS"
+}
+
+func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	return &cryptoutils.ECDSASignature{}, nil
+}
+
+// New creates new GAWS KMS backend
+func New(ctx context.Context, config *Config) (*Vault, error) {
+	os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
+	os.Setenv("AWS_REGION", config.Region)
+	sess := session.Must(session.NewSession())
+
+	api := kms.New(sess)
+	return &Vault{
+		kmsapi: api,
+		config: *config,
+	}, nil
+}
+
+func init() {
+	fmt.Println("Abi-->: AWS Init func")
+	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+		var conf Config
+		if node == nil || node.Kind == 0 {
+			return nil, errors.New("(AWSKMS): config is missing")
+		}
+		if err := node.Decode(&conf); err != nil {
+			return nil, err
+		}
+
+		if err := config.Validator().Struct(&conf); err != nil {
+			return nil, err
+		}
+
+		return New(ctx, &conf)
+	})
+}
+
+var _ vault.Importer = &Vault{}
