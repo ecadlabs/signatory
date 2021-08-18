@@ -30,12 +30,12 @@ import (
 )
 
 const (
-	userName       = "signatory-integration-test"
-	authKeyName    = "signatory-integration-test-auth"
+	userName       = "signatory-integration-test"      // Key name for transactions
+	authKeyName    = "signatory-integration-test-auth" // Key name to authenticate requests to the signer
+	envKey         = "ENV_SECRET_KEY"                  // Activated secret key to sign operations in Base58 format
+	envKeyJSON     = "ENV_ACTIVATION_KEY"              // (alternatively) JSON key file used to activate a funded account
+	envNodeAddress = "ENV_NODE_ADDR"                   // Testnet node address
 	listenAddr     = "localhost:6732"
-	envKey         = "ENV_SECRET_KEY"
-	envKeyJSON     = "ENV_ACTIVATION_KEY"
-	envNodeAddress = "ENV_NODE_ADDR"
 )
 
 type secretKeyJSON struct {
@@ -77,6 +77,7 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 	return nil, errors.New("secret key is required")
 }
 
+// Signatory wrapper to keep Sign calls arguments and returned data
 type signCall struct {
 	request   *signatory.SignRequest
 	signature string
@@ -103,7 +104,8 @@ func (s *signerWrapper) signCalls() []*signCall {
 	return s.calls
 }
 
-func genAuthKeys() (pub, pkh, priv string, err error) {
+// Generate authentication key
+func genAuthKey() (pub, pkh, priv string, err error) {
 	pubk, privk, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		return
@@ -120,16 +122,17 @@ func genAuthKeys() (pub, pkh, priv string, err error) {
 	return
 }
 
-func TestIntegrationTest(t *testing.T) {
+func TestSignatory(t *testing.T) {
 	pk, err := secretKeyFromEnv()
 	require.NoError(t, err)
 
 	pub, err := tezos.EncodePublicKeyHash(pk.Public())
 	require.NoError(t, err)
 
-	authPub, authPKH, authPriv, err := genAuthKeys()
+	authPub, authPKH, authPriv, err := genAuthKey()
 	require.NoError(t, err)
 
+	// setup Signatory instance
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
 		Watermark: signatory.IgnoreWatermark{},
@@ -163,14 +166,30 @@ func TestIntegrationTest(t *testing.T) {
 
 	epAddr := os.Getenv(envNodeAddress)
 	require.NotEmpty(t, epAddr)
-	// initialize client
-	require.NoError(t, exec.Command("tezos-client", "--endpoint", epAddr, "config", "init").Run())
-	// import key
-	require.NoError(t, exec.Command("tezos-client", "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub).Run())
-	// add authentication key
-	require.NoError(t, exec.Command("tezos-client", "import", "secret", "key", authKeyName, "unencrypted:"+authPriv).Run())
-	// create transaction
-	require.NoError(t, exec.Command("tezos-client", "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX").Run())
+
+	t.Run("Auth", func(t *testing.T) {
+		dir := "./authenticated-tezos-client"
+		os.Mkdir(dir, 0777)
+		// initialize client
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init").Run())
+		// import key
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub).Run())
+		// add authentication key
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv).Run())
+		// create transaction
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX").Run())
+	})
+
+	t.Run("NoAuth", func(t *testing.T) {
+		dir := "./unauthenticated-tezos-client"
+		os.Mkdir(dir, 0777)
+		// initialize client
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init").Run())
+		// import key
+		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub).Run())
+		// create transaction
+		require.Error(t, exec.Command("tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX").Run())
+	})
 
 	srv.Shutdown(context.Background())
 
