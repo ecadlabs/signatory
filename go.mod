@@ -16,12 +16,12 @@ require (
 	github.com/karalabe/hid v1.0.0
 	github.com/prometheus/client_golang v1.0.0
 	github.com/segmentio/ksuid v1.0.2
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.6.1
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	github.com/stretchr/testify v1.7.0
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/oauth2 v0.0.0-20210810183815-faf39c7919d5
 	google.golang.org/api v0.32.0
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.39.0 // indirect

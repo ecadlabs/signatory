@@ -102,9 +102,10 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 	}
 
 	return &Vault{
-		name:  name,
-		keys:  keys,
-		index: index,
+		name:     name,
+		keys:     keys,
+		index:    index,
+		unlocked: true,
 	}, nil
 }
 
