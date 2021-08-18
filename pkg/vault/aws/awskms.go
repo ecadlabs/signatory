@@ -20,9 +20,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config contains Google Cloud KMS backend configuration
+// Config contains AWS KMS backend configuration
 type Config struct {
-	// User name,Password,Access key ID,Secret access key,Console login link
 	UserName    string `yaml:"user_name" validate:"required"`
 	KeyID       string `yaml:"kms_key_id" validate:"required"`
 	AccessKeyID string `yaml:"access_key_id" validate:"required"`
@@ -35,7 +34,7 @@ type Vault struct {
 	config Config
 }
 
-// cloudKMSKey represents a key stored in Google Cloud KMS
+// awsKMSKey represents a key stored in AWS KMS
 type awsKMSKey struct {
 	key *kms.GetPublicKeyOutput
 	pub *ecdsa.PublicKey
@@ -145,7 +144,7 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 	return &cryptoutils.ECDSASignature{}, nil
 }
 
-// New creates new GAWS KMS backend
+// New creates new AWS KMS backend
 func New(ctx context.Context, config *Config) (*Vault, error) {
 	os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
