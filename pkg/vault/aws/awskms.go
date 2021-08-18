@@ -44,8 +44,8 @@ type awsKMSKey struct {
 type awsKMSIterator struct {
 	ctx context.Context
 	v   *Vault
-	// ki  *kms.CryptoKeyIterator
-	// vi  *kms.CryptoKeyVersionIterator
+	i   int
+	lk  *kms.ListKeysOutput
 }
 
 // PublicKey returns encoded public key
@@ -87,18 +87,42 @@ func (kv *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKe
 }
 
 func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
-	return &awsKMSKey{
-		key: nil,
-		pub: nil,
-	}, nil
+	if c.lk.Keys == nil {
+		return nil, fmt.Errorf("key list empty")
+	}
+	if c.i >= len(c.lk.Keys) {
+		return nil, vault.ErrDone
+	}
+
+	fmt.Println("Abi-->:Next:- ", *c.lk.Keys[c.i].KeyId, " - ", *c.lk.Keys[c.i].KeyArn)
+	c.i += 1
+	return c.v.GetPublicKey(c.ctx, *c.lk.Keys[c.i-1].KeyId)
+
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
 func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
-	c.GetPublicKey(ctx, c.config.KeyID)
+	var lkout *kms.ListKeysOutput
+	var err error
+	var lkin *kms.ListKeysInput
+	for {
+		lkout, err = c.kmsapi.ListKeys(lkin)
+		if err != nil {
+			fmt.Println("Abi-->:ListPublicKeys:- ", err)
+			return nil
+		}
+		if !*lkout.Truncated {
+			break
+		}
+		lkin.Marker = lkout.NextMarker
+	}
+	fmt.Println("Abi-->:ListPublicKeys:- ", lkout.Keys, " - ", len(lkout.Keys))
+	lkout.Keys[0] = lkout.Keys[1]
 	return &awsKMSIterator{
 		ctx: ctx,
 		v:   c,
+		lk:  lkout,
+		i:   0,
 	}
 }
 
