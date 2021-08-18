@@ -42,10 +42,10 @@ type awsKMSKey struct {
 }
 
 type awsKMSIterator struct {
-	ctx context.Context
-	v   *Vault
-	i   int
-	lk  *kms.ListKeysOutput
+	ctx  context.Context
+	v    *Vault
+	indx int
+	lko  *kms.ListKeysOutput
 }
 
 // PublicKey returns encoded public key
@@ -87,16 +87,16 @@ func (kv *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKe
 }
 
 func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
-	if c.lk.Keys == nil {
+	if c.lko.Keys == nil {
 		return nil, fmt.Errorf("key list empty")
 	}
-	if c.i >= len(c.lk.Keys) {
+
+	if c.indx >= len(c.lko.Keys) {
 		return nil, vault.ErrDone
 	}
 
-	fmt.Println("Abi-->:Next:- ", *c.lk.Keys[c.i].KeyId, " - ", *c.lk.Keys[c.i].KeyArn)
-	c.i += 1
-	return c.v.GetPublicKey(c.ctx, *c.lk.Keys[c.i-1].KeyId)
+	c.indx += 1
+	return c.v.GetPublicKey(c.ctx, *c.lko.Keys[c.indx-1].KeyId)
 
 }
 
@@ -105,6 +105,7 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	var lkout *kms.ListKeysOutput
 	var err error
 	var lkin *kms.ListKeysInput
+
 	for {
 		lkout, err = c.kmsapi.ListKeys(lkin)
 		if err != nil {
@@ -116,13 +117,15 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 		}
 		lkin.Marker = lkout.NextMarker
 	}
-	fmt.Println("Abi-->:ListPublicKeys:- ", lkout.Keys, " - ", len(lkout.Keys))
+
+	//Abi--> added for debug. Remove this line after key deleted
 	lkout.Keys[0] = lkout.Keys[1]
+
 	return &awsKMSIterator{
-		ctx: ctx,
-		v:   c,
-		lk:  lkout,
-		i:   0,
+		ctx:  ctx,
+		v:    c,
+		lko:  lkout,
+		indx: 0,
 	}
 }
 
@@ -157,7 +160,6 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 }
 
 func init() {
-	fmt.Println("Abi-->: AWS Init func")
 	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
