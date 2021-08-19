@@ -5,10 +5,12 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"errors"
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
@@ -141,7 +143,23 @@ func (c *Vault) Name() string {
 }
 
 func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return &cryptoutils.ECDSASignature{}, nil
+	kid := key.ID()
+	sout, err := c.kmsapi.Sign(&kms.SignInput{
+		KeyId:            &kid,
+		Message:          digest,
+		MessageType:      aws.String(kms.MessageTypeDigest),
+		SigningAlgorithm: aws.String(kms.SigningAlgorithmSpecEcdsaSha256),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var sig cryptoutils.ECDSASignature
+	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
+		return nil, fmt.Errorf("(AWSKMS/%s): %v", c.config.KeyID, err)
+	}
+
+	return &sig, nil
 }
 
 // New creates new AWS KMS backend
