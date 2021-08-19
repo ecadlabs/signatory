@@ -14,6 +14,7 @@ jobs:
     steps:
       - name: Build image
         run: |
+          pwd
           ls -l
           docker build -t signatory-test -f ./integration_test/Dockerfile .
       - name: Run tests
