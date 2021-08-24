@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.40.28 // indirect
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/validator/v10 v10.7.0
