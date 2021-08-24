@@ -10,11 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/ecadlabs/signatory/pkg/vault"
 	// Install backends
 	_ "github.com/ecadlabs/signatory/pkg/vault/aws"
 	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
 	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
 	_ "github.com/ecadlabs/signatory/pkg/vault/file"
+	_ "github.com/ecadlabs/signatory/pkg/vault/ledger"
+	_ "github.com/ecadlabs/signatory/pkg/vault/mem"
 	_ "github.com/ecadlabs/signatory/pkg/vault/yubi"
 )
 
@@ -23,8 +26,13 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		Context: ctx,
 	}
 	rootCmd := commands.NewRootCommand(&rootCtx, "signatory-cli")
-	rootCmd.AddCommand(commands.NewListCommand(&rootCtx))
-	rootCmd.AddCommand(commands.NewImportCommand(&rootCtx))
+	rootCmd.AddCommand(
+		commands.NewListCommand(&rootCtx),
+		commands.NewImportCommand(&rootCtx),
+	)
+
+	// Vault specific
+	rootCmd.AddCommand(vault.Commands()...)
 
 	return rootCmd
 }

@@ -2,11 +2,11 @@ package tezos
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 )
 
 // tzPrefix is a comparable type unlike slice
@@ -135,23 +135,24 @@ func encodeBase58(prefix tzPrefix, payload []byte) (string, error) {
 	return base58.CheckEncode(data, prefix.ver()), nil
 }
 
-// EncodeSignature returns encoded version of a digital signature
-func EncodeSignature(sig cryptoutils.Signature) (res string, err error) {
-	var data []byte
-	switch s := sig.(type) {
-	case cryptoutils.ED25519Signature:
-		data = s
-	case *cryptoutils.ECDSASignature:
-		sr := s.R.Bytes()
-		ss := s.S.Bytes()
-		if len(sr) > 32 || len(ss) > 32 {
-			return "", errors.New("tezos: invalid signature size") // unlikely
-		}
-		data = make([]byte, 64)
-		copy(data[32-len(sr):], sr)
-		copy(data[64-len(ss):], ss)
-	default:
-		return "", fmt.Errorf("tezos: unknown signature type %T (%v)", sig, sig)
+func DecodeChainID(src string) (res [4]byte, err error) {
+	cid, err := hex.DecodeString(src)
+	if len(cid) != 4 {
+		return res, errors.New("tezos: invalid chain ID")
 	}
-	return encodeBase58(pGenericSignature, data)
+	if err == nil {
+		copy(res[:], cid)
+		return
+	}
+
+	prefix, cid, err := decodeBase58(src)
+	if err != nil {
+		return
+	}
+
+	if prefix != pChainID {
+		return res, errors.New("tezos: invalid chain ID")
+	}
+	copy(res[:], cid)
+	return
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,6 +21,11 @@ type StoredKey interface {
 // StoredKeysIterator is used to iterate over stored public keys
 type StoredKeysIterator interface {
 	Next() (StoredKey, error)
+}
+
+// RawSigner may be implemented by some vaults that expect raw data instead of a precomputed hash
+type RawSigner interface {
+	SignRaw(ctx context.Context, data []byte, key StoredKey) (cryptoutils.Signature, error)
 }
 
 // Vault interface that represent a secure key store
@@ -57,17 +63,43 @@ var ErrDone = errors.New("done")
 
 type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
 
-var registry = make(map[string]newVaultFunc)
-
-func RegisterVault(name string, newFunc newVaultFunc) {
-	registry[name] = newFunc
+type Factory interface {
+	New(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
 }
 
-// NewVault returns new vault instance
-func NewVault(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
-	if newFunc, ok := registry[name]; ok {
+type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+
+func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+	return f(ctx, name, conf)
+}
+
+type registry map[string]newVaultFunc
+
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+	if newFunc, ok := r[name]; ok {
 		return newFunc(ctx, conf)
 	}
-
-	return nil, fmt.Errorf("Unknown vault driver: %s", name)
+	return nil, fmt.Errorf("unknown vault driver: %s", name)
 }
+
+var vaultRegistry = make(registry)
+
+func RegisterVault(name string, newFunc newVaultFunc) {
+	vaultRegistry[name] = newFunc
+}
+
+func Registry() Factory {
+	return vaultRegistry
+}
+
+var commands []*cobra.Command
+
+func RegisterCommand(cmd *cobra.Command) {
+	commands = append(commands, cmd)
+}
+
+func Commands() []*cobra.Command {
+	return commands
+}
+
+var _ Factory = (registry)(nil)

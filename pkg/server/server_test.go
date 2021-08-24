@@ -1,110 +1,127 @@
-package server
+// +build !integration
+
+package server_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
+	"github.com/ecadlabs/signatory/pkg/server"
+	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSignatory struct {
+type signerMock struct {
 	SignResponse      string
 	SignError         error
 	PublicKeyResponse *signatory.PublicKey
 	PublicKeyError    error
 }
 
-func (c *fakeSignatory) Sign(ctx context.Context, keyHash string, message []byte) (string, error) {
+func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
 	return c.SignResponse, c.SignError
 }
 
-func (c *fakeSignatory) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+func (c *signerMock) GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error) {
+	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
+		return nil, errors.New("key not found")
+	}
 	return c.PublicKeyResponse, c.PublicKeyError
-}
-
-func toReadCloser(str string) io.ReadCloser {
-	return ioutil.NopCloser(bytes.NewReader([]byte(str)))
 }
 
 func TestSign(t *testing.T) {
 	type testCase struct {
 		Name       string
-		Request    []byte
+		Request    string
 		StatusCode int
 		Response   string
 		Error      error
-		Expected   []byte
+		Expected   string
 	}
 
 	cases := []testCase{
 		{
 			Name:       "Bad request",
 			StatusCode: http.StatusBadRequest,
-			Expected:   []byte("{\"error\":\"unexpected end of JSON input\"}\n"),
+			Expected:   "[{\"id\":\"failure\",\"kind\":\"temporary\",\"msg\":\"unexpected end of JSON input\"}]\n",
 		},
 		{
 			Name:       "Invalid body",
-			Request:    []byte("03"),
+			Request:    "\x03",
 			StatusCode: http.StatusBadRequest,
-			Expected:   []byte("{\"error\":\"invalid character '3' after top-level value\"}\n"),
+			Expected:   "[{\"id\":\"failure\",\"kind\":\"temporary\",\"msg\":\"invalid character '\\\\x03' looking for beginning of value\"}]\n",
 		},
 		{
 			Name:       "Invalid hex",
-			Request:    []byte("\"03ZZZZ\""),
+			Request:    "\"03ZZZZ\"",
 			StatusCode: http.StatusBadRequest,
-			Expected:   []byte("{\"error\":\"encoding/hex: invalid byte: U+005A 'Z'\"}\n"),
+			Expected:   "[{\"id\":\"failure\",\"kind\":\"temporary\",\"msg\":\"encoding/hex: invalid byte: U+005A 'Z'\"}]\n",
 		},
 		{
 			Name:       "Ok",
-			Request:    []byte("\"03123453\""),
+			Request:    "\"03123453\"",
 			StatusCode: http.StatusOK,
 			Response:   "signature",
-			Expected:   []byte("{\"signature\":\"signature\"}\n"),
+			Expected:   "{\"signature\":\"signature\"}\n",
 		},
 		{
 			Name:       "Signature error",
-			Request:    []byte("\"03123453\""),
+			Request:    "\"03123453\"",
 			StatusCode: http.StatusInternalServerError,
 			Error:      errors.New("error"),
-			Expected:   []byte("{\"error\":\"error\"}\n"),
+			Expected:   "[{\"id\":\"failure\",\"kind\":\"temporary\",\"msg\":\"error\"}]\n",
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &fakeSignatory{
+			sig := &signerMock{
 				SignError:    c.Error,
 				SignResponse: c.Response,
 			}
 
-			srv := &Server{
+			srv := &server.Server{
 				Signer: sig,
 			}
 
-			var body io.Reader
-			if c.Request != nil {
-				body = bytes.NewReader(c.Request)
+			handler, err := srv.Handler()
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest("POST", "http://irrelevant.com", body)
-			resp := httptest.NewRecorder()
-			srv.signHandler(resp, r)
+			s := httptest.NewServer(handler)
+			defer s.Close()
 
-			require.Equal(t, resp.Code, c.StatusCode)
+			var body io.Reader
+			if c.Request != "" {
+				body = strings.NewReader(c.Request)
+			}
+
+			req, err := http.NewRequest("POST", s.URL+"/keys/03123453", body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Fatal(err)
 			}
 
-			require.Equal(t, b, c.Expected)
+			require.Equal(t, c.Expected, string(b))
 		})
 	}
 }
@@ -115,7 +132,7 @@ func TestGetPublicKey(t *testing.T) {
 		StatusCode int
 		Response   *signatory.PublicKey
 		Error      error
-		Expected   []byte
+		Expected   string
 	}
 
 	cases := []testCase{
@@ -123,39 +140,117 @@ func TestGetPublicKey(t *testing.T) {
 			Name:       "Read Error",
 			StatusCode: http.StatusInternalServerError,
 			Error:      errors.New("test"),
-			Expected:   []byte("{\"error\":\"test\"}\n"),
+			Expected:   "[{\"id\":\"failure\",\"kind\":\"temporary\",\"msg\":\"test\"}]\n",
 		},
 		{
 			Name:       "Normal case",
 			StatusCode: http.StatusOK,
 			Response:   &signatory.PublicKey{PublicKey: "key"},
-			Expected:   []byte("{\"public_key\":\"key\"}\n"),
+			Expected:   "{\"public_key\":\"key\"}\n",
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			sig := &fakeSignatory{
+			sig := &signerMock{
 				PublicKeyError:    c.Error,
 				PublicKeyResponse: c.Response,
 			}
 
-			srv := &Server{
+			srv := &server.Server{
 				Signer: sig,
 			}
 
-			r := httptest.NewRequest("GET", "http://irrelevant.com", nil)
-			resp := httptest.NewRecorder()
-			srv.getKeyHandler(resp, r)
+			handler, err := srv.Handler()
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			require.Equal(t, resp.Code, c.StatusCode)
+			s := httptest.NewServer(handler)
+			defer s.Close()
+
+			req, err := http.NewRequest("GET", s.URL+"/keys/03123453", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Fatal(err)
 			}
 
-			require.Equal(t, b, c.Expected)
+			require.Equal(t, c.Expected, string(b))
+		})
+	}
+}
+
+func TestSignedRequest(t *testing.T) {
+	type testCase struct {
+		Name       string
+		Signature  string
+		StatusCode int
+	}
+
+	cases := []testCase{
+		{
+			Name:       "Ok",
+			Signature:  "edsigu1n7Zw1mvwmM22attD7Jwoy3MXFXJU3WAqQeww2RuRr1kxhEjEvkW9L1wD7h1EnHaMuqFWJ6qkAGuW4enmq8CdRSw45k5W",
+			StatusCode: http.StatusOK,
+		},
+		{
+			Name:       "Unauthorized",
+			StatusCode: http.StatusUnauthorized,
+		},
+		{
+			Name:       "Forbidden",
+			Signature:  "spsig1SbAZ2AWQP6fXYusCW8XowTxieZw874YcuBtKYkGEEDrvyTgReLY3jKAuoBamBALRtrEsEMG5N7zxmuxfE9MDLgsMP1YJh",
+			StatusCode: http.StatusForbidden,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			sig := &signerMock{
+				SignResponse: "signature",
+			}
+
+			srv := &server.Server{
+				Signer: sig,
+				Auth:   auth.Must(auth.StaticAuthorizedKeysFromString("edpktpQKJF4vRodmSfT3h6LrYisshQuJeoybUxB9c8s3b1QymvisHC")),
+			}
+
+			handler, err := srv.Handler()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			s := httptest.NewServer(handler)
+			defer s.Close()
+
+			body := strings.NewReader("\"03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00\"")
+			u, _ := url.Parse(s.URL + "/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm")
+			if c.Signature != "" {
+				u.RawQuery = url.Values{
+					"authentication": []string{c.Signature},
+				}.Encode()
+			}
+
+			req, err := http.NewRequest("POST", u.String(), body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := s.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			require.Equal(t, c.StatusCode, resp.StatusCode)
 		})
 	}
 }

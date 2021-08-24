@@ -1,0 +1,19 @@
+name: Run integration tests
+
+on:
+  push:
+  pull_request:
+    types: [opened]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      NODE_ADDR: https://testnet-tezos.giganode.io/
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run: docker build -t signatory-test -f ./integration_test/Dockerfile .
+      - name: Run tests
+        run: docker run -e 'ENV_ACTIVATION_KEY=${{ secrets.FAUCET_ACTIVATION_KEY }}' -e "ENV_NODE_ADDR=${NODE_ADDR}" signatory-test

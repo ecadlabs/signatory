@@ -21,16 +21,16 @@ var (
 )
 
 func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
-	switch {
-	case curve == elliptic.P224():
+	switch curve {
+	case elliptic.P224():
 		return oidNamedCurveP224, true
-	case curve == elliptic.P256():
+	case elliptic.P256():
 		return oidNamedCurveP256, true
-	case curve == elliptic.P384():
+	case elliptic.P384():
 		return oidNamedCurveP384, true
-	case curve == elliptic.P521():
+	case elliptic.P521():
 		return oidNamedCurveP521, true
-	case CurveEqual(curve, S256()):
+	case S256():
 		return oidNamedCurveS256, true
 	}
 
