@@ -11,11 +11,11 @@ Below are the minimum configuration required.
 
 ```sh
 config:
-      user_name: signatory-test
-      kms_key_id: ab717a73-4cb5-4d66-b531-9e389bf5feb6
-      access_key_id: AKIAWXBZ6RID4YZT5U6Q
-      secret_access_key: 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
-      region: us-east-2
+      user_name: sigy-tsty
+      kms_key_id: as713a73-4cb5-4t66-b561-9e383bf6fyb6
+      access_key_id: AKIATXBC6RIH4YZT5U6B
+      secret_access_key: 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
+      region: us-west-2
 ```
 
 ### Configuration parameters
