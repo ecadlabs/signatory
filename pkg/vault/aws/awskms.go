@@ -1,4 +1,4 @@
-package vault
+package awskms
 
 import (
 	"context"
@@ -8,12 +8,13 @@ import (
 	"encoding/asn1"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
-	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
@@ -21,6 +22,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+type Kmsapi interface {
+	ListKeys(input *kms.ListKeysInput) (*kms.ListKeysOutput, error)
+	Sign(input *kms.SignInput) (*kms.SignOutput, error)
+	GetPublicKeyWithContext(aws.Context, *kms.GetPublicKeyInput, ...request.Option) (*kms.GetPublicKeyOutput, error)
+}
 
 // Config contains AWS KMS backend configuration
 type Config struct {
@@ -32,8 +39,9 @@ type Config struct {
 }
 
 type Vault struct {
-	kmsapi kmsiface.KMSAPI
-	config Config
+	Kmsapi Kmsapi
+	// Kmsapi kmsiface.KMSAPI
+	Config Config
 }
 
 // awsKMSKey represents a key stored in AWS KMS
@@ -60,7 +68,8 @@ func (c *awsKMSKey) ID() string {
 }
 
 func (kv *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
-	pkresp, err := kv.kmsapi.GetPublicKeyWithContext(ctx, &kms.GetPublicKeyInput{
+
+	pkresp, err := kv.Kmsapi.GetPublicKeyWithContext(ctx, &kms.GetPublicKeyInput{
 		KeyId: &keyID,
 	})
 	if err != nil {
@@ -103,14 +112,14 @@ func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 
 // ListPublicKeys returns a list of keys stored under the backend
 func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+
 	var lkout *kms.ListKeysOutput
 	var err error
 	var lkin *kms.ListKeysInput
 
 	for {
-		lkout, err = c.kmsapi.ListKeys(lkin)
+		lkout, err = c.Kmsapi.ListKeys(lkin)
 		if err != nil {
-			fmt.Println("Abi-->:ListPublicKeys:- ", err)
 			return nil
 		}
 		if !*lkout.Truncated {
@@ -118,9 +127,6 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 		}
 		lkin.Marker = lkout.NextMarker
 	}
-
-	//Abi--> added for debug. Remove this line after key deleted
-	lkout.Keys[0] = lkout.Keys[1]
 
 	return &awsKMSIterator{
 		ctx:  ctx,
@@ -144,7 +150,7 @@ func (c *Vault) Name() string {
 
 func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 	kid := key.ID()
-	sout, err := c.kmsapi.Sign(&kms.SignInput{
+	sout, err := c.Kmsapi.Sign(&kms.SignInput{
 		KeyId:            &kid,
 		Message:          digest,
 		MessageType:      aws.String(kms.MessageTypeDigest),
@@ -154,12 +160,21 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 		return nil, err
 	}
 
-	var sig cryptoutils.ECDSASignature
-	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(AWSKMS/%s): %v", c.config.KeyID, err)
+	var sig struct {
+		R *big.Int
+		S *big.Int
 	}
 
-	return &sig, nil
+	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
+		return nil, fmt.Errorf("(AWSKMS/%s): %v", c.Config.KeyID, err)
+	}
+
+	pubkey := key.(*awsKMSKey)
+	return &cryptoutils.ECDSASignature{
+		R:     sig.R,
+		S:     sig.S,
+		Curve: pubkey.pub.Curve,
+	}, nil
 }
 
 // New creates new AWS KMS backend
@@ -171,8 +186,8 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 
 	api := kms.New(sess)
 	return &Vault{
-		kmsapi: api,
-		config: *config,
+		Kmsapi: api,
+		Config: *config,
 	}, nil
 }
 
