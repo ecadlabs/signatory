@@ -10,7 +10,9 @@ Search for IAM and create a user with "Programmatic access" for Signatory to acc
 Below are the minimum configuration required.
 
 ```sh
-config:
+awskms:
+    driver: awskms
+    config:
       user_name: sigy-tsty
       kms_key_id: as713a73-4cb5-4t66-b561-9e383bf6fyb6
       access_key_id: AKIATXBC6RIH4YZT5U6B
