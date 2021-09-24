@@ -106,9 +106,7 @@ func TestAWSVault(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return &akms.Vault{
 				Kmsapi: mockSvc,
-				Config: akms.Config{
-					KeyID: "0",
-				},
+				Config: akms.Config{},
 			}, nil
 		}),
 		Policy: map[string]*signatory.Policy{

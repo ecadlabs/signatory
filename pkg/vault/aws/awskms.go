@@ -31,8 +31,8 @@ type Kmsapi interface {
 
 // Config contains AWS KMS backend configuration
 type Config struct {
-	UserName    string `yaml:"user_name" validate:"required"`
-	KeyID       string `yaml:"kms_key_id" validate:"required"`
+	UserName string `yaml:"user_name" validate:"required"`
+	// KeyID       string `yaml:"kms_key_id" validate:"required"`
 	AccessKeyID string `yaml:"access_key_id" validate:"required"`
 	AccessKey   string `yaml:"secret_access_key" validate:"required"`
 	Region      string `yaml:"region" validate:"required"`
@@ -166,7 +166,7 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 	}
 
 	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(AWSKMS/%s): %v", c.Config.KeyID, err)
+		return nil, fmt.Errorf("(AWSKMS/%s): %v", kid, err)
 	}
 
 	pubkey := key.(*awsKMSKey)
