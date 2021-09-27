@@ -31,8 +31,7 @@ type Kmsapi interface {
 
 // Config contains AWS KMS backend configuration
 type Config struct {
-	UserName string `yaml:"user_name" validate:"required"`
-	// KeyID       string `yaml:"kms_key_id" validate:"required"`
+	UserName    string `yaml:"user_name" validate:"required"`
 	AccessKeyID string `yaml:"access_key_id" validate:"required"`
 	AccessKey   string `yaml:"secret_access_key" validate:"required"`
 	Region      string `yaml:"region" validate:"required"`
