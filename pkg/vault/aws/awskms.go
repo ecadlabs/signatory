@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
 	"gopkg.in/yaml.v3"
@@ -135,13 +134,6 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	}
 }
 
-func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
-	return &awsKMSKey{
-		key: nil,
-		pub: nil,
-	}, nil
-}
-
 // Name returns backend name
 func (c *Vault) Name() string {
 	return "AWSKMS"
@@ -207,5 +199,3 @@ func init() {
 		return New(ctx, &conf)
 	})
 }
-
-var _ vault.Importer = &Vault{}
