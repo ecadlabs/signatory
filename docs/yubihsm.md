@@ -34,7 +34,7 @@ The connector requires you to have the libusd package installed on your system.
 apt-get install libusb-1.0-0
 ```
 
-To install the connector from the, find and install the 
+To install the connector, find and install the 
 
 ```
 dpkg -i yubihsm-connector_2.1.0-1_amd64.deb
