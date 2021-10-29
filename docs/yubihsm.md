@@ -15,9 +15,9 @@ YubiHSM2 is a hardware-based HSM device. This device is suitable for use where y
 
 ### Prerequisites
 
-In this guide, we make use of Docker for convenience, but you are not required to use Docker.
+In this guide, we use Docker for convenience, but you are not required to use Docker.
 
-This documentation assumes that you will be running signatory and the YubiHSM2 device on the same physical server.
+This documentation assumes that you will be running Signatory and the YubiHSM2 device on the same physical server.
 
 * A Linux system operably configured with:
   * Docker
@@ -77,7 +77,7 @@ To open a new session with the device type. The default password on the YubiHSM2
 yubihsm> session open 1 password
 ```
 
-To list all objects on the device run the command.
+To list all objects on the device, run the command.
 
 ```
 yubihsm> list objects 0 0
@@ -127,7 +127,7 @@ vaults:
       auth_key_id: 1
 ```
 
-To import a secret key, we take the secret key from the above json examples. Do not include the "encrypted:" or "unencrypted:" prefix.
+To import a secret key, we take the secret key from the above JSON examples. Do not include the "encrypted:" or "unencrypted:" prefix.
 
 ```
 signatory-cli import --config ./signatory.yaml --vault yubi edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb 
