@@ -1,3 +1,5 @@
+// +build !integration
+
 package tezos
 
 import (
@@ -60,6 +62,11 @@ func TestTZKey(t *testing.T) {
 
 	for i, tst := range cases {
 		pk, err := ParsePrivateKey(tst.priv, func() ([]byte, error) { return []byte(tst.pass), nil })
+		if !as.NoError(err, i) {
+			continue
+		}
+
+		_, err = ParsePublicKey(tst.pub)
 		if !as.NoError(err, i) {
 			continue
 		}

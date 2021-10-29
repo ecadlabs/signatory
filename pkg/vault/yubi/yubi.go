@@ -37,7 +37,7 @@ const defaultDomains = 1
 
 // Config contains YubiHSM backend configuration
 type Config struct {
-	Address          string `yaml:"address" validate:"omitempty,hostport"`
+	Address          string `yaml:"address" validate:"omitempty,hostname_port"`
 	Password         string `yaml:"password"`
 	AuthKeyID        uint16 `yaml:"auth_key_id"`
 	KeyImportDomains uint16 `yaml:"key_import_domains"`
@@ -225,12 +225,17 @@ func (h *HSM) signECDSA(digest []byte, id uint16) (*cryptoutils.ECDSASignature, 
 		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
 	}
 
-	var sig cryptoutils.ECDSASignature
+	var sig struct {
+		R *big.Int
+		S *big.Int
+	}
 	if _, err = asn1.Unmarshal(ecdsaResponse.Signature, &sig); err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}
-
-	return &sig, nil
+	return &cryptoutils.ECDSASignature{
+		R: sig.R,
+		S: sig.S,
+	}, nil
 }
 
 func (h *HSM) signED25519(digest []byte, id uint16) (cryptoutils.ED25519Signature, error) {
@@ -301,10 +306,10 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algorithm, caps uint64, p []byte, err error) {
 	switch key := pk.(type) {
 	case *ecdsa.PrivateKey:
-		switch {
-		case key.Curve == elliptic.P256():
+		switch key.Curve {
+		case elliptic.P256():
 			alg = commands.AlgorithmP256
-		case cryptoutils.CurveEqual(key.Curve, cryptoutils.S256()):
+		case cryptoutils.S256():
 			alg = commands.AlgorithmSecp256k1
 		default:
 			return "", 0, 0, nil, fmt.Errorf("unsupported curve: %s", key.Params().Name)
