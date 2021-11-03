@@ -88,7 +88,7 @@ Example:
 signatory-cli ledger set-high-watermark -d 3944f7a0 0
 ```
 ### close_after field in config
-Configure this value as per your requirement. As you dont know the time between the blocks assigned to your baker, it is better to configure it at least few hours to prevent ledger from closing often fue to inactivity.
+Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity.
 Example:
 ```
 close_after: 3600s
