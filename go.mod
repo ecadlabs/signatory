@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	cloud.google.com/go v0.65.0
+	github.com/aws/aws-sdk-go v1.36.29
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -36,6 +37,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
