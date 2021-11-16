@@ -43,9 +43,11 @@ var (
 // Config contains Azure KeyVault backend configuration
 type Config struct {
 	auth.Config    `yaml:",inline"`
-	Vault          string `yaml:"vault" validate:"required,url"`
-	SubscriptionID string `yaml:"subscription_id" validate:"omitempty,uuid4"` // Optional
-	ResourceGroup  string `yaml:"resource_group"`                             // Optional
+	Vault          string   `yaml:"vault" validate:"required,url"`
+	SubscriptionID string   `yaml:"subscription_id" validate:"omitempty,uuid4"` // Optional
+	ResourceGroup  string   `yaml:"resource_group"`                             // Optional
+	ManagementURL  []string `yaml:"management_url"`                             // Optional
+	VaultScopeURL  []string `yaml:"vault_scope"`                                // Optional
 }
 
 // Vault is a Azure KeyVault backend
@@ -65,16 +67,27 @@ func (a *azureKey) ID() string                  { return a.bundle.Key.KeyID }
 
 // New creates new Azure KeyVault backend
 func New(ctx context.Context, config *Config) (vault *Vault, err error) {
+	var vs, ms []string
 	v := Vault{
 		config: config,
 	}
+	if len(config.VaultScopeURL) > 0 {
+		vs = config.VaultScopeURL
+	} else {
+		vs = vaultScopes
+	}
+	if len(config.ManagementURL) > 0 {
+		ms = config.ManagementURL
+	} else {
+		ms = managementScopes
+	}
 
-	if v.client, err = config.Client(context.Background(), vaultScopes); err != nil {
+	if v.client, err = config.Client(context.Background(), vs); err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 	}
 
 	if v.config.SubscriptionID != "" && v.config.ResourceGroup != "" {
-		if v.managementClient, err = config.Client(context.Background(), managementScopes); err != nil {
+		if v.managementClient, err = config.Client(context.Background(), ms); err != nil {
 			return nil, fmt.Errorf("(Azure/%s): %v", config.Vault, err)
 		}
 	}
