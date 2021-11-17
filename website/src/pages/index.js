@@ -12,7 +12,7 @@ const features = [
     imageUrl: 'img/undraw_security_o890.svg',
     description: (
       <>
-        Start prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense
+        Start prototyping your infrastructure with an on-disk key, switch to a HSM when it makes sense
       </>
     ),
   },
