@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+//go:build !integration
+
+>>>>>>> 26e0f47 (Go 1.17)
 package tezos
 
 import (
