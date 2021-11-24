@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine
+FROM golang:1.17-alpine
 ARG TEZOS_CLIENT_VERSION=v11.0-1
 
 RUN apkArch="$(apk --print-arch)" && \
@@ -19,4 +19,4 @@ COPY . .
 RUN go mod download all
 ENV ENV_NODE_ADDR=https://hangzhounet.api.tez.ie
 ENTRYPOINT [ "/bin/sh", "-c" ]
-CMD [ "/usr/local/go/bin/go test -tags integration ./..." ]
+CMD [ "/usr/local/go/bin/go test -v -tags integration ./..." ]

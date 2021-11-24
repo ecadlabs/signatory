@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 package integrationtest
 
@@ -122,6 +122,12 @@ func genAuthKey() (pub, pkh, priv string, err error) {
 	return
 }
 
+func logExec(t *testing.T, name string, arg ...string) error {
+	buf, err := exec.Command(name, arg...).Output()
+	t.Log(string(buf))
+	return err
+}
+
 func TestSignatory(t *testing.T) {
 	pk, err := secretKeyFromEnv()
 	require.NoError(t, err)
@@ -171,24 +177,24 @@ func TestSignatory(t *testing.T) {
 		dir := "./authenticated-tezos-client"
 		os.Mkdir(dir, 0777)
 		// initialize client
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init").Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub).Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
 		// add authentication key
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv).Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv))
 		// create transaction
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX").Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX"))
 	})
 
 	t.Run("NoAuth", func(t *testing.T) {
 		dir := "./unauthenticated-tezos-client"
 		os.Mkdir(dir, 0777)
 		// initialize client
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init").Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, exec.Command("tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub).Run())
+		require.NoError(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
 		// create transaction
-		require.Error(t, exec.Command("tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX").Run())
+		require.Error(t, logExec(t, "tezos-client", "-l", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX"))
 	})
 
 	srv.Shutdown(context.Background())
