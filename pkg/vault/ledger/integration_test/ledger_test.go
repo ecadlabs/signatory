@@ -1,4 +1,4 @@
-// +build ledger_test
+//go:build ledger_test
 
 package integrationtest_test
 
