@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: 1.16
+          go-version: 1.17
       - uses: actions/checkout@v2
       - name: Setup Code Climate test-reporter
         run: |
