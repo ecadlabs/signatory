@@ -6,6 +6,7 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'ecadlabs', // Usually your GitHub org/user name.
   projectName: 'signatory', // Usually your repo name.
+  onBrokenLinks: 'warn',
   themeConfig: {
     navbar: {
       title: 'Signatory Remote Signer',
