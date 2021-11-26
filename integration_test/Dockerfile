@@ -1,5 +1,5 @@
-FROM golang:1.16-alpine
-ARG TEZOS_CLIENT_VERSION=v9.7-1
+FROM golang:1.17-alpine
+ARG TEZOS_CLIENT_VERSION=v11.0-1
 
 RUN apkArch="$(apk --print-arch)" && \
 	case "$apkArch" in \
@@ -16,7 +16,7 @@ RUN apk add --no-cache linux-headers gcc musl-dev
 
 WORKDIR /app
 COPY . .
-RUN go mod download
-ENV ENV_NODE_ADDR=https://testnet-tezos.giganode.io/
+RUN go mod download all
+ENV ENV_NODE_ADDR=https://hangzhounet.api.tez.ie
 ENTRYPOINT [ "/bin/sh", "-c" ]
-CMD [ "/usr/local/go/bin/go test -tags integration ./..." ]
+CMD [ "/usr/local/go/bin/go test -v -tags integration ./..." ]
