@@ -10,7 +10,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      NODE_ADDR: https://testnet-tezos.giganode.io/
+      NODE_ADDR: https://hangzhounet.api.tez.ie
     steps:
       - uses: actions/checkout@v2
       - name: Build image
