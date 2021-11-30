@@ -293,11 +293,15 @@ Adding the information generated in any vault to the tezos-client is done in a s
 
 `tezos-client import secret key {name_you_choose} http://localhost:6732/{your_public_key_hash}`
 
-Using the same pkh as above the command would look like:
+Using the same pkh as above an example command would look like:
 
 `tezos-client import secret key yubi_guide http://localhost:6732/tz1RKhyJmze24D3EerrGpCZG6P572ijpPUc3`
 
 This should produce the output: `Tezos address added: tz1RKhyJmze24D3EerrGpCZG6P572ijpPUc3`
+
+Making the added PKH a delegate to begin baking/endorsing is achieved through this command (node/baker/endorser should be running already):
+
+`tezos-client register key {name_you_chose} as delegate`
 
 ### Final Signatory Verification Test
 We can finally see that all the pieces are working together by curling the signatory service and asking for the public key associated with our active public key hash:
