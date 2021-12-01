@@ -14,6 +14,7 @@ const (
 	tagOpActivateAccount           = 4
 	tagOpProposals                 = 5
 	tagOpBallot                    = 6
+	tagOpEndorsementWithSlot       = 10
 	tagOpReveal                    = 107
 	tagOpTransaction               = 108
 	tagOpOrigination               = 109
@@ -65,6 +66,15 @@ func (o *OpEndorsement) GetLevel() int32 { return o.Level }
 // OperationKind returns operation name i.e. "endorsement"
 func (o *OpEndorsement) OperationKind() string { return "endorsement" }
 
+// OpEndorsementWithSlot represents "endorsement" operation
+type OpEndorsementWithSlot struct {
+	InlinedEndorsement
+	Slot uint16
+}
+
+// OperationKind returns operation name i.e. "endorsement_with_slot"
+func (o *OpEndorsementWithSlot) OperationKind() string { return "endorsement_with_slot" }
+
 // OpSeedNonceRevelation represents "seed_nonce_revelation" operation
 type OpSeedNonceRevelation struct {
 	Level int32
@@ -79,9 +89,9 @@ func (o *OpSeedNonceRevelation) OperationKind() string { return "seed_nonce_reve
 
 // InlinedEndorsement represents inlined endorsement operation with signature
 type InlinedEndorsement struct {
+	OpEndorsement
 	Branch    string
 	Signature string
-	OpEndorsement
 }
 
 // OpDoubleEndorsementEvidence represents "double_endorsement_evidence" operation
@@ -207,6 +217,25 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 		return &op, nil
 
+	case tagOpEndorsementWithSlot:
+		var op OpEndorsementWithSlot
+		ln, err := getUint32(buf)
+		if err != nil {
+			return nil, err
+		}
+		tmpBuf, err := getBytes(buf, int(ln))
+		if err != nil {
+			return nil, err
+		}
+		e, err := parseInlinedEndorsement(&tmpBuf)
+		if err != nil {
+			return nil, err
+		}
+		op.InlinedEndorsement = *e
+		if op.Slot, err = getUint16(buf); err != nil {
+			return nil, err
+		}
+
 	case tagOpSeedNonceRevelation:
 		var op OpSeedNonceRevelation
 		if op.Level, err = getInt32(buf); err != nil {
@@ -228,21 +257,11 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			if err != nil {
 				return nil, err
 			}
-			branch, op, err := parseUnsignedEndorsement(&tmpBuf)
+			op, err := parseInlinedEndorsement(&tmpBuf)
 			if err != nil {
 				return nil, err
 			}
-			ee[i] = &InlinedEndorsement{
-				Branch:        branch,
-				OpEndorsement: *op,
-			}
-			sig, err := getBytes(&tmpBuf, 64)
-			if err != nil {
-				return nil, err
-			}
-			if ee[i].Signature, err = encodeBase58(pGenericSignature, sig); err != nil {
-				return nil, err
-			}
+			ee[i] = op
 		}
 		return &OpDoubleEndorsementEvidence{
 			Op1: ee[0],
@@ -279,9 +298,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		if err != nil {
 			return nil, err
 		}
-		if op.PublicKeyHash, err = encodeBase58(pED25519PublicKeyHash, pkh); err != nil {
-			return nil, err
-		}
+		op.PublicKeyHash = encodeBase58(pED25519PublicKeyHash, pkh)
 		if op.Secret, err = getBytes(buf, 20); err != nil {
 			return nil, err
 		}
@@ -308,11 +325,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			if err != nil {
 				return nil, err
 			}
-			pstr, err := encodeBase58(pProtocolHash, prop)
-			if err != nil {
-				return nil, err
-			}
-			op.Proposals = append(op.Proposals, pstr)
+			op.Proposals = append(op.Proposals, encodeBase58(pProtocolHash, prop))
 		}
 		return &op, nil
 
@@ -328,9 +341,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		if err != nil {
 			return nil, err
 		}
-		if op.Proposal, err = encodeBase58(pProtocolHash, prop); err != nil {
-			return nil, err
-		}
+		op.Proposal = encodeBase58(pProtocolHash, prop)
 		ballot, err := getByte(buf)
 		if err != nil {
 			return nil, err
@@ -456,6 +467,23 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 	return nil, fmt.Errorf("tezos: unknown or unimplemented operation tag: %d", t)
 }
 
+func parseInlinedEndorsement(buf *[]byte) (op *InlinedEndorsement, err error) {
+	branch, e, err := parseUnsignedEndorsement(buf)
+	if err != nil {
+		return
+	}
+	op = &InlinedEndorsement{
+		Branch:        branch,
+		OpEndorsement: *e,
+	}
+	sig, err := getBytes(buf, 64)
+	if err != nil {
+		return nil, err
+	}
+	op.Signature = encodeBase58(pGenericSignature, sig)
+	return
+}
+
 const (
 	tagPublicKeyHashED25519 = iota
 	tagPublicKeyHashSECP256K1
@@ -485,12 +513,7 @@ func parsePublicKeyHash(buf *[]byte) (pkh string, err error) {
 		return "", err
 	}
 
-	pkh, err = encodeBase58(prefix, b)
-	if err != nil {
-		return "", err
-	}
-
-	return pkh, nil
+	return encodeBase58(prefix, b), nil
 }
 
 const (
@@ -527,13 +550,7 @@ func parsePublicKey(buf *[]byte) (pkh string, err error) {
 	if err != nil {
 		return "", err
 	}
-
-	pkh, err = encodeBase58(prefix, b)
-	if err != nil {
-		return "", err
-	}
-
-	return pkh, nil
+	return encodeBase58(prefix, b), nil
 }
 
 const (
@@ -560,15 +577,9 @@ func parseContractID(buf *[]byte) (pkh string, err error) {
 		if err != nil {
 			return "", err
 		}
-		pkh, err = encodeBase58(pContractHash, b)
-		if err != nil {
-			return "", err
-		}
+		pkh = encodeBase58(pContractHash, b)
 		_, err = getByte(buf)
-		if err != nil {
-			return "", err
-		}
-		return pkh, nil
+		return pkh, err
 	}
 
 	return "", fmt.Errorf("tezos: unknown contract id tag: %d", t)
@@ -643,10 +654,7 @@ func parseUnsignedOperation(buf *[]byte) (op *UnsignedOperation, err error) {
 		return nil, err
 	}
 
-	branch, err := encodeBase58(pBlockHash, blockHash)
-	if err != nil {
-		return nil, err
-	}
+	branch := encodeBase58(pBlockHash, blockHash)
 
 	list := make([]OperationContents, 0)
 	for len(*buf) != 0 {
@@ -685,18 +693,19 @@ func parseUnsignedEndorsement(buf *[]byte) (branch string, op *OpEndorsement, er
 
 // BlockHeader represents unsigned block header
 type BlockHeader struct {
-	Level            int32
-	Proto            byte
-	Predecessor      string
-	Timestamp        time.Time
-	ValidationPass   byte
-	OperationsHash   string
-	Fitness          [][]byte
-	Context          string
-	Priority         uint16
-	ProofOfWorkNonce []byte
-	NonceHash        []byte
-	Signature        string
+	Level                     int32
+	Proto                     byte
+	Predecessor               string
+	Timestamp                 time.Time
+	ValidationPass            byte
+	OperationsHash            string
+	Fitness                   [][]byte
+	Context                   string
+	Priority                  uint16
+	ProofOfWorkNonce          []byte
+	NonceHash                 []byte
+	LiquidityBakingEscapeVote bool
+	Signature                 string
 }
 
 // GetLevel returns block level
@@ -715,9 +724,7 @@ func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 	if err != nil {
 		return nil, err
 	}
-	if b.Predecessor, err = encodeBase58(pBlockHash, hash); err != nil {
-		return nil, err
-	}
+	b.Predecessor = encodeBase58(pBlockHash, hash)
 	ts, err := getInt64(buf)
 	if err != nil {
 		return nil, err
@@ -729,9 +736,7 @@ func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 	if hash, err = getBytes(buf, 32); err != nil {
 		return nil, err
 	}
-	if b.OperationsHash, err = encodeBase58(pOperationListListHash, hash); err != nil {
-		return nil, err
-	}
+	b.OperationsHash = encodeBase58(pOperationListListHash, hash)
 
 	ln, err := getUint32(buf)
 	if err != nil {
@@ -755,9 +760,7 @@ func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 	if hash, err = getBytes(buf, 32); err != nil {
 		return nil, err
 	}
-	if b.Context, err = encodeBase58(pContextHash, hash); err != nil {
-		return nil, err
-	}
+	b.Context = encodeBase58(pContextHash, hash)
 	if b.Priority, err = getUint16(buf); err != nil {
 		return nil, err
 	}
@@ -773,14 +776,16 @@ func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 			return nil, err
 		}
 	}
+	b.LiquidityBakingEscapeVote, err = getBool(buf)
+	if err != nil {
+		return nil, err
+	}
 	if sig {
 		s, err := getBytes(buf, 64)
 		if err != nil {
 			return nil, err
 		}
-		if b.Signature, err = encodeBase58(pGenericSignature, s); err != nil {
-			return nil, err
-		}
+		b.Signature = encodeBase58(pGenericSignature, s)
 	}
 
 	return b, nil
@@ -830,8 +835,6 @@ func (u *UnsignedEndorsement) GetLevel() int32 { return u.Level }
 // GetChainID returns chain ID
 func (u *UnsignedEndorsement) GetChainID() string { return u.ChainID }
 
-// Watermark prefixes
-// see https://gitlab.com/tezos/tezos/blob/master/src/lib_crypto/signature.ml#L669
 const (
 	wmBlockHeader      = 1
 	wmEndorsement      = 2
@@ -850,10 +853,7 @@ func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
 		if err != nil {
 			return nil, err
 		}
-		chainID, err := encodeBase58(pChainID, b)
-		if err != nil {
-			return nil, err
-		}
+		chainID := encodeBase58(pChainID, b)
 		switch t {
 		case wmBlockHeader:
 			bh, err := parseBlockHeader(buf, false)

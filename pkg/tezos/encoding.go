@@ -129,13 +129,12 @@ func decodeBase58(data string) (prefix tzPrefix, payload []byte, err error) {
 	return
 }
 
-func encodeBase58(prefix tzPrefix, payload []byte) (string, error) {
+func encodeBase58(prefix tzPrefix, payload []byte) string {
 	p := prefix.prefix()
 	data := make([]byte, len(p)+len(payload))
 	copy(data, p)
 	copy(data[len(p):], payload)
-
-	return EncodeBase58Check(data), nil
+	return EncodeBase58Check(data)
 }
 
 func DecodeChainID(src string) (res [4]byte, err error) {
