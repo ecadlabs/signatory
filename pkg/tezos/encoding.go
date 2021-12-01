@@ -22,12 +22,16 @@ func (t *tzPrefix) prefix() []byte {
 // See https://gitlab.com/tezos/tezos/blob/master/src/lib_crypto/base58.ml
 var (
 	// 32
-	pBlockHash             = tzPrefix{plen: 2, mlen: 32, p: [5]byte{1, 52}}        // B(51)
-	pOperationHash         = tzPrefix{plen: 2, mlen: 32, p: [5]byte{5, 116}}       // o(51)
-	pOperationListHash     = tzPrefix{plen: 2, mlen: 32, p: [5]byte{133, 233}}     // Lo(52)
-	pOperationListListHash = tzPrefix{plen: 3, mlen: 32, p: [5]byte{29, 159, 109}} // LLo(53)
-	pProtocolHash          = tzPrefix{plen: 2, mlen: 32, p: [5]byte{2, 170}}       // P(51)
-	pContextHash           = tzPrefix{plen: 2, mlen: 32, p: [5]byte{79, 199}}      // Co(52)
+	pBlockHash                     = tzPrefix{plen: 2, mlen: 32, p: [5]byte{1, 52}}        // B(51)
+	pOperationHash                 = tzPrefix{plen: 2, mlen: 32, p: [5]byte{5, 116}}       // o(51)
+	pOperationListHash             = tzPrefix{plen: 2, mlen: 32, p: [5]byte{133, 233}}     // Lo(52)
+	pOperationListListHash         = tzPrefix{plen: 3, mlen: 32, p: [5]byte{29, 159, 109}} // LLo(53)
+	pProtocolHash                  = tzPrefix{plen: 2, mlen: 32, p: [5]byte{2, 170}}       // P(51)
+	pContextHash                   = tzPrefix{plen: 2, mlen: 32, p: [5]byte{79, 199}}      // Co(52)
+	pBlockMetadataHash             = tzPrefix{plen: 2, mlen: 32, p: [5]byte{234, 249}}     // bm(52)
+	pOperationMetadataHash         = tzPrefix{plen: 2, mlen: 32, p: [5]byte{5, 183}}       // r(51)
+	pOperationMetadataListHash     = tzPrefix{plen: 2, mlen: 32, p: [5]byte{134, 39}}      // Lr(52)
+	pOperationMetadataListListHash = tzPrefix{plen: 2, mlen: 32, p: [5]byte{29, 159, 182}} // LLr(53)
 
 	// 20
 	pED25519PublicKeyHash   = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 159}} // tz1(36)
@@ -64,6 +68,12 @@ var (
 
 	// 4
 	pChainID = tzPrefix{plen: 3, mlen: 4, p: [5]byte{87, 82, 0}}
+
+	// 169
+	pSaplingSpendingKey = tzPrefix{plen: 4, mlen: 169, p: [5]byte{11, 237, 20, 92}} // sask(241)
+
+	// 43
+	pSaplingAddress = tzPrefix{plen: 4, mlen: 43, p: [5]byte{18, 71, 40, 223}} // zet1(69)
 )
 
 // Full list of prefixes with payload lengths
