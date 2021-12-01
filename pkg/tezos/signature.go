@@ -46,7 +46,7 @@ func EncodeGenericSignature(sig cryptoutils.Signature) (res string, err error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeBase58(pGenericSignature, data)
+	return encodeBase58(pGenericSignature, data), nil
 }
 
 // EncodeSignature returns encoded version of a digital signature in a specific format
@@ -55,7 +55,7 @@ func EncodeSignature(sig cryptoutils.Signature) (res string, err error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeBase58(p, data)
+	return encodeBase58(p, data), nil
 }
 
 // ErrSignature is the error returned if the signature type is unknown
