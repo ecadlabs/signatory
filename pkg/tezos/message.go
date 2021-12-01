@@ -7,21 +7,17 @@ import (
 )
 
 const (
-	tagOpEndorsement = iota
-	tagOpSeedNonceRevelation
-	tagOpDoubleEndorsementEvidence
-	tagOpDoubleBakingEvidence
-	tagOpActivateAccount
-	tagOpProposals
-	tagOpBallot
-	tagOpReveal
-	tagOpTransaction
-	tagOpOrigination
-	tagOpDelegation
-)
-
-const (
-	tagBabylon = 100
+	tagOpEndorsement               = 0
+	tagOpSeedNonceRevelation       = 1
+	tagOpDoubleEndorsementEvidence = 2
+	tagOpDoubleBakingEvidence      = 3
+	tagOpActivateAccount           = 4
+	tagOpProposals                 = 5
+	tagOpBallot                    = 6
+	tagOpReveal                    = 107
+	tagOpTransaction               = 108
+	tagOpOrigination               = 109
+	tagOpDelegation                = 110
 )
 
 const (
@@ -180,17 +176,9 @@ type ScriptedContracts struct {
 // OpOrigination represents "origination" operation
 type OpOrigination struct {
 	Manager
-	Balance     *big.Int
-	Delegate    string
-	ManagerData *ManagerData // pre Babylon
-	Script      *ScriptedContracts
-}
-
-// ManagerData represents pre Babylon manager data
-type ManagerData struct {
-	ManagerPubKey string
-	Spendable     bool
-	Delegatable   bool
+	Balance  *big.Int
+	Delegate string
+	Script   *ScriptedContracts
 }
 
 // OperationKind returns operation name i.e. "origination"
@@ -357,14 +345,9 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 		return &op, nil
 
-	case tagOpReveal, tagOpTransaction, tagOpOrigination, tagOpDelegation,
-		tagOpReveal + tagBabylon, tagOpTransaction + tagBabylon, tagOpOrigination + tagBabylon, tagOpDelegation + tagBabylon:
+	case tagOpReveal, tagOpTransaction, tagOpOrigination, tagOpDelegation:
 		var txCommon Manager
-		if t >= tagBabylon {
-			if txCommon.Source, err = parsePublicKeyHash(buf); err != nil {
-				return nil, err
-			}
-		} else if txCommon.Source, err = parseContractID(buf); err != nil {
+		if txCommon.Source, err = parsePublicKeyHash(buf); err != nil {
 			return nil, err
 		}
 		if txCommon.Fee, err = parseBigNum(buf); err != nil {
@@ -381,7 +364,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 		}
 
 		switch t {
-		case tagOpReveal, tagOpReveal + tagBabylon:
+		case tagOpReveal:
 			op := OpReveal{
 				Manager: txCommon,
 			}
@@ -390,7 +373,7 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			}
 			return &op, nil
 
-		case tagOpTransaction, tagOpTransaction + tagBabylon:
+		case tagOpTransaction:
 			op := OpTransaction{
 				Manager: txCommon,
 			}
@@ -406,10 +389,8 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			}
 			if flag {
 				op.Parameters = new(TxParameters)
-				if t >= tagBabylon {
-					if op.Parameters.Entrypoint, err = parseEntrypoint(buf); err != nil {
-						return nil, err
-					}
+				if op.Parameters.Entrypoint, err = parseEntrypoint(buf); err != nil {
+					return nil, err
 				}
 				ln, err := getUint32(buf)
 				if err != nil {
@@ -422,26 +403,12 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 			}
 			return &op, nil
 
-		case tagOpOrigination, tagOpOrigination + tagBabylon:
+		case tagOpOrigination:
 			op := OpOrigination{
 				Manager: txCommon,
 			}
-			if t < tagBabylon {
-				op.ManagerData = new(ManagerData)
-				if op.ManagerData.ManagerPubKey, err = parsePublicKeyHash(buf); err != nil {
-					return nil, err
-				}
-			}
 			if op.Balance, err = parseBigNum(buf); err != nil {
 				return nil, err
-			}
-			if t < tagBabylon {
-				if op.ManagerData.Spendable, err = getBool(buf); err != nil {
-					return nil, err
-				}
-				if op.ManagerData.Delegatable, err = getBool(buf); err != nil {
-					return nil, err
-				}
 			}
 			flag, err := getBool(buf)
 			if err != nil {
@@ -452,33 +419,24 @@ func parseOperation(buf *[]byte) (op OperationContents, err error) {
 					return nil, err
 				}
 			}
-			if t < tagBabylon {
-				if flag, err = getBool(buf); err != nil {
-					return nil, err
-				}
-			} else {
-				flag = true
+			op.Script = new(ScriptedContracts)
+			ln, err := getUint32(buf)
+			if err != nil {
+				return nil, err
 			}
-			if flag {
-				op.Script = new(ScriptedContracts)
-				ln, err := getUint32(buf)
-				if err != nil {
-					return nil, err
-				}
-				if op.Script.Code, err = getBytes(buf, int(ln)); err != nil {
-					return nil, err
-				}
-				ln, err = getUint32(buf)
-				if err != nil {
-					return nil, err
-				}
-				if op.Script.Storage, err = getBytes(buf, int(ln)); err != nil {
-					return nil, err
-				}
+			if op.Script.Code, err = getBytes(buf, int(ln)); err != nil {
+				return nil, err
+			}
+			ln, err = getUint32(buf)
+			if err != nil {
+				return nil, err
+			}
+			if op.Script.Storage, err = getBytes(buf, int(ln)); err != nil {
+				return nil, err
 			}
 			return &op, nil
 
-		case tagOpDelegation, tagOpDelegation + tagBabylon:
+		case tagOpDelegation:
 			op := OpDelegation{
 				Manager: txCommon,
 			}
