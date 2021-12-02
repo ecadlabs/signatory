@@ -1,29 +1,35 @@
+---
+id: GCP_kms
+title: Google Cloud Platform KMS
+---
 ## Alex's Changes for GCP:
 
-Note on convention: Anything surrounded by curly brackets is a piece of info that will be specific to you. For example {tezos_public_key_hash} will be something on your system resembling `tz1P572ijpP...`
+#### Note on convention: 
+Anything surrounded by curly brackets is a piece of info that will be specific to you. For example {tezos_public_key_hash} will be something on your system resembling `tz1P572ijpP...`
 
 ### Introduction to GCP HSM:
 
 They will likely describe their own products far better than we ever could. Some resources are available here
-- [HSM website](https://cloud.google.com/kms/docs/hsm)
+- [HSM Overview](https://cloud.google.com/kms/docs/hsm)
 - [KMS Overview](https://cloud.google.com/security-key-management)
 
-### Trade-offs of using GCP HSM:
+### Trade-offs of using GCP HSM: 
 To be completed later
 
 ### Vault Setup Hints
-- 
+- TBD
 
 ### Key Management
-#### Generating a key in GCP
-- First step is to create a key ring (The key-ring name and location are required in the signatory configuration)
+#### Generating a key ring
+- First step is to create a key ring (The key ring name and location are required in the signatory configuration)
     - Key rings can be found in the security section of your GCP project (Security -> Key Management)
     - When creating the key a few things are important:
         - Purpose should be "asymmetric sign"
         - Protection level should be "HSM"
 
+#### Custom Role Creation (Reference: https://cloud.google.com/iam/docs/creating-custom-roles)
 - Creating a role for a service account:
-Note: Service accounts are only able to assign permissions from roles instead of individual permissions
+  - Service accounts are only able to assign permissions from roles instead of individual permissions
 - Navigate to the IAM & Admin section in the GCP dashboard -> Roles
 - Create a role and name is whatever you like
 - Assign the following permissions for an all-in-one role:
@@ -40,8 +46,7 @@ Note: Service accounts are only able to assign permissions from roles instead of
     - cloudkms.importJobs.list
     - cloudkms.importJobs.useToImport
 
-- Service Accounts (Reference: https://cloud.google.com/iam/docs/service-accounts):
-
+#### Service Accounts (Reference: https://cloud.google.com/iam/docs/service-accounts):
 Creating a service account from scratch:
 - Navigate to the IAM & Admin section in the GCP dashboard -> Service Accounts
 - Create a new service account
