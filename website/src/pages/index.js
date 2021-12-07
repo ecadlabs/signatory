@@ -57,7 +57,7 @@ function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="A Remote Signer for Tezos that keeps your keys in a HSM (Yubi, Azure KMS, Google KMS)<head />">
+      description="A Remote Signer for Tezos that keeps your keys in an HSM (Yubi, Azure KMS, Google KMS)<head />">
       <header className={classnames('hero hero--primary', styles.heroBanner)}>
         <div className="container">
           <h1 className="hero__title">{siteConfig.title}</h1>
