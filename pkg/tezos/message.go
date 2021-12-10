@@ -793,11 +793,13 @@ func parseBlockHeader(buf *[]byte, sig bool) (b *BlockHeader, err error) {
 
 // MessageWithLevel is implemented by UnsignedBlockHeader and UnsignedEndorsement. Useful for high water marking.
 type MessageWithLevel interface {
+	UnsignedMessage
 	GetLevel() int32
 }
 
 // MessageWithChainID is implemented by UnsignedBlockHeader and UnsignedEndorsement. Useful for high water marking.
 type MessageWithChainID interface {
+	UnsignedMessage
 	GetChainID() string
 }
 
@@ -805,6 +807,10 @@ type MessageWithChainID interface {
 type MessageWithLevelAndChainID interface {
 	MessageWithLevel
 	MessageWithChainID
+}
+
+type MessageWithRound interface {
+	GetRound() int32
 }
 
 // UnsignedBlockHeader represents unsigned block header
@@ -836,9 +842,12 @@ func (u *UnsignedEndorsement) GetLevel() int32 { return u.Level }
 func (u *UnsignedEndorsement) GetChainID() string { return u.ChainID }
 
 const (
-	wmBlockHeader      = 1
-	wmEndorsement      = 2
-	wmGenericOperation = 3
+	magicBlockHeader              = 0x01
+	magicEndorsement              = 0x02
+	magicGenericOperation         = 0x03
+	magicTenderbakeBlock          = 0x11
+	magicTenderbakeEndorsement    = 0x12
+	magicTenderbakePreendorsement = 0x13
 )
 
 func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
@@ -848,14 +857,14 @@ func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
 	}
 
 	switch t {
-	case wmBlockHeader, wmEndorsement:
+	case magicBlockHeader, magicEndorsement:
 		b, err := getBytes(buf, 4)
 		if err != nil {
 			return nil, err
 		}
 		chainID := encodeBase58(pChainID, b)
 		switch t {
-		case wmBlockHeader:
+		case magicBlockHeader:
 			bh, err := parseBlockHeader(buf, false)
 			if err != nil {
 				return nil, err
@@ -865,7 +874,7 @@ func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
 				BlockHeader: *bh,
 			}, nil
 
-		case wmEndorsement:
+		case magicEndorsement:
 			branch, op, err := parseUnsignedEndorsement(buf)
 			if err != nil {
 				return nil, err
@@ -876,7 +885,12 @@ func parseUnsignedMessage(buf *[]byte) (u UnsignedMessage, err error) {
 				OpEndorsement: *op,
 			}, nil
 		}
-	case wmGenericOperation:
+
+	case magicTenderbakeBlock:
+	case magicTenderbakeEndorsement:
+	case magicTenderbakePreendorsement:
+
+	case magicGenericOperation:
 		return parseUnsignedOperation(buf)
 	}
 	return nil, fmt.Errorf("tezos: unknown watermark tag: %d", t)

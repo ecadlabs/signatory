@@ -253,20 +253,17 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	}
 	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
-	if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg); err != nil {
-		err = errors.Wrap(err, http.StatusForbidden)
-		l.Error(err)
-		return "", err
-	}
-
-	var signFunc func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error)
-	if rawSigner, ok := p.vault.(vault.RawSigner); ok {
-		signFunc = rawSigner.SignRaw
-	} else {
-		signFunc = func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-			digest := tezos.DigestFunc(message)
-			return p.vault.Sign(ctx, digest[:], p.key)
+	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+		digest := tezos.DigestFunc(message)
+		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, digest[:], msg); err != nil {
+			err = errors.Wrap(err, http.StatusForbidden)
+			l.Error(err)
+			return nil, err
 		}
+		if rawSigner, ok := p.vault.(vault.RawSigner); ok {
+			return rawSigner.SignRaw(ctx, message, key)
+		}
+		return p.vault.Sign(ctx, digest[:], p.key)
 	}
 
 	var sig cryptoutils.Signature
