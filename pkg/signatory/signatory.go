@@ -172,7 +172,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
+	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
 		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
@@ -205,7 +205,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
-	msg, err := tezos.ParseUnsignedMessage(req.Message)
+	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
 		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusBadRequest)
@@ -213,16 +213,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	l = l.WithField(logOp, msg.MessageKind())
 
-	if m, ok := msg.(tezos.MessageWithChainID); ok {
-		l = l.WithField(logChainID, m.GetChainID())
-	}
-
 	if m, ok := msg.(tezos.MessageWithLevel); ok {
-		l = l.WithField(logLevel, m.GetLevel())
+		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
 	}
 
 	var opKind []string
-	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
+	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
 	}

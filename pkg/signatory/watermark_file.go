@@ -24,7 +24,7 @@ type watermarkData struct {
 	Hash  []byte `json:"hash,omitempty"`
 }
 
-func (w *watermarkData) isSafeToSign(msg tezos.MessageWithLevelAndChainID, hash []byte) error {
+func (w *watermarkData) isSafeToSign(msg tezos.MessageWithLevel, hash []byte) error {
 	dataMatched := bytes.Equal(w.Hash, hash)
 
 	if w.Level == msg.GetLevel() && !dataMatched {
@@ -55,7 +55,7 @@ type FileWatermark struct {
 }
 
 func (f *FileWatermark) IsSafeToSign(pkh string, hash []byte, msg tezos.UnsignedMessage) error {
-	m, ok := msg.(tezos.MessageWithLevelAndChainID)
+	m, ok := msg.(tezos.MessageWithLevel)
 	if !ok {
 		// watermark is not required
 		return nil
