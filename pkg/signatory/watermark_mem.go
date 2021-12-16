@@ -14,7 +14,7 @@ type InMemoryWatermark struct {
 
 // IsSafeToSign return true if this msgID is safe to sign
 func (w *InMemoryWatermark) IsSafeToSign(pkh string, hash []byte, msg tezos.UnsignedMessage) error {
-	m, ok := msg.(tezos.MessageWithLevelAndChainID)
+	m, ok := msg.(tezos.MessageWithLevel)
 	if !ok {
 		// watermark is not required
 		return nil
