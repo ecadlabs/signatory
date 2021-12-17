@@ -226,7 +226,12 @@ This is the guide that was used to set up the HSM initially and gather the requi
     - One part of this is possibly defining a udev rule for allowing your user to access the yubiHSM since running things as root isn't generally advised. This [link](https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/) is helpful for setting up udev rules so your user can run the connector
 
 ### Key Management
+
+#### Key generation on YubiHSM
 - You will need to complete the section titled "Generate a Key for Signing". This will create the keys that the HSM will use for signing. A single key is generally enough to get what you need done and if you need more, they can be added in the future.
+
+#### Importing a Secret key into the YubiHSM2 for Tezos
+
 
 ### Signatory Setup for most cases (no different setup needed for Yubi at this time)
 I don't believe there is anything additional needed for signatory when using a YubiHSM. The standard should work:

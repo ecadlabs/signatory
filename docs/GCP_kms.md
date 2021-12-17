@@ -62,6 +62,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="Your_Credentials_JSON_File"
 - You can generate a private key in an air gapped environment and then import it into GCP Key Management using the signatory-cli binary
   - You must have signatory and signatory-cli set up. If this has not been done please move onto the signatory setup section and come back
 - The import command is the command that will take your secret key and set up signatory to use it:
+
 ```alexander@debian:~/signatory$ ./signatory-cli import --help
 Import Tezos private keys (edsk..., spsk..., p2sk...)
 
@@ -76,8 +77,18 @@ Flags:
 
 Global Flags:
   -c, --config string   Config file path (default "/etc/signatory.yaml")
-      --log string      Log level: [error, warn, info, debug, trace] (default "info")```
+      --log string      Log level: [error, warn, info, debug, trace] (default "info")
+```
 
+- An example command and the associated output are as follows:
+
+```
+./signatory-cli import -c signatory.yaml --vault kms p2esk28hoUE2J88QNFj2aDX2pjzL7wcVh2g8tkEwtWWguby9M3FHUgSbzvF2Sd7wQ4Kd8crFwvto6gF3otcBuo4T
+INFO[0000] Initializing vault                            vault=cloudkms vault_name=kms
+Enter Password: 
+INFO[0002] Requesting import operation                   pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
+INFO[0008] Successfully imported                         key_id=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring/cryptoKeys/signatory-imported-215FwcXxhLdlr9IYwzA31vwANmy/cryptoKeyVersions/1 pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
+```
 
 ### Signatory Setup for most cases (no different setup needed for Yubi at this time)
 I don't believe there is anything additional needed for signatory when using a YubiHSM. The standard should work
