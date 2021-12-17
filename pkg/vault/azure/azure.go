@@ -48,10 +48,14 @@ type Config struct {
 	ResourceGroup  string `yaml:"resource_group"`                             // Optional
 }
 
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // Vault is a Azure KeyVault backend
 type Vault struct {
-	client           *http.Client
-	managementClient *http.Client
+	client           HttpClient
+	managementClient HttpClient
 	config           *Config
 }
 
@@ -111,7 +115,7 @@ func (v *Vault) vaultError(res *http.Response) error {
 	return errors.New(msg)
 }
 
-func (v *Vault) request(ctx context.Context, client *http.Client, method, url string, body io.Reader, result interface{}) (status int, err error) {
+func (v *Vault) request(ctx context.Context, client HttpClient, method, url string, body io.Reader, result interface{}) (status int, err error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return status, err
