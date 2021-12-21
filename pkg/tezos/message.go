@@ -180,21 +180,6 @@ func parseUnsignedBlockHeader(buf *[]byte) (*BlockHeader, error) {
 	return &b, nil
 }
 
-/*
-func parseBlockHeader(buf *[]byte) (b *BlockHeader, err error) {
-	b, err = parseUnsignedBlockHeader(buf)
-	if err != nil {
-		return nil, err
-	}
-	s, err := utils.GetBytes(buf, 64)
-	if err != nil {
-		return nil, err
-	}
-	b.Signature = encodeBase58(pGenericSignature, s)
-	return b, nil
-}
-*/
-
 // TenderbakeBlockRequest represents unsigned block header
 type TenderbakeBlockRequest struct {
 	ChainID string
@@ -316,7 +301,7 @@ func parsePreendorsementRequest(buf *[]byte) (*PreendorsementRequest, error) {
 	}
 	e, ok := op.(*OpPreendorsement)
 	if !ok {
-		return nil, fmt.Errorf("tezos: endorsement operation expected, got: %T", op)
+		return nil, fmt.Errorf("tezos: preendorsement operation expected, got: %T", op)
 	}
 	return &PreendorsementRequest{
 		ChainID:          encodeBase58(pChainID, chainID),
@@ -330,8 +315,8 @@ const (
 	magicEmmyEndorsement       = 0x02
 	magicGenericOperation      = 0x03
 	magicTenderbakeBlock       = 0x11
-	magicTenderbakeEndorsement = 0x12
-	magicPreendorsement        = 0x13
+	magicPreendorsement        = 0x12
+	magicTenderbakeEndorsement = 0x13
 )
 
 func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
@@ -372,11 +357,11 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 	case magicEmmyEndorsement:
 		return parseEmmyEndorsementRequest(buf)
 
-	case magicTenderbakeEndorsement:
-		return parseTenderbakeEndorsementRequest(buf)
-
 	case magicPreendorsement:
 		return parsePreendorsementRequest(buf)
+
+	case magicTenderbakeEndorsement:
+		return parseTenderbakeEndorsementRequest(buf)
 
 	case magicGenericOperation:
 		return parseGenericOperationRequest(buf)

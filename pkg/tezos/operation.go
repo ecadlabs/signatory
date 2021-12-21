@@ -13,7 +13,7 @@ type Operation interface {
 }
 
 const (
-	tagEndorsement                  = 0
+	tagEmmyEndorsement              = 0
 	tagSeedNonceRevelation          = 1
 	tagDoubleEndorsementEvidence    = 2
 	tagDoubleBakingEvidence         = 3
@@ -34,7 +34,7 @@ const (
 )
 
 var opKinds = map[int]string{
-	tagEndorsement:                  "endorsement",
+	tagEmmyEndorsement:              "endorsement",
 	tagSeedNonceRevelation:          "seed_nonce_revelation",
 	tagDoubleEndorsementEvidence:    "double_endorsement_evidence",
 	tagDoubleBakingEvidence:         "double_baking_evidence",
@@ -54,7 +54,7 @@ var opKinds = map[int]string{
 	tagTxRollupOrigination:          "tx_rollup_origination",
 }
 
-type OpEndorsement interface {
+type Endorsement interface {
 	Operation
 	GetLevel() int32
 	OpEndorsement()
@@ -104,6 +104,8 @@ func (o *OpPreendorsement) OperationKind() string { return "preendorsement" }
 // GetRound returns tenderbake round
 func (o *OpPreendorsement) GetRound() int32 { return o.Round }
 
+func (*OpPreendorsement) OpEndorsement() {}
+
 // OpEndorsementWithSlot represents "endorsement" operation
 type OpEndorsementWithSlot struct {
 	InlinedEndorsement
@@ -127,9 +129,9 @@ func (o *OpSeedNonceRevelation) OperationKind() string { return "seed_nonce_reve
 
 // InlinedEndorsement represents inlined endorsement operation with signature
 type InlinedEndorsement struct {
-	OpEndorsement // either Emmy or Tenderbake
-	Branch        string
-	Signature     string
+	Endorsement // either Emmy or Tenderbake
+	Branch      string
+	Signature   string
 }
 
 // InlinedPreendorsement represents inlined preendorsement operation with signature
@@ -294,7 +296,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	}
 
 	switch t {
-	case tagEndorsement:
+	case tagEmmyEndorsement:
 		var op OpEmmyEndorsement
 		if op.Level, err = utils.GetInt32(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
@@ -639,14 +641,14 @@ func parseInlinedEndorsement(buf *[]byte) (*InlinedEndorsement, error) {
 	if err != nil {
 		return nil, fmt.Errorf("inlined_endorsement: %w", err)
 	}
-	e, ok := op.(OpEndorsement)
+	e, ok := op.(Endorsement)
 	if !ok {
 		return nil, fmt.Errorf("tezos: endorsement operation expected, got: %T", op)
 	}
 	return &InlinedEndorsement{
-		OpEndorsement: e,
-		Branch:        encodeBase58(pBlockHash, blockHash),
-		Signature:     encodeBase58(pGenericSignature, *buf),
+		Endorsement: e,
+		Branch:      encodeBase58(pBlockHash, blockHash),
+		Signature:   encodeBase58(pGenericSignature, *buf),
 	}, nil
 }
 
