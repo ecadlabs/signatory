@@ -3,6 +3,8 @@ package tezos
 import (
 	"fmt"
 	"math/big"
+
+	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 )
 
 // Operation is implemented by all operations
@@ -31,6 +33,27 @@ const (
 	tagTxRollupOrigination          = 150
 )
 
+var opKinds = map[int]string{
+	tagEndorsement:                  "endorsement",
+	tagSeedNonceRevelation:          "seed_nonce_revelation",
+	tagDoubleEndorsementEvidence:    "double_endorsement_evidence",
+	tagDoubleBakingEvidence:         "double_baking_evidence",
+	tagActivateAccount:              "activate_account",
+	tagProposals:                    "proposals",
+	tagBallot:                       "ballot",
+	tagDoublePreendorsementEvidence: "double_preendorsement_evidence",
+	tagEndorsementWithSlot:          "endorsement_with_slot",
+	tagPreendorsement:               "preendorsement",
+	tagTenderbakeEndorsement:        "endorsement",
+	tagReveal:                       "reveal",
+	tagTransaction:                  "transaction",
+	tagOrigination:                  "origination",
+	tagDelegation:                   "delegation",
+	tagRegisterGlobalConstant:       "register_global_constant",
+	tagSetDepositsLimit:             "set_deposits_limit",
+	tagTxRollupOrigination:          "tx_rollup_origination",
+}
+
 type OpEndorsement interface {
 	Operation
 	GetLevel() int32
@@ -52,10 +75,10 @@ func (*OpEmmyEndorsement) OpEndorsement() {}
 
 // OpTenderbakeEndorsement represents "endorsement" operation
 type OpTenderbakeEndorsement struct {
-	Slot             *uint16
+	Slot             uint16
 	Level            int32
 	Round            int32
-	BlockPayloadHash []byte
+	BlockPayloadHash string
 }
 
 // GetLevel returns block level
@@ -138,8 +161,8 @@ func (o *OpDoublePreendorsementEvidence) OperationKind() string {
 
 // OpDoubleBakingEvidence represents "double_baking_evidence" operation
 type OpDoubleBakingEvidence struct {
-	BlockHeader1 *BlockHeader
-	BlockHeader2 *BlockHeader
+	BlockHeader1 *ShellBlockHeader
+	BlockHeader2 *ShellBlockHeader
 }
 
 // OperationKind returns operation name i.e. "double_baking_evidence"
@@ -216,8 +239,8 @@ type TxParameters struct {
 	Entrypoint string // post Babylon
 }
 
-// ScriptedContracts contains contract data
-type ScriptedContracts struct {
+// ScriptedContract contains contract data
+type ScriptedContract struct {
 	Code    []byte
 	Storage []byte
 }
@@ -227,7 +250,7 @@ type OpOrigination struct {
 	Manager
 	Balance  *big.Int
 	Delegate string
-	Script   *ScriptedContracts
+	Script   *ScriptedContract
 }
 
 // OperationKind returns operation name i.e. "origination"
@@ -265,35 +288,38 @@ type OpTxRollupOrigination Manager
 func (o *OpTxRollupOrigination) OperationKind() string { return "tx_rollup_origination" }
 
 func parseOperation(buf *[]byte) (op Operation, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("operation: %w", err)
 	}
 
 	switch t {
 	case tagEndorsement:
 		var op OpEmmyEndorsement
-		if op.Level, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Level, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
 
 	case tagTenderbakeEndorsement, tagPreendorsement:
-		var op OpTenderbakeEndorsement
-		if s, err := getUint16(buf); err != nil {
-			return nil, err
-		} else {
-			op.Slot = &s
+		var (
+			op  OpTenderbakeEndorsement
+			err error
+		)
+		if op.Slot, err = utils.GetUint16(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.Level, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Level, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.Round, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Round, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.BlockPayloadHash, err = getBytes(buf, 32); err != nil {
-			return nil, err
+		hash, err := utils.GetBytes(buf, 32)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
+		op.BlockPayloadHash = encodeBase58(pValueHash, hash)
 		if t == tagPreendorsement {
 			return (*OpPreendorsement)(&op), nil
 		}
@@ -301,47 +327,48 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 
 	case tagEndorsementWithSlot:
 		var op OpEndorsementWithSlot
-		ln, err := getUint32(buf)
+		ln, err := utils.GetUint32(buf)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		tmpBuf, err := getBytes(buf, int(ln))
+		tmpBuf, err := utils.GetBytes(buf, int(ln))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		e, err := parseInlinedEndorsement(&tmpBuf)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		op.InlinedEndorsement = *e
-		if op.Slot, err = getUint16(buf); err != nil {
-			return nil, err
+		if op.Slot, err = utils.GetUint16(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
+		return &op, nil
 
 	case tagSeedNonceRevelation:
 		var op OpSeedNonceRevelation
-		if op.Level, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Level, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.Nonce, err = getBytes(buf, 32); err != nil {
-			return nil, err
+		if op.Nonce, err = utils.GetBytes(buf, 32); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
 
 	case tagDoubleEndorsementEvidence:
 		var ee [2]*InlinedEndorsement
 		for i := range ee {
-			ln, err := getUint32(buf)
+			ln, err := utils.GetUint32(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			tmpBuf, err := getBytes(buf, int(ln))
+			tmpBuf, err := utils.GetBytes(buf, int(ln))
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			op, err := parseInlinedEndorsement(&tmpBuf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			ee[i] = op
 		}
@@ -353,17 +380,17 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	case tagDoublePreendorsementEvidence:
 		var ee [2]*InlinedPreendorsement
 		for i := range ee {
-			ln, err := getUint32(buf)
+			ln, err := utils.GetUint32(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			tmpBuf, err := getBytes(buf, int(ln))
+			tmpBuf, err := utils.GetBytes(buf, int(ln))
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			op, err := parseInlinedPreendorsement(&tmpBuf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			ee[i] = op
 		}
@@ -374,60 +401,60 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 
 	case tagDoubleBakingEvidence:
 		var op OpDoubleBakingEvidence
-		ln, err := getUint32(buf)
+		ln, err := utils.GetUint32(buf)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		bhbuf, err := getBytes(buf, int(ln))
+		bhbuf, err := utils.GetBytes(buf, int(ln))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.BlockHeader1, err = parseBlockHeader(&bhbuf); err != nil {
-			return nil, err
+		if op.BlockHeader1, err = parseShellBlockHeader(&bhbuf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if ln, err = getUint32(buf); err != nil {
-			return nil, err
+		if ln, err = utils.GetUint32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if bhbuf, err = getBytes(buf, int(ln)); err != nil {
-			return nil, err
+		if bhbuf, err = utils.GetBytes(buf, int(ln)); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.BlockHeader2, err = parseBlockHeader(&bhbuf); err != nil {
-			return nil, err
+		if op.BlockHeader2, err = parseShellBlockHeader(&bhbuf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
 
 	case tagActivateAccount:
 		var op OpActivateAccount
-		pkh, err := getBytes(buf, 20)
+		pkh, err := utils.GetBytes(buf, 20)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		op.PublicKeyHash = encodeBase58(pED25519PublicKeyHash, pkh)
-		if op.Secret, err = getBytes(buf, 20); err != nil {
-			return nil, err
+		if op.Secret, err = utils.GetBytes(buf, 20); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
 
 	case tagProposals:
 		var op OpProposals
 		if op.Source, err = parsePublicKeyHash(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.Period, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Period, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		ln, err := getUint32(buf)
+		ln, err := utils.GetUint32(buf)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		pbuf, err := getBytes(buf, int(ln))
+		pbuf, err := utils.GetBytes(buf, int(ln))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		for len(pbuf) != 0 {
-			prop, err := getBytes(&pbuf, 32)
+			prop, err := utils.GetBytes(&pbuf, 32)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			op.Proposals = append(op.Proposals, encodeBase58(pProtocolHash, prop))
 		}
@@ -436,19 +463,19 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	case tagBallot:
 		var op OpBallot
 		if op.Source, err = parsePublicKeyHash(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if op.Period, err = getInt32(buf); err != nil {
-			return nil, err
+		if op.Period, err = utils.GetInt32(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		prop, err := getBytes(buf, 32)
+		prop, err := utils.GetBytes(buf, 32)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		op.Proposal = encodeBase58(pProtocolHash, prop)
-		ballot, err := getByte(buf)
+		ballot, err := utils.GetByte(buf)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		switch ballot {
 		case ballotYay:
@@ -464,19 +491,19 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		tagRegisterGlobalConstant, tagSetDepositsLimit, tagTxRollupOrigination:
 		var common Manager
 		if common.Source, err = parsePublicKeyHash(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		if common.Fee, err = parseBigNum(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		if common.Counter, err = parseBigNum(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		if common.GasLimit, err = parseBigNum(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		if common.StorageLimit, err = parseBigNum(buf); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 
 		switch t {
@@ -485,7 +512,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				Manager: common,
 			}
 			if op.PublicKey, err = parsePublicKey(buf); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			return &op, nil
 
@@ -494,26 +521,26 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				Manager: common,
 			}
 			if op.Amount, err = parseBigNum(buf); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseContractID(buf); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			flag, err := getBool(buf)
+			flag, err := utils.GetBool(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
 				op.Parameters = new(TxParameters)
 				if op.Parameters.Entrypoint, err = parseEntrypoint(buf); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
-				ln, err := getUint32(buf)
+				ln, err := utils.GetUint32(buf)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
-				if op.Parameters.Value, err = getBytes(buf, int(ln)); err != nil {
-					return nil, err
+				if op.Parameters.Value, err = utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 
 			}
@@ -524,31 +551,31 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				Manager: common,
 			}
 			if op.Balance, err = parseBigNum(buf); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			flag, err := getBool(buf)
+			flag, err := utils.GetBool(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
 				if op.Delegate, err = parsePublicKeyHash(buf); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
-			op.Script = new(ScriptedContracts)
-			ln, err := getUint32(buf)
+			op.Script = new(ScriptedContract)
+			ln, err := utils.GetUint32(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.Script.Code, err = getBytes(buf, int(ln)); err != nil {
-				return nil, err
+			if op.Script.Code, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			ln, err = getUint32(buf)
+			ln, err = utils.GetUint32(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.Script.Storage, err = getBytes(buf, int(ln)); err != nil {
-				return nil, err
+			if op.Script.Storage, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			return &op, nil
 
@@ -556,13 +583,13 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpDelegation{
 				Manager: common,
 			}
-			flag, err := getBool(buf)
+			flag, err := utils.GetBool(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
 				if op.Delegate, err = parsePublicKeyHash(buf); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
 			return &op, nil
@@ -571,12 +598,12 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpRegisterGlobalConstant{
 				Manager: common,
 			}
-			ln, err := getUint32(buf)
+			ln, err := utils.GetUint32(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.Value, err = getBytes(buf, int(ln)); err != nil {
-				return nil, err
+			if op.Value, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			return &op, nil
 
@@ -584,13 +611,13 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpSetDepositsLimit{
 				Manager: common,
 			}
-			flag, err := getBool(buf)
+			flag, err := utils.GetBool(buf)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
 				if op.Limit, err = parseBigNum(buf); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
 			return &op, nil
@@ -604,13 +631,13 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 }
 
 func parseInlinedEndorsement(buf *[]byte) (*InlinedEndorsement, error) {
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inlined_endorsement: %w", err)
 	}
 	op, err := parseOperation(buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inlined_endorsement: %w", err)
 	}
 	e, ok := op.(OpEndorsement)
 	if !ok {
@@ -624,13 +651,13 @@ func parseInlinedEndorsement(buf *[]byte) (*InlinedEndorsement, error) {
 }
 
 func parseInlinedPreendorsement(buf *[]byte) (*InlinedPreendorsement, error) {
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inlined_preendorsement: %w", err)
 	}
 	op, err := parseOperation(buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inlined_preendorsement: %w", err)
 	}
 	e, ok := op.(*OpPreendorsement)
 	if !ok {
@@ -650,7 +677,7 @@ const (
 )
 
 func parsePublicKeyHash(buf *[]byte) (pkh string, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
 		return "", err
 	}
@@ -667,7 +694,7 @@ func parsePublicKeyHash(buf *[]byte) (pkh string, err error) {
 		return "", fmt.Errorf("tezos: unknown public key hash tag: %d", t)
 	}
 
-	b, err := getBytes(buf, 20)
+	b, err := utils.GetBytes(buf, 20)
 	if err != nil {
 		return "", err
 	}
@@ -682,7 +709,7 @@ const (
 )
 
 func parsePublicKey(buf *[]byte) (pkh string, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
 		return "", err
 	}
@@ -705,7 +732,7 @@ func parsePublicKey(buf *[]byte) (pkh string, err error) {
 		return "", fmt.Errorf("tezos: unknown public key tag: %d", t)
 	}
 
-	b, err := getBytes(buf, ln)
+	b, err := utils.GetBytes(buf, ln)
 	if err != nil {
 		return "", err
 	}
@@ -718,7 +745,7 @@ const (
 )
 
 func parseContractID(buf *[]byte) (pkh string, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
 		return "", err
 	}
@@ -732,12 +759,12 @@ func parseContractID(buf *[]byte) (pkh string, err error) {
 		return pkh, nil
 
 	case tagContractIDOriginated:
-		b, err := getBytes(buf, 20)
+		b, err := utils.GetBytes(buf, 20)
 		if err != nil {
 			return "", err
 		}
 		pkh = encodeBase58(pContractHash, b)
-		_, err = getByte(buf)
+		_, err = utils.GetByte(buf)
 		return pkh, err
 	}
 
@@ -752,7 +779,7 @@ func parseBigNum(buf *[]byte) (val *big.Int, err error) {
 		msb++
 	}
 	if msb == len(b) {
-		return nil, ErrMsgUnexpectedEnd
+		return nil, utils.ErrMsgUnexpectedEnd
 	}
 	for i := msb; i >= 0; i-- {
 		var tmp big.Int
@@ -775,7 +802,7 @@ const (
 const epNamed = 255
 
 func parseEntrypoint(buf *[]byte) (e string, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
 		return "", err
 	}
@@ -792,11 +819,11 @@ func parseEntrypoint(buf *[]byte) (e string, err error) {
 	case epRemoveDelegate:
 		e = "remove_delegate"
 	case epNamed:
-		ln, err := getByte(buf)
+		ln, err := utils.GetByte(buf)
 		if err != nil {
 			return "", err
 		}
-		name, err := getBytes(buf, int(ln))
+		name, err := utils.GetBytes(buf, int(ln))
 		if err != nil {
 			return "", err
 		}

@@ -3,6 +3,8 @@ package tezos
 import (
 	"fmt"
 	"time"
+
+	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 )
 
 // UnsignedMessage is implemented by all kinds of sign request payloads
@@ -41,7 +43,7 @@ func (u *GenericOperationRequest) OperationKinds() []string {
 func (u *GenericOperationRequest) MessageKind() string { return "generic" }
 
 func parseGenericOperationRequest(buf *[]byte) (*GenericOperationRequest, error) {
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -78,49 +80,49 @@ func parseShellBlockHeader(buf *[]byte) (*ShellBlockHeader, error) {
 		b   ShellBlockHeader
 		err error
 	)
-	if b.Level, err = getInt32(buf); err != nil {
+	if b.Level, err = utils.GetInt32(buf); err != nil {
 		return nil, err
 	}
-	if b.Proto, err = getByte(buf); err != nil {
+	if b.Proto, err = utils.GetByte(buf); err != nil {
 		return nil, err
 	}
-	hash, err := getBytes(buf, 32)
+	hash, err := utils.GetBytes(buf, 32)
 	if err != nil {
 		return nil, err
 	}
 	b.Predecessor = encodeBase58(pBlockHash, hash)
-	ts, err := getInt64(buf)
+	ts, err := utils.GetInt64(buf)
 	if err != nil {
 		return nil, err
 	}
 	b.Timestamp = time.Unix(ts, 0).UTC()
-	if b.ValidationPass, err = getByte(buf); err != nil {
+	if b.ValidationPass, err = utils.GetByte(buf); err != nil {
 		return nil, err
 	}
-	if hash, err = getBytes(buf, 32); err != nil {
+	if hash, err = utils.GetBytes(buf, 32); err != nil {
 		return nil, err
 	}
 	b.OperationsHash = encodeBase58(pOperationListListHash, hash)
-	ln, err := getUint32(buf)
+	ln, err := utils.GetUint32(buf)
 	if err != nil {
 		return nil, err
 	}
-	fbuf, err := getBytes(buf, int(ln))
+	fbuf, err := utils.GetBytes(buf, int(ln))
 	if err != nil {
 		return nil, err
 	}
 	for len(fbuf) != 0 {
-		ln, err := getUint32(&fbuf)
+		ln, err := utils.GetUint32(&fbuf)
 		if err != nil {
 			return nil, err
 		}
-		elem, err := getBytes(&fbuf, int(ln))
+		elem, err := utils.GetBytes(&fbuf, int(ln))
 		if err != nil {
 			return nil, err
 		}
 		b.Fitness = append(b.Fitness, elem)
 	}
-	if hash, err = getBytes(buf, 32); err != nil {
+	if hash, err = utils.GetBytes(buf, 32); err != nil {
 		return nil, err
 	}
 	b.Context = encodeBase58(pContextHash, hash)
@@ -130,12 +132,11 @@ func parseShellBlockHeader(buf *[]byte) (*ShellBlockHeader, error) {
 // BlockHeader represents unsigned block header
 type BlockHeader struct {
 	ShellBlockHeader
-	PayloadHash               []byte
+	PayloadHash               string
 	PayloadRound              int32
 	ProofOfWorkNonce          []byte
-	SeedNonceHash             []byte
+	SeedNonceHash             string
 	LiquidityBakingEscapeVote bool
-	Signature                 string
 }
 
 func (b *BlockHeader) GetRound() int32 {
@@ -150,43 +151,49 @@ func parseUnsignedBlockHeader(buf *[]byte) (*BlockHeader, error) {
 	b := BlockHeader{
 		ShellBlockHeader: *sh,
 	}
-	if b.PayloadHash, err = getBytes(buf, 32); err != nil {
+	hash, err := utils.GetBytes(buf, 32)
+	if err != nil {
 		return nil, err
 	}
-	if b.PayloadRound, err = getInt32(buf); err != nil {
+	b.PayloadHash = encodeBase58(pValueHash, hash)
+	if b.PayloadRound, err = utils.GetInt32(buf); err != nil {
 		return nil, err
 	}
-	if b.ProofOfWorkNonce, err = getBytes(buf, 8); err != nil {
+	if b.ProofOfWorkNonce, err = utils.GetBytes(buf, 8); err != nil {
 		return nil, err
 	}
-	flag, err := getBool(buf)
+	flag, err := utils.GetBool(buf)
 	if err != nil {
 		return nil, err
 	}
 	if flag {
-		if b.SeedNonceHash, err = getBytes(buf, 32); err != nil {
+		hash, err := utils.GetBytes(buf, 32)
+		if err != nil {
 			return nil, err
 		}
+		b.SeedNonceHash = encodeBase58(pCycleNonce, hash)
 	}
-	b.LiquidityBakingEscapeVote, err = getBool(buf)
+	b.LiquidityBakingEscapeVote, err = utils.GetBool(buf)
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
+/*
 func parseBlockHeader(buf *[]byte) (b *BlockHeader, err error) {
 	b, err = parseUnsignedBlockHeader(buf)
 	if err != nil {
 		return nil, err
 	}
-	s, err := getBytes(buf, 64)
+	s, err := utils.GetBytes(buf, 64)
 	if err != nil {
 		return nil, err
 	}
 	b.Signature = encodeBase58(pGenericSignature, s)
 	return b, nil
 }
+*/
 
 // TenderbakeBlockRequest represents unsigned block header
 type TenderbakeBlockRequest struct {
@@ -234,11 +241,11 @@ func (t *TenderbakeEndorsementRequest) GetChainID() string  { return t.ChainID }
 func (t *TenderbakeEndorsementRequest) MessageKind() string { return "endorsement" }
 
 func parseEmmyEndorsementRequest(buf *[]byte) (*EmmyEndorsementRequest, error) {
-	chainID, err := getBytes(buf, 4)
+	chainID, err := utils.GetBytes(buf, 4)
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -258,11 +265,11 @@ func parseEmmyEndorsementRequest(buf *[]byte) (*EmmyEndorsementRequest, error) {
 }
 
 func parseTenderbakeEndorsementRequest(buf *[]byte) (*TenderbakeEndorsementRequest, error) {
-	chainID, err := getBytes(buf, 4)
+	chainID, err := utils.GetBytes(buf, 4)
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -295,11 +302,11 @@ func (u *PreendorsementRequest) MessageKind() string { return "preendorsement" }
 func (u *PreendorsementRequest) GetChainID() string { return u.ChainID }
 
 func parsePreendorsementRequest(buf *[]byte) (*PreendorsementRequest, error) {
-	chainID, err := getBytes(buf, 4)
+	chainID, err := utils.GetBytes(buf, 4)
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := getBytes(buf, 32)
+	blockHash, err := utils.GetBytes(buf, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -328,14 +335,14 @@ const (
 )
 
 func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
-	t, err := getByte(buf)
+	t, err := utils.GetByte(buf)
 	if err != nil {
 		return nil, err
 	}
 
 	switch t {
 	case magicEmmyBlock:
-		b, err := getBytes(buf, 4)
+		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
 			return nil, err
 		}
@@ -349,7 +356,7 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 		}, nil
 
 	case magicTenderbakeBlock:
-		b, err := getBytes(buf, 4)
+		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
 			return nil, err
 		}

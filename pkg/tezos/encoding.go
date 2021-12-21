@@ -34,10 +34,11 @@ var (
 	pOperationMetadataListListHash = tzPrefix{plen: 2, mlen: 32, p: [5]byte{29, 159, 182}} // LLr(53)
 
 	// 20
-	pED25519PublicKeyHash   = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 159}} // tz1(36)
-	pSECP256K1PublicKeyHash = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 161}} // tz2(36)
-	pP256PublicKeyHash      = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 164}} // tz3(36)
-	pContractHash           = tzPrefix{plen: 3, mlen: 20, p: [5]byte{2, 90, 121}}  // KT1(36)
+	pED25519PublicKeyHash   = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 159}}   // tz1(36)
+	pSECP256K1PublicKeyHash = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 161}}   // tz2(36)
+	pP256PublicKeyHash      = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 164}}   // tz3(36)
+	pContractHash           = tzPrefix{plen: 3, mlen: 20, p: [5]byte{2, 90, 121}}    // KT1(36)
+	pBlindedPublicKeyHash   = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 2, 49, 223}} // btz1(37)
 
 	// 16
 	pCryptoboxPublicKeyHash = tzPrefix{plen: 2, mlen: 16, p: [5]byte{153, 103}} // id(30)
@@ -47,6 +48,9 @@ var (
 	pED25519PublicKey   = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 37, 217}}   // edpk(54)
 	pSECP256K1SecretKey = tzPrefix{plen: 4, mlen: 32, p: [5]byte{17, 162, 224, 201}} // spsk(54)
 	pP256SecretKey      = tzPrefix{plen: 4, mlen: 32, p: [5]byte{16, 81, 238, 189}}  // p2sk(54)
+	pValueHash          = tzPrefix{plen: 3, mlen: 32, p: [5]byte{1, 106, 242}}       // vh(52)
+	pCycleNonce         = tzPrefix{plen: 3, mlen: 32, p: [5]byte{69, 220, 169}}      // nce(53)
+	pScriptExpr         = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 44, 64, 27}}    // expr(54)
 
 	// 56
 	pED25519EncryptedSeed        = tzPrefix{plen: 5, mlen: 56, p: [5]byte{7, 90, 60, 179, 41}}    // edesk(88)

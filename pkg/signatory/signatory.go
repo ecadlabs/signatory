@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
@@ -250,7 +251,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-		digest := tezos.DigestFunc(message)
+		digest := utils.DigestFunc(message)
 		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, digest[:], msg); err != nil {
 			err = errors.Wrap(err, http.StatusForbidden)
 			l.Error(err)
