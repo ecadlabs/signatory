@@ -88,15 +88,23 @@ var commonPrefixes = []tzPrefix{
 	pOperationListListHash,
 	pProtocolHash,
 	pContextHash,
+	pBlockMetadataHash,
+	pOperationMetadataHash,
+	pOperationMetadataListHash,
+	pOperationMetadataListListHash,
 	pED25519PublicKeyHash,
 	pSECP256K1PublicKeyHash,
 	pP256PublicKeyHash,
 	pContractHash,
+	pBlindedPublicKeyHash,
 	pCryptoboxPublicKeyHash,
 	pED25519Seed,
 	pED25519PublicKey,
 	pSECP256K1SecretKey,
 	pP256SecretKey,
+	pValueHash,
+	pCycleNonce,
+	pScriptExpr,
 	pED25519EncryptedSeed,
 	pSECP256K1EncryptedSecretKey,
 	pP256EncryptedSecretKey,
@@ -110,6 +118,8 @@ var commonPrefixes = []tzPrefix{
 	pP256Signature,
 	pGenericSignature,
 	pChainID,
+	pSaplingSpendingKey,
+	pSaplingAddress,
 }
 
 // ErrPrefix is returned in case of unknown Tezos base58 prefix
@@ -161,4 +171,20 @@ func DecodeChainID(src string) (res [4]byte, err error) {
 	}
 	copy(res[:], cid)
 	return
+}
+
+func DecodeValueHash(src string) (res [32]byte, err error) {
+	prefix, h, err := decodeBase58(src)
+	if err != nil {
+		return
+	}
+	if prefix != pValueHash {
+		return res, errors.New("tezos: invalid value hash")
+	}
+	copy(res[:], h)
+	return
+}
+
+func EncodeValueHash(hash []byte) string {
+	return encodeBase58(pValueHash, hash)
 }

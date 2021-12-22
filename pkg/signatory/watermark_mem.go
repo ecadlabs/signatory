@@ -50,10 +50,14 @@ func (w *InMemoryWatermark) IsSafeToSign(pkh string, hash []byte, msg tezos.Unsi
 	if mr, ok := msg.(tezos.MessageWithRound); ok {
 		round = mr.GetRound()
 	}
+	var ench string
+	if hash != nil {
+		ench = tezos.EncodeValueHash(hash)
+	}
 	wm[pkh] = &watermarkData{
 		Round: round,
 		Level: m.GetLevel(),
-		Hash:  hash,
+		Hash:  ench,
 	}
 
 	return nil
