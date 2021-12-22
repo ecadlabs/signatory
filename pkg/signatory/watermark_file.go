@@ -52,11 +52,11 @@ func (w *watermarkData) isSafeToSign(msg tezos.MessageWithLevel, hash []byte) er
 	return nil
 }
 
-const defaultDir = ".signatory"
+const watermarkDir = "watermark"
 
 type FileWatermark struct {
-	Dir string
-	mtx sync.Mutex
+	BaseDir string
+	mtx     sync.Mutex
 }
 
 func (f *FileWatermark) IsSafeToSign(pkh string, hash []byte, msg tezos.UnsignedMessage) error {
@@ -66,18 +66,11 @@ func (f *FileWatermark) IsSafeToSign(pkh string, hash []byte, msg tezos.Unsigned
 		return nil
 	}
 
-	dir := f.Dir
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		dir = filepath.Join(home, defaultDir)
-	}
-	if err := os.MkdirAll(dir, 0777); err != nil {
+	dir := filepath.Join(f.BaseDir, watermarkDir)
+	if err := os.MkdirAll(dir, 0770); err != nil {
 		return err
 	}
-	filename := filepath.Join(dir, fmt.Sprintf("watermark_%s.json", m.GetChainID()))
+	filename := filepath.Join(dir, fmt.Sprintf("%s.json", m.GetChainID()))
 
 	f.mtx.Lock()
 	defer f.mtx.Unlock()

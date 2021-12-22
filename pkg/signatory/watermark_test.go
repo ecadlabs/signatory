@@ -55,7 +55,7 @@ func TestWatermarkFile(t *testing.T) {
 	require.NoError(t, err)
 
 	hash := [32]byte{1, 2, 3, 4}
-	wm := FileWatermark{Dir: dir}
+	wm := FileWatermark{BaseDir: dir}
 
 	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 124, 0}))
 	assert.EqualError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind1", 123, 0}), "kind1 level 123 not above high watermark 124")
@@ -64,6 +64,4 @@ func TestWatermarkFile(t *testing.T) {
 	assert.NoError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind2", 124, 0}))
 	assert.NoError(t, wm.IsSafeToSign("pkh2", nil, &msgMock{"chain1", "kind1", 124, 0}))
 	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 125, 0}))
-
-	t.Log(dir)
 }
