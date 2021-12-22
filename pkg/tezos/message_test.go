@@ -100,23 +100,28 @@ func TestRequest(t *testing.T) {
 		},
 		{
 			data: "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000",
-			msg: &EmmyBlockRequest{
+			msg: &TenderbakeBlockRequest{
 				ChainID: "NetXxkAx4woPLyu",
-				ShellBlockHeader: &ShellBlockHeader{
-					Level:          20878,
-					Proto:          1,
-					Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
-					Timestamp:      strTime("2021-11-17 03:45:57 +0000 UTC"),
-					ValidationPass: 4,
-					OperationsHash: "LLoaJEEVU5t92V3PEFG9SZ6JrgG3AAwLhKXkXxHjfiZFxLZeqaRcg",
-					Fitness: [][]uint8{
-						{0x02},
-						{0x00, 0x00, 0x51, 0x8e},
-						{},
-						{0xff, 0xff, 0xff, 0xff},
-						{0x00, 0x00, 0x00, 0x00},
+				BlockHeader: &BlockHeader{
+					ShellBlockHeader: ShellBlockHeader{
+						Level:          20878,
+						Proto:          1,
+						Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+						Timestamp:      strTime("2021-11-17 03:45:57 +0000 UTC"),
+						ValidationPass: 4,
+						OperationsHash: "LLoaJEEVU5t92V3PEFG9SZ6JrgG3AAwLhKXkXxHjfiZFxLZeqaRcg",
+						Fitness: [][]uint8{
+							{0x02},
+							{0x00, 0x00, 0x51, 0x8e},
+							{},
+							{0xff, 0xff, 0xff, 0xff},
+							{0x00, 0x00, 0x00, 0x00},
+						},
+						Context: "CoWRqXN1hCqPoLNF5K53DkcqHSHA9638oXnyhg5nBBsK1gNVAQdZ",
 					},
-					Context: "CoWRqXN1hCqPoLNF5K53DkcqHSHA9638oXnyhg5nBBsK1gNVAQdZ",
+					PayloadHash:      "vh2UJ9qvkLHcFbiotR462Ni84QU7xJ83fNwspoo9kq7spoNeSMkH",
+					PayloadRound:     0,
+					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
 				},
 			},
 		},
@@ -148,23 +153,28 @@ func TestRequest(t *testing.T) {
 		},
 		{
 			data: "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947b4004002f50a59970f77d844808d67cf0c39bc0680900a608720051ecb334d47cf1fc000000250000000102000000040000518e000000040000000100000004ffffffff00000004000000022d4fd437220316d3da0604b9d4c6b631931b3e5ca6373e1dcb9217ed163a5eb6521eef1af112fc98def0da6588945c7c483b532334afacd247c6e959467d194600000001a8e1dd3c000000000000",
-			msg: &EmmyBlockRequest{
+			msg: &TenderbakeBlockRequest{
 				ChainID: "NetXxkAx4woPLyu",
-				ShellBlockHeader: &ShellBlockHeader{
-					Level:          20878,
-					Proto:          1,
-					Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
-					Timestamp:      strTime("2021-11-17 03:47:12 +0000 UTC"),
-					ValidationPass: 4,
-					OperationsHash: "LLoZKnjY7Ad48r91VJfy8AbCr8Cksa5qYHNWV5HMfDS97rc9nrJwp",
-					Fitness: [][]uint8{
-						{0x02},
-						{0x00, 0x00, 0x51, 0x8e},
-						{0x00, 0x00, 0x00, 0x01},
-						{0xff, 0xff, 0xff, 0xff},
-						{0x00, 0x00, 0x00, 0x02},
+				BlockHeader: &BlockHeader{
+					ShellBlockHeader: ShellBlockHeader{
+						Level:          20878,
+						Proto:          1,
+						Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+						Timestamp:      strTime("2021-11-17 03:47:12 +0000 UTC"),
+						ValidationPass: 4,
+						OperationsHash: "LLoZKnjY7Ad48r91VJfy8AbCr8Cksa5qYHNWV5HMfDS97rc9nrJwp",
+						Fitness: [][]uint8{
+							{0x02},
+							{0x00, 0x00, 0x51, 0x8e},
+							{0x00, 0x00, 0x00, 0x01},
+							{0xff, 0xff, 0xff, 0xff},
+							{0x00, 0x00, 0x00, 0x02},
+						},
+						Context: "CoUzGHYfsjAYzGRXrdRGsHPBegYPyGZhERubtd4g4C4Q1UxG3pcF",
 					},
-					Context: "CoUzGHYfsjAYzGRXrdRGsHPBegYPyGZhERubtd4g4C4Q1UxG3pcF",
+					PayloadHash:      "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
+					PayloadRound:     1,
+					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
 				},
 			},
 		},

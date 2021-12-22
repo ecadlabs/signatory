@@ -331,20 +331,6 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 		if err != nil {
 			return nil, err
 		}
-		bh, err := parseUnsignedBlockHeader(buf)
-		if err != nil {
-			return nil, err
-		}
-		return &TenderbakeBlockRequest{
-			ChainID:     encodeBase58(pChainID, b),
-			BlockHeader: bh,
-		}, nil
-
-	case magicTenderbakeBlock:
-		b, err := utils.GetBytes(buf, 4)
-		if err != nil {
-			return nil, err
-		}
 		bh, err := parseShellBlockHeader(buf) // skip Emmy protocol data
 		if err != nil {
 			return nil, err
@@ -352,6 +338,20 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 		return &EmmyBlockRequest{
 			ChainID:          encodeBase58(pChainID, b),
 			ShellBlockHeader: bh,
+		}, nil
+
+	case magicTenderbakeBlock:
+		b, err := utils.GetBytes(buf, 4)
+		if err != nil {
+			return nil, err
+		}
+		bh, err := parseUnsignedBlockHeader(buf)
+		if err != nil {
+			return nil, err
+		}
+		return &TenderbakeBlockRequest{
+			ChainID:     encodeBase58(pChainID, b),
+			BlockHeader: bh,
 		}, nil
 
 	case magicEmmyEndorsement:

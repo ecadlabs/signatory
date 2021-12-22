@@ -127,7 +127,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = Policy{
-	AllowedOperations: []string{"block", "endorsement"},
+	AllowedOperations: []string{"block", "preendorsement", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
