@@ -7,7 +7,7 @@ sidebar_label: Getting Started
 
 ## What is Signatory
 
-Signatory is a remote signing daemon that allows Tezos bakers to sign endorsement and baking operations with various key-management systems.
+Signatory is a remote signing daemon. Signatory can be used by Tezos Bakers to add additional security to their systems. Signatory can also be used by applications that require signatures but do not want to have the responsibility of storing secret keys.
 
 Signatory currently supports [YubiHSM][yubi], [Azure Key Vault][azure], and for development/prototyping purposes, Signatory can sign with a local private key.
 
@@ -24,3 +24,14 @@ Security issues can be encrypted using the keys available at keybase/jevonearth
 
 [yubi]: https://www.yubico.com/products/hardware-security-module/
 [azure]: https://docs.microsoft.com/en-us/azure/key-vault/
+
+## Following this guide
+
+:::note Conventions
+Text surrounded by curly brackets is a piece of info that will be specific to you. For example, the reader should replace `{tezos_public_key_hash}` with your Tezos Address (Public Key Hash) which starts with either `tz1`, `tz2`, or `tz3`, and looks like `tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`.
+:::
+
+## Signatory Configuration
+
+Signatory reads a YAML configuration file. <!-- TODO: Explain config file structure here-->
+
