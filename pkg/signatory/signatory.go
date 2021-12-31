@@ -253,7 +253,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 		digest := utils.DigestFunc(message)
 		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, digest[:], msg); err != nil {
-			err = errors.Wrap(err, http.StatusForbidden)
+			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
 		}
