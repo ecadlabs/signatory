@@ -92,10 +92,7 @@ vaults:
 # This section is for public key hashes to define what is activated IRL
 tezos:
   # Default policy allows "block" and "endorsement" operations
-  tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
-    # Setting `log_payloads` to `true` will cause Signatory to log operation
-    # payloads to `stdout`. This may be desirable for audit and investigative
-    # purposes.
+  {public_key_hash}:
     log_payloads: true
     allowed_operations:
       # List of [generic, block, endorsement]
@@ -138,23 +135,6 @@ Active:             true
 Allowed Operations: [block endorsement generic]
 Allowed Kinds:      [delegation endorsement reveal transaction]
 ```
-
-### Tezos Client Setup
-Adding the information generated in any vault to the tezos-client is done in a single command, it is as follows:
-
-`tezos-client import secret key {name_you_choose} http://localhost:6732/{your_public_key_hash}`
-
-Using the same pkh as above an example command would look like:
-
-`tezos-client import secret key {name_you_chose} http://localhost:6732/tz3c6J47hHmwuasew7Y3HMZzmy7ymDgd6cfy`
-
-This should produce the output: `Tezos address added: tz3c6J47hHmwuasew7Y3HMZzmy7ymDgd6cfy`
-
-Making the added PKH a delegate to begin baking/endorsing is achieved through this command (node/baker/endorser should be running already):
-
-`tezos-client register key {name_you_chose} as delegate`
-
-After the above command is accepted in the chain then if you navigate to a block explorer you should be able to see your account
 
 ### Final Signatory Verification Test
 We can finally see that all the pieces are working together by curling the signatory service and asking for the public key associated with our active public key hash:

@@ -32,6 +32,87 @@ Text surrounded by curly brackets is a piece of info that will be specific to yo
 :::
 
 ## Signatory Configuration
+Signatory reads a YAML configuration file to determine how it should behave and what different accounts can do. There are 3 main section to the signatory configuration YAML file. They are:
+- The server section
+- The vaults section
+- The tezos/account section
 
-Signatory reads a YAML configuration file. <!-- TODO: Explain config file structure here-->
+#### The Server Section:
+The server section defines the ports that signatory will exposes for different purposes. The following is an example of what the server section can look like:
+```
+server:
+  # Address/Port that Signatory listens on
+  address: :6732
+  # Address/Port that Signatory serves prometheus metrics on
+  utility_address: :9583
+```
 
+#### The Vaults Section:
+The vaults section defines which backend signatory will use that has the secret key used for signing. The general structure of this section will be as follows:
+```
+vaults:
+# Name is used to identify backend during import process
+  {backend_keyword}:
+    driver: {driver_keyword}
+    config:
+      {various_configuration_options}
+```
+
+For each individual backend their specific page will have greater detail about what is needed in terms of configuration. The overall status of different backend support can be found [here](https://github.com/ecadlabs/signatory#backend-kmshsm-support-status)
+
+#### The Tezos/Account Section:
+The tezos/account section defines what actions a backend can do within signatory. The overall structure is as follows and can be repeated for as many accounts as you have/need:
+```
+tezos:
+  # Comments to explain your choices/decisions
+  {pkh_of_the_account_associated_with_the_backend}: 
+    log_payloads: {true | false}
+    allowed_operations:
+    # List of [generic, block, endorsement]
+    - {your_choices_for_operations}
+    allowed_kinds:
+    # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+    - {your_choices_for_kinds}
+    authorized_keys:
+    # Allow sign operation only for clients specified below. Same syntax as `server/authorized_key`
+      - *authorized_key
+```
+
+Descriptions of the above options:
+
+Logging:
+- log_payloads: 
+
+Allowed Operations:
+- generic: 
+- block: 
+- endorsement: 
+
+Allowed Kinds:
+- endorsement: 
+- ballot: 
+- reveal: 
+- transaction:
+- origination:
+- delegation:
+- seed_nonce_revelation:
+- activate_account:
+
+Authorized Keys: Client specific operations, someone with more knowledge than me please fill this in
+
+## Tezos Client Setup for Signatory
+Adding the information generated in any vault to the tezos-client is done in a single command, it is as follows:
+
+`tezos-client import secret key {name_you_choose} http://localhost:{server_address}/{your_public_key_hash}`
+
+Using an example server_Address/pkh an example command would look like:
+
+`tezos-client import secret key {name_you_chose} http://localhost:6732/tz3WxgnteyTpM5YzJSTFFtnNYB8Du31gf3bQ`
+
+This should produce the output: `Tezos address added: tz3WxgnteyTpM5YzJSTFFtnNYB8Du31gf3bQ`
+
+Making the added PKH a delegate to begin baking/endorsing is achieved through this command (node/baker/endorser should be running already):
+
+`tezos-client register key {name_you_chose} as delegate`
+
+After the above command is accepted in the chain then if you navigate to a block explorer you should be able to see your account as a delegate
