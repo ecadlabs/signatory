@@ -31,6 +31,14 @@ Security issues can be encrypted using the keys available at keybase/jevonearth
 Text surrounded by curly brackets is a piece of info that will be specific to you. For example, the reader should replace `{tezos_public_key_hash}` with your Tezos Address (Public Key Hash) which starts with either `tz1`, `tz2`, or `tz3`, and looks like `tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`.
 :::
 
+### Signatory Setup for most cases
+I don't believe there is anything additional needed for signatory when using a YubiHSM. The standard should work
+- Clone [repo](https://github.com/ecadlabs/signatory)
+- Make sure Go is installed (version must be greater than 1.15), link [here](https://go.dev/doc/install)
+- Navigate to the cloned signatory repo
+- `make signatory`
+- `make signatory-cli`
+
 ## Signatory Configuration
 Signatory reads a YAML configuration file to determine how it should behave and what different accounts can do. There are 3 main section to the signatory configuration YAML file. They are:
 - The server section

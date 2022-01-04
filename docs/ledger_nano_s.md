@@ -67,14 +67,6 @@ Authorized baking for address: tz1Kiak7gwhv6fvcpq9Q9ghjKNuFNYDtUJUG
 - Make sure to run signatory after adding the correct info to the yaml file (`./signatory serve -c signatory.yaml` after filling in info in signatory.yaml section)
 - Add the ledger device to the tezo-client as a delegate for baking (this will also require a device verification, steps found in the tezos-client setup below)
 
-### Signatory Setup for most cases (no different setup needed for Ledger at this time)
-I don't believe there is anything additional needed for signatory when using a ledger. The standard should work
-- Clone [repo](https://github.com/ecadlabs/signatory)
-- Make sure Go is installed (version must be greater than 1.15)
-- Navigate to the cloned signatory repo
-- `make signatory`
-- `make signatory-cli`
-
 #### What you need for ledger in a signatory configuration YAML file
 The following is needed in a config file for signatory to know what it is looking for on a ledger nano S
 ```

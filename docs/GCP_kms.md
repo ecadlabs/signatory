@@ -89,14 +89,6 @@ INFO[0002] Requesting import operation                   pkh=tz3be5v4ZWL3zQYUZoL
 INFO[0008] Successfully imported                         key_id=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring/cryptoKeys/signatory-imported-215FwcXxhLdlr9IYwzA31vwANmy/cryptoKeyVersions/1 pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
 ```
 
-### Signatory Setup for most cases (no different setup needed for Yubi at this time)
-I don't believe there is anything additional needed for signatory when using a YubiHSM. The standard should work
-- Clone [repo](https://github.com/ecadlabs/signatory)
-- Make sure Go is installed (version must be greater than 1.15)
-- Navigate to the cloned signatory repo
-- `make signatory`
-- `make signatory-cli`
-
 #### What you need for GCP in a signatory configuration YAML file
 The following is needed in a config file for signatory to know what it is looking for on a yubiHSM
 ```

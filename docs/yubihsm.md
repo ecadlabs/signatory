@@ -27,15 +27,6 @@ This is the guide that was used to set up the HSM initially and gather the requi
 
 #### Importing a Secret key into the YubiHSM2 for Tezos
 
-
-### Signatory Setup for most cases (no different setup needed for Yubi at this time)
-I don't believe there is anything additional needed for signatory when using a YubiHSM. The standard should work:
-- Clone [repo](https://github.com/ecadlabs/signatory)
-- Make sure Go is installed (version must be greater than 1.12(I think))
-- Navigate to the cloned signatory repo
-- `make signatory`
-- `make signatory-cli`
-
 #### What you need for YubiHSM in a signatory configuration YAML file
 The following is needed in a config file for signatory to know what it is looking for on a yubiHSM
 ```
