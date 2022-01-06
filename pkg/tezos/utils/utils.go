@@ -1,4 +1,4 @@
-package tezos
+package utils
 
 import (
 	"encoding/binary"
@@ -14,7 +14,7 @@ var DigestFunc = blake2b.Sum256
 // ErrMsgUnexpectedEnd is returned when message is too short
 var ErrMsgUnexpectedEnd = errors.New("unexpected end of message")
 
-func getByte(buf *[]byte) (b byte, err error) {
+func GetByte(buf *[]byte) (b byte, err error) {
 	if len(*buf) < 1 {
 		return 0, ErrMsgUnexpectedEnd
 	}
@@ -23,7 +23,7 @@ func getByte(buf *[]byte) (b byte, err error) {
 	return b, nil
 }
 
-func getUint16(buf *[]byte) (i uint16, err error) {
+func GetUint16(buf *[]byte) (i uint16, err error) {
 	if len(*buf) < 2 {
 		return 0, ErrMsgUnexpectedEnd
 	}
@@ -32,12 +32,12 @@ func getUint16(buf *[]byte) (i uint16, err error) {
 	return i, nil
 }
 
-func getInt16(buf *[]byte) (i int16, err error) {
-	ii, err := getUint16(buf)
+func GetInt16(buf *[]byte) (i int16, err error) {
+	ii, err := GetUint16(buf)
 	return int16(ii), err
 }
 
-func getUint32(buf *[]byte) (i uint32, err error) {
+func GetUint32(buf *[]byte) (i uint32, err error) {
 	if len(*buf) < 4 {
 		return 0, ErrMsgUnexpectedEnd
 	}
@@ -46,12 +46,12 @@ func getUint32(buf *[]byte) (i uint32, err error) {
 	return i, nil
 }
 
-func getInt32(buf *[]byte) (i int32, err error) {
-	ii, err := getUint32(buf)
+func GetInt32(buf *[]byte) (i int32, err error) {
+	ii, err := GetUint32(buf)
 	return int32(ii), err
 }
 
-func getUint64(buf *[]byte) (i uint64, err error) {
+func GetUint64(buf *[]byte) (i uint64, err error) {
 	if len(*buf) < 8 {
 		return 0, ErrMsgUnexpectedEnd
 	}
@@ -60,12 +60,12 @@ func getUint64(buf *[]byte) (i uint64, err error) {
 	return i, nil
 }
 
-func getInt64(buf *[]byte) (i int64, err error) {
-	ii, err := getUint64(buf)
+func GetInt64(buf *[]byte) (i int64, err error) {
+	ii, err := GetUint64(buf)
 	return int64(ii), err
 }
 
-func getBytes(buf *[]byte, ln int) (b []byte, err error) {
+func GetBytes(buf *[]byte, ln int) (b []byte, err error) {
 	if len(*buf) < ln {
 		return nil, ErrMsgUnexpectedEnd
 	}
@@ -74,8 +74,8 @@ func getBytes(buf *[]byte, ln int) (b []byte, err error) {
 	return b, nil
 }
 
-func getBool(buf *[]byte) (b bool, err error) {
-	bb, err := getByte(buf)
+func GetBool(buf *[]byte) (b bool, err error) {
+	bb, err := GetByte(buf)
 	if err != nil {
 		return false, err
 	}

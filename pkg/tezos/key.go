@@ -268,7 +268,7 @@ func EncodePublicKey(pub crypto.PublicKey) (res string, err error) {
 		return "", err
 	}
 
-	return encodeBase58(prefix, payload)
+	return encodeBase58(prefix, payload), nil
 }
 
 // EncodePublicKeyHash returns base58 encoded public key hash
@@ -285,7 +285,7 @@ func EncodePublicKeyHash(pub crypto.PublicKey) (hash string, err error) {
 	digest.Write(payload)
 	h := digest.Sum(nil)
 
-	return encodeBase58(prefix, h)
+	return encodeBase58(prefix, h), nil
 }
 
 // GetPublicKeyHash returns BLAKE2B public key hash
@@ -329,7 +329,7 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 		payload = key.Seed()
 	}
 
-	return encodeBase58(prefix, payload)
+	return encodeBase58(prefix, payload), nil
 }
 
 // EncodeBinaryPublicKeyHash returns binary representation of the public key hash
