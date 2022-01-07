@@ -1,303 +1,197 @@
-//go:build !integration
-
 package tezos
 
 import (
 	"encoding/hex"
-	"math/big"
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func mustHex(s string) []byte {
-	buf, err := hex.DecodeString(s)
-	if err != nil {
-		panic(err)
+func TestBlock(t *testing.T) {
+	// tezt/_regressions/encoding/ithaca.block_header.out
+	data := "00000533010e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8000000005e9dcbb00242e9bc4583d4f9fa6ba422733f45d3a44397141a953d2237bf8df62e5046eef700000011000000010100000008000000000000000a4c7319284b55068bb7c4e0b9f8585729db7fb27ab4ca9cff2038a1fc324f650c000000000000000000000000000000000000000000000000000000000000000000000000101895ca00000000ff043691f53c02ca1ac6f1a0c1586bf77973e04c2d9b618a8309e79651daf0d5580066804fe735e06e97e26da8236b6341b91c625d5e82b3524ec0a88cc982365e70f8a5b9bc65df2ea6d21ee244cc3a96fb33031c394c78b1179ff1b8a44237740c"
+	expect := BlockHeader{
+		ShellBlockHeader: ShellBlockHeader{
+			Level:          1331,
+			Proto:          1,
+			Predecessor:    "BKpbfCvh777DQHnXjU2sqHvVUNZ7dBAdqEfKkdw8EGSkD9LSYXb",
+			Timestamp:      strTime("2020-04-20 16:20:00 +0000 UTC"),
+			ValidationPass: 2,
+			OperationsHash: "LLoZqBDX1E2ADRXbmwYo8VtMNeHG6Ygzmm4Zqv97i91UPBQHy9Vq3",
+			Fitness: [][]uint8{
+				{0x01},
+				{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a},
+			},
+			Context: "CoVDyf9y9gHfAkPWofBJffo4X4bWjmehH2LeVonDcCKKzyQYwqdk",
+		},
+		PayloadHash:               "vh1g87ZG6scSYxKhspAUzprQVuLAyoa5qMBKcUfjgnQGnFb3dJcG",
+		PayloadRound:              0,
+		ProofOfWorkNonce:          []uint8{0x10, 0x18, 0x95, 0xca, 0x00, 0x00, 0x00, 0x00},
+		SeedNonceHash:             "nceUFoeQDgkJCmzdMWh19ZjBYqQD3N9fe6bXQ1ZsUKKvMn7iun5Z3",
+		LiquidityBakingEscapeVote: false,
 	}
-	return buf
+	d, err := hex.DecodeString(data)
+	require.NoError(t, err)
+	bh, err := parseUnsignedBlockHeader(&d)
+	require.NoError(t, err)
+	require.Equal(t, &expect, bh)
 }
 
-// Forged test cases
-func TestUnsignedOperations(t *testing.T) {
+func TestRequest(t *testing.T) {
 	type testCase struct {
-		data []byte
-		op   *UnsignedOperation
-	}
-
-	var cases = []testCase{
-		{
-			data: mustHex("ce69c5713dac3537254e7be59759cf59c15abd530d10501ccf9028a5786314cf08000002298c03ed7d454a101eb7022bc95f7e5f41ac78d0860303c8010080c2d72f0000e7670f32038107a59a2b9cfefae36ea21f5aa63c00"),
-			op: &UnsignedOperation{
-				Branch: "BMHBtAaUv59LipV1czwZ5iQkxEktPJDE7A9sYXPkPeRzbBasNY8",
-				Contents: []OperationContents{
-					&OpTransaction{
-						Manager: Manager{
-							Source:       "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx",
-							Fee:          big.NewInt(50000),
-							Counter:      big.NewInt(3),
-							GasLimit:     big.NewInt(200),
-							StorageLimit: big.NewInt(0),
-						},
-						Amount:      big.NewInt(100000000),
-						Destination: "tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN",
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("ce69c5713dac3537254e7be59759cf59c15abd530d10501ccf9028a5786314cf6c0002298c03ed7d454a101eb7022bc95f7e5f41ac78d0860303c8010080c2d72f0000e7670f32038107a59a2b9cfefae36ea21f5aa63c006b00f9b3d4be657854c737e8695a757140be34246af9f50994dd7c904e0000c64ae25c006340b984441995d910fdfbce7d332327ee145f08ef03119d4828176e00ad271c36556ecbcb3d6c1ce77ffe1a8155fc4f608c0b02904e00ff00707889a622339b5cf0447d87e5f9f93f2a387251"),
-			op: &UnsignedOperation{
-				Branch: "BMHBtAaUv59LipV1czwZ5iQkxEktPJDE7A9sYXPkPeRzbBasNY8",
-				Contents: []OperationContents{
-					&OpTransaction{
-						Manager: Manager{
-							Source:       "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx",
-							Fee:          big.NewInt(50000),
-							Counter:      big.NewInt(3),
-							GasLimit:     big.NewInt(200),
-							StorageLimit: big.NewInt(0),
-						},
-						Amount:      big.NewInt(100000000),
-						Destination: "tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN",
-					},
-					&OpReveal{
-						Manager: Manager{
-							Source:       "tz1iQLNmGLdFF3sApRjKhrahXAJBTdG3goGc",
-							Fee:          big.NewInt(1269),
-							Counter:      big.NewInt(2043540),
-							GasLimit:     big.NewInt(10000),
-							StorageLimit: big.NewInt(0),
-						},
-						PublicKey: "edpkv9Z42q8rLARYHtEW4WM8cgyGcF8PDvdHRBcNweEzFUovR5bbbL",
-					},
-					&OpDelegation{
-						Manager: Manager{
-							Source:       "tz1bRaSjKZrSrSeQHBDiCqjKXqtZYZM1t8FW",
-							Fee:          big.NewInt(1420),
-							Counter:      big.NewInt(2),
-							GasLimit:     big.NewInt(10000),
-							StorageLimit: big.NewInt(0),
-						},
-						Delegate: "tz1Vtimi84kLh9RANfRVX2JvYtP4NPCT1aFm",
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("8ab9fab6bc7a3c8f9e0930b293faa506fb641abad6b979e9e16a632e229a9e550000098d4b"),
-			op: &UnsignedOperation{
-				Branch: "BLmNvANeVQhNoNCkXN45XdstCjpaXv4TDWJTraAALCcQ75ioeMj",
-				Contents: []OperationContents{
-					&OpEndorsement{
-						Level: 625995,
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("ca5e93ad04d116af3295e879a0add96611db0f541f27a194b8e5b0e0c8bd92486d005f450441f41ee11eee78a31d1e1e55627c783bd6ef0acc018157c30280c2d72f000000001c02000000170500036805010368050202000000080316053d036d03420000000a010000000568656c6c6f"),
-			op: &UnsignedOperation{
-				Branch: "BMFQbFcKBYSv5FpKiMjS46LdCcjJMhnizJpqoaWFHDj3jDYAxvj",
-				Contents: []OperationContents{
-					&OpOrigination{
-						Manager: Manager{
-							Source:       "tz1UKmZhi8dhUX5a5QTfCrsH9pK4dt1dVfJo",
-							Fee:          big.NewInt(1391),
-							Counter:      big.NewInt(204),
-							GasLimit:     big.NewInt(11137),
-							StorageLimit: big.NewInt(323),
-						},
-						Balance: big.NewInt(100000000),
-						Script: &ScriptedContracts{
-							Code:    mustHex("02000000170500036805010368050202000000080316053d036d0342"),
-							Storage: mustHex("010000000568656c6c6f"),
-						},
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("1dc1a5b193d1bf8ad500c26209ebdc75f0e71e906de9b7cb45b91f9880037842047d663b831a15c9a3e2d85b141a229486ead3a485fa143cb83c5607f7a1d54dca308073ced76c58a9"),
-			op: &UnsignedOperation{
-				Branch: "BKwPRXtN67dPwkjoXu2q3E7fVCV9xfyN5vckGqxdAGppTBL445Z",
-				Contents: []OperationContents{
-					&OpActivateAccount{
-						PublicKeyHash: "tz1X55dLMTVKA1knjV15zNiQ3cJoJqrYKkRM",
-						Secret:        mustHex("fa143cb83c5607f7a1d54dca308073ced76c58a9"),
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("12758196431d8beaa7e644993007477150da3355d363c8266ced8951404711db03000000ce00108f94061536a898fa5b5f71f33303e6c81c5b974fb7acb81fb969eb3e8d2d019446932d000000005f37de3c04e9c17220fde68b1c5cca2ad49ab6bbfd91c665a4687d223bacf1c93975503c22000000110000000101000000080000000000068f943745c4cde8b4437f5a13703497a8f27f27dcd07a00212b8226060e1f95fa62680000ba45727c8e3d040000158204f817c93ff4e500a877b89935d7769690c19f4155cca5f0c7b838d1a18fdc5fa452903ba5a5fbcf5fe391a55c192a31ee22d82c1ba59af0f9304f52470c000000ce00108f94061536a898fa5b5f71f33303e6c81c5b974fb7acb81fb969eb3e8d2d019446932d000000005f37de3c0461d368abdc29209a178f37b8af74fc2740c0380678644a65bb057452055b7664000000110000000101000000080000000000068f943745c4cde8b4437f5a13703497a8f27f27dcd07a00212b8226060e1f95fa62680000ba45727cfecf070000881c83aa3283505caa813d738206d9e47313837c04bf3ce69a3eed452355c34f1e2d523eb07e53588e6e2cf0567400bc8c153e61dae3ab94876b75497b88c706"),
-			op: &UnsignedOperation{
-				Branch: "BKrQr2tzLfwpu77h7wb8vJmAiZrD7vhBKHj3WJBnH2Wcj1Gwoqe",
-				Contents: []OperationContents{
-					&OpDoubleBakingEvidence{
-						BlockHeader1: &BlockHeader{
-							Level:          1085332,
-							Proto:          6,
-							Predecessor:    "BKsdCv5tsbZ8bYYW5pfkhxDrusgGrEbCczH7GetyofAZPPRgnjn",
-							Timestamp:      mustTime("2020-08-15T13:08:12Z"),
-							ValidationPass: 4,
-							OperationsHash: "LLob6ezDsDXTAN2ew6VDEzmz5NpMfi3wdiYjPesWV6FgkcRtEqXZT",
-							Fitness: [][]uint8{
-								{0x01},
-								{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
-							},
-							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
-							Priority:         0,
-							ProofOfWorkNonce: []uint8{0xba, 0x45, 0x72, 0x7c, 0x8e, 0x3d, 0x04, 0x00},
-							Signature:        "sigQoVq2enb3a9QuT16K7eYgAQ8GLVkPHm6H3ziaqvvP3njRX38LcZS76cS5TQ3xXmuePZupcPxkpXUbFb72jn8ePCxFZqV8",
-						},
-						BlockHeader2: &BlockHeader{
-							Level:          1085332,
-							Proto:          6,
-							Predecessor:    "BKsdCv5tsbZ8bYYW5pfkhxDrusgGrEbCczH7GetyofAZPPRgnjn",
-							Timestamp:      mustTime("2020-08-15T13:08:12Z"),
-							ValidationPass: 4,
-							OperationsHash: "LLoa4nqohFX77Mkhj89SriZtRGQFkagaZC7AdGHjkhifMmdEhM7gL",
-							Fitness: [][]uint8{
-								{0x01},
-								{0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x8f, 0x94},
-							},
-							Context:          "CoV4eieX2wbaeDRK6yNZ3vnC329nDZjWKon48GAHVW2yu49wckYR",
-							Priority:         0,
-							ProofOfWorkNonce: []uint8{0xba, 0x45, 0x72, 0x7c, 0xfe, 0xcf, 0x07, 0x00},
-							Signature:        "sigfo7dKzzFdS1x5Ygbf8RBqt32zckgQ2qV9SEhEnSWg7KEH16dMr2dTiz9EjUUVckZeMiZoeaTFF1r1DQk1F93wiwM3VC3e",
-						},
-					},
-				},
-			},
-		},
-		{
-			data: mustHex("8bec704d3e1c4a027e07f2f8f7d009cce48338e715fb819d3c8724a6a50d24f40200000065a60703a9567bf69ec66b368c3d8562eba4cbf29278c2c10447a684e3aa143685000008773bd3a9e1467b32104921d4e2dd93265739c1a5faee7a7f8880842b096c0b6714200c43fd5872f82581dfe1cb3a76ccdadaa4d6361d72b4abee6884cb7ed87f0b04000000656280d069cca0c2c8c97c172cc0530e3861cf8050d80970866a388c19bcbbf15f000008773b0ef3e51b218d04c29211b89f5b7582a7169b4810e6dbe46732b44c84331ae6cb32ced7c53ef55e7a2358ed66dedcb98daff1d8ec4f0638f74f215083526d2e03"),
-			op: &UnsignedOperation{
-				Branch: "BLmuViQ4BUbLcuku4pXHxZz8YbecVSD5e2srQtMWFdVy2e8bgPL",
-				Contents: []OperationContents{
-					&OpDoubleEndorsementEvidence{
-						Op1: &InlinedEndorsement{
-							OpEndorsement: OpEndorsement{
-								Level: 554811,
-							},
-							Branch:    "BLyQHMFeNzZEKHmKgfD9imcowLm8hc4aUo16QtYZcS5yvx7RFqQ",
-							Signature: "sigqgQgW5qQCsuHP5HhMhAYR2HjcChUE7zAczsyCdF681rfZXpxnXFHu3E6ycmz4pQahjvu3VLfa7FMCxZXmiMiuZFQS4MHy",
-						},
-						Op2: &InlinedEndorsement{
-							OpEndorsement: OpEndorsement{
-								Level: 554811,
-							},
-							Branch:    "BLTfU3iAfPFMuHTmC1F122AHqdhqnFTfkxBmzYCWtCkBMpYNjxw",
-							Signature: "sigPwkrKhsDdEidvvUgEEtsaVhyiGmzhCYqCJGKqbYMtH8KxkrFds2HmpDCpRxSTnehKoSC8XKCs9eej6PEzcZoy6fqRAPEZ",
-						},
-					},
-				},
-			},
-		},
-	}
-	as := assert.New(t)
-
-	for _, tst := range cases {
-		buf := tst.data
-		op, err := parseUnsignedOperation(&buf)
-		if !as.NoError(err) {
-			continue
-		}
-		as.Empty(buf)
-		as.Equal(tst.op, op)
-	}
-}
-
-func TestParseUnsignedMessage(t *testing.T) {
-	type testCase struct {
-		data []byte
+		data string
 		msg  UnsignedMessage
 	}
 
 	var cases = []testCase{
 		{
-			data: mustHex("029caecab9c1f5142a0e842be39063c79c6d8952fd74f7957e1d471ffe14bb45c0faa130200000058213"),
-			msg: &UnsignedEndorsement{
-				ChainID: "NetXjD3HPJJjmcd",
-				Branch:  "BMBhiTEp4X5mqqHJPFUK87GoV3ojoABGyqgDSQnUhJtVtwa3zdi",
-				OpEndorsement: OpEndorsement{
-					Level: 360979,
+			data: "12ed9d217c2f50673bab6b20dfb0a88ca93b4a0c72a34c807af5dffbece2cba3d2b509835f14006000000002000000041f1ebb39759cc957216f88fb4d005abc206fb00a53f8d57ac01be00c084cba97",
+			msg: &PreendorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BL57uk2FrPckCtzBQwaQV1bYtPPShcDCqMShArucaBSpqtmDdRn",
+				OpPreendorsement: &OpPreendorsement{
+					Slot:             96,
+					Level:            2,
+					Round:            4,
+					BlockPayloadHash: "vh1uq2uMDFaJAZZcydX5QeW2dG3Mpc2y31tT621LuEppkxfy11SK",
 				},
 			},
 		},
 		{
-			data: mustHex("039146a3769e88e5af02f4789dfb23090c7b601d26a81c4cd114c26cfc42050ce8050010f65c7e592ac9e222ca88d959d6dc1020885390000000210000002040cab83d3f37a64da26b57ad3d0432ae881293a25169ada387bfc74a1cbf9e6e"),
-			msg: &UnsignedOperation{
-				Branch: "BLpGDPAutvEr8MNBm8nzpMLSY5F1tb5MEX9x5sQ6LqtR5TgnmFz",
-				Contents: []OperationContents{
-					&OpProposals{
-						Source:    "tz1MBidfvWhJ64MuJapKExcP5SV4HQWyiJwS",
-						Period:    33,
-						Proposals: []string{"PsDELPH1Kxsxt8f9eWbxQeRxkjfbxoqM52jvs5Y5fBxWWh4ifpo"},
+			data: "12ed9d217c2f50673bab6b20dfb0a88ca93b4a0c72a34c807af5dffbece2cba3d2b509835f1400600000000200000005554ff14bf2d6f40d0176221a6eaa385e7fcefe272063bf9d156baf5da3a0a012",
+			msg: &PreendorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BL57uk2FrPckCtzBQwaQV1bYtPPShcDCqMShArucaBSpqtmDdRn",
+				OpPreendorsement: &OpPreendorsement{
+					Slot:             96,
+					Level:            2,
+					Round:            5,
+					BlockPayloadHash: "vh2KhJSHF6yD2zYxJXXGf2QYgqs5X3bstEGpwECVVHtDdoSnaVsM",
+				},
+			},
+		},
+		{
+			data: "12ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01400120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d",
+			msg: &PreendorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BMdVJUZrmcLJBnXsxdJLJaTDFJYyqarwmst7hpPu53Z3xLPtnMF",
+				OpPreendorsement: &OpPreendorsement{
+					Slot:             18,
+					Level:            20877,
+					Round:            0,
+					BlockPayloadHash: "vh1hqtJCryS2Uzb8KDU2PAp33U1nDCeUB4g9yWKTjgVhiy4x9pQA",
+				},
+			},
+		},
+		{
+			data: "13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d",
+			msg: &TenderbakeEndorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BMdVJUZrmcLJBnXsxdJLJaTDFJYyqarwmst7hpPu53Z3xLPtnMF",
+				OpTenderbakeEndorsement: &OpTenderbakeEndorsement{
+					Slot:             18,
+					Level:            20877,
+					Round:            0,
+					BlockPayloadHash: "vh1hqtJCryS2Uzb8KDU2PAp33U1nDCeUB4g9yWKTjgVhiy4x9pQA",
+				},
+			},
+		},
+		{
+			data: "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000",
+			msg: &TenderbakeBlockRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				BlockHeader: &BlockHeader{
+					ShellBlockHeader: ShellBlockHeader{
+						Level:          20878,
+						Proto:          1,
+						Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+						Timestamp:      strTime("2021-11-17 03:45:57 +0000 UTC"),
+						ValidationPass: 4,
+						OperationsHash: "LLoaJEEVU5t92V3PEFG9SZ6JrgG3AAwLhKXkXxHjfiZFxLZeqaRcg",
+						Fitness: [][]uint8{
+							{0x02},
+							{0x00, 0x00, 0x51, 0x8e},
+							{},
+							{0xff, 0xff, 0xff, 0xff},
+							{0x00, 0x00, 0x00, 0x00},
+						},
+						Context: "CoWRqXN1hCqPoLNF5K53DkcqHSHA9638oXnyhg5nBBsK1gNVAQdZ",
 					},
+					PayloadHash:      "vh2UJ9qvkLHcFbiotR462Ni84QU7xJ83fNwspoo9kq7spoNeSMkH",
+					PayloadRound:     0,
+					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
 				},
 			},
 		},
-	}
-	as := assert.New(t)
-
-	for _, tst := range cases {
-		buf := tst.data
-		msg, err := parseUnsignedMessage(&buf)
-		if !as.NoError(err) {
-			continue
-		}
-		as.Empty(buf)
-		as.Equal(tst.msg, msg)
-	}
-}
-
-func mustTime(s string) time.Time {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
-func TestBlockHeader(t *testing.T) {
-	type testCase struct {
-		data  []byte
-		block *BlockHeader
-	}
-
-	var cases = []testCase{
 		{
-			data: mustHex("00033816011dc1a5b193d1bf8ad500c26209ebdc75f0e71e906de9b7cb45b91f9880037842000000005d8e4e8104a3e226c7b4a8700c985e470581dfdd13067e808d8b163fe838c42abda7f478e50000001100000001010000000800000000000338152851a65d186d0cfa747b890ca9086aa0feef05b573aa82c3a32fba55e1c5f99f04d2112233445566778800"),
-			block: &BlockHeader{
-				Level:          210966,
-				Proto:          1,
-				Predecessor:    "BKwPRXtN67dPwkjoXu2q3E7fVCV9xfyN5vckGqxdAGppTBL445Z",
-				Timestamp:      mustTime("2019-09-27T18:01:37Z"),
-				ValidationPass: 4,
-				OperationsHash: "LLoaZtCFHbHQoi797K93Gug9jwWP52iGoixzWBDTqEL717mvYBAAX",
-				Fitness: [][]uint8{
-					{0x01},
-					{0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x38, 0x15},
+			data: "12ed9d217c18425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209631400000000518e00000001521eef1af112fc98def0da6588945c7c483b532334afacd247c6e959467d1946",
+			msg: &PreendorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+				OpPreendorsement: &OpPreendorsement{
+					Slot:             0,
+					Level:            20878,
+					Round:            1,
+					BlockPayloadHash: "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
 				},
-				Context:          "CoUx4kRYc9xWSXFLAk3ukiJ3n7MLMVt3Pb3xH4WYqZiUZaiwd4JT",
-				Priority:         1234,
-				ProofOfWorkNonce: []uint8{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+			},
+		},
+		{
+			data: "13ed9d217c18425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209631500000000518e00000001521eef1af112fc98def0da6588945c7c483b532334afacd247c6e959467d1946",
+			msg: &TenderbakeEndorsementRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				Branch:  "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+				OpTenderbakeEndorsement: &OpTenderbakeEndorsement{
+					Slot:             0,
+					Level:            20878,
+					Round:            1,
+					BlockPayloadHash: "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
+				},
+			},
+		},
+		{
+			data: "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947b4004002f50a59970f77d844808d67cf0c39bc0680900a608720051ecb334d47cf1fc000000250000000102000000040000518e000000040000000100000004ffffffff00000004000000022d4fd437220316d3da0604b9d4c6b631931b3e5ca6373e1dcb9217ed163a5eb6521eef1af112fc98def0da6588945c7c483b532334afacd247c6e959467d194600000001a8e1dd3c000000000000",
+			msg: &TenderbakeBlockRequest{
+				ChainID: "NetXxkAx4woPLyu",
+				BlockHeader: &BlockHeader{
+					ShellBlockHeader: ShellBlockHeader{
+						Level:          20878,
+						Proto:          1,
+						Predecessor:    "BKty19HXfE15jjeLFCTxpEZRXRVkQKGBcArzn4eAgMYTrdaf6xc",
+						Timestamp:      strTime("2021-11-17 03:47:12 +0000 UTC"),
+						ValidationPass: 4,
+						OperationsHash: "LLoZKnjY7Ad48r91VJfy8AbCr8Cksa5qYHNWV5HMfDS97rc9nrJwp",
+						Fitness: [][]uint8{
+							{0x02},
+							{0x00, 0x00, 0x51, 0x8e},
+							{0x00, 0x00, 0x00, 0x01},
+							{0xff, 0xff, 0xff, 0xff},
+							{0x00, 0x00, 0x00, 0x02},
+						},
+						Context: "CoUzGHYfsjAYzGRXrdRGsHPBegYPyGZhERubtd4g4C4Q1UxG3pcF",
+					},
+					PayloadHash:      "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
+					PayloadRound:     1,
+					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
+				},
 			},
 		},
 	}
 
-	as := assert.New(t)
-
-	for _, tst := range cases {
-		buf := tst.data
-		b, err := parseBlockHeader(&buf, false)
-		if !as.NoError(err) {
-			continue
-		}
-		as.Empty(buf)
-		as.Equal(tst.block, b)
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("%T", c.msg), func(t *testing.T) {
+			d, err := hex.DecodeString(c.data)
+			require.NoError(t, err)
+			msg, err := parseRequest(&d)
+			require.NoError(t, err)
+			switch msg.(type) {
+			case *EmmyBlockRequest, *TenderbakeBlockRequest:
+			default:
+				assert.Empty(t, d)
+			}
+			assert.Equal(t, c.msg, msg)
+		})
 	}
 }

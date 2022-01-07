@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
@@ -126,7 +127,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = Policy{
-	AllowedOperations: []string{"block", "endorsement"},
+	AllowedOperations: []string{"block", "preendorsement", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
@@ -172,7 +173,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
+	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
 		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
@@ -205,7 +206,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
-	msg, err := tezos.ParseUnsignedMessage(req.Message)
+	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
 		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusBadRequest)
@@ -213,16 +214,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	l = l.WithField(logOp, msg.MessageKind())
 
-	if m, ok := msg.(tezos.MessageWithChainID); ok {
-		l = l.WithField(logChainID, m.GetChainID())
-	}
-
 	if m, ok := msg.(tezos.MessageWithLevel); ok {
-		l = l.WithField(logLevel, m.GetLevel())
+		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
 	}
 
 	var opKind []string
-	if ops, ok := msg.(*tezos.UnsignedOperation); ok {
+	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
 		opKind = ops.OperationKinds()
 		l = l.WithField(logKind, opKind)
 	}
@@ -253,20 +250,17 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	}
 	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
-	if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg); err != nil {
-		err = errors.Wrap(err, http.StatusForbidden)
-		l.Error(err)
-		return "", err
-	}
-
-	var signFunc func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error)
-	if rawSigner, ok := p.vault.(vault.RawSigner); ok {
-		signFunc = rawSigner.SignRaw
-	} else {
-		signFunc = func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-			digest := tezos.DigestFunc(message)
-			return p.vault.Sign(ctx, digest[:], p.key)
+	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+		digest := utils.DigestFunc(message)
+		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, digest[:], msg); err != nil {
+			err = errors.Wrap(err, http.StatusConflict)
+			l.Error(err)
+			return nil, err
 		}
+		if rawSigner, ok := p.vault.(vault.RawSigner); ok {
+			return rawSigner.SignRaw(ctx, message, key)
+		}
+		return p.vault.Sign(ctx, digest[:], p.key)
 	}
 
 	var sig cryptoutils.Signature
