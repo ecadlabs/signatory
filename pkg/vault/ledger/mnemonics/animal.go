@@ -3,6 +3,7 @@ package mnemonics
 import (
 	"crypto/sha256"
 	"encoding/binary"
+
 	"fmt"
 
 	"golang.org/x/crypto/blake2b"
@@ -1620,23 +1621,25 @@ func GetName(pk string) (*Names, error) {
 	}
 	fmt.Println("h: ", h.Sum(nil))
 
-	u64, n := binary.Uvarint(h.Sum(nil))
-	fmt.Println("u64: ", u64)
-	fmt.Println("n: ", n)
+	// u64, n := binary.Uvarint(h.Sum(nil))
+	u64 := binary.LittleEndian.Uint32(h.Sum(nil))
+	fmt.Println("u64: ", u64, "Size []byte: ", len(h.Sum(nil)))
+	// fmt.Println("n: ", n)
 
 	rem := int(u64) % len(adjectives)
-	fmt.Println("Reminder: ", rem)
+	fmt.Println("Reminder: ", rem, "length: ", len(adjectives))
 	fmt.Println("Crouching: ", adjectives[rem])
 
 	// another hash
 	sum := sha256.Sum256([]byte(pk))
 	fmt.Println("sum: ", sum)
-	u32, no := binary.Uvarint(sum[:])
-	fmt.Println("u32: ", u32)
-	fmt.Println("no: ", no)
+	// u32, no := binary.Uvarint(sum[:])
+	u32 := binary.LittleEndian.Uint32(sum[:])
+	fmt.Println("u32: ", u32, "sum len: ", len(sum))
+	// fmt.Println("no: ", no)
 
-	rem = int(u64) % len(adjectives)
-	fmt.Println("Reminder: ", rem)
+	rem = int(u32) % len(adjectives)
+	fmt.Println("Reminder: ", rem, "length: ", len(adjectives))
 	fmt.Println("Crouching: ", adjectives[rem])
 
 	return &Names{
