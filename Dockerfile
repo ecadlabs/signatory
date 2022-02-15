@@ -1,7 +1,12 @@
-FROM alpine:3
-RUN apk --no-cache add ca-certificates
-COPY ./signatory /bin
-COPY ./signatory-cli /bin
+FROM alpine:3 AS build
 
-ENTRYPOINT ["/bin/signatory"]
+RUN apk update
+RUN apk upgrade
+RUN apk add --update alpine-sdk
+RUN apk add --update go
+RUN apk add linux-headers
+RUN apk add --update make
 
+WORKDIR /root
+
+ENTRYPOINT ["make"]
