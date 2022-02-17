@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"os"
 
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
@@ -23,6 +24,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 	var (
 		level      string
 		configFile string
+		baseDir    string
 	)
 
 	rootCmd := cobra.Command{
@@ -33,6 +35,14 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			conf := config.Default()
 			if configFile != "" {
 				conf.Read(configFile)
+			}
+
+			if baseDir == "" {
+				baseDir = conf.BaseDir
+			}
+			baseDir = os.ExpandEnv(baseDir)
+			if err := os.MkdirAll(baseDir, 0770); err != nil {
+				return err
 			}
 
 			validate := config.Validator()
@@ -56,7 +66,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Policy:      pol,
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
-				Watermark:   &signatory.InMemoryWatermark{},
+				Watermark:   &signatory.FileWatermark{BaseDir: baseDir},
 			}
 
 			sig, err := signatory.New(c.Context, &sigConf)
@@ -78,6 +88,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
+	f.StringVar(&baseDir, "base-dir", "", "Base directory. Takes priority over one specified in config")
 
 	return &rootCmd
 }

@@ -1,5 +1,5 @@
 FROM golang:1.17-alpine
-ARG TEZOS_CLIENT_VERSION=v11.0-1
+ARG TEZOS_CLIENT_VERSION=v12.0-rc1-1
 
 RUN apkArch="$(apk --print-arch)" && \
 	case "$apkArch" in \
@@ -17,6 +17,8 @@ RUN apk add --no-cache linux-headers gcc musl-dev
 WORKDIR /app
 COPY . .
 RUN go mod download all
-ENV ENV_NODE_ADDR=https://hangzhounet.api.tez.ie
+ENV ENV_NODE_ADDR=https://ithacanet.ecadinfra.com
+ENV TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
+
 ENTRYPOINT [ "/bin/sh", "-c" ]
 CMD [ "/usr/local/go/bin/go test -v -tags integration ./..." ]

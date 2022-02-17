@@ -10,7 +10,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      NODE_ADDR: https://hangzhounet.api.tez.ie
+      NODE_ADDR: https://ithacanet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
       - name: Build image

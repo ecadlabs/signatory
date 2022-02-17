@@ -85,3 +85,6 @@ changelog:
       - '^docs:'
       - '^website:'
       - '^test:'
+
+release:
+  prerelease: auto

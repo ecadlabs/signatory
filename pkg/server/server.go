@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -50,7 +51,7 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}
-	digest := tezos.DigestFunc(signed)
+	digest := utils.DigestFunc(signed)
 
 	sig, err := tezos.ParseSignature(v, nil)
 	if err != nil {
