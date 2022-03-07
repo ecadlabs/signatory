@@ -1,3 +1,4 @@
+runs-on: self-hosted
 name: Publish signatory.io website
 on:
   push:
