@@ -2,7 +2,7 @@ runs-on: self-hosted
 name: Run integration tests
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
   push:
   pull_request:
     types: [opened]
