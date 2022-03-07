@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       NODE_ADDR: https://ithacanet.ecadinfra.com
     steps:
