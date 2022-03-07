@@ -1,5 +1,6 @@
 runs-on: self-hosted
 on:
+  workflow_dispatch
   push:
   pull_request:
     types:
