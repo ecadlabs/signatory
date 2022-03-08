@@ -4,7 +4,7 @@ builds:
   - id: signatory
     binary: signatory
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -20,7 +20,7 @@ builds:
   - id: signatory-cli
     binary: signatory-cli
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
