@@ -53,6 +53,7 @@ type awsKMSIterator struct {
 	v    *Vault
 	indx int
 	lko  *kms.ListKeysOutput
+	e    error
 }
 
 // PublicKey returns encoded public key
@@ -95,6 +96,10 @@ func (kv *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKe
 }
 
 func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
+
+	if c.e != nil {
+		return nil, c.e
+	}
 	if c.lko.Keys == nil {
 		return nil, fmt.Errorf("key list empty")
 	}
@@ -114,11 +119,11 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	var lkout *kms.ListKeysOutput
 	var err error
 	var lkin *kms.ListKeysInput
-
+	err = nil
 	for {
 		lkout, err = c.Kmsapi.ListKeys(lkin)
 		if err != nil {
-			return nil
+			break
 		}
 		if !*lkout.Truncated {
 			break
@@ -131,6 +136,7 @@ func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 		v:    c,
 		lko:  lkout,
 		indx: 0,
+		e:    err,
 	}
 }
 
