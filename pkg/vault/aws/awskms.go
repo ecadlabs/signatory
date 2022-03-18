@@ -114,7 +114,6 @@ func (c *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
-// TODO: Handle errors in anyother key in the vault
 func (c *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 
 	var lkout *kms.ListKeysOutput
