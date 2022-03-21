@@ -12,6 +12,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/vault"
 	// Install backends
+	_ "github.com/ecadlabs/signatory/pkg/vault/aws"
 	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
 	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
 	_ "github.com/ecadlabs/signatory/pkg/vault/file"
