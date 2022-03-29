@@ -79,7 +79,7 @@ jobs:
           password: ${{ secrets.GH_PAT }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-cross@v2
+        uses: goreleaser/goreleaser-cross
         with:
           version: latest
           args: release --rm-dist --skip-validate
