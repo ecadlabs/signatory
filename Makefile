@@ -37,10 +37,10 @@ sysroot-unpack:
 
 .PHONY: release
 release:
-	# @if [ ! -f ".release-env" ]; then \
-	# 	echo "\033[91m.release-env is required for release\033[0m";\
-	# 	exit 1;\
-	# fi
+	@if [ ! -f ".release-env" ]; then \
+		echo "\033[91m.release-env is required for release\033[0m";\
+		exit 1;\
+	fi
 	docker run \
 		--rm \
 		--privileged \

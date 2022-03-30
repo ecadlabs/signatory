@@ -80,7 +80,7 @@ jobs:
 
       - name: setup release environment
         run: |-
-          echo 'GITHUB_TOKEN=${{secrets.GORELEASER_ACCESS_TOKEN}}' > .release-env
+          echo 'GITHUB_TOKEN=${{secrets.GH_PAT}}' > .release-env
       - name: Run GoReleaser
         run: make release
 
