@@ -15,8 +15,8 @@ builds:
       - darwin
     goarch:
       - amd64
-      - arm
-      - arm64
+      # - arm
+      # - arm64
   - id: signatory-cli
     binary: signatory-cli
     env:
@@ -31,8 +31,8 @@ builds:
       - darwin
     goarch:
       - amd64
-      - arm
-      - arm64
+      # - arm
+      # - arm64
 dockers:
   - ids:
       - signatory
