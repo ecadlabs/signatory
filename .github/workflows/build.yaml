@@ -78,10 +78,16 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_PAT }}
 
+      - name: setup release environment
+        run: |-
+          echo 'GITHUB_TOKEN=${{secrets.GORELEASER_ACCESS_TOKEN}}' > .release-env
       - name: Run GoReleaser
-        uses: docker://goreleaser/goreleaser-cross:v1.18
-        with:
-          version: latest
-          args: release --rm-dist --skip-validate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: make release
+
+      # - name: Run GoReleaser
+      #   uses: docker://goreleaser/goreleaser-cross:v1.18
+      #   with:
+      #     version: latest
+      #     args: release --rm-dist --skip-validate
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GH_PAT }}
