@@ -1,7 +1,7 @@
 before:
   hooks:
 builds:
-  - id: signatory
+  - id: signatory-linux-arm
     binary: signatory
     env:
       - CGO_ENABLED=1
@@ -19,7 +19,7 @@ builds:
       - linux
     goarch:
       - arm
-  - id: signatory-cli
+  - id: signatory-cli-linux-arm
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
@@ -38,7 +38,7 @@ builds:
     goarch:
       - arm
 
-  - id: signatory
+  - id: signatory-darwin-amd
     binary: signatory
     env:
       - CGO_ENABLED=1
@@ -54,7 +54,7 @@ builds:
       - darwin
     goarch:
       - amd64
-  - id: signatory-cli
+  - id: signatory-cli-darwing-amd
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
