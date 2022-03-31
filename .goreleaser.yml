@@ -18,11 +18,17 @@ builds:
     goos:
       - linux
     goarch:
-      - amd64
+      - arm
   - id: signatory-cli
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+      - CXX=arm-linux-gnueabihf-g++
+      - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
+      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -30,7 +36,7 @@ builds:
     goos:
       - linux
     goarch:
-      - amd64
+      - arm
 checksum:
   name_template: checksums.txt
 snapshot:
