@@ -116,7 +116,7 @@ builds:
       - darwin
     goarch:
       - arm64
-  - id: signatory-cli-darwing-arm
+    - id: signatory-cli-darwing-arm
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
