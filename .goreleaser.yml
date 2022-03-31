@@ -38,7 +38,7 @@ builds:
     goarch:
       - arm
 
-- id: signatory-linux-amd
+  - id: signatory-linux-amd
     binary: signatory
     env:
       - CGO_ENABLED=1
