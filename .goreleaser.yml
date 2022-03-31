@@ -44,10 +44,6 @@ builds:
       - CGO_ENABLED=1
       - CC=gcc
       - CXX=g++
-      # - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
-      # - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      # - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -62,10 +58,6 @@ builds:
       - CGO_ENABLED=1
       - CC=gcc
       - CXX=g++
-      # - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
-      # - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      # - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -107,6 +99,39 @@ builds:
       - darwin
     goarch:
       - amd64
+
+    - id: signatory-darwin-arm
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/arm64
+      - PKG_CONFIG_PATH=/sysroot/macos/arm64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - darwin
+    goarch:
+      - arm64
+  - id: signatory-cli-darwing-arm
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/arm64
+      - PKG_CONFIG_PATH=/sysroot/macos/arm64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - darwin
+    goarch:
+      - arm64
 
 checksum:
   name_template: checksums.txt
