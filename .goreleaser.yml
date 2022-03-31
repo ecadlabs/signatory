@@ -5,18 +5,20 @@ builds:
     binary: signatory
     env:
       - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+      - CXX=arm-linux-gnueabihf-g++
+      - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
+      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
     goos:
       - linux
-      - windows
-      - darwin
     goarch:
       - amd64
-      # - arm
-      # - arm64
   - id: signatory-cli
     binary: signatory-cli
     env:
@@ -27,53 +29,8 @@ builds:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
     goos:
       - linux
-      - windows
-      - darwin
     goarch:
       - amd64
-      # - arm
-      # - arm64
-dockers:
-  - ids:
-      - signatory
-      - signatory-cli
-  - image_templates:
-    - 'ecadlabs/signatory:{{ .Tag }}-amd64'
-    - 'ecadlabs/signatory:latest-amd64'
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-amd64'
-    - 'ghcr.io/ecadlabs/signatory:latest-amd64'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/amd64"
-  - image_templates:
-    - 'ecadlabs/signatory:{{ .Tag }}-arm64'
-    - 'ecadlabs/signatory:latest-arm64'
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-arm64'
-    - 'ghcr.io/ecadlabs/signatory:latest-arm64'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm64"
-    goarch: arm64
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      amd64: x86_64
 checksum:
   name_template: checksums.txt
 snapshot:
