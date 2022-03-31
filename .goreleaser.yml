@@ -38,7 +38,7 @@ builds:
     goarch:
       - arm
 
-- id: signatory
+  - id: signatory
     binary: signatory
     env:
       - CGO_ENABLED=1
