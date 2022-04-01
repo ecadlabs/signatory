@@ -1,6 +1,5 @@
 name: Publish signatory.io website
 on:
-  workflow_dispatch:
   push:
     branches:
       - master
