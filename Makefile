@@ -4,13 +4,15 @@ CONTAINER_TAG ?= $(shell git branch --show-current)
 
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
+PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
+GOLANG_CROSS_VERSION  ?= v1.17.6
 
 all: signatory signatory-cli
 
 signatory:
-	CGO_ENABLED=0 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory
+	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory
 signatory-cli:
-	CGO_ENABLED=0 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory-cli
+	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory-cli
 
 container:
 	docker build -t ghcr.io/ecadlabs/signatory:$(CONTAINER_TAG) .
@@ -18,22 +20,6 @@ container:
 
 clean:
 	rm signatory signatory-cli
-
-
-   
-PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
-GOLANG_CROSS_VERSION  ?= v1.17.6
-
-SYSROOT_DIR     ?= sysroots
-SYSROOT_ARCHIVE ?= sysroots.tar.bz2
-
-.PHONY: sysroot-pack
-sysroot-pack:
-	@tar cf - $(SYSROOT_DIR) -P | pv -s $[$(du -sk $(SYSROOT_DIR) | awk '{print $1}') * 1024] | pbzip2 > $(SYSROOT_ARCHIVE)
-
-.PHONY: sysroot-unpack
-sysroot-unpack:
-	@pv $(SYSROOT_ARCHIVE) | pbzip2 -cd | tar -xf -
 
 .PHONY: release
 release:
