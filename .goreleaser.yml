@@ -7,10 +7,6 @@ builds:
       - CGO_ENABLED=1
       - CC=arm-linux-gnueabihf-gcc
       - CXX=arm-linux-gnueabihf-g++
-      # - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
-      # - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      # - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -25,10 +21,6 @@ builds:
       - CGO_ENABLED=1
       - CC=arm-linux-gnueabihf-gcc
       - CXX=arm-linux-gnueabihf-g++
-      # - CGO_FLAGS=--sysroot=/sysroot/linux/armhf
-      # - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      # - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -37,6 +29,35 @@ builds:
       - linux
     goarch:
       - arm
+
+  - id: signatory-linux-arm
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm64
+  - id: signatory-cli-linux-arm
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm64
 
   - id: signatory-linux-amd
     binary: signatory
@@ -66,13 +87,11 @@ builds:
       - linux
     goarch:
       - amd64
-      
+
   - id: signatory-darwin-amd
     binary: signatory
     env:
       - CGO_ENABLED=1
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      # - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
       - CC=o64-clang
       - CXX=o64-clang++
     main: ./cmd/signatory/main.go
@@ -87,8 +106,6 @@ builds:
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      # - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
       - CC=o64-clang
       - CXX=o64-clang++
     main: ./cmd/signatory-cli/main.go
@@ -104,8 +121,6 @@ builds:
     binary: signatory
     env:
       - CGO_ENABLED=1
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/arm64
-      # - PKG_CONFIG_PATH=/sysroot/macos/arm64/usr/local/lib/pkgconfig
       - CC=oa64-clang
       - CXX=oa64-clang++
     main: ./cmd/signatory/main.go
@@ -120,8 +135,6 @@ builds:
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/arm64
-      # - PKG_CONFIG_PATH=/sysroot/macos/arm64/usr/local/lib/pkgconfig
       - CC=oa64-clang
       - CXX=oa64-clang++
     main: ./cmd/signatory-cli/main.go
