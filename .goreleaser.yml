@@ -30,7 +30,7 @@ builds:
     goarch:
       - arm
 
-  - id: signatory-linux-arm
+  - id: signatory-linux-arm64
     binary: signatory
     env:
       - CGO_ENABLED=1
@@ -44,7 +44,7 @@ builds:
       - linux
     goarch:
       - arm64
-  - id: signatory-cli-linux-arm
+  - id: signatory-cli-linux-arm64
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
