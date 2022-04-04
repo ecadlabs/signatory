@@ -66,9 +66,7 @@ builds:
       - linux
     goarch:
       - amd64
-
-aarch64-linux-gnu-gcc
-
+      
   - id: signatory-darwin-amd
     binary: signatory
     env:
