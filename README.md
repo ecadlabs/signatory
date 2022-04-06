@@ -8,7 +8,7 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/test_coverage)](https://codeclimate.com/github/ecadlabs/signatory/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ecadlabs/signatory)](https://goreportcard.com/report/github.com/ecadlabs/signatory)
 
-_WARNING: This project is in active development. While we welcome users and feedback, please be warned that this project is a work in progress and users should proceed with caution._
+_WARNING: This project is in active development. While we welcome users and feedback, please be warned that this project is a work in progress, and users should proceed with caution._
 
 ## What is Signatory?
 
@@ -34,18 +34,18 @@ Signatory receives signing requests from either a baker or an endorser, signs th
 
 ### Observability
 
-Signatory is also focused on observability, meaning that it exposes metrics about its operations. Metrics allows operators to see historical trends, signing volumes, errors and latencies, enabling rich reporting and alerting capabilities.
+Signatory is also focused on observability, meaning that it exposes metrics about its operations. Metrics allow operators to see historical trends, signing volumes, errors and latencies, enabling rich reporting and alerting capabilities.
 
 ### Private-Key Import
 
-Private-key import is an important security consideration when choosing a Cloud HSM offering. Some HSM's allow you to generate the secret key internally so that no one can extract the private key from the HSM. Others allow for private-key import with different levels of security. The trade-offs in this context are essential to understand.
+Private-key import is an important security consideration when choosing a Cloud HSM offering. Some HSMs allow you to generate the secret key internally so that no one can extract the private key from the HSM. Others allow for private-key import with different levels of security. The trade-offs in this context are essential to understand.
 
 ---
 
 ## How it Works
 
 * Tezos sends a signing request to Signatory
-* Signatory checks that the operation is either `block` or `endorsement.`
+* Signatory checks that the operation is either `block` or `endorsement`
 * Signatory sends the operation to the configured backend for singing
 * Upon receiving the signing operation from the backend, Signatory validates the signature with a Tezos node (optional)
 * Signatory returns the operation signature to the Tezos node
@@ -54,13 +54,11 @@ Private-key import is an important security consideration when choosing a Cloud 
 
 Signatory currently supports [Azure Key Vault][0]. Other backend signing services are either in the planning phase or are currently in development.
 
-We are adding support for additional backend Key Management Systems (KMS) for the secure handling of private keys. Most cloud-based KMS systems offer an HSM backed mode, which we strongly recommended.
+We are adding support for additional backend Key Management Systems (KMS) for the secure handling of private keys. Most cloud-based KMS systems offer an HSM-backed mode, which we strongly recommend.
 
-Our goal in supporting multiple Cloud KMS/HSM services is to help in preventing centralization on the _network_ or _infrastructure_ level. It is not optimal for Tezos to have the most decentralized network in terms of bakers, and of those bakers, a large majority operate on single infrastructure provider.
+Our goal in supporting multiple Cloud KMS/HSM services is to help in preventing centralization on the _network_ or _infrastructure_ level. A goal of Tezos is to have a highly decentralized network of bakers. That goal is not fully realized if, of those bakers, a large majority operate on a single infrastructure provider.
 
-In the first year of the Tezos network operation, there was anecdotal evidence that a lot of bakers run on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable.
-
-By supporting multiple Cloud KMS/HSM systems, we hope to help the network from centralization on a particular Cloud offering. In the first year of the Tezos network operation, there was anecdotal evidence that many bakers run on AWS.  AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable.
+In the first year of the Tezos network operation, there was anecdotal evidence that a large percentage of bakers run on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable. By supporting multiple Cloud KMS/HSM systems, we hope to prevent the network from centralization on a particular Cloud offering.
 
 ### Backend KMS/HSM Support Status
 
@@ -73,7 +71,7 @@ By supporting multiple Cloud KMS/HSM systems, we hope to help the network from c
 
 ### Tezos Address Types
 
-In Tezos, the signing algorithm you can infer from the first three characters of an address. For example, an address beginning with `tz3` uses the P-256 algorithm. HSM's and Cloud-based HSM's have support for a subset of the three algorithms supported by Tezos.
+In Tezos, you can infer the signing algorithm from the first three characters of an address. For example, an address beginning with `tz3` uses the P-256 algorithm. HSMs and Cloud-based HSMs have support for a subset of the three algorithms supported by Tezos.
 
 * `tz1` - [Ed25519](https://ed25519.cr.yp.to/)
 * `tz2` - [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1) __aka: P256K__
@@ -106,17 +104,17 @@ Please use the [GitHub issue tracker](https://github.com/ecadlabs/signatory/issu
 
 To contribute, please check the issue tracker to see if an issue exists for your planned contribution. If there's no issue, please create one first, and then submit a pull request with your contribution.
 
-For a contribution to be merged, it is required to have complete documentation, come with unit tests, and integration tests where appropriate. Submitting a "work in progress" pull request is welcome!
+For a contribution to be merged, it is required to have complete documentation, come with unit tests and integration tests where appropriate. Submitting a "work in progress" pull request is welcome!
 
 ---
 
 ## Alternative Remote Signers
 
-At least three other remote signers are available to use with Tezos. Tezos also provides native support for baking with a Ledger Nano. We encourage bakers too, at a minimum, review these projects. We are eager to collaborate and be peers with these great projects.
+At least three other remote signers are available to use with Tezos. Tezos also provides native support for baking with a Ledger Nano. We encourage bakers to, at a minimum, review these projects. We are eager to collaborate and be peers with these great projects.
 
-* [Tezzigators Azure remote signer](https://github.com/tezzigator/azure-tezos-signer)
+* [Tezzigator's Azure remote signer](https://github.com/tezzigator/azure-tezos-signer)
 * [Tacoinfra's remote signer](https://github.com/tacoinfra/remote-signer)
-* [Polychain Lab's remote signer](https://gitlab.com/polychainlabs/tezos-hsm-signer)
+* [Polychain Labs' remote signer](https://gitlab.com/polychainlabs/tezos-hsm-signer)
 
 ## Disclaimer
 
