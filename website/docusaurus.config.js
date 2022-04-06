@@ -40,7 +40,7 @@ module.exports = {
             },
             {
               label: 'Local Secret',
-              to: 'docs/filebased',
+              to: 'docs/file_based',
             },
             {
               label: 'YubiHSM',

@@ -1,5 +1,5 @@
 ---
-id: filebased
+id: file_based
 title: File-Based Secret Storage (Insecure)
 ---
 
@@ -8,7 +8,7 @@ Signatory file-based signer mode allows operation without an HSM or Key Vault se
 
 ## Signatory configuration for file-based secret storage
 
-The documentation assumes you will use the official Signatory docker image, and that you have a Linux server operably configured with docker installed.
+This documentation assumes you will use the official Signatory docker image, and that you have a working Linux server with docker installed.
 
 Place the following YAML in a file named `signatory.yaml`
 

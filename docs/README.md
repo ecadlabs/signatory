@@ -2,11 +2,11 @@
 
 ## Configuration
 
-Signatory configuration is specified in a YAML file. Use the `signatory.yaml` file as a template to getting started.
+Signatory configuration is specified in a YAML file. Use the `signatory.yaml` file as a template to get started.
 
-Each backend can be configured with one of more instances of the backend. The operator can add as many new backends as they wish, just append to the list.
+You can configure multiple `vault`s. Each `vault` should be configured to use a backend. Same backend can be used in more than one `vault`.
 
-Configuration file is shared between `signatory` and `signatory-cli`.
+The configuration file is shared between `signatory` and `signatory-cli`.
 
 ### Configuration example
 
@@ -14,7 +14,7 @@ Configuration file is shared between `signatory` and `signatory-cli`.
 server:
   # Address for the main HTTP server to listen on
   address: :6732
-  # Address for the utility HTTP server to listen on
+  # Address for the utility HTTP server (for Prometheus metrics) to listen on
   utility_address: :9583
   # List of authorized public keys. Sign operation must be authenticated if present
   # Nested lists are allowed
@@ -104,27 +104,27 @@ Flags:
 
 ### Prometheus metrics and health service
 
-Signatory exposes Prometheus metrics and a health status on address specified in `utility_address` configuration parameter. Default value is `:9583`.
+Signatory exposes Prometheus metrics and health status on the address specified in `utility_address` configuration parameter. The default value is `:9583`.
 
 #### Prometheus metrics
 
 Metrics include counters and histograms that track signing operations and errors.
 
-The metrics are intended to be scraped using the Prometheus time series database. We also publish a ready-made Grafana dashboard which users can use to visualize the operation of their signing operations. (TODO: publish Grafana dashboard)
+The metrics are intended to be scraped using the Prometheus time series database. We also publish a ready-made Grafana dashboard that users can use to visualize the operation of their signing operations. (TODO: publish Grafana dashboard)
 
 `localhost:9583/metrics`
 
 #### Health service
 
-Health service endpoint can be used to test if the service is running correctly, and ready to sign requests.
+The health service endpoint can be used to test if the service is running correctly and is ready to sign requests.
 
-This endpoints is useful for use in monitoring, or declarative tests as part of deployment playbooks or kubernetes manifests.
+This endpoint is useful for monitoring, or declarative tests as part of deployment playbooks or Kubernetes manifests.
 
 `localhost:9583/healthz`
 
 ### Testing
 
-To test the signing operation, you can send a post to signatory. In this example, we are sending a dummy operation of type `02`, which is a `endorsement` operation type. 
+To test the signing operation, you can send a post to Signatory. In this example, we are sending a dummy operation of type `02`, which is an `endorsement` operation type.
 
 ```sh
 curl -XPOST \
