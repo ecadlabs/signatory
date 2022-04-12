@@ -28,7 +28,7 @@ This documentation assumes that you will be running Signatory and the YubiHSM2 d
 
 Signatory uses the `yubihsm-connector` daemon to interact with the YubiHSM USB device.
 
-The connector requires you to have the libusd package installed on your system.
+The connector requires you to have the libusb package installed on your system.
 
 ```
 apt-get install libusb-1.0-0
@@ -46,7 +46,7 @@ To manage the YubiHSM2 device, you will need the `yubihsm-shell` utility. This u
 apt-get install libedit2
 ```
 
-To install yubihsm-shell, you must install the yubihsm-shell package and the supporting YubiHSM2 libraries. The `yubihsm-shell` is not required for the operation of signatory and is only for the management of the YubiHSM2 device.
+To install yubihsm-shell, you must install the yubihsm-shell package and the supporting YubiHSM2 libraries. The `yubihsm-shell` is not required for the operation of Signatory and is only for the management of the YubiHSM2 device.
 
 ```
 dpkg -i yubihsm-shell_2.0.2-1_amd64.deb \
@@ -69,7 +69,7 @@ Run the command `yubihsm-shell`. You will get a prompt that looks like:
 yubihsm>
 ```
 
-To connect to the device type `connect`. It will automatically connect to localhost.
+To connect to the device, type `connect`. It will automatically connect to localhost.
 
 To open a new session with the device type. The default password on the YubiHSM2 is "password".
 
@@ -130,7 +130,7 @@ vaults:
 To import a secret key, we take the secret key from the above JSON examples. Do not include the "encrypted:" or "unencrypted:" prefix.
 
 ```
-signatory-cli import --config ./signatory.yaml --vault yubi edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb 
+signatory-cli import --config ./signatory.yaml --vault yubi edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb
 ```
 
 If the import is successful, the `signatory-cli` will report the PKH of your newly imported secret:
@@ -147,7 +147,7 @@ You can use the `yubihsm-shell` utility command `list objects 0 0` to verify tha
 
 ### Listing Tezos Addresses in the YubiHSM2
 
-You can use the command `signatory-cli list` to list all keys in the YubiHSM2. `signatory-cli` also prints the configuration status for each address
+You can use the command `signatory-cli list` to list all keys in the YubiHSM2. `signatory-cli` also prints the configuration status for each address.
 
 ```
 signatory-cli -c ./signatory.yaml list
