@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -25,12 +26,18 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		level      string
 		configFile string
 		baseDir    string
+		version    bool
 	)
 
 	rootCmd := cobra.Command{
 		Use:   name,
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+
+			if version {
+				fmt.Println("Abi-->: ", version)
+				fmt.Println("Signatory Version: ", metrics.GitRevision, " - ", metrics.GitBranch)
+			}
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
@@ -89,6 +96,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
 	f.StringVar(&baseDir, "base-dir", "", "Base directory. Takes priority over one specified in config")
-
+	// f.Bool("version", false, "Print Signatory version")
+	f.BoolVarP(&version, "version", "v", false, "Print Signatory version")
 	return &rootCmd
 }
