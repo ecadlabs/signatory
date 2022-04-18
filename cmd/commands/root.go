@@ -37,12 +37,14 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				conf.Read(configFile)
 			}
 
-			if baseDir == "" {
-				baseDir = conf.BaseDir
-			}
-			baseDir = os.ExpandEnv(baseDir)
-			if err := os.MkdirAll(baseDir, 0770); err != nil {
-				return err
+			if cmd.Use != "version" {
+				if baseDir == "" {
+					baseDir = conf.BaseDir
+				}
+				baseDir = os.ExpandEnv(baseDir)
+				if err := os.MkdirAll(baseDir, 0770); err != nil {
+					return err
+				}
 			}
 
 			validate := config.Validator()
