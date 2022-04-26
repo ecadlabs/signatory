@@ -16,14 +16,14 @@
 	// background-position: center 0px;
 	// position: relative;
 	// mix-blend-mode: normal;
-	clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+	// clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
 
-	@media (max-width: 640px) {
-		clip-path: polygon(0 0, 100% 0, 100% 95%, 0 100%);
-	}
-	background-image: url('../../../static/img/hero-background.png');
+	// @media (max-width: 640px) {
+	// 	clip-path: polygon(0 0, 100% 0, 100% 95%, 0 100%);
+	// }
+	background-image: url('../../../static/img/hero-background-2.png');
 	background-repeat: no-repeat;
-	background-attachment: fixed;
+	// background-attachment: fixed;
 	background-position: top;
 	background-size: cover;
 	z-index: 0;
@@ -39,8 +39,10 @@
 	margin-left: 5%;
 	margin-right: 5%;
 	height: 100%;
-	padding-bottom: 300px;
-	padding-top: 108px;
+	padding-bottom: 150px;
+	padding-top: 150px;
+	position: relative;
+	z-index: 1;
 }
 
 .dotMenu {

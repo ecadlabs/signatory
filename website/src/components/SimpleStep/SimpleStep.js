@@ -4,48 +4,33 @@ import styles from './SimpleStep.module.scss';
 
 const FeatureList = [
 	{
-		title: 'Start Simple With Taquito',
-		description:
-			'Just a few simple steps and you are set to start building your own app.',
-		link: {
-			title: 'Start Now',
-			url: '/docs/start',
-		},
-
 		steps: [
 			{
-				icon: require('../../../static/img/systems.svg').default,
-				title: 'Install Taquito',
+				icon: require('../../../static/img/svg-placeholder.svg').default,
+				title: 'Easy to start, trivial to secure',
 				description:
-					'Follow our QuickStart guide to start using Taquito and check code examples.',
+					'Start prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense.',
 			},
 			{
-				icon: require('../../../static/img/systems.svg').default,
-				title: 'Create and run your first app locally',
+				icon: require('../../../static/img/svg-placeholder.svg').default,
+				title: 'Signatory signs only the operations you want',
 				description:
-					'Use our original React Taquito Boilerplate app template for your future application',
+					'Set policy on the type of Tezos Operations you want to allow signing. Are you running a baker? Limit it to blocks and endorsements. Institution? Signatory can enforce policies.',
 			},
 			{
-				icon: require('../../../static/img/systems.svg').default,
-				title: 'Build your own App',
+				icon: require('../../../static/img/svg-placeholder.svg').default,
+				title: 'Built with observability',
 				description:
-					'Enjoy building with Taquito, and let us know how we can help to make your life easier.',
+					'Critical infrastructure monitoring is crucial. Signatory exposes operational metrics for Prometheus allowing teams to monitor operations with the tools they have already invested in.',
 			},
 		],
 	},
 ];
 
-function Feature({ title, steps, link, description }) {
+function Feature({ steps }) {
 	return (
 		<div className={styles.content}>
 			<div className={styles.simpleStepsContainer}>
-				<div className={styles.simpleStepsTitleContainer}>
-					<h1 className={styles.simpleStepsTitle}>{title}</h1>
-					<p className={styles.simpleStepsDescription}>{description}</p>
-					<a className={styles.simpleStepsButton} href={link.url}>
-						{link.title}
-					</a>
-				</div>
 				<div className={styles.steps}>
 					{steps.map((step, idx) => (
 						<div
@@ -57,16 +42,7 @@ function Feature({ title, steps, link, description }) {
 							key={idx}
 						>
 							<div className={styles.stepBox}>
-								<div className={styles.svgContainer}>
-									<div className={styles.stepSvg}>
-										<step.icon alt={step.title} />
-									</div>
-									<span
-										className={
-											idx === 0 ? styles.stepNumberFirst : styles.stepNumber
-										}
-									>{`${idx + 1}.`}</span>
-								</div>
+								<step.icon alt={step.title} />
 								<div className={styles.textContainer}>
 									<h4 className={styles.stepTitle}>{step.title}</h4>
 									<p className={styles.stepDescription}>{step.description}</p>
