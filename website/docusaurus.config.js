@@ -8,23 +8,42 @@ module.exports = {
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
 	themeConfig: {
+		colorMode: {
+			defaultMode: 'light',
+			disableSwitch: true,
+			respectPrefersColorScheme: false,
+			// The following value has been deprecated and will need to be re-implemented when dark mode is implemented
+			// switchConfig: {
+			// 	darkIcon: '🌙',
+			// 	darkIconStyle: {
+			// 		marginLeft: '2px',
+			// 	},
+			// 	// Unicode icons such as '\u2600' will work
+			// 	// Unicode with 5 chars require brackets: '\u{1F602}'
+			// 	lightIcon: '\u{1F602}',
+			// 	lightIconStyle: {
+			// 		marginLeft: '1px',
+			// 	},
+			// },
+		},
 		navbar: {
-			title: 'Signatory Remote Signer',
 			logo: {
 				alt: 'Signatory Signer for Tezos',
-				src: 'img/logo_nib.png',
+				src: 'img/header-logo.svg',
 			},
 			items: [
 				{
-					to: 'docs/start',
-					activeBasePath: 'docs',
+					type: 'doc',
+					docId: 'start',
 					label: 'Docs',
-					position: 'left',
+					position: 'right',
+					className: 'header-link button_link',
 				},
 				{
 					href: 'https://github.com/ecadlabs/signatory',
-					label: 'GitHub',
 					position: 'right',
+					className: 'header-link header-github-link',
+					'aria-label': 'GitHub repository',
 				},
 			],
 		},
