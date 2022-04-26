@@ -8,6 +8,8 @@ module.exports = {
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
 	themeConfig: {
+		autoCollapseSidebarCategories: true,
+
 		colorMode: {
 			defaultMode: 'light',
 			disableSwitch: true,
