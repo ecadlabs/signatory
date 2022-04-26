@@ -9,7 +9,7 @@ const FeatureList = [
 			'Just a few simple steps and you are set to start building your own app.',
 		link: {
 			title: 'Start Now',
-			url: '/docs/quick_start',
+			url: '/docs/start',
 		},
 
 		steps: [

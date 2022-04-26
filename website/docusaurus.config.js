@@ -93,7 +93,7 @@ module.exports = {
 					items: [
 						{
 							label: 'Quick Start',
-							to: '/docs/quick_start',
+							to: '/docs/start',
 						},
 						{
 							label: 'TypeDoc Reference',

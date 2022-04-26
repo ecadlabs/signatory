@@ -19,7 +19,7 @@ const FeatureList = [
 		),
 		link: {
 			title: 'Get Started',
-			url: '/docs/quick_start',
+			url: '/docs/start',
 		},
 
 		logoImages: [
@@ -27,21 +27,21 @@ const FeatureList = [
 				logo: require('../../../static/img/example.png').default,
 				link: {
 					title: 'Get Started',
-					url: '/docs/quick_start',
+					url: '/docs/start',
 				},
 			},
 			{
 				logo: require('../../../static/img/example.png').default,
 				link: {
 					title: 'Get Started',
-					url: '/docs/quick_start',
+					url: '/docs/start',
 				},
 			},
 			{
 				logo: require('../../../static/img/example.png').default,
 				link: {
 					title: 'Get Started',
-					url: '/docs/quick_start',
+					url: '/docs/start',
 				},
 			},
 		],
