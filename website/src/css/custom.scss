@@ -53,12 +53,7 @@ h5 {
 __docusaurus {
 	background: var(--ifm-color-primary) !important;
 }
-.docMainContainer_node_modules-\@docusaurus-theme-classic-lib-next-theme-DocPage-styles-module {
-	display: flex;
-	width: 100%;
-	padding-top: 120px;
-	// background: #1a1e44;
-}
+
 .main-wrapper:before {
 	content: ' ';
 	top: 0;
@@ -69,16 +64,7 @@ __docusaurus {
 	background: #1a1e44;
 	z-index: -1;
 }
-.docSidebarContainer_node_modules-\@docusaurus-theme-classic-lib-next-theme-DocPage-styles-module {
-	display: block;
-	width: var(--doc-sidebar-width);
-	margin-top: calc(-1 * var(--ifm-navbar-height));
-	border-right: none !important;
-	will-change: width;
-	transition: width var(--ifm-transition-fast) ease;
-	clip-path: inset(0);
-	padding-top: 120px;
-}
+
 .navbar .navbar--fixed-top {
 	background: rgb(72, 77, 91);
 }
@@ -522,6 +508,14 @@ a.pagination-nav__link {
 //sidebar
 
 aside {
+	display: block;
+	width: var(--doc-sidebar-width);
+	margin-top: calc(-1 * var(--ifm-navbar-height));
+	border-right: none !important;
+	will-change: width;
+	transition: width var(--ifm-transition-fast) ease;
+	clip-path: inset(0);
+	padding-top: 120px;
 	background-color: var(--ifm-color-primary);
 	color: var(--ifm-white);
 
@@ -639,7 +633,7 @@ aside {
 }
 
 .padding-top--md {
-	padding-top: 1rem !important;
+	padding-top: 120px !important;
 	padding-left: 3rem !important;
 
 	a {
