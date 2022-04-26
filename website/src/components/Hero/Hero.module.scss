@@ -123,10 +123,18 @@
 }
 
 .heroTitle {
-	max-width: 624px;
+	font-family: 'Montserrat';
+	font-style: normal;
+	font-weight: 700;
+	font-size: 40px;
+	line-height: 56px;
+	/* identical to box height, or 140% */
+
+	text-transform: capitalize;
+	max-width: 485px;
 	text-transform: capitalize;
 	/* black */
-	color: var(--ifm-color-text-primary);
+	color: var(--ifm-white);
 
 	@media (max-width: 380px) {
 		font-size: 32px;
@@ -137,7 +145,7 @@
 .heroCard {
 	padding-top: 60px;
 	padding-right: 20px;
-	color: var(----ifm-color-text-secondary);
+	color: var(--ifm-white);
 }
 
 .heroCardContent {
@@ -149,15 +157,15 @@
 }
 
 .heroCardDescription {
-	font-family: Source Sans Pro;
+	font-family: Fira Sans;
 	font-style: normal;
 	font-weight: 400;
 	font-size: 18px;
 	line-height: 25px;
 	letter-spacing: 0.3px;
 	/* black */
-	color: var(--ifm-color-text-primary);
-	max-width: 477px;
+	color: var(--ifm-white);
+	max-width: 359px;
 }
 
 .heroButtonContainer {
@@ -166,21 +174,19 @@
 }
 
 .heroButton {
-	font-family: Rounded Mplus 1c;
+	font-family: 'Montserrat';
+	font-style: normal;
 	font-weight: 600;
-	font-size: 20px;
-	text-transform: capitalize;
-	width: fit-content;
+	font-size: 15px;
+	line-height: 22px;
 	display: flex;
-	justify-content: center;
 	align-items: center;
-	border-radius: 30px;
-	text-align: center;
-	padding: 3px 15px 6px 15px;
-	background-color: var(--ifm-color-secondary);
-	border-radius: 30px;
-	color: var(--ifm-color-text-secondary) !important;
-	min-width: 135px !important;
+	letter-spacing: 0.3px;
+	background: #e4a45c;
+	border-radius: 3px;
+	color: #1a1e44;
+	width: fit-content;
+	padding: 15px 18px;
 }
 
 .heroButton:hover {
