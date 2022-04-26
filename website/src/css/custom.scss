@@ -29,6 +29,7 @@
 	--ifm-menu-color: var(--ifm-white);
 	// --ifm-menu-link-padding-horizontal: 0px;
 	--ifm-menu-color-background-active: var(--ifm-color-hover-link);
+	--ifm-black: #333333;
 }
 
 h5 {
@@ -105,6 +106,13 @@ __docusaurus {
 	@media (max-width: 960px) {
 		flex-direction: row-reverse;
 		justify-content: space-between;
+		.navbar__toggle {
+			svg {
+				path {
+					stroke: var(--ifm-white) !important;
+				}
+			}
+		}
 	}
 }
 
@@ -579,7 +587,7 @@ aside {
 }
 
 .table-of-contents__link--active {
-	color: var(--ifm-white);
+	color: var(--ifm-black);
 }
 
 .table-of-contents__link:hover {
@@ -665,27 +673,26 @@ aside {
 
 .menu__link .menu__link--sublist-caret .menu__link--active:hover {
 	background-color: transparent !important;
-	color: var(--ifm-white) !important;
+	color: var(--ifm-color-hover-link) !important;
 }
 
 .breadcrumbs__item--active .breadcrumbs__link {
-	color: var(--ifm-white) !important;
+	color: var(--ifm-black) !important;
 }
 
 .padding-top--md a {
-	color: var(--ifm-white) !important;
+	color: var(--ifm-black) !important;
 }
 
 .padding-top--md .table-of-contents__link {
-	color: var(--ifm-white) !important;
-
+	color: var(--ifm-black) !important;
 	&:hover {
-		color: var(--ifm-white) !important;
+		color: var(--ifm-color-hover-link) !important;
 	}
 }
 
 .padding-top--md .table-of-contents__link--active {
-	color: var(--ifm-white) !important;
+	color: var(--ifm-color-hover-link) !important;
 }
 
 .col--3 > * {
