@@ -1,0 +1,104 @@
+.footerForm {
+	width: 100%;
+	margin-top: 50px;
+}
+
+.footerFormTitle {
+	color: var(--ifm-white);
+	font-family: Source Sans Pro;
+	font-style: normal;
+	font-weight: 600;
+	font-size: 18px;
+	line-height: 12px;
+	letter-spacing: 0.2px;
+}
+
+.footerInputContainer {
+	width: 100%;
+	display: flex;
+	justify-content: flex-start;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.footerEmail {
+	border: none;
+	background: transparent;
+	border-bottom: 1px solid var(--ifm-white);
+	padding-right: 100px;
+	margin-bottom: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	padding-left: 10px;
+}
+
+.signupButton {
+	height: fit-content;
+	white-space: nowrap;
+	background-color: var(--ifm-color-button);
+	border-radius: 3px;
+	margin-left: 15px;
+	margin-right: 15px;
+	color: var(--ifm-color-primary) !important;
+	border: none;
+	height: 33px;
+	width: 96px;
+	font-family: Fira Sans;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 25px;
+
+	/* &:hover {
+    color: var(--ifm-color-text-primary) !important;
+  } */
+}
+
+.signupButton:hover {
+	cursor: pointer !important;
+	color: var(--ifm-white) !important;
+}
+
+input:focus {
+	background-color: var(--ifm-white) !important;
+}
+
+input:checked {
+	background-color: var(--ifm-color-primary) !important;
+}
+
+::placeholder {
+	/* Chrome, Firefox, Opera, Safari 10.1+ */
+	color: var(--ifm-white) !important;
+	opacity: 1;
+	/* Firefox */
+	font-family: Fira Sans;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 25px;
+	letter-spacing: 0.3px;
+}
+
+:-ms-input-placeholder {
+	/* Internet Explorer 10-11 */
+	color: var(--ifm-white) !important;
+	font-family: Fira Sans;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 25px;
+	letter-spacing: 0.3px;
+}
+
+::-ms-input-placeholder {
+	/* Microsoft Edge */
+	color: var(--ifm-white) !important;
+	font-family: Fira Sans;
+	font-style: normal;
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 25px;
+	letter-spacing: 0.3px;
+}
