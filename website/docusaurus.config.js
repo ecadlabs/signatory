@@ -27,6 +27,7 @@ module.exports = {
 			// },
 		},
 		navbar: {
+			// hideOnScroll: true,
 			logo: {
 				alt: 'Signatory Signer for Tezos',
 				src: 'img/header-logo.svg',

@@ -22,7 +22,7 @@
 	--ifm-border-color: #e4e7eb;
 	--ifm-code-font-size: 95%;
 	--ifm-white: #ffffff;
-  --ifm-bg-light:#ECEFF2;
+	--ifm-bg-light: #eceff2;
 }
 
 .docusaurus-highlight-code-line {
@@ -31,14 +31,14 @@
 	margin: 0 calc(-1 * var(--ifm-pre-padding));
 	padding: 0 var(--ifm-pre-padding);
 }
-body {
-	background-image: url('../../static/img/hero-background.png');
-	background-repeat: no-repeat;
-	background-attachment: fixed;
-	background-position: top;
-	background-size: cover;
-	z-index: 0;
-}
+// body {
+// 	background-image: url('../../static/img/hero-background.png');
+// 	background-repeat: no-repeat;
+// 	background-attachment: fixed;
+// 	background-position: top;
+// 	background-size: cover;
+// 	z-index: 0;
+// }
 // Navbar
 .navbar {
 	background: transparent;
@@ -46,6 +46,12 @@ body {
 	padding-left: 7%;
 	padding-right: 7%;
 	box-shadow: none !important;
+}
+.navbar--fixed-top {
+	position: absolute;
+	width: 100%;
+	top: 0;
+	left: 0;
 }
 
 .header-github-link:before {
