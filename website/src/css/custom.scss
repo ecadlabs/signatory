@@ -43,6 +43,9 @@ h5 {
 	margin: 0 calc(-1 * var(--ifm-pre-padding));
 	padding: 0 var(--ifm-pre-padding);
 }
+__docusaurus {
+	background: #1a1e44;
+}
 // body {
 // 	background-image: url('../../static/img/hero-background.png');
 // 	background-repeat: no-repeat;
@@ -58,6 +61,47 @@ h5 {
 	padding-left: 7%;
 	padding-right: 7%;
 	box-shadow: none !important;
+}
+
+.navbar__items {
+	flex-direction: unset;
+	justify-content: unset;
+
+	@media (max-width: 960px) {
+		flex-direction: row-reverse;
+		justify-content: space-between;
+	}
+}
+
+.navbar-sidebar {
+	.navbar-sidebar__brand {
+		padding-top: 50px;
+		padding-bottom: 50px;
+		background-color: var(--ifm-color-primary) !important;
+	}
+
+	.navbar-sidebar__items {
+		padding-top: 30px;
+	}
+
+	max-width: 320px;
+
+	.menu__list-item {
+		max-width: 280px;
+		padding-bottom: 5px;
+	}
+
+	.menu__list-item:nth-of-type(3) {
+		width: fit-content;
+		order: 0 !important;
+	}
+
+	.menu__link--active {
+		color: var(--ifm-color-primary) !important;
+	}
+	.button_link {
+		width: fit-content;
+	}
 }
 .navbar--fixed-top {
 	position: absolute;
