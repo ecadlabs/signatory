@@ -25,7 +25,7 @@
 	--ifm-bg-light: #eceff2;
 	--ifm-color-hover-link: #a13455;
 	--sidebar-link-bg: #a13455;
-	--ifm-navbar-height: 110px;
+	--ifm-navbar-height: 110px !important;
 	--ifm-menu-color: var(--ifm-white);
 	// --ifm-menu-link-padding-horizontal: 0px;
 	--ifm-menu-color-background-active: var(--ifm-color-hover-link);
@@ -59,7 +59,7 @@ __docusaurus {
 	padding-top: 120px;
 	// background: #1a1e44;
 }
-.docMainContainer_node_modules-\@docusaurus-theme-classic-lib-next-theme-DocPage-styles-module:before {
+.main-wrapper:before {
 	content: ' ';
 	top: 0;
 	left: 0;
@@ -67,13 +67,13 @@ __docusaurus {
 	height: 110px;
 	position: absolute;
 	background: #1a1e44;
-	z-index: 5;
+	z-index: -1;
 }
 .docSidebarContainer_node_modules-\@docusaurus-theme-classic-lib-next-theme-DocPage-styles-module {
 	display: block;
 	width: var(--doc-sidebar-width);
 	margin-top: calc(-1 * var(--ifm-navbar-height));
-	border-right: 1px solid var(--ifm-toc-border-color);
+	border-right: none !important;
 	will-change: width;
 	transition: width var(--ifm-transition-fast) ease;
 	clip-path: inset(0);
@@ -595,7 +595,7 @@ aside {
 }
 
 .table-of-contents__left-border {
-	border-left: 1px solid var(--ifm-white);
+	border-left: 2px solid rgb(161, 52, 85, 0.2);
 }
 
 .theme-doc-toc-desktop {
