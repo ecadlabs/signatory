@@ -53,9 +53,12 @@
 	margin-right: 30px;
 	align-items: center;
 	height: 100%;
-	h5 {
+	.headline {
 		color: var(--ifm-white);
 		margin-right: -10px;
+		@media (max-width: 380px) {
+			margin-right: -30px;
+		}
 	}
 }
 

@@ -1,6 +1,9 @@
 .footerForm {
 	width: 100%;
 	margin-top: 50px;
+	h5 {
+		text-align: left;
+	}
 }
 
 .footerFormTitle {
@@ -26,11 +29,18 @@
 	border: none;
 	background: transparent;
 	border-bottom: 1px solid var(--ifm-white);
-	padding-right: 100px;
+	padding-right: 10px;
 	margin-bottom: 10px;
 	padding-top: 10px;
 	padding-bottom: 10px;
 	padding-left: 10px;
+	width: 320px;
+	@media (max-width: 450px) {
+		width: 300px;
+	}
+	@media (max-width: 340px) {
+		width: 200px;
+	}
 }
 
 .signupButton {
