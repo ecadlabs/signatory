@@ -29,7 +29,7 @@
 	--ifm-color-hover-link: #a13455;
 	--sidebar-link-bg: #a13455;
 	--ifm-navbar-height: 110px !important;
-	--ifm-menu-color: var(--ifm-white);
+	// --ifm-menu-color: var(--ifm-white);
 	// --ifm-menu-link-padding-horizontal: 0px;
 	--ifm-menu-color-background-active: var(--ifm-color-hover-link);
 	--ifm-black: #333333;
@@ -647,6 +647,9 @@ aside {
 	a {
 		color: var(--ifm-white) !important;
 	}
+	@media (max-width: 1000px) {
+		padding-left: 1rem !important;
+	}
 }
 
 .menu__list-item-collapsible .menu__link {
@@ -661,6 +664,9 @@ aside {
 	letter-spacing: 0.3px;
 	background: none;
 	display: block;
+	@media (max-width: 1000px) {
+		color: var(--ifm-black) !important;
+	}
 }
 
 .menu__list-item-collapsible:hover {
@@ -720,4 +726,11 @@ article {
 
 .clean-btn {
 	color: var(--ifm-white);
+}
+
+.menu__link {
+	color: var(--ifm-white) !important;
+	@media (max-width: 1000px) {
+		color: var(--ifm-black) !important;
+	}
 }
