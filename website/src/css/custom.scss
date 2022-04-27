@@ -38,6 +38,8 @@
 	--ifm-tabs-padding-vertical: 5px;
 	--ifm-tabs-padding-horizontal: 15px;
 	--ifm-font-family-base: Fira Sans;
+	--ifm-toc-padding-vertical: 1rem;
+	// --ifm-menu-link-sublist-icon: white;
 }
 
 h5 {
@@ -689,6 +691,12 @@ aside {
 	&:hover {
 		color: var(--ifm-color-hover-link) !important;
 	}
+	@media (max-width: 1000px) {
+		color: var(--ifm-white) !important;
+		&:hover {
+			color: var(--ifm-black) !important;
+		}
+	}
 }
 
 .padding-top--md .table-of-contents__link--active {
@@ -709,3 +717,7 @@ article {
 //   margin-bottom: 0;
 //   padding: var(--ifm-toc-padding-vertical) 0;
 // }
+
+.clean-btn {
+	color: var(--ifm-white);
+}
