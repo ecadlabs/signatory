@@ -141,7 +141,13 @@ module.exports = {
 					editUrl: 'https://github.com/ecadlabs/signatory/edit/master/website/',
 				},
 				theme: {
-					customCss: require.resolve('./src/css/custom.scss'),
+					customCss: [
+						require.resolve('./src/css/custom.scss'),
+						require.resolve('./src/css/tables.scss'),
+						require.resolve('./src/css/admonitions.scss'),
+						require.resolve('./src/css/codeBlock.scss'),
+						require.resolve('./src/css/tabs.scss'),
+					],
 				},
 			},
 		],

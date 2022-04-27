@@ -7,6 +7,9 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,900;1,200;1,300;1,400;1,600;1,700&display=swap');
+
 // /* You can override the default Infima variables here. */
 
 /* You can override the default Infima variables here. */
@@ -30,6 +33,10 @@
 	// --ifm-menu-link-padding-horizontal: 0px;
 	--ifm-menu-color-background-active: var(--ifm-color-hover-link);
 	--ifm-black: #333333;
+	--ifm-table-head-font-weight: 600 !important;
+	--ifm-alert-border-color: #a13455 !important;
+	--ifm-tabs-padding-vertical: 5px;
+	--ifm-tabs-padding-horizontal: 15px;
 }
 
 h5 {
@@ -39,8 +46,6 @@ h5 {
 	font-size: 17px;
 	line-height: 25px;
 	/* identical to box height, or 147% */
-
-	text-align: right;
 	letter-spacing: 0.3px;
 }
 
@@ -675,7 +680,7 @@ aside {
 }
 
 .padding-top--md a {
-	color: var(--ifm-black) !important;
+	color: var(--ifm-color-hover-link) !important;
 }
 
 .padding-top--md .table-of-contents__link {
