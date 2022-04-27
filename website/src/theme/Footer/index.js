@@ -30,6 +30,7 @@ function FooterLink({
 	const normalizedHref = useBaseUrl(href, {
 		forcePrependBaseUrl: true,
 	});
+
 	return (
 		<Link
 			className='footer__link-item'
@@ -97,17 +98,24 @@ function Footer() {
 	//   };
 	// }, []);
 
-	useEffect(() => {
-		if (!isActive) {
-			setTimeout(() => {
-				setIsActive(true);
-				return lottie.play('footerLogo');
-			}, 2000);
-		}
-	}, [isActive]);
+	// useEffect(() => {
+	// 	if (!isActive) {
+	// 		setTimeout(() => {
+	// 			setIsActive(true);
+	// 			return lottie.play('footerLogo');
+	// 		}, 2000);
+	// 	}
+	// }, [isActive]);
 
 	return (
 		<footer
+			style={{
+				background: `${
+					typeof window !== 'undefined' && window.location.pathname === '/'
+						? 'linear-gradient(132.76deg, #a13455 -80.79%, #1a1e44 54.08%)'
+						: '#1A1E44'
+				}`,
+			}}
 			className={clsx('footer', {
 				'footer--dark': footer.style === 'dark',
 			})}
