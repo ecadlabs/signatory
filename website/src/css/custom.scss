@@ -104,6 +104,10 @@ __docusaurus {
 	padding-left: 7%;
 	padding-right: 7%;
 	box-shadow: none !important;
+	@media (min-width: 1440px) {
+		padding-left: 10%;
+		padding-right: 10%;
+	}
 }
 
 .navbar__items {
@@ -325,8 +329,8 @@ __docusaurus {
 	border-top: 2px solid var(--ifm-border-color);
 	padding: 20px 40px;
 	color: var(--ifm-white) !important;
-	padding-left: 5%;
-	padding-right: 5%;
+	padding-left: 10%;
+	padding-right: 10%;
 }
 
 .footerButton {
@@ -768,4 +772,13 @@ h3,
 h4 {
 	font-family: Montserrat !important;
 	color: #454545;
+}
+
+.footer {
+	.container {
+		max-width: 85%;
+		@media (max-width: 640px) {
+			max-width: 100%;
+		}
+	}
 }

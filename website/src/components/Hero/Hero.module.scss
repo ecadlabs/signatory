@@ -32,7 +32,7 @@
 .content {
 	display: flex;
 	// align-items: center;
-	justify-content: center;
+	justify-content: space-evenly;
 	flex-wrap: wrap;
 	width: 90%;
 	padding-top: 50px;
@@ -51,7 +51,6 @@
 	flex-direction: row;
 	margin-top: 10px;
 }
-
 
 .dots {
 	height: 8px;
