@@ -41,6 +41,7 @@
 	--ifm-toc-padding-vertical: 1rem;
 	// --ifm-menu-link-sublist-icon: white;
 	// --ifm-menu-link-sublist-icon: url('../../static/img/dow-arrow-white.svg');
+	--ifm-color-text-primary: #454545;
 }
 
 h5 {
@@ -51,6 +52,17 @@ h5 {
 	line-height: 25px;
 	/* identical to box height, or 147% */
 	letter-spacing: 0.3px;
+}
+
+h1 {
+	font-family: Montserrat;
+	font-style: normal;
+	font-weight: 700;
+	font-size: 40px;
+	line-height: 56px;
+	/* identical to box height, or 140% */
+
+	text-transform: capitalize;
 }
 
 .docusaurus-highlight-code-line {
@@ -297,6 +309,7 @@ __docusaurus {
 	letter-spacing: 0.3px;
 	margin-bottom: 30px;
 	padding-top: 20px;
+	color: var(--ifm-white) !important;
 }
 
 .footer__copyright {
@@ -734,4 +747,25 @@ article {
 	@media (max-width: 1000px) {
 		color: var(--ifm-black) !important;
 	}
+}
+
+.pagination-nav__label {
+	line-height: 25px;
+}
+
+.breadcrumbs__item--active {
+	background-color: rgba(161, 52, 85, 0.2) !important;
+	border-radius: 24px !important;
+	.breadcrumbs__link {
+		color: #a13455 !important;
+	}
+}
+
+.markdown > header,
+h1,
+h2,
+h3,
+h4 {
+	font-family: Montserrat !important;
+	color: #454545;
 }
