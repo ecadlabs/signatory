@@ -98,23 +98,20 @@ function Footer() {
 	//   };
 	// }, []);
 
-	// useEffect(() => {
-	// 	if (!isActive) {
-	// 		setTimeout(() => {
-	// 			setIsActive(true);
-	// 			return lottie.play('footerLogo');
-	// 		}, 2000);
-	// 	}
-	// }, [isActive]);
+	const [bg, setBg] = useState(
+		'linear-gradient(132.76deg, #a13455 -80.79%, #1a1e44 54.08%)'
+	);
+
+	useEffect(() => {
+		if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+			setBg('#1A1E44');
+		}
+	}, []);
 
 	return (
 		<footer
 			style={{
-				background: `${
-					typeof window !== 'undefined' && window.location.pathname === '/'
-						? 'linear-gradient(132.76deg, #a13455 -80.79%, #1a1e44 54.08%)'
-						: '#1A1E44'
-				}`,
+				background: `${bg}`,
 			}}
 			className={clsx('footer', {
 				'footer--dark': footer.style === 'dark',
