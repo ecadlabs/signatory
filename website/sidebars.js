@@ -22,7 +22,7 @@ const sidebars = {
 			className: 'sidebarHeader',
 			collapsed: false,
 			collapsible: false,
-			items: ['start', 'file_based', 'yubihsm', 'azure_kms', 'example'],
+			items: ['start', 'file_based', 'yubihsm', 'azure_kms'],
 		},
 	],
 };
