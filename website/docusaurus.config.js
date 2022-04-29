@@ -83,7 +83,7 @@ module.exports = {
 						},
 						{
 							label: 'GitHub',
-							to: 'https://github.com/ecadlabs/signatory',
+							to: 'https://github.com/ecadlabs/taqueria',
 						},
 					],
 				},
@@ -110,7 +110,7 @@ module.exports = {
 						},
 						{
 							html: `
-									<a class='footerButton' href='https://github.com/ecadlabs/signatory>
+									<a class='footerButton' href='https://github.com/ecadlabs/taqueria'>
 										GITHUB
 									</a>
 								  `,
