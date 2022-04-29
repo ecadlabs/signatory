@@ -3,7 +3,7 @@ module.exports = {
 	tagline: 'Signatory signs your Tezos Ops while protecting your private keys',
 	url: 'https://signatory.io',
 	baseUrl: '/',
-	favicon: 'img/favicon.ico',
+	favicon: 'img/favicon.svg',
 	organizationName: 'ecadlabs', // Usually your GitHub org/user name.
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
