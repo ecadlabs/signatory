@@ -57,11 +57,11 @@ module.exports = {
 					items: [
 						{
 							label: 'Report Issues',
-							to: 'https://github.com/ecadlabs/taqueria/issues/new/choose',
+							to: 'https://github.com/ecadlabs/signatory/issues/new/choose',
 						},
 						{
 							label: 'Contribute',
-							to: 'https://github.com/ecadlabs/taquito/blob/master/CONTRIBUTING.md',
+							to: 'https://github.com/ecadlabs/signatory/blob/main/README.md',
 						},
 					],
 				},
@@ -69,10 +69,6 @@ module.exports = {
 				{
 					title: 'Community',
 					items: [
-						{
-							label: 'Stack Exchange',
-							to: 'https://tezos.stackexchange.com/questions/tagged/taqueria',
-						},
 						{
 							label: 'Discord',
 							to: 'https://discord.gg/bujt7syVVT',
@@ -83,7 +79,7 @@ module.exports = {
 						},
 						{
 							label: 'Code of Conduct',
-							to: 'https://github.com/ecadlabs/taquito/blob/master/code-of-conduct.md',
+							to: 'https://github.com/ecadlabs/signatory/blob/main/CODE_OF_CONDUCT.md',
 						},
 						{
 							label: 'GitHub',
@@ -98,10 +94,6 @@ module.exports = {
 							label: 'Quick Start',
 							to: '/docs/start',
 						},
-						{
-							label: 'TypeDoc Reference',
-							to: 'https://tezostaquito.io/typedoc',
-						},
 					],
 				},
 				{
@@ -112,7 +104,7 @@ module.exports = {
 						{
 							html: `
 									<p class='footerDescription'>
-										Faplaren krorar whataboutism. Krorat kroligen. 
+										A Tezos Remote Signer
 									</p>
 								  `,
 						},
