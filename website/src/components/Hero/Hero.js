@@ -1,19 +1,9 @@
-import React, { useState, useEffect } from 'react';
-// import clsx from "clsx";
+import React from 'react';
 import styles from './Hero.module.scss';
-// import Slider from "react-slick";
-
-// import SVGExample from './example-logo.svg'
 
 const FeatureList = [
 	{
 		title: 'A Tezos Remote Signer',
-		// Svg: require("./example-logo.svg").default,
-		// SvgTraiangle1: require("../../../static/img/triangle1.svg").default,
-		// SvgTraiangle2: require("../../../static/img/triangle2.svg").default,
-		// SvgTraiangle3: require("../../../static/img/triangle3.svg").default,
-		// SvgTraiangle4: require("../../../static/img/triangle4.svg").default,
-		// SvgTraiangle5: require("./example-logo.svg").default,
 		description: (
 			<>Signatory signs your Tezos Ops while protecting your private keys</>
 		),
