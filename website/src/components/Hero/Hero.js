@@ -11,7 +11,7 @@ const FeatureList = [
 			title: 'Get Started',
 			url: '/docs/start',
 		},
-		Image: require('../../../static/img/place-holder.png').default,
+		Image: require('../../../static/img/signatory-hero-img.png').default,
 	},
 ];
 
