@@ -9,8 +9,8 @@ function Feature() {
 	});
 
 	const [inputs, setInputs] = useState({
-		'group[218840]': '3',
-		value: 3,
+		'group[218840]': '4',
+		value: 4,
 	});
 
 	const handleInputChange = (event) => {
