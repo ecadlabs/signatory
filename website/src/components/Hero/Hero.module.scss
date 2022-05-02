@@ -10,6 +10,9 @@
 .container {
 	width: 100%;
 	height: 100%;
+	@media (min-width: 1144px) {
+		max-height: 668px;
+	}
 	// background: transparent;
 	// background-size: 100% 95%;
 	// background-repeat: no-repeat;
@@ -45,90 +48,13 @@
 	z-index: 1;
 }
 
-.dotMenu {
-	margin: auto;
-	display: flex;
-	flex-direction: row;
-	margin-top: 10px;
-}
-
-.dots {
-	height: 8px;
-	width: 8px;
-	background-color: var(--ifm-color-secondary);
-	border-radius: 50%;
-	display: inline-block;
-	cursor: pointer;
-	margin-left: 5px;
-	margin-right: 5px;
-	margin-bottom: 15px;
-}
-
-.videoBlock {
-	background-color: #111013;
-	max-height: 379px;
-	display: flex;
-	align-items: 'center';
-	height: 379px;
-	border-radius: 13px;
-}
-
-.inactivedots {
-	height: 8px;
-	width: 8px;
-	background-color: var(--ifm-color-secondary);
-	opacity: 0.2;
-	border-radius: 50%;
-	display: inline-block;
-	cursor: pointer;
-	margin-left: 5px;
-	margin-right: 5px;
-	margin-bottom: 15px;
-}
-
 .heroCardContainer {
-	/* background-color: var(--ifm-color-bg-purple); */
-	/* -webkit-clip-path: polygon(0 15%, 100% 0%, 100% 85%, 15% 100%);
-	clip-path: polygon(0 15%, 100% 0%, 100% 85%, 15% 100%);
-	border-radius: 10px;
-	box-sizing: border-box; */
-	/* background-image: url("../../../static/img/purpleBG.png"); */
 	background-repeat: no-repeat;
 	background-size: contain;
 	padding-bottom: 30px;
 	margin-bottom: 30px;
 	position: relative;
 	width: 558px;
-}
-
-.featureSvgTraiangle1 {
-	position: absolute;
-	top: 80px;
-	left: -50px;
-}
-
-.featureSvgTraiangle2 {
-	position: absolute;
-	top: 20px;
-	left: -30px;
-}
-
-.featureSvgTraiangle3 {
-	position: absolute;
-	top: -40px;
-	left: 0px;
-}
-
-.featureSvgTraiangle4 {
-	position: absolute;
-	top: -60px;
-	right: 60px;
-}
-
-.featureSvgTraiangle5 {
-	position: absolute;
-	top: -40px;
-	right: 10px;
 }
 
 .heroTitle {
