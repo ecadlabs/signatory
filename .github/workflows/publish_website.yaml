@@ -2,7 +2,7 @@ name: Publish signatory.io website
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   publish-docs:
