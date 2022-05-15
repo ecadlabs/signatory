@@ -110,7 +110,7 @@ Below are the configuration fields which are required for Signatory.**
 **Key Management**
 
 
-Under <code>key management</code> </strong>create a new <code>key-ring</code> with any location and create a key with <code>purpose</code> as<strong> <code>Asymmetric sign </code></strong>and<code> protection level </code>as<code> HSM.</code>
+Under <code>key management</code> </strong>create a new <code>key-ring</code> with any location and create a key with <code>purpose</code> as<strong> <code>Asymmetric sign </code></strong>and<code> protection level </code>as<code>HSM.</code>
 
 The key-ring name and location are required in the signatory configuration.
 
