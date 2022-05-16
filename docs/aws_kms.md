@@ -1,3 +1,7 @@
+---
+id: aws_kms
+title: AwsKMS
+---
 # AWS KMS Configuration
 
 Create an asymetric key with usage as "sign and verify" in your AWS account. 

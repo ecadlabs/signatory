@@ -1,3 +1,7 @@
+---
+id: ledger
+title: Ledger
+---
 # Ledger vault
 Connect the ledger device to the system in which signatory is running.
 Install tezos-wallet and tezos-baker apps from ledger live. 

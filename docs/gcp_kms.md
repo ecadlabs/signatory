@@ -1,18 +1,21 @@
-## 
+---
+id: gcp_kms
+title: CloudKMS
+---
+##
+
 **Google Cloud KMS backend**
 
+##
 
-## 
 **Google Cloud Platform configuration**
 
 Create a new project or use an existing project and the service accounts used with Signatory should have the following permissions. It may be achieved by using custom roles (see [https://console.cloud.google.com/iam-admin/roles](https://console.cloud.google.com/iam-admin/roles)) \
 Project name is required in the signatory config.
 
+###
 
-### 
 **Basic permissions**
-
-
 
 * `cloudkms.cryptoKeyVersions.get`
 * `cloudkms.cryptoKeyVersions.list`
@@ -20,12 +23,14 @@ Project name is required in the signatory config.
 * `cloudkms.cryptoKeys.get`
 * `cloudkms.cryptoKeys.list`
 
-### 
+###
+
 **Sign**
 
 * `cloudkms.cryptoKeyVersions.useToSign`
 
-### 
+###
+
 **Import**
 
 * `cloudkms.cryptoKeyVersions.create`
@@ -36,9 +41,9 @@ Project name is required in the signatory config.
 * `cloudkms.importJobs.useToImport`
 
 ###
+
 **Configuration parameters \
 Below are the configuration fields which are required for Signatory.**
-
 
 <table>
   <tr>
@@ -104,42 +109,35 @@ Below are the configuration fields which are required for Signatory.**
   </tr>
 </table>
 
+###
 
-
-### 
 **Key Management**
 
-
-Under <code>key management</code> </strong>create a new <code>key-ring</code> with any location and create a key with <code>purpose</code> as<strong> <code>Asymmetric sign </code></strong>and<code> protection level </code>as<code>HSM.</code>
+Under <code>key management</code> create a new <code>key-ring</code> with any location and create a key with <code>purpose</code> as<strong> <code>Asymmetric sign </code></strong>and<code> protection level </code>as<code>HSM.</code>
 
 The key-ring name and location are required in the signatory configuration.
 
+###
 
-### 
 **Application Access:**
 
 The below steps are for providing signatory with the permissions to access the google cloud account Key Management.
 
-
-
 * Select `IAM & ADMIN` from the menu and select `Service accounts`. Create a new service account or use an existing one with all the above permissions (Get, Sign & Import) granted.
-* Select the created/existing service account and within that create a new key and a` `prompt to download the application credentials will appear, select the JSON format.
+* Select the created/existing service account and within that create a new key and a``prompt to download the application credentials will appear, select the JSON format.
 * The downloaded JSON file is needed in signatory config or can be assigned to the below environment variable.
 
-### 
+###
+
 **Environment variables**
 
-
 `cloudkms` backend accepts GCP's standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable
-
 
 ```
 export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 ```
 
-
 **Getting PKH**
-
 
 ```
 abineshm@Abineshs-MacBook-Pro signatory % ./signatory-cli list -c /etc/s.yaml
@@ -150,9 +148,7 @@ Status:             FOUND_NOT_CONFIGURED
 *DISABLED*
 ```
 
-
 **Update signatory.yaml config with PKH:**
-
 
 ```
 abineshm@Abineshs-MacBook-Pro signatory % cat /etc/s.yaml 
@@ -187,7 +183,8 @@ tezos:
       - endorsement
 ```
 
-### 
+###
+
 **Key Import:**
 
 Users can generate a private key in an air gap environment and then import it into GCP Key Management using `signatory-cli` binary. Below are the steps to do that. \
@@ -197,7 +194,6 @@ Users can generate a private key in an air gap environment and then import it in
 2. Use the below command to import the generated private into GCP Key Management. Only `Elliptic Curve P-256 - SHA256` `Digest` is supported now. Below sample key is taken from `signatory/docs/yubihsm.md \
 ` \
 `% ./signatory-cli import -c signatory.yaml --vault kms p2esk28hoUE2J88QNFj2aDX2pjzL7wcVh2g8tkEwtWWguby9M3FHUgSbzvF2Sd7wQ4Kd8crFwvto6gF3otcBuo4T`
-
 
 ```
 INFO[0000] Initializing vault                            vault=cloudkms vault_name=kms
