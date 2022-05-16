@@ -36,7 +36,7 @@ vaults:
   ledger:
     driver: ledger
     config:
-      id: 49505c50
+      id: 3944f7a0
       keys:
         - "bip32-ed25519/0'/0'"
         - "secp256k1/0'/1'"
