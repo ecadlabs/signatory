@@ -5,6 +5,7 @@ title: CloudKMS
 
 ##
 **Google Cloud Platform configuration**
+
 Create a new project or use an existing project and the service accounts used with Signatory should have the following permissions. It may be achieved by using custom roles (see [https://console.cloud.google.com/iam-admin/roles](https://console.cloud.google.com/iam-admin/roles)) \
 Project name is required in the signatory config.
 
