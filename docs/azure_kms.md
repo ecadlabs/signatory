@@ -1,4 +1,4 @@
-# **Microsoft Azure Key Vault**
+# **Azure Key Vault**
 
 The goal of this guide is to configure Signatory to use an Azure Key Vault as a signing backend.
 
