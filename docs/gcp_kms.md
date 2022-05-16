@@ -2,21 +2,14 @@
 id: gcp_kms
 title: CloudKMS
 ---
-##
-
-**Google Cloud KMS backend**
 
 ##
-
 **Google Cloud Platform configuration**
-
 Create a new project or use an existing project and the service accounts used with Signatory should have the following permissions. It may be achieved by using custom roles (see [https://console.cloud.google.com/iam-admin/roles](https://console.cloud.google.com/iam-admin/roles)) \
 Project name is required in the signatory config.
 
 ###
-
 **Basic permissions**
-
 * `cloudkms.cryptoKeyVersions.get`
 * `cloudkms.cryptoKeyVersions.list`
 * `cloudkms.cryptoKeyVersions.viewPublicKey`
@@ -24,13 +17,9 @@ Project name is required in the signatory config.
 * `cloudkms.cryptoKeys.list`
 
 ###
-
 **Sign**
-
 * `cloudkms.cryptoKeyVersions.useToSign`
-
 ###
-
 **Import**
 
 * `cloudkms.cryptoKeyVersions.create`
@@ -41,7 +30,6 @@ Project name is required in the signatory config.
 * `cloudkms.importJobs.useToImport`
 
 ###
-
 **Configuration parameters \
 Below are the configuration fields which are required for Signatory.**
 
