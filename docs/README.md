@@ -128,7 +128,7 @@ To test the signing operation, you can send a post to Signatory. In this example
 
 ```sh
 curl -XPOST \
-    -d '"02111111111111111111"' \
+    -d '"027a06a770e6cebe5b3e39483a13ac35f998d650e8b864696e31520922c7242b88c8d2ac55000003eb6d"' \
     localhost:8003/keys/tz3Tm6UTWmPAZJaNSPAQNiMiyFSHnRXrkcHj
 ```
 
