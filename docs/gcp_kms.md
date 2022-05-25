@@ -9,6 +9,7 @@ Create a new project or use an existing project and the service accounts used wi
 Project name is required in the signatory config.
 
 ### **Basic permissions**
+
 * `cloudkms.cryptoKeyVersions.get`
 * `cloudkms.cryptoKeyVersions.list`
 * `cloudkms.cryptoKeyVersions.viewPublicKey`
@@ -114,13 +115,13 @@ The below steps are for providing signatory with the permissions to access the g
 
 `cloudkms` backend accepts GCP's standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable
 
-```
+```sh
 export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 ```
 
-**Getting PKH**
+### **Getting PKH**
 
-```
+```sh
 signatory % ./signatory-cli list -c /etc/s.yaml
 Public Key Hash:    tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ
 Vault:              CloudKMS
@@ -131,7 +132,7 @@ Status:             FOUND_NOT_CONFIGURED
 
 **Update signatory.yaml config with PKH:**
 
-```
+```sh
 signatory % cat /etc/s.yaml 
 server:
   # Address/Port that Signatory listens on
@@ -172,7 +173,7 @@ Users can generate a private key in an air gap environment and then import it in
 
 2. Use the below command to import the generated private into GCP Key Management. Only `Elliptic Curve P-256 - SHA256` `Digest` is supported now. Below sample key is taken from `signatory/docs/yubihsm.md`
 
-```
+```sh
 % ./signatory-cli import -c signatory.yaml --vault kms p2esk28hoUE2J88QNFj2aDX2pjzL7wcVh2g8tkEwtWWguby9M3FHUgSbzvF2Sd7wQ4Kd8crFwvto6gF3otcBuo4T
 
 INFO[0000] Initializing vault                            vault=cloudkms vault_name=kms
