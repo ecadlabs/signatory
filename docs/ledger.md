@@ -6,10 +6,10 @@ title: Ledger
 # Ledger vault
 
 Connect the ledger device to the system in which signatory is running.
-Install tezos-wallet and tezos-baker apps from ledger live. <https://www.ledger.com/ledger-live/download>
+Install tezos-wallet and tezos-baker apps from [ledger live](https://www.ledger.com/ledger-live/download).
 
 Note: Developer mode might be needed to install baker app.
-<https://developers.ledger.com/docs/live-app/developer-mode/#:~:text=To%20activate%20the%20Developer%20mode,Live%20version%202.32%20and%20above.>
+[Ledger Developer mode](https://developers.ledger.com/docs/live-app/developer-mode/#:~:text=To%20activate%20the%20Developer%20mode,Live%20version%202.32%20and%20above.)
 
 ## Configuration
 
