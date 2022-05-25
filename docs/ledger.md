@@ -2,9 +2,12 @@
 id: ledger
 title: Ledger
 ---
+
 # Ledger vault
+
 Connect the ledger device to the system in which signatory is running.
-Install tezos-wallet and tezos-baker apps from ledger live. 
+Install tezos-wallet and tezos-baker apps from ledger live. <https://www.ledger.com/ledger-live/download>
+
 ## Configuration
 
 | Name        | Type         | Description                                                   |
@@ -42,10 +45,13 @@ vaults:
         - "secp256k1/0'/1'"
       close_after: 3600s
 ```
+
 ## Getting data from ledger for signatory configuration using CLI:
+
 Keep tezos-wallet app open for the below commands and for signing any wallet transactions.
 During every wallet transaction `Accept/Reject` input should be provided in the ledger when prompted.
 
+```sh
     % ./signatory-cli list -c ./sig-ledger.yaml 
     INFO[0000] Initializing vault                            vault=ledger vault_name=ledger
     Public Key Hash:    tz1TrrJS7XU2WGJJEZcPxaB7cXWLd8pCL7SW
@@ -57,20 +63,23 @@ During every wallet transaction `Accept/Reject` input should be provided in the 
     Public Key Hash:    tz2ByDXtXn3Wj4k6DoJnyKHMA68xJvL1nBmV
     Vault:              Ledger
     ID:                 secp256k1/44'/1729'/0'/1'
+```
 
 ### List all connected Ledgers
 
-```
+```sh
 % signatory-cli ledger list
-Path:  		IOService:/AppleARMPE/arm-io@10F00000/AppleT810xIO/usb-drd1@2280000/AppleT8103USBXHCI@01000000/usb-drd1-port-hs@01100000/USB2.1 Hub@01100000/AppleUSB20Hub@01100000/AppleUSB20HubPort@01130000/Nano S@01130000/Nano S@0/AppleUserUSBHostHIDDevice
-ID:     	tz1Qrqpz6bVUgZc5o5qARHB7j2v57z6knm55 / 3944f7a0
-Version:	TezBake 2.2.11 a6fbd27f
+Path:    IOService:/AppleARMPE/arm-io@10F00000/AppleT810xIO/usb-drd1@2280000/AppleT8103USBXHCI@01000000/usb-drd1-port-hs@01100000/USB2.1 Hub@01100000/AppleUSB20Hub@01100000/AppleUSB20HubPort@01130000/Nano S@01130000/Nano S@0/AppleUserUSBHostHIDDevice
+ID:      tz1Qrqpz6bVUgZc5o5qARHB7j2v57z6knm55 / 3944f7a0
+Version: TezBake 2.2.11 a6fbd27f
 ```
 
 ## Setup baking with signatory and ledger
+
 Keep tezos-baker app open for the below configurations and when the baker is running.
 No prompt will be seen in ledger during signing operations.
-```
+
+```sh
 signatory-cli ledger setup-baking [--chain-id <chain_id>] [--main-hwm <hwm>] [--test-hwm <hwm>] [-d <device>] <path>
 ```
 
@@ -82,7 +91,7 @@ signatory-cli ledger setup-baking -d 3944f7a0 "bip32-ed25519/44'/1729'/0'/0'"
 
 ### Reset high water marks
 
-```
+```sh
 signatory-cli ledger set-high-watermark [-d <device>] <hwm>
 ```
 
@@ -91,8 +100,11 @@ Example:
 ```sh
 signatory-cli ledger set-high-watermark -d 3944f7a0 0
 ```
-### close_after field in config
-Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity. 
+
+### **close_after field in config**
+
+Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity.
+
 Example:
 ```
 close_after: 3600s

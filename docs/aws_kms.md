@@ -1,6 +1,6 @@
 ---
 id: aws_kms
-title: AwsKMS
+title: AWSKMS
 ---
 # AWS KMS Configuration
 
