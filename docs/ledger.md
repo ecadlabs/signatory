@@ -8,6 +8,9 @@ title: Ledger
 Connect the ledger device to the system in which signatory is running.
 Install tezos-wallet and tezos-baker apps from ledger live. <https://www.ledger.com/ledger-live/download>
 
+Note: Developer mode might be needed to install baker app.
+<https://developers.ledger.com/docs/live-app/developer-mode/#:~:text=To%20activate%20the%20Developer%20mode,Live%20version%202.32%20and%20above.>
+
 ## Configuration
 
 | Name        | Type         | Description                                                   |
@@ -46,7 +49,7 @@ vaults:
       close_after: 3600s
 ```
 
-## Getting data from ledger for signatory configuration using CLI:
+## Getting data from ledger for signatory configuration using CLI
 
 Keep tezos-wallet app open for the below commands and for signing any wallet transactions.
 During every wallet transaction `Accept/Reject` input should be provided in the ledger when prompted.
@@ -106,6 +109,7 @@ signatory-cli ledger set-high-watermark -d 3944f7a0 0
 Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity.
 
 Example:
-```
+
+```sh
 close_after: 3600s
 ```
