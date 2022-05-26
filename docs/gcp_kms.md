@@ -50,7 +50,7 @@ Below are the configuration fields which are required for Signatory.
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTIONAL
    </td>
    <td>Path to the GCP application token JSON file (overrides <code>GOOGLE_APPLICATION_CREDENTIALS</code> environment variable)
    </td>
@@ -60,7 +60,7 @@ Below are the configuration fields which are required for Signatory.
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTIONAL
    </td>
    <td>GCP application token JSON data (overrides <code>application_credentials</code>)
    </td>

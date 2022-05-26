@@ -271,7 +271,7 @@ Example output:
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Used for secret based authentication. Not covered here. Not recommended.
    </td>
@@ -281,7 +281,7 @@ Example output:
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Path to PKCS #12 file
    </td>
@@ -291,7 +291,7 @@ Example output:
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Hex or Base64 encoded client certificate hash. Use along with <code>client_private_key</code> as an alternative to PKCS #12 flow
    </td>
@@ -301,7 +301,7 @@ Example output:
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Path to the client private key. Use along with <code>client_certificate_thumbprint</code> as an alternative to PKCS #12 flow
    </td>
@@ -311,7 +311,7 @@ Example output:
    </td>
    <td>UUID
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Subscription ID. Optional. Only if <code>Microsoft.ResourceHealth</code> is enabled (see above)
    </td>
@@ -321,7 +321,7 @@ Example output:
    </td>
    <td>string
    </td>
-   <td>
+   <td>OPTINAL
    </td>
    <td>Resource group name. Optional. Only if <code>Microsoft.ResourceHealth</code> is enabled (see above)
    </td>
