@@ -1,6 +1,6 @@
 ---
 id: ledger
-title: Ledger hardware wallet setup
+title: (DRAFT) Ledger hardware wallet setup
 ---
 
 Steps for a ledger to be setup for baking.
