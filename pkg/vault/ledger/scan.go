@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
+	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonics"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
 
@@ -51,15 +52,17 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	pkh, err := tezos.EncodePublicKeyHash(rootPK)
+	pkh, err := mnemonics.Getname(hash)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	id := pkh.C + "-" + pkh.D + "-" + pkh.H + "-" + pkh.D
+
 	dev = &deviceInfo{
 		Path:    path,
 		Version: ver,
-		ID:      pkh,
+		ID:      id,
 		ShortID: hex.EncodeToString(hash[:4]),
 	}
 	return app, dev, nil
