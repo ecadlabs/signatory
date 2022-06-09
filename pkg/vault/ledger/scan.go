@@ -57,7 +57,7 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	id := pkh.C + "-" + pkh.D + "-" + pkh.H + "-" + pkh.D
+	id := pkh.C + "-" + pkh.T + "-" + pkh.H + "-" + pkh.D
 
 	dev = &deviceInfo{
 		Path:    path,
