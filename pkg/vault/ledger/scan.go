@@ -16,6 +16,7 @@ type deviceInfo struct {
 	Path    string
 	Version *tezosapp.Version
 	ID      string
+	Pkh     string
 	ShortID string
 }
 
@@ -52,17 +53,23 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	pkh, err := mnemonics.Getname(hash)
+	pkh, err := tezos.EncodePublicKeyHash(rootPK)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	id := pkh.C + "-" + pkh.T + "-" + pkh.H + "-" + pkh.D
+	an, err := mnemonics.Getname(hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	id := an.C + "-" + an.T + "-" + an.H + "-" + an.D
 
 	dev = &deviceInfo{
 		Path:    path,
 		Version: ver,
 		ID:      id,
+		Pkh:     pkh,
 		ShortID: hex.EncodeToString(hash[:4]),
 	}
 	return app, dev, nil

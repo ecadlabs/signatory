@@ -12,6 +12,7 @@ import (
 const listTemplateSrc = `{{range . -}}
 Path:  		{{.Path}}
 ID:     	{{.ID}} / {{.ShortID}}
+PKH:		{{.Pkh}}
 Version:	{{.Version}}
 {{end}}
 `

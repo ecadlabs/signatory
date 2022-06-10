@@ -18,5 +18,3 @@ func TestMnemonics(t *testing.T) {
 	fmt.Println("Name", n)
 	require.Equal(t, name, *n)
 }
-
-// "calculating"; t = "meerkat"; h = "straight"; d = "beetle"
