@@ -1,0 +1,6 @@
+- [] Design
+- [] Development
+- [] Unit Tests
+- [] Integration Tests (If needed/applicable)
+- [] Manual Testing
+- [] Documentation
