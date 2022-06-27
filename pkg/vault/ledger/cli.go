@@ -10,10 +10,9 @@ import (
 )
 
 const listTemplateSrc = `{{range . -}}
-Path:  		{{.Path}}
-ID:     	{{.ID}} / {{.ShortID}}
-PKH:		{{.Pkh}}
-Version:	{{.Version}}
+Path:  			{{.Path}}
+Public Key Mnemonic:    {{.ID}}
+Version:		{{.Version}}
 {{end}}
 `
 

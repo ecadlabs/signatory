@@ -1,7 +1,6 @@
 package ledger
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -53,11 +52,6 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	pkh, err := tezos.EncodePublicKeyHash(rootPK)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	an, err := mnemonics.Getname(hash)
 	if err != nil {
 		return nil, nil, err
@@ -69,8 +63,6 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		Path:    path,
 		Version: ver,
 		ID:      id,
-		Pkh:     pkh,
-		ShortID: hex.EncodeToString(hash[:4]),
 	}
 	return app, dev, nil
 }
@@ -93,7 +85,8 @@ func (s *scanner) open(id string) (*tezosapp.App, error) {
 		if err != nil {
 			continue
 		}
-		if id == "" || dev.ShortID == id || dev.ID == id {
+		if id == "" || dev.ID == id {
+			fmt.Println("Abi-->: ", dev.ID, " - ", id)
 			return app, nil
 		}
 		if err := app.Close(); err != nil {
