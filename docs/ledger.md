@@ -13,11 +13,11 @@ Note: Developer mode might be needed to install baker app.
 
 ## Configuration
 
-| Name        | Type         | Description                                                   |
-| ----------- | ------------ | ------------------------------------------------------------- |
-| id          | string       | Ledger Device ID. Use first available device if not specified |
-| keys        | string array | Managed key IDs                                               |
-| close_after | duration     | Close device after a certain period of inactivity             |
+| Name        | Type         | Required | Description                                                   |
+|-------------|--------------|----------|---------------------------------------------------------------|
+| id          | string       |     ✅    | Ledger Device ID. Use first available device if not specified |
+| keys        | string array |     ✅    | Managed key IDs                                               |
+| close_after | duration     |          | Close device after a certain period of inactivity             |
 
 ### Keys & ID format and meaning
 
@@ -47,6 +47,16 @@ vaults:
         - "bip32-ed25519/0'/0'"
         - "secp256k1/0'/1'"
       close_after: 3600s
+```
+
+### **close_after field in config**
+
+Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity.
+
+Example:
+
+```sh
+close_after: 3600s
 ```
 
 ## Getting data from ledger for signatory configuration using CLI
@@ -102,14 +112,4 @@ Example:
 
 ```sh
 signatory-cli ledger set-high-watermark -d 3944f7a0 0
-```
-
-### **close_after field in config**
-
-Configure this value as per your requirement. As you don't know the time between the blocks assigned to your baker, it is better to configure it for at least a few hours to prevent the ledger from closing, often due to inactivity.
-
-Example:
-
-```sh
-close_after: 3600s
 ```

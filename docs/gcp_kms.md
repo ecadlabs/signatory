@@ -108,7 +108,7 @@ The key-ring name and location are required in the signatory configuration.
 The below steps are for providing signatory with the permissions to access the google cloud account Key Management.
 
 * Select `IAM & ADMIN` from the menu and select `Service accounts`. Create a new service account or use an existing one with all the above permissions (Get, Sign & Import) granted.
-* Select the created/existing service account and within that create a new key and a``prompt to download the application credentials will appear, select the JSON format.
+* Select the created/existing service account and within that create a new key and a prompt to download the application credentials will appear, select the JSON format.
 * The downloaded JSON file is needed in signatory config or can be assigned to the below environment variable.
 
 ### **Environment variables**
