@@ -238,6 +238,7 @@ func (v *Vault) worker() {
 				}
 
 			case *signReq:
+				// Retrying openDevice oncemore when ledger reset
 				attempt := 0
 				for attempt < 2 {
 					if err = openDev(attempt == 1); err != nil {
