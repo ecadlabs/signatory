@@ -30,7 +30,7 @@ func TestBlock(t *testing.T) {
 		PayloadRound:              0,
 		ProofOfWorkNonce:          []uint8{0x10, 0x18, 0x95, 0xca, 0x00, 0x00, 0x00, 0x00},
 		SeedNonceHash:             "nceUFoeQDgkJCmzdMWh19ZjBYqQD3N9fe6bXQ1ZsUKKvMn7iun5Z3",
-		LiquidityBakingEscapeVote: false,
+		LiquidityBakingToggleVote: "on",
 	}
 	d, err := hex.DecodeString(data)
 	require.NoError(t, err)
@@ -119,9 +119,10 @@ func TestRequest(t *testing.T) {
 						},
 						Context: "CoWRqXN1hCqPoLNF5K53DkcqHSHA9638oXnyhg5nBBsK1gNVAQdZ",
 					},
-					PayloadHash:      "vh2UJ9qvkLHcFbiotR462Ni84QU7xJ83fNwspoo9kq7spoNeSMkH",
-					PayloadRound:     0,
-					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
+					PayloadHash:               "vh2UJ9qvkLHcFbiotR462Ni84QU7xJ83fNwspoo9kq7spoNeSMkH",
+					PayloadRound:              0,
+					ProofOfWorkNonce:          []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
+					LiquidityBakingToggleVote: "on",
 				},
 			},
 		},
@@ -172,9 +173,38 @@ func TestRequest(t *testing.T) {
 						},
 						Context: "CoUzGHYfsjAYzGRXrdRGsHPBegYPyGZhERubtd4g4C4Q1UxG3pcF",
 					},
-					PayloadHash:      "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
-					PayloadRound:     1,
-					ProofOfWorkNonce: []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
+					PayloadHash:               "vh2JHnDVQe3AjR4G2GioKa2B7toaM1zYHNN9Er5u8ZexMVnt9owF",
+					PayloadRound:              1,
+					ProofOfWorkNonce:          []uint8{0xa8, 0xe1, 0xdd, 0x3c, 0x00, 0x00, 0x00, 0x00},
+					LiquidityBakingToggleVote: "on",
+				},
+			},
+		},
+		{
+			data: "11af1864d9000bb28703a4852fc6cc0ecde11c599941651e4a532197a48c084e2f5b75a9a8b643534e910000000062bb3552042c39b4d080c1575898d04ce9494a92f01dc383741a5386892d73fbf1c3b07bcc00000021000000010200000004000bb2870000000000000004ffffffff00000004000000014d33938f492722277f1d2f9a63e797c5c5b207dec6120859fe4384107fe6352daafc5d3c600812134143c1be015d89a906264547aff9f2ea3026908f82d5139e00000001cb9f439e19d500000002",
+			msg: &TenderbakeBlockRequest{
+				ChainID: "NetXnHfVqm9iesp",
+				BlockHeader: &BlockHeader{
+					ShellBlockHeader: ShellBlockHeader{
+						Level:          766599,
+						Proto:          3,
+						Predecessor:    "BLxjnUUjCqzB3MxfQpPB3ebLDr84vzPZ8hiREB7QEFbMECeaKcw",
+						Timestamp:      strTime("2022-06-28 17:07:30 +0000 UTC"),
+						ValidationPass: 4,
+						OperationsHash: "LLoZfBh66rRrSZhwNArQJgL3xyUPgdEyqWUnsx6Avr3fpA8WLNiot",
+						Fitness: [][]uint8{
+							{0x02},
+							{0x00, 0x0b, 0xb2, 0x87},
+							{},
+							{0xff, 0xff, 0xff, 0xff},
+							{0x00, 0x00, 0x00, 0x01},
+						},
+						Context: "CoVEJs57DVdG1roZD5YPjZ3jEHGvoiBrYEiXS2B37Vvj4xg8KRmy",
+					},
+					PayloadHash:               "vh2yRiWnsKxkSP8AweaWr5nXBhYutgSvcCtNEpTJBTKN1aoXjzyw",
+					PayloadRound:              1,
+					ProofOfWorkNonce:          []uint8{0xcb, 0x9f, 0x43, 0x9e, 0x19, 0xd5, 0x00, 0x00},
+					LiquidityBakingToggleVote: "pass",
 				},
 			},
 		},
@@ -191,6 +221,7 @@ func TestRequest(t *testing.T) {
 			default:
 				assert.Empty(t, d)
 			}
+			// spew.Dump(msg)
 			assert.Equal(t, c.msg, msg)
 		})
 	}

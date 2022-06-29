@@ -129,6 +129,12 @@ func parseShellBlockHeader(buf *[]byte) (*ShellBlockHeader, error) {
 	return &b, nil
 }
 
+const (
+	lbVoteOn = iota
+	lbVoteOff
+	lbVotePass
+)
+
 // BlockHeader represents unsigned block header
 type BlockHeader struct {
 	ShellBlockHeader
@@ -136,7 +142,7 @@ type BlockHeader struct {
 	PayloadRound              int32
 	ProofOfWorkNonce          []byte
 	SeedNonceHash             string
-	LiquidityBakingEscapeVote bool
+	LiquidityBakingToggleVote string
 }
 
 func (b *BlockHeader) GetRound() int32 {
@@ -173,9 +179,19 @@ func parseUnsignedBlockHeader(buf *[]byte) (*BlockHeader, error) {
 		}
 		b.SeedNonceHash = encodeBase58(pCycleNonce, hash)
 	}
-	b.LiquidityBakingEscapeVote, err = utils.GetBool(buf)
+	vote, err := utils.GetByte(buf)
 	if err != nil {
 		return nil, err
+	}
+	switch vote {
+	case lbVoteOn:
+		b.LiquidityBakingToggleVote = "on"
+	case lbVoteOff:
+		b.LiquidityBakingToggleVote = "off"
+	case lbVotePass:
+		b.LiquidityBakingToggleVote = "pass"
+	default:
+		return nil, fmt.Errorf("invalid liquidity baking vote: %d", vote)
 	}
 	return &b, nil
 }
