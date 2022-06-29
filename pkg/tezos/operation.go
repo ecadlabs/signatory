@@ -508,8 +508,10 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op.Ballot = "yay"
 		case ballotNay:
 			op.Ballot = "nay"
-		default:
+		case ballotPass:
 			op.Ballot = "pass"
+		default:
+			return nil, fmt.Errorf("invalid ballot: %d", ballot)
 		}
 		return &op, nil
 
