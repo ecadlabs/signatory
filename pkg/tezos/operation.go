@@ -31,6 +31,18 @@ const (
 	tagRegisterGlobalConstant       = 111
 	tagSetDepositsLimit             = 112
 	tagTxRollupOrigination          = 150
+	tagTxRollupSubmitBatch          = 151
+	tagTxRollupCommit               = 152
+	tagTxRollupReturnBond           = 153
+	tagTxRollupFinalizeCommitment   = 154
+	tagTxRollupRemoveCommitment     = 155
+	tagTxRollupRejection            = 156
+	tagTxRollupDispatchTickets      = 157
+	tagTransferTicket               = 158
+	tagScRollupOriginate            = 200
+	tagScRollupAddMessages          = 201
+	tagScRollupCement               = 202
+	tagScRollupPublish              = 203
 )
 
 var opKinds = map[int]string{
@@ -52,6 +64,18 @@ var opKinds = map[int]string{
 	tagRegisterGlobalConstant:       "register_global_constant",
 	tagSetDepositsLimit:             "set_deposits_limit",
 	tagTxRollupOrigination:          "tx_rollup_origination",
+	tagTxRollupSubmitBatch:          "tx_rollup_submit_batch",
+	tagTxRollupCommit:               "tx_rollup_commit",
+	tagTxRollupReturnBond:           "tx_rollup_return_bond",
+	tagTxRollupFinalizeCommitment:   "tx_rollup_finalize_commitment",
+	tagTxRollupRemoveCommitment:     "tx_rollup_remove_commitment",
+	tagTxRollupRejection:            "tx_rollup_rejection",
+	tagTxRollupDispatchTickets:      "tx_rollup_dispatch_tickets",
+	tagTransferTicket:               "transfer_ticket",
+	tagScRollupOriginate:            "sc_rollup_originate",
+	tagScRollupAddMessages:          "sc_rollup_add_messages",
+	tagScRollupCement:               "sc_rollup_cement",
+	tagScRollupPublish:              "sc_rollup_publish",
 }
 
 type Endorsement interface {
