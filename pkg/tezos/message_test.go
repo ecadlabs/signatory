@@ -30,7 +30,7 @@ func TestBlock(t *testing.T) {
 		PayloadRound:              0,
 		ProofOfWorkNonce:          []uint8{0x10, 0x18, 0x95, 0xca, 0x00, 0x00, 0x00, 0x00},
 		SeedNonceHash:             "nceUFoeQDgkJCmzdMWh19ZjBYqQD3N9fe6bXQ1ZsUKKvMn7iun5Z3",
-		LiquidityBakingEscapeVote: false,
+		LiquidityBakingEscapeVote: 0,
 	}
 	d, err := hex.DecodeString(data)
 	require.NoError(t, err)

@@ -1,6 +1,7 @@
 package tezos
 
 import (
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -136,7 +137,7 @@ type BlockHeader struct {
 	PayloadRound              int32
 	ProofOfWorkNonce          []byte
 	SeedNonceHash             string
-	LiquidityBakingEscapeVote bool
+	LiquidityBakingEscapeVote int8
 }
 
 func (b *BlockHeader) GetRound() int32 {
@@ -173,7 +174,12 @@ func parseUnsignedBlockHeader(buf *[]byte) (*BlockHeader, error) {
 		}
 		b.SeedNonceHash = encodeBase58(pCycleNonce, hash)
 	}
-	b.LiquidityBakingEscapeVote, err = utils.GetBool(buf)
+	lq, err := utils.GetBytes(buf, 8)
+	if err != nil {
+		return nil, err
+	}
+
+	b.LiquidityBakingEscapeVote = int8(binary.LittleEndian.Uint16(lq))
 	if err != nil {
 		return nil, err
 	}
