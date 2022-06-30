@@ -2,6 +2,7 @@
 id: azure_kms
 title: AzureKMS
 ---
+
 # Azure Key Vault
 
 The goal of this guide is to configure Signatory to use an Azure Key Vault as a signing backend.
@@ -225,108 +226,18 @@ Example output:
 
 ### **Configuration parameters**
 
-<table>
-  <tr>
-   <td><strong>Name</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>vault
-   </td>
-   <td>URL
-   </td>
-   <td>✅
-   </td>
-   <td>Vault URL
-   </td>
-  </tr>
-  <tr>
-   <td>tenant_id
-   </td>
-   <td>UUID
-   </td>
-   <td>✅
-   </td>
-   <td>Tenant ID
-   </td>
-  </tr>
-  <tr>
-   <td>client_id
-   </td>
-   <td>UUID
-   </td>
-   <td>✅
-   </td>
-   <td>Service Principal (application) ID from the registration stage
-   </td>
-  </tr>
-  <tr>
-   <td>client_secret
-   </td>
-   <td>string
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Used for secret based authentication. Not covered here. Not recommended.
-   </td>
-  </tr>
-  <tr>
-   <td>client_pkcs12_certificate
-   </td>
-   <td>string
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Path to PKCS #12 file
-   </td>
-  </tr>
-  <tr>
-   <td>client_certificate_thumbprint
-   </td>
-   <td>string
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Hex or Base64 encoded client certificate hash. Use along with <code>client_private_key</code> as an alternative to PKCS #12 flow
-   </td>
-  </tr>
-  <tr>
-   <td>client_private_key
-   </td>
-   <td>string
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Path to the client private key. Use along with <code>client_certificate_thumbprint</code> as an alternative to PKCS #12 flow
-   </td>
-  </tr>
-  <tr>
-   <td>subscription_id
-   </td>
-   <td>UUID
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Subscription ID. Optional. Only if <code>Microsoft.ResourceHealth</code> is enabled (see above)
-   </td>
-  </tr>
-  <tr>
-   <td>resource_group
-   </td>
-   <td>string
-   </td>
-   <td>OPTINAL
-   </td>
-   <td>Resource group name. Optional. Only if <code>Microsoft.ResourceHealth</code> is enabled (see above)
-   </td>
-  </tr>
-</table>
+|||||
+|--- |--- |--- |--- |
+|Name|Type|Required|Description|
+|vault|URL|✅|Vault URL|
+|tenant_id|UUID|✅|Tenant ID|
+|client_id|UUID|✅|Service Principal (application) ID from the registration stage|
+|client_secret|string|OPTIONAL|Used for secret based authentication. Not covered here. Not recommended.|
+|client_pkcs12_certificate|string|OPTIONAL|Path to PKCS #12 file|
+|client_certificate_thumbprint|string|OPTIONAL|Hex or Base64 encoded client certificate hash. Use along with client_private_key as an alternative to PKCS #12 flow|
+|client_private_key|string|OPTIONAL|Path to the client private key. Use along with client_certificate_thumbprint as an alternative to PKCS #12 flow|
+|subscription_id|UUID|OPTIONAL|Subscription ID. Optional. Only if Microsoft.ResourceHealth is enabled (see above)|
+|resource_group|string|OPTIONAL|Resource group name. Optional. Only if Microsoft.ResourceHealth is enabled (see above)|
 
 Example:
 

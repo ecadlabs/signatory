@@ -3,12 +3,12 @@ id: gcp_kms
 title: GCPKMS
 ---
 
-## **Google Cloud Platform configuration**
+# **Google Cloud Platform configuration**
 
 Create a new project or use an existing project and the service accounts used with Signatory should have the following permissions. It may be achieved by using custom roles (see [https://console.cloud.google.com/iam-admin/roles](https://console.cloud.google.com/iam-admin/roles)) \
 Project name is required in the signatory config.
 
-### **Basic permissions**
+## **Basic permissions**
 
 * `cloudkms.cryptoKeyVersions.get`
 * `cloudkms.cryptoKeyVersions.list`
@@ -16,11 +16,11 @@ Project name is required in the signatory config.
 * `cloudkms.cryptoKeys.get`
 * `cloudkms.cryptoKeys.list`
 
-### **Sign**
+## **Sign**
 
 * `cloudkms.cryptoKeyVersions.useToSign`
 
-### **Import**
+## **Import**
 
 * `cloudkms.cryptoKeyVersions.create`
 * `cloudkms.cryptoKeys.create`
@@ -29,81 +29,26 @@ Project name is required in the signatory config.
 * `cloudkms.importJobs.list`
 * `cloudkms.importJobs.useToImport`
 
-### **Configuration parameters**
+## **Configuration parameters**
 
 Below are the configuration fields which are required for Signatory.
 
-<table>
-  <tr>
-   <td>
-<strong>Name</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>application_credentials
-   </td>
-   <td>string
-   </td>
-   <td>OPTIONAL
-   </td>
-   <td>Path to the GCP application token JSON file (overrides <code>GOOGLE_APPLICATION_CREDENTIALS</code> environment variable)
-   </td>
-  </tr>
-  <tr>
-   <td>application_credentials_data
-   </td>
-   <td>string
-   </td>
-   <td>OPTIONAL
-   </td>
-   <td>GCP application token JSON data (overrides <code>application_credentials</code>)
-   </td>
-  </tr>
-  <tr>
-   <td>project
-   </td>
-   <td>string
-   </td>
-   <td>✅
-   </td>
-   <td>Project name
-   </td>
-  </tr>
-  <tr>
-   <td>location
-   </td>
-   <td>string
-   </td>
-   <td>✅
-   </td>
-   <td>Location
-   </td>
-  </tr>
-  <tr>
-   <td>key_ring
-   </td>
-   <td>string
-   </td>
-   <td>✅
-   </td>
-   <td>Key ring name
-   </td>
-  </tr>
-</table>
+|||||
+|--- |--- |--- |--- |
+|Name|Type|Required|Description|
+|application_credentials|string|OPTIONAL|Path to the GCP application token JSON file (overrides GOOGLE_APPLICATION_CREDENTIALS environment variable)|
+|application_credentials_data|string|OPTIONAL|GCP application token JSON data (overrides application_credentials)|
+|project|string|✅|Project name|
+|location|string|✅|Location|
+|key_ring|string|✅|Key ring name|
 
-### **Key Management**
+## **Key Management**
 
-Under `key management` create a new `key-ring` with any location and create a key with `purpose` as `Asymmetric-sign `and `protection level` as `HSM`.
+Under `key management` create a new `key-ring` with any location and create a key with `purpose` as `Asymmetric-sign` and `protection level` as `HSM`.
 
 The key-ring name and location are required in the signatory configuration.
 
-### **Application Access:**
+## **Application Access:**
 
 The below steps are for providing signatory with the permissions to access the google cloud account Key Management.
 
@@ -111,7 +56,7 @@ The below steps are for providing signatory with the permissions to access the g
 * Select the created/existing service account and within that create a new key and a prompt to download the application credentials will appear, select the JSON format.
 * The downloaded JSON file is needed in signatory config or can be assigned to the below environment variable.
 
-### **Environment variables**
+## **Environment variables**
 
 `cloudkms` backend accepts GCP's standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable
 
@@ -119,7 +64,7 @@ The below steps are for providing signatory with the permissions to access the g
 export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 ```
 
-### **Getting PKH**
+## **Getting PKH**
 
 ```sh
 signatory % ./signatory-cli list -c /etc/s.yaml
@@ -165,7 +110,7 @@ tezos:
       - endorsement
 ```
 
-### **Key Import:**
+## **Key Import:**
 
 Users can generate a private key in an air gap environment and then import it into GCP Key Management using `signatory-cli` binary. Below are the steps to do that.
 
