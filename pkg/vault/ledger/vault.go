@@ -194,9 +194,13 @@ func (v *Vault) worker() {
 		closeAfter = defaultCloseAfter
 	}
 
-	openDev := func() error {
+	openDev := func(retry bool) error {
 		if dev != nil {
-			return nil
+			if retry {
+				dev.Close()
+			} else {
+				return nil
+			}
 		}
 		dev, err = deviceScanner.open(v.config.ID)
 		if err != nil {
@@ -219,7 +223,7 @@ func (v *Vault) worker() {
 		case req := <-v.req:
 			switch r := req.(type) {
 			case *getKeyReq:
-				if err = openDev(); err != nil {
+				if err = openDev(false); err != nil {
 					r.err <- err
 					break
 				}
@@ -234,16 +238,26 @@ func (v *Vault) worker() {
 				}
 
 			case *signReq:
-				if err = openDev(); err != nil {
-					r.err <- err
-					break
+				// Retrying openDevice oncemore when ledger reset
+				attempt := 0
+				for attempt < 2 {
+					if err = openDev(attempt == 1); err != nil {
+						r.err <- err
+						break
+					}
+					sig, err := dev.Sign(r.key.dt, r.key.path, r.data, r.prehashed)
+					if err != nil {
+						if attempt == 1 {
+							r.err <- err
+						} else {
+							attempt = attempt + 1
+							continue
+						}
+						break
+					}
+					attempt = 3
+					r.sig <- sig
 				}
-				sig, err := dev.Sign(r.key.dt, r.key.path, r.data, r.prehashed)
-				if err != nil {
-					r.err <- err
-					break
-				}
-				r.sig <- sig
 			}
 
 		case <-tch:

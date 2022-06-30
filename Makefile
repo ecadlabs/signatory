@@ -4,8 +4,8 @@ CONTAINER_TAG ?= $(shell git branch --show-current)
 
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
-PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
-GOLANG_CROSS_VERSION  ?= v1.17.6
+PACKAGE_NAME          := github.com/ecadlabs/signatory
+GOLANG_CROSS_VERSION  ?= v1.18.3
 
 all: signatory signatory-cli
 
