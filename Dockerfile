@@ -1,5 +1,4 @@
-FROM alpine:3
-RUN apk --no-cache add ca-certificates
+FROM ubuntu:22.04
 COPY ./signatory /bin
 COPY ./signatory-cli /bin
 
