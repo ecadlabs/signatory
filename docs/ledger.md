@@ -17,7 +17,7 @@ Note: Developer mode might be needed to install baker app.
 |-------------|--------------|----------|---------------------------------------------------------------|
 | id          | string       |     ✅    | Ledger Device ID. Use first available device if not specified |
 | keys        | string array |     ✅    | Managed key IDs                                               |
-| close_after | duration     |          | Close device after a certain period of inactivity             |
+| close_after | duration     |    OPTIONAL      | Close device after a certain period of inactivity             |
 
 ### Keys & ID format and meaning
 
