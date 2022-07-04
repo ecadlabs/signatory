@@ -81,7 +81,7 @@ You can test the signing functionality by making a POST request as follows:
 
 ```sh
 curl -XPOST \
-    -d '"02111111111111111110"' \
+    -d '"027a06a770e6cebe5b3e39483a13ac35f998d650e8b864696e31520922c7242b88c8d2ac55000003eb6d"' \
     signatory:6732/keys/tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm
 ```
 

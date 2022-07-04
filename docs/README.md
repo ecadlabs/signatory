@@ -60,7 +60,7 @@ tezos:
     # purposes.
     log_payloads: true
     allowed_operations:
-      # List of [generic, block, endorsement]
+      # List of [generic, block, endorsement, preendorsement]
       - generic
       - block
       - endorsement
