@@ -128,7 +128,7 @@ openssl pkcs12 -export -out "service-principal.pfx" -inkey "service-principal.ke
 
 Now you can safely delete the certificate file (`.csr`).
 
-#### **Get certificate hash from AD (the rational way).**
+#### **Get certificate hash from AD**
 
 Alternatively, you can get back a certificate hash
 
