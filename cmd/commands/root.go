@@ -25,6 +25,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		level      string
 		configFile string
 		baseDir    string
+		jsonLog    bool
 	)
 
 	rootCmd := cobra.Command{
@@ -50,6 +51,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			validate := config.Validator()
 			if err := validate.Struct(conf); err != nil {
 				return err
+			}
+
+			if jsonLog == true {
+				log.SetFormatter(&log.JSONFormatter{})
 			}
 
 			lv, err := log.ParseLevel(level)
@@ -91,6 +96,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
 	f.StringVar(&baseDir, "base-dir", "", "Base directory. Takes priority over one specified in config")
+	f.BoolVar(&jsonLog, "json-log", false, "Use JSON structured logs")
 
 	return &rootCmd
 }
