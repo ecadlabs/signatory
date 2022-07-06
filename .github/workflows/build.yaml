@@ -77,15 +77,16 @@ jobs:
           path: ${{ github.workspace }}/.release-env
           contents: |
             DOCKER_FAIL_ON_LOGIN_ERROR=true
-            DOCKER_CREDS_FILE=.docker-creds
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Write docker-creds file
-        uses: DamianReeves/write-file-action@v1.0
-        with:
-          path: ${{ github.workspace }}/.docker-creds
-          contents: |
-            ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
+      # - name: Write docker-creds file
+      #   uses: DamianReeves/write-file-action@v1.0
+      #   with:
+      #     path: ${{ github.workspace }}/.docker-creds
+      #     contents: |
+      #       ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
 
       - name: Run GoReleaser
         run: make release
