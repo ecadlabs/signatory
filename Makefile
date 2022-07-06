@@ -23,6 +23,7 @@ clean:
 
 .PHONY: release-dry-run
 release-dry-run:
+	sudo rm -rf ./dist
 	docker run \
 		--rm \
 		--privileged \
