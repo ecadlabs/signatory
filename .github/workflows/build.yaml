@@ -7,6 +7,12 @@ on:
 
 name: Test and publish
 
+permissions:
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+
 env:
   CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
 
@@ -65,16 +71,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: setup release environment
-        run: |-
-          echo 'GITHUB_TOKEN=${{secrets.GH_PAT}}' > .release-env
-
-      - name: Docker Login to ghcr.io
-        uses: docker/login-action@v1
+      - name: Write release-env file
+        uses: DamianReeves/write-file-action@v1.0
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT }}
+          path: ${{ github.workspace }}/.release-env
+          contents: |
+            DOCKER_FAIL_ON_LOGIN_ERROR=true
+            DOCKER_CREDS_FILE=.docker-creds
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write docker-creds file
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: ${{ github.workspace }}/.docker-creds
+          contents: |
+            ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}:docker.io
 
       - name: Run GoReleaser
         run: make release

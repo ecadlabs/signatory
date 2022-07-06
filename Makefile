@@ -21,6 +21,18 @@ container:
 clean:
 	rm signatory signatory-cli
 
+.PHONY: release-dry-run
+release-dry-run:
+	docker run \
+		--rm \
+		--privileged \
+		-e CGO_ENABLED=1 \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(PACKAGE_NAME) \
+		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		release --rm-dist --skip-validate --skip-publish
+
 .PHONY: release
 release:
 	@if [ ! -f ".release-env" ]; then \

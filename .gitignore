@@ -19,3 +19,5 @@ vendor/
 .devcontainer
 
 dist
+.release-env
+.docker-creds
