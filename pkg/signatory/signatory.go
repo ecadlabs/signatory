@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -313,11 +312,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaul
 
 			pkh, err := tezos.EncodePublicKeyHash(key.PublicKey())
 			if err != nil {
-				s.logger().WithFields(log.Fields{
-					logVaultName: name,
-					logKeyID:     strings.Split(key.ID(), "/")[1],
-				}).Warn(err)
-				continue
+				return nil, nil, err
 			}
 			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(pkh, p)
@@ -327,7 +322,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaul
 			list = append(list, p)
 		}
 		if isempty {
-			s.logger().WithField(logVaultName, name).Warn("No valid keys found in the vault")
+			s.logger().Error("No valid keys found in the vault ", name)
 		}
 		isempty = true
 	}
@@ -340,15 +335,12 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	var i int = 0
+
 	ret := make([]*PublicKey, len(list))
-	for _, p := range list {
+	for i, p := range list {
 		enc, err := tezos.EncodePublicKey(p.key.PublicKey())
 		if err != nil {
-			s.logger().WithFields(log.Fields{
-				logVaultName: p.vault.Name(),
-				logPKH:       p.pkh}).Warn(err)
-			continue
+			return nil, err
 		}
 		ret[i] = &PublicKey{
 			PublicKey:     enc,
@@ -358,7 +350,6 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
 		}
 		ret[i].Active = ret[i].Policy != nil
-		i = i + 1
 	}
 	return ret, nil
 }
