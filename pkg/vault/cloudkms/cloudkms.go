@@ -85,7 +85,7 @@ func (c *Vault) getPublicKey(ctx context.Context, name string) (*ecdsa.PublicKey
 
 	ecKey, ok := pkixKey.(*ecdsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("key is not EC: %T", ecKey)
+		return nil, fmt.Errorf("%w: %T", vault.ErrKey, ecKey)
 	}
 
 	return ecKey, nil

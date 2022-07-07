@@ -298,15 +298,24 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaultPair, list []*keyVaultPair, err error) {
 	ret = make(map[string]*keyVaultPair)
-	var isempty bool = true
 	for name, v := range s.vaults {
+		var vaultKeys []*keyVaultPair
 		iter := v.ListPublicKeys(ctx)
+	keys:
 		for {
 			key, err := iter.Next()
-			if err == vault.ErrDone {
-				break
-			}
 			if err != nil {
+				switch {
+				case stderr.Is(err, vault.ErrDone):
+					break keys
+				case stderr.Is(err, vault.ErrKey):
+					continue keys
+				default:
+					return nil, nil, err
+				}
+			}
+
+			if !cryptoutils.PublicKeySuitableForTezos(key.PublicKey()) {
 				continue
 			}
 
@@ -318,13 +327,12 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaul
 			s.cache.push(pkh, p)
 
 			ret[pkh] = p
-			isempty = false
-			list = append(list, p)
+			vaultKeys = append(vaultKeys, p)
 		}
-		if isempty {
+		if len(vaultKeys) == 0 {
 			s.logger().Error("No valid keys found in the vault ", name)
 		}
-		isempty = true
+		list = append(list, vaultKeys...)
 	}
 	return ret, list, nil
 }

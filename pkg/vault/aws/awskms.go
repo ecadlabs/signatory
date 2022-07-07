@@ -76,7 +76,7 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 
 	ecKey, ok := pkixKey.(*ecdsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("key is not EC: %T", ecKey)
+		return nil, fmt.Errorf("%w: %T", vault.ErrKey, ecKey)
 	}
 
 	return &awsKMSKey{
