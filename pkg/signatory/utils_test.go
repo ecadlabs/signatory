@@ -14,18 +14,21 @@ type Name func() string
 type Next func() (vault.StoredKey, error)
 
 type TestVault struct {
-	name string
-	gp   GetPublicKey
-	lp   ListPublicKeys
-	s    Sign
-	n    Name
+	vaultname string
+	gp        GetPublicKey
+	lp        ListPublicKeys
+	si        Sign
+	na        Name
 }
 
-func NewTestVault(g GetPublicKey, l ListPublicKeys, s Sign, na Name, n string) *TestVault {
+func NewTestVault(g GetPublicKey, l ListPublicKeys, s Sign, n Name, vn string) *TestVault {
 
 	return &TestVault{
-		name: n,
-		lp:   l,
+		vaultname: vn,
+		gp:        g,
+		lp:        l,
+		si:        s,
+		na:        n,
 	}
 }
 
