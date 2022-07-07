@@ -32,7 +32,7 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist --skip-validate --skip-publish
+		release --rm-dist --skip-validate --skip-publish --debug
 
 .PHONY: release
 release:

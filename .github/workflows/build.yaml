@@ -53,16 +53,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - 
+        name: Checkout
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - 
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - 
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Go
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18.3
 
       - name: Write release-env file
         uses: DamianReeves/write-file-action@v1.0

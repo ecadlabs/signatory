@@ -1,4 +1,5 @@
 FROM ubuntu:22.04
+RUN apt-get update
 RUN apt-get install -y curl apt-transport-https
 RUN apt-get clean
 
