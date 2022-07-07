@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/x509"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -70,7 +69,7 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 		return nil, errors.New("key usage must be SIGN_VERIFY")
 	}
 
-	pkixKey, err := x509.ParsePKIXPublicKey(pkresp.PublicKey)
+	pkixKey, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
