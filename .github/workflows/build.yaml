@@ -87,7 +87,7 @@ jobs:
       #       ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
       -
         name: goreleaser release-dry-run
-        run: make release
+        run: make release-dry-run
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - 
