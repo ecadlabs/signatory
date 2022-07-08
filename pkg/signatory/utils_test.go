@@ -46,6 +46,6 @@ func (v *TestVault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator
 	return v.lp(ctx)
 }
 func (v *TestVault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return v.s(ctx, digest, key)
+	return v.si(ctx, digest, key)
 }
-func (v *TestVault) Name() string { return v.n() }
+func (v *TestVault) Name() string { return v.na() }
