@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -299,37 +298,41 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaultPair, list []*keyVaultPair, err error) {
 	ret = make(map[string]*keyVaultPair)
-	var isempty bool = true
 	for name, v := range s.vaults {
+		var vaultKeys []*keyVaultPair
 		iter := v.ListPublicKeys(ctx)
+	keys:
 		for {
 			key, err := iter.Next()
-			if err == vault.ErrDone {
-				break
-			}
 			if err != nil {
+				switch {
+				case stderr.Is(err, vault.ErrDone):
+					break keys
+				case stderr.Is(err, vault.ErrKey):
+					continue keys
+				default:
+					return nil, nil, err
+				}
+			}
+
+			if !cryptoutils.PublicKeySuitableForTezos(key.PublicKey()) {
 				continue
 			}
 
 			pkh, err := tezos.EncodePublicKeyHash(key.PublicKey())
 			if err != nil {
-				s.logger().WithFields(log.Fields{
-					logVaultName: name,
-					logKeyID:     strings.Split(key.ID(), "/")[1],
-				}).Warn(err)
-				continue
+				return nil, nil, err
 			}
 			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(pkh, p)
 
 			ret[pkh] = p
-			isempty = false
-			list = append(list, p)
+			vaultKeys = append(vaultKeys, p)
 		}
-		if isempty {
-			s.logger().WithField(logVaultName, name).Warn("No valid keys found in the vault")
+		if len(vaultKeys) == 0 {
+			s.logger().Error("No valid keys found in the vault ", name)
 		}
-		isempty = true
+		list = append(list, vaultKeys...)
 	}
 	return ret, list, nil
 }
@@ -340,15 +343,12 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	var i int = 0
+
 	ret := make([]*PublicKey, len(list))
-	for _, p := range list {
+	for i, p := range list {
 		enc, err := tezos.EncodePublicKey(p.key.PublicKey())
 		if err != nil {
-			s.logger().WithFields(log.Fields{
-				logVaultName: p.vault.Name(),
-				logPKH:       p.pkh}).Warn(err)
-			continue
+			return nil, err
 		}
 		ret[i] = &PublicKey{
 			PublicKey:     enc,
@@ -358,7 +358,6 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
 		}
 		ret[i].Active = ret[i].Policy != nil
-		i = i + 1
 	}
 	return ret, nil
 }
