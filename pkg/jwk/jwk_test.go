@@ -41,7 +41,7 @@ func parsePublicKey(buf []byte) (pk interface{}, err error) {
 		return nil, errors.New("failed to parse PEM block containing the public key")
 	}
 
-	return x509.ParsePKIXPublicKey(block.Bytes)
+	return cryptoutils.ParsePKIXPublicKey(block.Bytes)
 }
 
 func TestParse(t *testing.T) {

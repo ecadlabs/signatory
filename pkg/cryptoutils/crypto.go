@@ -140,3 +140,22 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 
 	return nil
 }
+
+// PublicKeySuitable returns true if the key is Tezos compatible
+func PublicKeySuitableForTezos(pub crypto.PublicKey) bool {
+	switch k := pub.(type) {
+	case *ecdsa.PublicKey:
+		switch k.Curve {
+		case elliptic.P256(), S256():
+			return true
+		default:
+			return false
+		}
+
+	case ed25519.PublicKey:
+		return true
+
+	default:
+		return false
+	}
+}

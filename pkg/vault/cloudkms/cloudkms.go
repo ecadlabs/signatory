@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"crypto/x509"
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
@@ -79,14 +78,14 @@ func (c *Vault) getPublicKey(ctx context.Context, name string) (*ecdsa.PublicKey
 	}
 
 	block, _ := pem.Decode([]byte(pk.Pem))
-	pkixKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	pkixKey, err := cryptoutils.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return nil, err
 	}
 
 	ecKey, ok := pkixKey.(*ecdsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("key is not EC: %T", ecKey)
+		return nil, fmt.Errorf("%w: %T", vault.ErrKey, ecKey)
 	}
 
 	return ecKey, nil
@@ -243,6 +242,9 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 	// Encrypt the wrapping key with job's private key
 	// SHA-1 is required
 	encAesKey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, pubKey, aesKey, []byte{})
+	if err != nil {
+		return nil, err
+	}
 
 	// Wrap the key
 	wrapper, err := kwp.NewKWP(aesKey)
@@ -331,7 +333,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 
 	// Decode job's public key
 	pemBlock, _ := pem.Decode([]byte(job.PublicKey.Pem))
-	opaqueJobKey, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
+	opaqueJobKey, err := cryptoutils.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
 	}
