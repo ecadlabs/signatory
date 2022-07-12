@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -23,8 +24,8 @@ import (
 // Config contains AWS KMS backend configuration
 type Config struct {
 	UserName    string `yaml:"user_name" validate:"required"`
-	AccessKeyID string `yaml:"access_key_id" validate:"required"`
-	AccessKey   string `yaml:"secret_access_key" validate:"required"`
+	AccessKeyID string `yaml:"access_key_id"`
+	AccessKey   string `yaml:"secret_access_key"`
 	Region      string `yaml:"region" validate:"required"`
 }
 
@@ -106,7 +107,15 @@ func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 
 	key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
 	i.index += 1
-	return
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case "AccessDeniedException":
+				return i.Next() // If access denied, return Next
+			}
+		}
+	}
+	return key, err
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
@@ -154,8 +163,10 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 
 // New creates new AWS KMS backend
 func New(ctx context.Context, config *Config) (*Vault, error) {
-	os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
-	os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
+	if config.AccessKeyID != "" {
+		os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
+		os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
+	}
 	os.Setenv("AWS_REGION", config.Region)
 	sess := session.Must(session.NewSession())
 
