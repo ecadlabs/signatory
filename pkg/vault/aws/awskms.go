@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -106,7 +107,15 @@ func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 
 	key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
 	i.index += 1
-	return
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case "AccessDeniedException":
+				return i.Next() // If access denied, return Next
+			}
+		}
+	}
+	return key, err
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
