@@ -272,7 +272,7 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 			pub:    ecpub,
 		}, nil
 	}
-	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
+	return nil, fmt.Errorf("(Azure/%s) %w: %T", v.config.Vault, vault.ErrKey, pub)
 }
 
 // Name returns backend name

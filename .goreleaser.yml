@@ -179,8 +179,8 @@ dockers:
       - signatory
       - signatory-cli
   - image_templates:
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-amd64'
-    - 'ghcr.io/ecadlabs/signatory:latest-amd64'
+    - 'ecadlabs/signatory:{{ .Tag }}-amd64'
+    - 'ecadlabs/signatory:latest-amd64'
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -192,8 +192,8 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/amd64"
   - image_templates:
-    - 'ghcr.io/ecadlabs/signatory:{{ .Tag }}-arm64'
-    - 'ghcr.io/ecadlabs/signatory:latest-arm64'
+    - 'ecadlabs/signatory:{{ .Tag }}-arm64'
+    - 'ecadlabs/signatory:latest-arm64'
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
