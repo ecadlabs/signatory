@@ -19,7 +19,6 @@ awskms:
     driver: awskms
     config:
       user_name: sigy-tsty
-      kms_key_id: as713a73-4cb5-4t66-b561-9e383bf6fyb6
       access_key_id: AKIATXBC6RIH4YZT5U6B
       secret_access_key: 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
       region: us-west-2
@@ -30,7 +29,8 @@ awskms:
 Name | Type | Required | Description
 -----|------|:--------:|------------
 user_name | string |✅| IAM user name
-kms_key_id | string |✅| KeyId of the key from AWS KMS to be used for signing
-access_key_id | string | ✅ | IAM user detail
-secret_access_key | string | ✅ | IAM user detail
+access_key_id | string | OPTIONAL | IAM user detail
+secret_access_key | string | OPTIONAL | IAM user detail
 region | string | ✅ | Region where key is created
+
+The fields `access_key_id` & `secret_access_key` can be set in the environment variables `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` respectively.
