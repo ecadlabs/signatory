@@ -230,7 +230,7 @@ func TestPolicy(t *testing.T) {
 	}
 }
 
-func TestSignatoryGenericImpl(t *testing.T) {
+func TestListPublikKeys(t *testing.T) {
 	type testCase struct {
 		title    string
 		policy   signatory.Policy
@@ -248,8 +248,43 @@ func TestSignatoryGenericImpl(t *testing.T) {
 			expected: "Vault not reachable",
 			lpk: func(ctx context.Context) vault.StoredKeysIterator {
 				return &TestKeyIterator{
-					nxt: func() (key vault.StoredKey, err error) {
+					nxt: func(idx int) (key vault.StoredKey, err error) {
 						return nil, fmt.Errorf("Vault not reachable")
+					},
+				}
+			},
+		},
+		{
+			title: "ListPublicKeys with done",
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			lpk: func(ctx context.Context) vault.StoredKeysIterator {
+				return &TestKeyIterator{
+					nxt: func(idx int) (key vault.StoredKey, err error) {
+						return nil, vault.ErrDone
+					},
+				}
+			},
+		},
+		{
+			title: "ListPublicKeys with key error",
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			lpk: func(ctx context.Context) vault.StoredKeysIterator {
+				return &TestKeyIterator{
+					idx: 0,
+					nxt: func(idx int) (key vault.StoredKey, err error) {
+						if idx == 0 {
+							return nil, vault.ErrKey
+						} else {
+							return nil, vault.ErrDone
+						}
 					},
 				}
 			},

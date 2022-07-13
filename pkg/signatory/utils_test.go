@@ -33,11 +33,13 @@ func NewTestVault(g GetPublicKey, l ListPublicKeys, s Sign, n Name, vn string) *
 }
 
 type TestKeyIterator struct {
-	nxt Next
+	idx int
+	nxt func(idx int) (key vault.StoredKey, err error)
 }
 
 func (it *TestKeyIterator) Next() (key vault.StoredKey, err error) {
-	return it.nxt()
+	it.idx += 1
+	return it.nxt(it.idx - 1)
 }
 func (v *TestVault) GetPublicKey(ctx context.Context, id string) (vault.StoredKey, error) {
 	return v.gp(ctx, id)
