@@ -39,7 +39,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
-				conf.Read(configFile)
+				return conf.Read(configFile)
 			}
 
 			if baseDir == "" {
