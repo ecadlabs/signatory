@@ -32,20 +32,22 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		Use:   name,
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+			if cmd.Use == "version" {
+				return nil
+			}
+
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
 				conf.Read(configFile)
 			}
 
-			if cmd.Use != "version" {
-				if baseDir == "" {
-					baseDir = conf.BaseDir
-				}
-				baseDir = os.ExpandEnv(baseDir)
-				if err := os.MkdirAll(baseDir, 0770); err != nil {
-					return err
-				}
+			if baseDir == "" {
+				baseDir = conf.BaseDir
+			}
+			baseDir = os.ExpandEnv(baseDir)
+			if err := os.MkdirAll(baseDir, 0770); err != nil {
+				return err
 			}
 
 			validate := config.Validator()
@@ -53,7 +55,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
-			if jsonLog == true {
+			if jsonLog {
 				log.SetFormatter(&log.JSONFormatter{})
 			}
 
