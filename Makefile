@@ -14,9 +14,9 @@ signatory:
 signatory-cli:
 	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory-cli
 
-container:
-	docker build -t ghcr.io/ecadlabs/signatory:$(CONTAINER_TAG) .
-
+.PHONY: container
+container: signatory signatory-cli
+	docker build -t ecadlabs/signatory:$(CONTAINER_TAG) .
 
 clean:
 	rm signatory signatory-cli
@@ -32,7 +32,9 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist --snapshot
+		release \
+		--rm-dist \
+		--snapshot
 
 .PHONY: release
 release:
@@ -49,4 +51,6 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist --skip-validate
+		release \
+		--rm-dist \
+		--skip-validate
