@@ -25,31 +25,38 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		level      string
 		configFile string
 		baseDir    string
+		jsonLog    bool
 	)
 
 	rootCmd := cobra.Command{
 		Use:   name,
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+			if cmd.Use == "version" {
+				return nil
+			}
+
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
 				conf.Read(configFile)
 			}
 
-			if cmd.Use != "version" {
-				if baseDir == "" {
-					baseDir = conf.BaseDir
-				}
-				baseDir = os.ExpandEnv(baseDir)
-				if err := os.MkdirAll(baseDir, 0770); err != nil {
-					return err
-				}
+			if baseDir == "" {
+				baseDir = conf.BaseDir
+			}
+			baseDir = os.ExpandEnv(baseDir)
+			if err := os.MkdirAll(baseDir, 0770); err != nil {
+				return err
 			}
 
 			validate := config.Validator()
 			if err := validate.Struct(conf); err != nil {
 				return err
+			}
+
+			if jsonLog {
+				log.SetFormatter(&log.JSONFormatter{})
 			}
 
 			lv, err := log.ParseLevel(level)
@@ -91,6 +98,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
 	f.StringVar(&baseDir, "base-dir", "", "Base directory. Takes priority over one specified in config")
+	f.BoolVar(&jsonLog, "json-log", false, "Use JSON structured logs")
 
 	return &rootCmd
 }
