@@ -11,7 +11,7 @@ import (
 const listTemplateSrc = `{{range . -}}
 Public Key Hash:    {{.PublicKeyHash}}
 Vault:              {{.VaultName}}
-ID:                 {{.ID}}
+Publik key Path:    {{.ID}}
 Active:             {{.Active}}
 {{with .Policy -}}
 Allowed Operations: {{.AllowedOperations}}
