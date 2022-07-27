@@ -52,6 +52,11 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
+	pkh, err := tezos.EncodePublicKeyHash(rootPK)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	an, err := mnemonics.Getname(hash)
 	if err != nil {
 		return nil, nil, err
@@ -61,6 +66,7 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 
 	dev = &deviceInfo{
 		Path:    path,
+		Pkh:     pkh,
 		Version: ver,
 		ID:      id,
 	}
@@ -86,7 +92,9 @@ func (s *scanner) open(id string) (*tezosapp.App, error) {
 			continue
 		}
 		if id == "" || dev.ID == id {
-			fmt.Println("Abi-->: ", dev.ID, " - ", id)
+			fmt.Println()
+			fmt.Println("Ledger ID: 	  ", dev.ID)
+			fmt.Println()
 			return app, nil
 		}
 		if err := app.Close(); err != nil {

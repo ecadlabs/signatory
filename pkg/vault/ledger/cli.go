@@ -11,6 +11,7 @@ import (
 
 const listTemplateSrc = `{{range . -}}
 Path:  			{{.Path}}
+Root publik Key Hash: 	{{.Pkh}}
 Public Key Mnemonic:    {{.ID}}
 Version:		{{.Version}}
 {{end}}
