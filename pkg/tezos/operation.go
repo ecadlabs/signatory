@@ -239,6 +239,11 @@ type Manager struct {
 	StorageLimit *big.Int
 }
 
+type Rollup struct {
+	Manager
+	Rollup string
+}
+
 // OpReveal represents "reveal" operation
 type OpReveal struct {
 	Manager
@@ -312,6 +317,150 @@ type OpTxRollupOrigination Manager
 
 // OperationKind returns operation name i.e. "tx_rollup_origination"
 func (o *OpTxRollupOrigination) OperationKind() string { return "tx_rollup_origination" }
+
+type OpTxRollupSubmitBatch struct {
+	Rollup
+	Content   []byte
+	BurnLimit *big.Int
+}
+
+func (o *OpTxRollupSubmitBatch) OperationKind() string { return "tx_rollup_submit_batch" }
+
+type OpTxRollupCommit struct {
+	Rollup
+	Level           int32
+	Messages        []string
+	Predecessor     string
+	InboxMerkleRoot string
+}
+
+func (o *OpTxRollupCommit) OperationKind() string { return "tx_rollup_commit" }
+
+type OpTxRollupReturnBond Rollup
+
+func (o *OpTxRollupReturnBond) OperationKind() string { return "tx_rollup_return_bond" }
+
+type OpTxRollupFinalizeCommitment Rollup
+
+func (o *OpTxRollupFinalizeCommitment) OperationKind() string { return "tx_rollup_finalize_commitment" }
+
+type OpTxRollupRemoveCommitment Rollup
+
+func (o *OpTxRollupRemoveCommitment) OperationKind() string { return "tx_rollup_remove_commitment" }
+
+type RollupMessage interface {
+	RollupMessage()
+}
+
+const (
+	tagMessageBatch = iota
+	tagMessageDeposit
+)
+
+type RollupMessageBatch []byte
+
+func (RollupMessageBatch) RollupMessage() {}
+
+type RollupMessageDeposit struct {
+	Sender      string
+	Destination string
+	TicketHash  string
+	Amount      int64
+}
+
+func (*RollupMessageDeposit) RollupMessage() {}
+
+type MessageResult struct {
+	ContextHash      string
+	WithdrawListHash string
+}
+
+type OpTxRollupRejection struct {
+	Rollup
+	Level                     int32
+	Message                   RollupMessage
+	MessagePosition           *big.Int
+	MessagePath               []string
+	MessageResultHash         string
+	MessageResultPath         []string
+	PreviousMessageResult     MessageResult
+	PreviousMessageResultPath []string
+	// not well documented
+	// Proof                     Proof
+}
+
+func (o *OpTxRollupRejection) OperationKind() string { return "tx_rollup_rejection" }
+
+type OpTxRollupDispatchTickets struct {
+	Rollup
+	Level             int32
+	ContextHash       string
+	MessageIndex      int32
+	MessageResultPath []string
+	TicketsInfo       []TicketInfo
+}
+
+func (o *OpTxRollupDispatchTickets) OperationKind() string { return "tx_rollup_dispatch_tickets" }
+
+type TicketInfo struct {
+	Contents []byte // expr
+	Ty       []byte // expr
+	Ticketer string
+	Amount   int64
+	Claimer  string
+}
+
+type OpTransferTicket struct {
+	Manager
+	TicketContents []byte // expr
+	TicketTy       []byte // expr
+	TicketTicketer string
+	TicketAmount   int64
+	Destination    string
+	Entrypoint     []byte
+}
+
+func (o *OpTransferTicket) OperationKind() string { return "transfer_ticket" }
+
+type OpScRollupOriginate struct {
+	Manager
+	Kind       uint16
+	BootSector string
+}
+
+func (o *OpScRollupOriginate) OperationKind() string { return "sc_rollup_originate" }
+
+type OpScRollupAddMessages struct {
+	Manager
+	Rollup  string
+	Message []string
+}
+
+func (o *OpScRollupAddMessages) OperationKind() string { return "sc_rollup_add_messages" }
+
+type OpScRollupCement struct {
+	Manager
+	Rollup     string
+	Commitment string
+}
+
+func (o *OpScRollupCement) OperationKind() string { return "sc_rollup_cement" }
+
+type OpScRollupPublish struct {
+	Manager
+	Rollup     string
+	Commitment Commitment
+}
+
+type Commitment struct {
+	CompressedState  string
+	InboxLevel       int32
+	Predecessor      string
+	NumberOfMessages int32
+	NumberOfTicks    int32 // 🕷
+}
+
+func (o *OpScRollupPublish) OperationKind() string { return "sc_rollup_publish" }
 
 func parseOperation(buf *[]byte) (op Operation, err error) {
 	t, err := utils.GetByte(buf)
@@ -515,8 +664,20 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		}
 		return &op, nil
 
-	case tagReveal, tagTransaction, tagOrigination, tagDelegation,
-		tagRegisterGlobalConstant, tagSetDepositsLimit, tagTxRollupOrigination:
+	case tagReveal,
+		tagTransaction,
+		tagOrigination,
+		tagDelegation,
+		tagRegisterGlobalConstant,
+		tagSetDepositsLimit,
+		tagTxRollupOrigination,
+		tagTxRollupSubmitBatch,
+		tagTxRollupCommit,
+		tagTxRollupReturnBond,
+		tagTxRollupFinalizeCommitment,
+		tagTxRollupRemoveCommitment,
+		tagTxRollupRejection,
+		tagTxRollupDispatchTickets:
 		var common Manager
 		if common.Source, err = parsePublicKeyHash(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
@@ -551,7 +712,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			if op.Amount, err = parseBigNum(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.Destination, err = parseContractID(buf); err != nil {
+			if op.Destination, err = parseDestination(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			flag, err := utils.GetBool(buf)
@@ -652,10 +813,466 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 
 		case tagTxRollupOrigination:
 			return (*OpTxRollupOrigination)(&common), nil
+
+		case tagTxRollupSubmitBatch,
+			tagTxRollupCommit,
+			tagTxRollupReturnBond,
+			tagTxRollupFinalizeCommitment,
+			tagTxRollupRemoveCommitment,
+			tagTxRollupRejection,
+			tagTxRollupDispatchTickets:
+
+			rollup := Rollup{
+				Manager: common,
+			}
+			if r, err := utils.GetBytes(buf, 20); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				rollup.Rollup = encodeBase58(pRollupAddress, r)
+			}
+
+			switch t {
+			case tagTxRollupSubmitBatch:
+				op := OpTxRollupSubmitBatch{
+					Rollup: rollup,
+				}
+				ln, err := utils.GetUint32(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if op.Content, err = utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				flag, err := utils.GetBool(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if flag {
+					if op.BurnLimit, err = parseBigNum(buf); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					}
+				}
+				return &op, nil
+
+			case tagTxRollupCommit:
+				op := OpTxRollupCommit{
+					Rollup: rollup,
+				}
+				if op.Level, err = utils.GetInt32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				ln, err := utils.GetUint32(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if mbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(mbuf) != 0 {
+						msg, err := utils.GetBytes(&mbuf, 32)
+						if err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.Messages = append(op.Messages, encodeBase58(pMessageHash, msg))
+					}
+				}
+				tag, err := utils.GetByte(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				switch tag {
+				case 0:
+				case 1:
+					if p, err := utils.GetBytes(buf, 32); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						op.Predecessor = encodeBase58(pCommitmentHash, p)
+					}
+				default:
+					return nil, fmt.Errorf("%s: unexpected tag", opKinds[int(t)])
+				}
+				if r, err := utils.GetBytes(buf, 32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					op.InboxMerkleRoot = encodeBase58(pInboxHash, r)
+				}
+				return &op, nil
+
+			case tagTxRollupReturnBond:
+				return (*OpTxRollupReturnBond)(&rollup), nil
+
+			case tagTxRollupFinalizeCommitment:
+				return (*OpTxRollupFinalizeCommitment)(&rollup), nil
+
+			case tagTxRollupRemoveCommitment:
+				return (*OpTxRollupRemoveCommitment)(&rollup), nil
+
+			case tagTxRollupRejection:
+				op := OpTxRollupRejection{
+					Rollup: rollup,
+				}
+				if op.Level, err = utils.GetInt32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				tag, err := utils.GetByte(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				switch tag {
+				case tagMessageBatch:
+					ln, err := utils.GetUint32(buf)
+					if err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					}
+					if v, err := utils.GetBytes(buf, int(ln)); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						op.Message = RollupMessageBatch(v)
+					}
+
+				case tagMessageDeposit:
+					m := RollupMessageDeposit{}
+					if m.Sender, err = parsePublicKeyHash(buf); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					}
+					if v, err := utils.GetBytes(buf, 20); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						op.Message = RollupMessageBatch(v)
+					}
+					if b, err := utils.GetBytes(buf, 20); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						m.Destination = encodeBase58(pL2Address, b)
+					}
+					if b, err := utils.GetBytes(buf, 32); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						m.TicketHash = encodeBase58(pScriptExpr, b)
+					}
+					if m.Amount, err = parseAmount(buf); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					}
+					op.Message = &m
+				}
+				if op.MessagePosition, err = parseBigNum(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				ln, err := utils.GetUint32(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if pbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(pbuf) != 0 {
+						p, err := utils.GetBytes(&pbuf, 32)
+						if err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.MessagePath = append(op.MessagePath, encodeBase58(pInboxListHash, p))
+					}
+				}
+				if r, err := utils.GetBytes(buf, 32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					op.MessageResultHash = encodeBase58(pMessageResultHash, r)
+				}
+
+				if ln, err = utils.GetUint32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if pbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(pbuf) != 0 {
+						p, err := utils.GetBytes(&pbuf, 32)
+						if err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.MessageResultPath = append(op.MessageResultPath, encodeBase58(pMessageResultListHash, p))
+					}
+				}
+				if v, err := utils.GetBytes(buf, 32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					op.PreviousMessageResult.ContextHash = encodeBase58(pContextHash, v)
+				}
+				if v, err := utils.GetBytes(buf, 32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					op.PreviousMessageResult.WithdrawListHash = encodeBase58(pWithdrawListHash, v)
+				}
+				if ln, err = utils.GetUint32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if pbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(pbuf) != 0 {
+						p, err := utils.GetBytes(&pbuf, 32)
+						if err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.PreviousMessageResultPath = append(op.PreviousMessageResultPath, encodeBase58(pMessageResultListHash, p))
+					}
+				}
+
+				// The binary proof encoding is not documented well and surprisingly doesn't reflect JSON that much to use
+				// latter as a reference
+				if _, err := utils.GetBytes(buf, 1+2+32+32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if ln, err = utils.GetUint32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if _, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				return &op, nil
+
+			case tagTxRollupDispatchTickets:
+				op := OpTxRollupDispatchTickets{
+					Rollup: rollup,
+				}
+				if op.Level, err = utils.GetInt32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if v, err := utils.GetBytes(buf, 32); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					op.ContextHash = encodeBase58(pContextHash, v)
+				}
+				if op.MessageIndex, err = utils.GetInt32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				ln, err := utils.GetUint32(buf)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if pbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(pbuf) != 0 {
+						p, err := utils.GetBytes(&pbuf, 32)
+						if err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.MessageResultPath = append(op.MessageResultPath, encodeBase58(pMessageResultListHash, p))
+					}
+				}
+				if ln, err = utils.GetUint32(buf); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				}
+				if tibuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+				} else {
+					for len(tibuf) != 0 {
+						var ti TicketInfo
+						if ln, err = utils.GetUint32(&tibuf); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ti.Contents, err = utils.GetBytes(&tibuf, int(ln)); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ln, err = utils.GetUint32(&tibuf); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ti.Ty, err = utils.GetBytes(&tibuf, int(ln)); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ti.Ticketer, err = parseDestination(&tibuf); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ti.Amount, err = parseAmount(&tibuf); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						if ti.Claimer, err = parsePublicKeyHash(&tibuf); err != nil {
+							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+						}
+						op.TicketsInfo = append(op.TicketsInfo, ti)
+					}
+				}
+				return &op, nil
+			}
+
+		case tagTransferTicket:
+			op := OpTransferTicket{
+				Manager: common,
+			}
+			ln, err := utils.GetUint32(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.TicketContents, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if ln, err = utils.GetUint32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.TicketTy, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.TicketTicketer, err = parseDestination(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.TicketAmount, err = parseAmount(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.Destination, err = parseDestination(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if ln, err = utils.GetUint32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.Entrypoint, err = utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			return &op, nil
+
+		case tagScRollupOriginate:
+			op := OpScRollupOriginate{
+				Manager: common,
+			}
+			if op.Kind, err = utils.GetUint16(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			ln, err := utils.GetUint32(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if bs, err := utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.BootSector = string(bs)
+			}
+			return &op, nil
+
+		case tagScRollupAddMessages:
+			op := OpScRollupAddMessages{
+				Manager: common,
+			}
+			ln, err := utils.GetUint32(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if v, err := utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Rollup = encodeBase58(pScRollupHash, v)
+			}
+			if ln, err = utils.GetUint32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if mbuf, err := utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				for len(mbuf) != 0 {
+					ln, err := utils.GetUint32(buf)
+					if err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					}
+					if m, err := utils.GetBytes(buf, int(ln)); err != nil {
+						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+					} else {
+						op.Message = append(op.Message, string(m))
+					}
+				}
+			}
+			return &op, nil
+
+		case tagScRollupCement:
+			op := OpScRollupCement{
+				Manager: common,
+			}
+			ln, err := utils.GetUint32(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if v, err := utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Rollup = encodeBase58(pScRollupHash, v)
+			}
+			if v, err := utils.GetBytes(buf, 32); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Commitment = encodeBase58(pScCommitmentHash, v)
+			}
+			return &op, nil
+
+		case tagScRollupPublish:
+			op := OpScRollupPublish{
+				Manager: common,
+			}
+			ln, err := utils.GetUint32(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if v, err := utils.GetBytes(buf, int(ln)); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Rollup = encodeBase58(pScRollupHash, v)
+			}
+			if v, err := utils.GetBytes(buf, 32); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Commitment.CompressedState = encodeBase58(pScStateHash, v)
+			}
+			if op.Commitment.InboxLevel, err = utils.GetInt32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if v, err := utils.GetBytes(buf, 32); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Commitment.Predecessor = encodeBase58(pScCommitmentHash, v)
+			}
+			if op.Commitment.NumberOfMessages, err = utils.GetInt32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			if op.Commitment.NumberOfTicks, err = utils.GetInt32(buf); err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			return &op, nil
 		}
 	}
 
 	return nil, fmt.Errorf("tezos: unknown or unimplemented operation tag: %d", t)
+}
+
+func parseAmount(buf *[]byte) (int64, error) {
+	tag, err := utils.GetByte(buf)
+	if err != nil {
+		return 0, fmt.Errorf("amount: %w", err)
+	}
+	switch tag {
+	case 0:
+		v, err := utils.GetByte(buf)
+		if err != nil {
+			return 0, fmt.Errorf("amount: %w", err)
+		}
+		return int64(v), nil
+	case 1:
+		v, err := utils.GetUint16(buf)
+		if err != nil {
+			return 0, fmt.Errorf("amount: %w", err)
+		}
+		return int64(v), nil
+	case 2:
+		v, err := utils.GetInt32(buf)
+		if err != nil {
+			return 0, fmt.Errorf("amount: %w", err)
+		}
+		return int64(v), nil
+	case 3:
+		v, err := utils.GetInt64(buf)
+		if err != nil {
+			return 0, fmt.Errorf("amount: %w", err)
+		}
+		return v, nil
+	default:
+		return 0, fmt.Errorf("amount: unexpected tag %d", tag)
+	}
 }
 
 func parseInlinedEndorsement(buf *[]byte) (*InlinedEndorsement, error) {
@@ -768,30 +1385,40 @@ func parsePublicKey(buf *[]byte) (pkh string, err error) {
 }
 
 const (
-	tagContractIDImplicit = iota
-	tagContractIDOriginated
+	tagDestinationImplicit = iota
+	tagDestinationOriginated
+	tagDestinationTxRollup
 )
 
-func parseContractID(buf *[]byte) (pkh string, err error) {
+func parseDestination(buf *[]byte) (pkh string, err error) {
 	t, err := utils.GetByte(buf)
 	if err != nil {
 		return "", err
 	}
 
 	switch t {
-	case tagContractIDImplicit:
+	case tagDestinationImplicit:
 		pkh, err = parsePublicKeyHash(buf)
 		if err != nil {
 			return "", err
 		}
 		return pkh, nil
 
-	case tagContractIDOriginated:
+	case tagDestinationOriginated:
 		b, err := utils.GetBytes(buf, 20)
 		if err != nil {
 			return "", err
 		}
 		pkh = encodeBase58(pContractHash, b)
+		_, err = utils.GetByte(buf)
+		return pkh, err
+
+	case tagDestinationTxRollup:
+		b, err := utils.GetBytes(buf, 20)
+		if err != nil {
+			return "", err
+		}
+		pkh = encodeBase58(pRollupAddress, b)
 		_, err = utils.GetByte(buf)
 		return pkh, err
 	}
