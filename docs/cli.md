@@ -54,9 +54,9 @@ Import operation can be verified in the vault or using the below list command.
  % ./signatory-cli list -c ./s.yaml_Azure --base-dir ./
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
 
-Public Key Hash:    tz2VamQJcdSBtXghHijT9VsqDzC86Hq1HDpB
+Public Key Hash:    tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
 Vault:              Azure
-ID:                 https://forimport.vault.azure.net/keys/imp-key/58441908018943889c0370fe9c228269
+ID:                 https://forimport.vault.azure.net/keys/signatory-imported-2Csev40hxBXjwo5wVVnRbonNaDl/ce48c88caf744549b638e97bf89acb1b
 Active:             true
 Allowed Operations: [block endorsement generic]
 Allowed Kinds:      [endorsement transaction]
