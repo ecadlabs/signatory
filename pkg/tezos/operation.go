@@ -22,6 +22,7 @@ const (
 	tagBallot                       = 6
 	tagDoublePreendorsementEvidence = 7
 	tagEndorsementWithSlot          = 10
+	tagFailingNoop                  = 17
 	tagPreendorsement               = 20
 	tagTenderbakeEndorsement        = 21
 	tagReveal                       = 107
@@ -55,6 +56,7 @@ var opKinds = map[int]string{
 	tagBallot:                       "ballot",
 	tagDoublePreendorsementEvidence: "double_preendorsement_evidence",
 	tagEndorsementWithSlot:          "endorsement_with_slot",
+	tagFailingNoop:                  "failing_noop",
 	tagPreendorsement:               "preendorsement",
 	tagTenderbakeEndorsement:        "endorsement",
 	tagReveal:                       "reveal",
@@ -462,6 +464,10 @@ type Commitment struct {
 
 func (o *OpScRollupPublish) OperationKind() string { return "sc_rollup_publish" }
 
+type OpFailingNoop []byte
+
+func (o OpFailingNoop) OperationKind() string { return "failing_noop" }
+
 func parseOperation(buf *[]byte) (op Operation, err error) {
 	t, err := utils.GetByte(buf)
 	if err != nil {
@@ -519,6 +525,17 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
+
+	case tagFailingNoop:
+		ln, err := utils.GetUint32(buf)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		v, err := utils.GetBytes(buf, int(ln))
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		return OpFailingNoop(v), nil
 
 	case tagSeedNonceRevelation:
 		var op OpSeedNonceRevelation
