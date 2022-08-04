@@ -9,6 +9,8 @@ To import a secret key, we will use the `signatory-cli` command.
 
 ## Generating key using tezos-client
 
+This is not the only way to generate keys to import in signatory. Any existing key can be imported in the vaults via signatory if the vault supports the key Curve.
+
 ```bash
 % tezos-client gen keys import-p256 -s p256 --encrypted
 Enter password to encrypt your key:
