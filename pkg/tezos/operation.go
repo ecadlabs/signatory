@@ -417,9 +417,9 @@ type OpTransferTicket struct {
 	TicketContents []byte // expr
 	TicketTy       []byte // expr
 	TicketTicketer string
-	TicketAmount   int64
+	TicketAmount   *big.Int
 	Destination    string
-	Entrypoint     []byte
+	Entrypoint     string
 }
 
 func (o *OpTransferTicket) OperationKind() string { return "transfer_ticket" }
@@ -694,7 +694,12 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		tagTxRollupFinalizeCommitment,
 		tagTxRollupRemoveCommitment,
 		tagTxRollupRejection,
-		tagTxRollupDispatchTickets:
+		tagTxRollupDispatchTickets,
+		tagTransferTicket,
+		tagScRollupOriginate,
+		tagScRollupAddMessages,
+		tagScRollupCement,
+		tagScRollupPublish:
 		var common Manager
 		if common.Source, err = parsePublicKeyHash(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
@@ -890,7 +895,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 						if err != nil {
 							return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 						}
-						op.Messages = append(op.Messages, encodeBase58(pMessageHash, msg))
+						op.Messages = append(op.Messages, encodeBase58(pMessageResultHash, msg))
 					}
 				}
 				tag, err := utils.GetByte(buf)
@@ -1133,7 +1138,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			if op.TicketTicketer, err = parseDestination(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.TicketAmount, err = parseAmount(buf); err != nil {
+			if op.TicketAmount, err = parseBigNum(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseDestination(buf); err != nil {
@@ -1142,8 +1147,10 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			if ln, err = utils.GetUint32(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.Entrypoint, err = utils.GetBytes(buf, int(ln)); err != nil {
+			if v, err := utils.GetBytes(buf, int(ln)); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			} else {
+				op.Entrypoint = string(v)
 			}
 			return &op, nil
 
