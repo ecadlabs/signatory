@@ -29,6 +29,8 @@ The encrypted private key can be obtained from the `.tezos-client/` directory
       "encrypted:p2esk**********************************************************" }]
 ```
 
+## Importing the generated key using signatory-cli
+
 Private key can be imported into any of the backend vaults (except: AWS & ledger) using below command.
 If you import an encrypted key, the `signatory-cli` command will prompt you for the password.
 
@@ -43,6 +45,8 @@ INFO[0007] Successfully imported                         key_id="https://forimpo
 If the import is successful, the `signatory-cli` will report the PKH (`tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo` in above example) of your newly imported secret which in turn can be used in the config YAML to add the policies.
 
 **Note:** PKH from Signatory and the PKH from `tezos-client list known addresess` command must be same.
+
+## Verifying import operation using list command
 
 Import operation can be verified in the vault or using the below list command.
 
