@@ -1,3 +1,8 @@
+---
+id: cli
+title: CLI
+---
+
 # Key Import using signatory-client
 
 To import a secret key, we will use the `signatory-cli` command.
