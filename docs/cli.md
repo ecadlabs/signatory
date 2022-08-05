@@ -51,12 +51,13 @@ If the import is successful, the `signatory-cli` will report the PKH (`tz3gxd1y7
 Name of the key can also be provided witht he import command.
 
 ```bash
-% ./signatory-cli import -c ../../../config_yaml/s.yaml_Azure --base-dir ./ --vault azure spesk1********************************** -o "name":test-name
+% ./signatory-cli import -c ./s.yaml_Azure --base-dir ./ --vault azure spesk1********************************** -o "name":test-name
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
-Enter Password: INFO[0003] Requesting import operation                   pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
+Enter Password: 
+INFO[0003] Requesting import operation                   pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0009] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/test-name/f503f20b309e4c8ea57982bd9736c412" pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 
-./signatory-cli import -c ../../../config_yaml/s.yaml_Azure --base-dir ./ --vault azure spesk1*********************** -o "name":test-name
+./signatory-cli import -c ./s.yaml_Azure --base-dir ./ --vault azure spesk1*********************** -o "name":test-name
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
 Public Key Hash:    tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV
 Vault:              Azure
