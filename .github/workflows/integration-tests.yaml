@@ -11,6 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # To add a new testnet endpoint check integration-tests/README.md
         testnet_endpoints:
           - https://ghostnet.ecadinfra.com
           - https://jakartanet.ecadinfra.com
