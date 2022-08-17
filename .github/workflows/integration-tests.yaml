@@ -9,11 +9,16 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      NODE_ADDR: https://rpc.jakartanet.teztnets.xyz
+    strategy:
+      fail-fast: false
+      matrix:
+        testnet_endpoints:
+          - https://ghostnet.ecadinfra.com
+          - https://jakartanet.ecadinfra.com
+          - https://kathmandunet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
       - name: Build image
         run: docker build -t signatory-test -f ./integration_test/Dockerfile .
       - name: Run tests
-        run: docker run -e 'ENV_ACTIVATION_KEY=${{ secrets.FAUCET_ACTIVATION_KEY }}' -e "ENV_NODE_ADDR=${NODE_ADDR}" signatory-test
+        run: docker run -e 'ENV_SECRET_KEY=${{ secrets.ENV_SECRET_KEY }}' -e "ENV_NODE_ADDR=${{ matrix.testnet_endpoints }}" signatory-test
