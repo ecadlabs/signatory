@@ -1,5 +1,5 @@
 FROM golang:1.18-alpine
-ARG TEZOS_CLIENT_VERSION=v13.0-1
+ARG TEZOS_CLIENT_VERSION=v14.0
 
 RUN apkArch="$(apk --print-arch)" && \
 	case "$apkArch" in \

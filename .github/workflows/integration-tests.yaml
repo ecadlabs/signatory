@@ -1,4 +1,4 @@
-name: Run integration tests
+name: Integration Tests
 
 on:
   push:
@@ -6,8 +6,7 @@ on:
     types: [opened]
 
 jobs:
-  test:
-    name: Test
+  integration-tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
