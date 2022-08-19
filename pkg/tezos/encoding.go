@@ -41,7 +41,8 @@ var (
 	pBlindedPublicKeyHash   = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 2, 49, 223}} // btz1(37)
 	pBLS12_381PublicKeyHash = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 166}}   // tz4(36)
 	pL2Address              = pBLS12_381PublicKeyHash
-	pRollupAddress          = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 128, 120, 31}} // txr1(37)
+	pRollupAddress          = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 128, 120, 31}}  // txr1(37)
+	pScRollupHash           = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 118, 132, 217}} // scr1(37)
 
 	// 16
 	pCryptoboxPublicKeyHash = tzPrefix{plen: 2, mlen: 16, p: [5]byte{153, 103}} // id(30)
@@ -106,6 +107,10 @@ var (
 
 	// 88
 	pBLS12_381EncryptedSecretKey = tzPrefix{plen: 5, mlen: 88, p: [5]byte{2, 5, 30, 53, 25}} // BLesk(58)
+
+	// ?
+	pScCommitmentHash = tzPrefix{plen: 4, mlen: 0, p: [5]byte{17, 144, 21, 100}}  // scc1(54)
+	pScStateHash      = tzPrefix{plen: 4, mlen: 0, p: [5]byte{17, 144, 122, 202}} // scs1(54)
 )
 
 // Full list of prefixes with payload lengths
@@ -163,6 +168,9 @@ var commonPrefixes = []tzPrefix{
 	pBLS12_381PublicKey,
 	pBLS12_381SecretKey,
 	pBLS12_381EncryptedSecretKey,
+	pScCommitmentHash,
+	pScStateHash,
+	pScRollupHash,
 }
 
 // ErrPrefix is returned in case of unknown Tezos base58 prefix
@@ -176,7 +184,7 @@ func decodeBase58(data string) (prefix tzPrefix, payload []byte, err error) {
 	for _, p := range commonPrefixes {
 		prefix := p.prefix()
 		if bytes.HasPrefix(buf, prefix) {
-			if len(buf)-len(prefix) != p.mlen {
+			if p.mlen != 0 && len(buf)-len(prefix) != p.mlen {
 				return p, nil, fmt.Errorf("tezos: invalid base58 message length: expected %d, got %d", p.mlen, len(buf)-len(prefix))
 			}
 			return p, buf[len(prefix):], nil
