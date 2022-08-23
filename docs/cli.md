@@ -34,7 +34,7 @@ The encrypted private key can be obtained from the `.tezos-client/` directory
 ## Importing the generated key using signatory-cli
 
 A private key can be imported into any of the backend vaults (except: AWS & ledger) using the below command.
-If you import an encrypted key, `signatory-cli` command will prompt you for the password.
+If you import an encrypted key, the `signatory-cli` command will prompt you for the password.
 
 ```bash
 % ./signatory-cli import -c ./s.yaml_Azure --base-dir ./ --vault azure p2esk*****************
@@ -46,9 +46,9 @@ INFO[0007] Successfully imported                         key_id="https://forimpo
 
 If the import is successful, the `signatory-cli` will report the PKH (`tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo` in the above example) of your newly imported secret which in turn can be used in the config YAML to add the policies.
 
-**Note:** The PKH from Signatory and the PKH from `tezos-client list known addresess` command must be same.
+**Note:** The PKH from Signatory and the PKH from `tezos-client list known addresess` command must be the same.
 
-Name of the key can also be provided witht he import command.
+Name of the key can also be provided with he import command.
 
 ```bash
 % ./signatory-cli import -c ./s.yaml_Azure --base-dir ./ --vault azure spesk1********************************** -o "name":test-name
@@ -65,7 +65,7 @@ ID:                 https://forimport.vault.azure.net/keys/test-name/f503f20b309
 Active:             false
 ```
 
-## Verifying the import operation using list command
+## Verifying the import operation using the list command
 
 The import operation can be verified in the vault or using the below list command.
 
