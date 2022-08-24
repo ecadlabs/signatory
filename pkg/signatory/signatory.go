@@ -170,7 +170,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 	}
 
 	if !allowed {
-		return fmt.Errorf("request kind `%s' is not allowed", kind)
+		return fmt.Errorf("operation `%s' is not allowed", kind)
 	}
 
 	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
@@ -184,7 +184,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 				}
 			}
 			if !allowed {
-				return fmt.Errorf("operation `%s' is not allowed", kind)
+				return fmt.Errorf("request kind `%s' is not allowed", kind)
 			}
 		}
 	}
