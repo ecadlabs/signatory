@@ -30,7 +30,7 @@ type GenericOperationRequest struct {
 	Contents []Operation
 }
 
-// OperationKinds returns list of uperation kinds
+// OperationKinds returns list of operation kinds
 func (u *GenericOperationRequest) OperationKinds() []string {
 	ops := make([]string, len(u.Contents))
 	for i, o := range u.Contents {
@@ -241,6 +241,15 @@ type TenderbakeEndorsementRequest struct {
 func (t *TenderbakeEndorsementRequest) GetChainID() string  { return t.ChainID }
 func (t *TenderbakeEndorsementRequest) MessageKind() string { return "endorsement" }
 
+type FailingNoopRequest struct {
+	ChainID string
+	*OpFailingNoop
+}
+
+// GetChainID returns chain ID
+func (t *FailingNoopRequest) GetChainID() string  { return t.ChainID }
+func (t *FailingNoopRequest) MessageKind() string { return "failing_noop" }
+
 func parseEmmyEndorsementRequest(buf *[]byte) (*EmmyEndorsementRequest, error) {
 	chainID, err := utils.GetBytes(buf, 4)
 	if err != nil {
@@ -330,6 +339,7 @@ const (
 	magicEmmyBlock             = 0x01
 	magicEmmyEndorsement       = 0x02
 	magicGenericOperation      = 0x03
+	magicNoop                  = 0x05
 	magicTenderbakeBlock       = 0x11
 	magicPreendorsement        = 0x12
 	magicTenderbakeEndorsement = 0x13
@@ -342,6 +352,14 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 	}
 
 	switch t {
+	case magicNoop:
+		b, err := utils.GetBytes(buf, 4)
+		if err != nil {
+			return nil, err
+		}
+		return &FailingNoopRequest{
+			ChainID: encodeBase58(pChainID, b),
+		}, nil
 	case magicEmmyBlock:
 		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
