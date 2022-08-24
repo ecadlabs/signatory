@@ -339,7 +339,7 @@ const (
 	magicEmmyBlock             = 0x01
 	magicEmmyEndorsement       = 0x02
 	magicGenericOperation      = 0x03
-	magicNoop                  = 0x05
+	magicFailingNoop           = 0x05
 	magicTenderbakeBlock       = 0x11
 	magicPreendorsement        = 0x12
 	magicTenderbakeEndorsement = 0x13
@@ -352,7 +352,7 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 	}
 
 	switch t {
-	case magicNoop:
+	case magicFailingNoop:
 		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
 			return nil, err
@@ -360,6 +360,7 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 		return &FailingNoopRequest{
 			ChainID: encodeBase58(pChainID, b),
 		}, nil
+
 	case magicEmmyBlock:
 		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
