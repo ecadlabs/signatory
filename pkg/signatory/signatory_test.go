@@ -78,7 +78,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "request kind `block' is not allowed",
+			expected: "operation `block' is not allowed",
 		},
 		{
 			title: "endorsement ok",
@@ -97,7 +97,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "request kind `endorsement' is not allowed",
+			expected: "operation `endorsement' is not allowed",
 		},
 		{
 			title: "generic ok",
@@ -116,7 +116,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "request kind `generic' is not allowed",
+			expected: "operation `generic' is not allowed",
 		},
 		{
 			title: "delegation ok",
@@ -135,7 +135,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination"},
 				LogPayloads:       true,
 			},
-			expected: "operation `delegation' is not allowed",
+			expected: "request kind `delegation' is not allowed",
 		},
 		{
 			title: "origination ok",
@@ -154,7 +154,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "operation `origination' is not allowed",
+			expected: "request kind `origination' is not allowed",
 		},
 		{
 			title: "reveal ok",
@@ -173,7 +173,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "transaction", "origination", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "operation `reveal' is not allowed",
+			expected: "request kind `reveal' is not allowed",
 		},
 		{
 			title: "transaction ok",
@@ -192,7 +192,7 @@ func TestPolicy(t *testing.T) {
 				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
 				LogPayloads:       true,
 			},
-			expected: "operation `transaction' is not allowed",
+			expected: "request kind `transaction' is not allowed",
 		},
 	}
 
