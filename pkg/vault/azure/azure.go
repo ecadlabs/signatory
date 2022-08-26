@@ -199,6 +199,8 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 
 				if len(res.Value) != 0 {
 					break
+				} else {
+					return nil, vault.ErrDone
 				}
 			}
 
