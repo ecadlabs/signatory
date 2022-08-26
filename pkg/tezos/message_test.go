@@ -208,6 +208,12 @@ func TestRequest(t *testing.T) {
 				},
 			},
 		},
+		{
+			data: "05010000004254657a6f73205369676e6564204d6573736167653a206d79646170702e636f6d20323032312d30312d31345431353a31363a30345a2048656c6c6f20776f726c6421",
+			msg: &FailingNoopRequest{
+				ChainID: "NetXHAiqfeSqpBH",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -217,7 +223,7 @@ func TestRequest(t *testing.T) {
 			msg, err := parseRequest(&d)
 			require.NoError(t, err)
 			switch msg.(type) {
-			case *EmmyBlockRequest, *TenderbakeBlockRequest:
+			case *EmmyBlockRequest, *TenderbakeBlockRequest, *FailingNoopRequest:
 			default:
 				assert.Empty(t, d)
 			}
