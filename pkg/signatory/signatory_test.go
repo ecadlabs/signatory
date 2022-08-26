@@ -72,6 +72,25 @@ func TestPolicy(t *testing.T) {
 			},
 		},
 		{
+			title: "failing noop not allowed",
+			msg:   mustHex("05010000004254657a6f73205369676e6564204d6573736167653a206d79646170702e636f6d20323032312d30312d31345431353a31363a30345a2048656c6c6f20776f726c6421"),
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			expected: "request kind `failing_noop' is not allowed",
+		},
+		{
+			title: "failing noop ok",
+			msg:   mustHex("05010000004254657a6f73205369676e6564204d6573736167653a206d79646170702e636f6d20323032312d30312d31345431353a31363a30345a2048656c6c6f20776f726c6421"),
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement", "failing_noop"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+		},
+		{
 			title: "block not allowed",
 			msg:   mustHex("019caecab9000753d3029bc7d9a36b60cce68ade985a0a16929587166e0d3de61efff2fa31b7116bf670000000005ee3c23b04519d71c4e54089c56773c44979b3ba3d61078ade40332ad81577ae074f653e0e0000001100000001010000000800000000000753d2da051ba81185783e4cbc633cf2ba809139ef07c3e5f6c5867f930e7667b224430000cde7fbbb948e030000"),
 			policy: signatory.Policy{
