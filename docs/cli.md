@@ -57,7 +57,7 @@ Enter Password:
 INFO[0003] Requesting import operation                   pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0009] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/test-name/f503f20b309e4c8ea57982bd9736c412" pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 
-./signatory-cli list -c ./azure.yaml --base-dir ./ --vault azure p2esk*********************** -o "name":test-name
+./signatory-cli list -c ./azure.yaml --base-dir ./
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
 Public Key Hash:    tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV
 Vault:              Azure
@@ -79,4 +79,34 @@ ID:                 https://forimport.vault.azure.net/keys/signatory-imported-2C
 Active:             true
 Allowed Operations: [block endorsement generic preendorsement]
 Allowed Kinds:      [endorsement transaction]
+```
+
+**Note:** `--base-dir` can be provided in the config.yaml file itself. Below is a sample layout of a config file.
+
+```yaml
+base_dir: /tmp/
+server:
+  address:
+  utility_address:
+vaults:
+  azure:
+    ...
+tezos:
+  tz2***:
+    log_payloads: true
+    allowed_operations:
+      # List of [generic, block, endorsement]
+      - generic
+      - block
+      - endorsement
+    allowed_kinds:
+      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
+      - transaction
+      - endorsement
+  tz3***:
+    log_payloads: true
+    allowed_operations:
+      - generic
+    allowed_kinds:
+      - transaction
 ```
