@@ -3,6 +3,7 @@ package tezos
 import (
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 )
@@ -1511,4 +1512,52 @@ func parseEntrypoint(buf *[]byte) (e string, err error) {
 		return "", fmt.Errorf("tezos: unknown entrypoint tag: %d", t)
 	}
 	return e, nil
+}
+
+var operations = []Operation{
+	&OpEmmyEndorsement{},
+	&OpSeedNonceRevelation{},
+	&OpDoubleEndorsementEvidence{},
+	&OpDoubleBakingEvidence{},
+	&OpActivateAccount{},
+	&OpProposals{},
+	&OpBallot{},
+	&OpDoublePreendorsementEvidence{},
+	&OpEndorsementWithSlot{},
+	&OpFailingNoop{},
+	&OpPreendorsement{},
+	&OpTenderbakeEndorsement{},
+	&OpReveal{},
+	&OpTransaction{},
+	&OpOrigination{},
+	&OpDelegation{},
+	&OpRegisterGlobalConstant{},
+	&OpSetDepositsLimit{},
+	&OpTxRollupOrigination{},
+	&OpTxRollupSubmitBatch{},
+	&OpTxRollupCommit{},
+	&OpTxRollupReturnBond{},
+	&OpTxRollupFinalizeCommitment{},
+	&OpTxRollupRemoveCommitment{},
+	&OpTxRollupRejection{},
+	&OpTxRollupDispatchTickets{},
+	&OpTransferTicket{},
+	&OpScRollupOriginate{},
+	&OpScRollupAddMessages{},
+	&OpScRollupCement{},
+	&OpScRollupPublish{},
+}
+
+var Operations []string
+
+func init() {
+	ops := make(map[string]bool, len(operations))
+	for _, r := range operations {
+		ops[r.OperationKind()] = true
+	}
+	Operations = make([]string, 0, len(ops))
+	for op := range ops {
+		Operations = append(Operations, op)
+	}
+	sort.Strings(Operations)
 }

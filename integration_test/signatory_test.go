@@ -147,8 +147,8 @@ func TestSignatory(t *testing.T) {
 		}),
 		Policy: map[string]*signatory.Policy{
 			pub: {
-				AllowedOperations: []string{"generic", "block", "endorsement"},
-				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 			},
 		},
 	}

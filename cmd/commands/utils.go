@@ -14,8 +14,8 @@ Vault:              {{.VaultName}}
 ID:                 {{.ID}}
 Active:             {{.Active}}
 {{with .Policy -}}
-Allowed Operations: {{.AllowedOperations}}
-Allowed Kinds:      {{.AllowedKinds}}
+Allowed Requests:   {{.AllowedRequests}}
+Allowed Operations: {{.AllowedOps}}
 {{end}}
 {{end -}}
 `

@@ -50,8 +50,8 @@ type SignInterceptorOptions struct {
 
 // Policy contains policy data related to the key
 type Policy struct {
-	AllowedOperations   []string
-	AllowedKinds        []string
+	AllowedRequests     []string
+	AllowedOps          []string
 	LogPayloads         bool
 	AuthorizedKeyHashes []string
 }
@@ -127,7 +127,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = Policy{
-	AllowedOperations: []string{"block", "preendorsement", "endorsement"},
+	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
@@ -162,7 +162,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 
 	kind := msg.MessageKind()
 	var allowed bool
-	for _, k := range policy.AllowedOperations {
+	for _, k := range policy.AllowedRequests {
 		if kind == k {
 			allowed = true
 			break
@@ -177,7 +177,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
-			for _, k := range policy.AllowedKinds {
+			for _, k := range policy.AllowedOps {
 				if kind == k {
 					allowed = true
 					break
@@ -484,16 +484,18 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 			LogPayloads: v.LogPayloads,
 		}
 
-		if v.AllowedKinds != nil {
-			pol.AllowedKinds = make([]string, len(v.AllowedKinds))
-			copy(pol.AllowedKinds, v.AllowedKinds)
-			sort.Strings(pol.AllowedKinds)
-		}
+		if v.Allow != nil {
+			pol.AllowedRequests = make([]string, 0, len(v.Allow))
+			for req := range v.Allow {
+				pol.AllowedRequests = append(pol.AllowedRequests, req)
+			}
+			sort.Strings(pol.AllowedRequests)
 
-		if v.AllowedOperations != nil {
-			pol.AllowedOperations = make([]string, len(v.AllowedOperations))
-			copy(pol.AllowedOperations, v.AllowedOperations)
-			sort.Strings(pol.AllowedOperations)
+			if ops, ok := v.Allow["generic"]; ok {
+				pol.AllowedOps = make([]string, len(ops))
+				copy(pol.AllowedOps, ops)
+				sort.Strings(pol.AllowedOps)
+			}
 		}
 
 		if v.AuthorizedKeys != nil {
