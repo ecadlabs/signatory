@@ -30,7 +30,7 @@ func pickWord(x *big.Int, words []string) string {
 	return words[i.Int64()]
 }
 
-func GenerateMnemonic(src []byte) Mnemonic {
+func New(src []byte) Mnemonic {
 	h1 := blake2b.Sum256(src)
 	h2 := blake2b.Sum256(h1[:])
 	h3 := blake2b.Sum256(h2[:])
