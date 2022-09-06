@@ -47,7 +47,7 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	hash, err := tezos.GetPublicKeyHash(rootPK)
+	hash, err := tezos.EncodeBinaryPublicKeyHashFromKeyData(rootPK)
 	if err != nil {
 		return nil, nil, err
 	}
