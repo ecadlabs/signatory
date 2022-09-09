@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -496,6 +497,37 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 				copy(pol.AllowedOps, ops)
 				sort.Strings(pol.AllowedOps)
 			}
+		} else if v.AllowedKinds != nil || v.AllowedOperations != nil {
+			if v.AllowedOperations != nil {
+				pol.AllowedRequests = make([]string, len(v.AllowedOperations))
+				copy(pol.AllowedRequests, v.AllowedOperations)
+				sort.Strings(pol.AllowedRequests)
+			}
+			if v.AllowedKinds != nil {
+				pol.AllowedOps = make([]string, len(v.AllowedKinds))
+				copy(pol.AllowedOps, v.AllowedKinds)
+				sort.Strings(pol.AllowedOps)
+			}
+			log.Warnln("`allowed_operations` and `allowed_kinds` options are deprecated. Use `allow` instead:")
+			type example struct {
+				Allow map[string][]string `yaml:"allow"`
+			}
+			e := example{
+				Allow: make(map[string][]string),
+			}
+			for _, r := range pol.AllowedRequests {
+				e.Allow[r] = nil
+			}
+			if pol.AllowedOps != nil {
+				e.Allow["generic"] = pol.AllowedOps
+			}
+			out, err := yaml.Marshal(&e)
+			if err != nil {
+				panic(err)
+			}
+			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
+			pipe.Write(out)
+			pipe.Close()
 		}
 
 		if v.AuthorizedKeys != nil {
