@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
 	"gopkg.in/yaml.v3"
@@ -126,10 +125,6 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 		v:      v,
 		kmsapi: v.kmsapi,
 	}
-}
-
-func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
-	return nil, fmt.Errorf("import not supported, please refer -> https://github.com/ecadlabs/signatory/blob/main/docs/aws_kms.md")
 }
 
 // Name returns backend name
