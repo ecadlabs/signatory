@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/stretchr/testify/require"
 )

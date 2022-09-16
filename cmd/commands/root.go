@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory"
@@ -15,8 +16,9 @@ import (
 type Context struct {
 	Context context.Context
 
-	config    *config.Config
-	signatory *signatory.Signatory
+	config        *config.Config
+	authenticator auth.AuthorizedKeysStorage
+	signatory     *signatory.Signatory
 }
 
 // NewRootCommand returns new root command
@@ -68,6 +70,14 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 			log.SetLevel(lv)
 
+			if conf.AuthorizedKeys != nil {
+				ak, err := auth.StaticAuthorizedKeysFromString(conf.AuthorizedKeys.List()...)
+				if err != nil {
+					return err
+				}
+				c.authenticator = ak
+			}
+
 			pol, err := signatory.PreparePolicy(conf.Tezos)
 			if err != nil {
 				return err
@@ -78,6 +88,15 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
 				Watermark:   &signatory.FileWatermark{BaseDir: baseDir},
+			}
+
+			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {
+				sigConf.PolicyHook = &signatory.PolicyHook{
+					Address: conf.PolicyHook.Address,
+				}
+				if conf.PolicyHook.RequireAuthentication {
+					sigConf.PolicyHook.Auth = c.authenticator
+				}
 			}
 
 			sig, err := signatory.New(c.Context, &sigConf)

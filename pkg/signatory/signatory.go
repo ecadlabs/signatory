@@ -1,14 +1,18 @@
 package signatory
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	stderr "errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"sync"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -77,6 +81,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash string // optional, see policy
 	PublicKeyHash       string
+	Source              string // optional caller address
 	Message             []byte
 }
 
@@ -191,6 +196,95 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 	return nil
 }
 
+func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error {
+	if s.config.PolicyHook == nil {
+		return nil
+	}
+	var nonce [32]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return err
+	}
+
+	hookReq := PolicyHookRequest{
+		Request:       req.Message,
+		Source:        req.Source,
+		PublicKeyHash: req.PublicKeyHash,
+		Nonce:         nonce[:],
+	}
+	body, err := json.Marshal(&hookReq)
+	if err != nil {
+		return err
+	}
+	r, err := http.NewRequestWithContext(ctx, "POST", s.config.PolicyHook.Address, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	r.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if s.config.PolicyHook.Auth != nil {
+		// authenticate the responce
+		var reply PolicyHookReply
+		if err := json.NewDecoder(resp.Body).Decode(&reply); err != nil {
+			return err
+		}
+		var pl PolicyHookReplyPayload
+		if err := json.Unmarshal(reply.Payload, &pl); err != nil {
+			return err
+		}
+		if pl.Status != resp.StatusCode {
+			return stderr.New("the policy hook reply status must match the HTTP header")
+		}
+		if !bytes.Equal(pl.Nonce, hookReq.Nonce) {
+			return errors.Wrap(errors.New("nonce mismatch"), http.StatusForbidden)
+		}
+		pub, err := s.config.PolicyHook.Auth.GetPublicKey(ctx, pl.PublicKeyHash)
+		if err != nil {
+			errors.Wrap(err, http.StatusForbidden)
+		}
+		sig, err := tezos.ParseSignature(reply.Signature, pub)
+		if err != nil {
+			return err
+		}
+		digest := utils.DigestFunc(reply.Payload)
+		if err = cryptoutils.Verify(pub, digest[:], sig); err != nil {
+			if stderr.Is(err, cryptoutils.ErrSignature) {
+				return errors.Wrap(errors.New("invalid hook reply signature"), http.StatusForbidden)
+			}
+			return err
+		}
+		if resp.StatusCode/100 != 2 {
+			var msg string
+			if pl.Error != "" {
+				msg = pl.Error
+			} else {
+				msg = resp.Status
+			}
+			var status int
+			if resp.StatusCode/100 == 4 {
+				status = http.StatusForbidden
+			} else {
+				status = http.StatusInternalServerError
+			}
+			return errors.Wrap(fmt.Errorf("policy hook: %s", msg), status)
+		}
+	} else if resp.StatusCode/100 != 2 {
+		var status int
+		if resp.StatusCode/100 == 4 {
+			status = http.StatusForbidden
+		} else {
+			status = http.StatusInternalServerError
+		}
+		return errors.Wrap(fmt.Errorf("policy hook: %s", resp.Status), status)
+	}
+
+	return nil
+}
+
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) {
 	l := s.logger().WithField(logPKH, req.PublicKeyHash)
@@ -240,6 +334,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	if err = matchFilter(policy, req, msg); err != nil {
 		l.Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
+	}
+
+	if err = s.callPolicyHook(ctx, req); err != nil {
+		l.Error(err)
+		return "", err
 	}
 
 	l.Info("Requesting signing operation")
@@ -415,6 +514,11 @@ func (s *Signatory) Unlock(ctx context.Context) error {
 	return nil
 }
 
+type PolicyHook struct {
+	Address string
+	Auth    auth.AuthorizedKeysStorage
+}
+
 // Config represents Signatory configuration
 type Config struct {
 	Policy       map[string]*Policy
@@ -423,6 +527,7 @@ type Config struct {
 	Watermark    Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
+	PolicyHook   *PolicyHook
 }
 
 // New returns Signatory instance

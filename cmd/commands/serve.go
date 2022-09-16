@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -22,14 +21,7 @@ func NewServeCommand(c *Context) *cobra.Command {
 			srvConf := server.Server{
 				Address: c.config.Server.Address,
 				Signer:  c.signatory,
-			}
-
-			if c.config.Server.AuthorizedKeys != nil {
-				ak, err := auth.StaticAuthorizedKeysFromString(c.config.Server.AuthorizedKeys.List()...)
-				if err != nil {
-					return err
-				}
-				srvConf.Auth = ak
+				Auth:    c.authenticator,
 			}
 
 			srv, err := srvConf.New()
