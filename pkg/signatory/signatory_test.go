@@ -215,7 +215,16 @@ func TestPolicy(t *testing.T) {
 			expected: "operation `transaction' is not allowed",
 		},
 		{
-			title: "increase paid storage",
+			title: "increase paid storage ok",
+			msg:   mustHex("031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9710079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00"),
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "increase_paid_storage"},
+				LogPayloads:       true,
+			},
+		},
+		{
+			title: "increase paid storage not allowed",
 			msg:   mustHex("031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9710079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00"),
 			policy: signatory.Policy{
 				AllowedOperations: []string{"generic", "block", "endorsement"},
@@ -225,16 +234,7 @@ func TestPolicy(t *testing.T) {
 			expected: "operation `increase_paid_storage' is not allowed",
 		},
 		{
-			title: "increase paid storage",
-			msg:   mustHex("031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9710079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00"),
-			policy: signatory.Policy{
-				AllowedOperations: []string{"generic", "block", "endorsement"},
-				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "increase_paid_storage"},
-				LogPayloads:       true,
-			},
-		},
-		{
-			title: "VDF Revelation",
+			title: "VDF Revelation ok",
 			msg:   mustHex("031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807"),
 			policy: signatory.Policy{
 				AllowedOperations: []string{"generic", "block", "endorsement"},
@@ -243,7 +243,7 @@ func TestPolicy(t *testing.T) {
 			},
 		},
 		{
-			title: "VDF Revelation",
+			title: "VDF Revelation not allowed",
 			msg:   mustHex("031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807000101c83a61cd1cb193d2d7d5e49d867cc2299211575d00031ca15e385360cc8843937ece7471307086020e8eaff1613c8c25124519710fe9080079cae4c9a1885f17d3995619bf28636c4394458bdd02ef8a09e807"),
 			policy: signatory.Policy{
 				AllowedOperations: []string{"generic", "block", "endorsement"},
