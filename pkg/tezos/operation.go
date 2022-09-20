@@ -1,6 +1,7 @@
 package tezos
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 
@@ -21,6 +22,7 @@ const (
 	tagProposals                    = 5
 	tagBallot                       = 6
 	tagDoublePreendorsementEvidence = 7
+	tagVdfRevelation                = 8
 	tagEndorsementWithSlot          = 10
 	tagFailingNoop                  = 17
 	tagPreendorsement               = 20
@@ -31,6 +33,7 @@ const (
 	tagDelegation                   = 110
 	tagRegisterGlobalConstant       = 111
 	tagSetDepositsLimit             = 112
+	tagIncreasePaidStorageLimit     = 113
 	tagTxRollupOrigination          = 150
 	tagTxRollupSubmitBatch          = 151
 	tagTxRollupCommit               = 152
@@ -55,6 +58,7 @@ var opKinds = map[int]string{
 	tagProposals:                    "proposals",
 	tagBallot:                       "ballot",
 	tagDoublePreendorsementEvidence: "double_preendorsement_evidence",
+	tagVdfRevelation:                "vdf_revelation",
 	tagEndorsementWithSlot:          "endorsement_with_slot",
 	tagFailingNoop:                  "failing_noop",
 	tagPreendorsement:               "preendorsement",
@@ -65,6 +69,7 @@ var opKinds = map[int]string{
 	tagDelegation:                   "delegation",
 	tagRegisterGlobalConstant:       "register_global_constant",
 	tagSetDepositsLimit:             "set_deposits_limit",
+	tagIncreasePaidStorageLimit:     "increase_paid_storage",
 	tagTxRollupOrigination:          "tx_rollup_origination",
 	tagTxRollupSubmitBatch:          "tx_rollup_submit_batch",
 	tagTxRollupCommit:               "tx_rollup_commit",
@@ -454,6 +459,14 @@ type OpScRollupPublish struct {
 	Commitment Commitment
 }
 
+type OpIncreasePaidStorage struct {
+	Manager
+	Amount      *big.Int
+	Destination string
+}
+
+func (o *OpIncreasePaidStorage) OperationKind() string { return "increase_paid_storage" }
+
 type Commitment struct {
 	CompressedState  string
 	InboxLevel       int32
@@ -468,6 +481,10 @@ type OpFailingNoop []byte
 
 func (o OpFailingNoop) OperationKind() string { return "failing_noop" }
 
+type OpVdfRevelation []byte
+
+func (o OpVdfRevelation) OperationKind() string { return "vdf_revelation" }
+
 func parseOperation(buf *[]byte) (op Operation, err error) {
 	t, err := utils.GetByte(buf)
 	if err != nil {
@@ -475,6 +492,13 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	}
 
 	switch t {
+	case tagVdfRevelation:
+		var op OpVdfRevelation
+		if op, err = utils.GetBytes(buf, 200); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		return &op, nil
+
 	case tagEmmyEndorsement:
 		var op OpEmmyEndorsement
 		if op.Level, err = utils.GetInt32(buf); err != nil {
@@ -687,6 +711,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		tagDelegation,
 		tagRegisterGlobalConstant,
 		tagSetDepositsLimit,
+		tagIncreasePaidStorageLimit,
 		tagTxRollupOrigination,
 		tagTxRollupSubmitBatch,
 		tagTxRollupCommit,
@@ -831,6 +856,21 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
+			return &op, nil
+
+		case tagIncreasePaidStorageLimit:
+			op := OpIncreasePaidStorage{
+				Manager: common,
+			}
+			op.Amount, err = parseStorage(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			dest, err := parseDestination(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			op.Destination = string(dest)
 			return &op, nil
 
 		case tagTxRollupOrigination:
@@ -1511,4 +1551,70 @@ func parseEntrypoint(buf *[]byte) (e string, err error) {
 		return "", fmt.Errorf("tezos: unknown entrypoint tag: %d", t)
 	}
 	return e, nil
+}
+
+func parseStorage(buf *[]byte) (e *big.Int, err error) {
+	var bamt []byte
+	var last byte
+	for {
+		b, err := utils.GetByte(buf)
+		if err != nil {
+			return nil, err
+		}
+		bamt = append(bamt, b)
+		last = b & 0x80
+		if last == 0 {
+			break
+		}
+	}
+	return decodeStorageBytes(bamt)
+}
+
+// decodeStorageBytes decodes a zarith encoded integer from the entire input byte array.
+func decodeStorageBytes(bamt []byte) (*big.Int, error) {
+	if len(bamt) == 0 {
+		return nil, fmt.Errorf("expected non-empty byte array")
+	}
+
+	// Split input into 8-bit bitstrings
+	segments := make([]string, len(bamt))
+	for i, curByte := range bamt {
+		segments[i] = fmt.Sprintf("%08b", curByte)
+	}
+
+	// Trim off leading continuation bit from each segment
+	for i, segment := range segments {
+		segments[i] = segment[1:]
+	}
+
+	// Trim off the sign flag from the first segment
+	firstSegment := []rune(segments[0])
+	isNegative := firstSegment[0] == '1'
+	segments[0] = string(firstSegment[1:])
+
+	// Reverse the order of the segments.
+	for i := len(segments)/2 - 1; i >= 0; i-- {
+		opp := len(segments) - 1 - i
+		segments[i], segments[opp] = segments[opp], segments[i]
+	}
+
+	// Concat all the bits
+	bitStringBuf := bytes.Buffer{}
+	for _, segment := range segments {
+		bitStringBuf.WriteString(segment)
+	}
+	bitString := bitStringBuf.String()
+
+	// Add sign flag
+	if isNegative {
+		bitString = "-" + bitString
+	}
+
+	// Convert from base 2 to base 10
+	amt := new(big.Int)
+	_, success := amt.SetString(bitString, 2)
+	if !success {
+		return nil, fmt.Errorf("failed to parse bit string %s to big.Int", bitString)
+	}
+	return amt, nil
 }
