@@ -209,6 +209,7 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		Request:       req.Message,
 		Source:        req.Source,
 		PublicKeyHash: req.PublicKeyHash,
+		ClientKeyHash: req.ClientPublicKeyHash,
 		Nonce:         nonce[:],
 	}
 	body, err := json.Marshal(&hookReq)

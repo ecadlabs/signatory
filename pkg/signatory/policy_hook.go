@@ -7,6 +7,7 @@ import (
 type PolicyHookRequest struct {
 	Request       []byte `json:"request"`
 	Source        string `json:"source"`
+	ClientKeyHash string `json:"client_key_hash"`
 	PublicKeyHash string `json:"public_key_hash"`
 	Nonce         []byte `json:"nonce"`
 }
