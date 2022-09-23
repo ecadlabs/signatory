@@ -5,6 +5,7 @@ package signatory_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -248,6 +249,99 @@ func TestPolicy(t *testing.T) {
 			require.NoError(t, s.Unlock(context.Background()))
 
 			_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pub, Message: c.msg})
+			if c.expected != "" {
+				require.EqualError(t, err, c.expected)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestListPublikKeys(t *testing.T) {
+	type testCase struct {
+		title    string
+		policy   signatory.Policy
+		expected string
+		lpk      ListPublicKeys
+	}
+	var cases = []testCase{
+		{
+			title: "ListPublicKeys with vault error",
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			expected: "Vault not reachable",
+			lpk: func(ctx context.Context) vault.StoredKeysIterator {
+				return &TestKeyIterator{
+					nxt: func(idx int) (key vault.StoredKey, err error) {
+						return nil, fmt.Errorf("Vault not reachable")
+					},
+				}
+			},
+		},
+		{
+			title: "ListPublicKeys with done",
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			lpk: func(ctx context.Context) vault.StoredKeysIterator {
+				return &TestKeyIterator{
+					nxt: func(idx int) (key vault.StoredKey, err error) {
+						return nil, vault.ErrDone
+					},
+				}
+			},
+		},
+		{
+			title: "ListPublicKeys with key error",
+			policy: signatory.Policy{
+				AllowedOperations: []string{"generic", "block", "endorsement"},
+				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				LogPayloads:       true,
+			},
+			lpk: func(ctx context.Context) vault.StoredKeysIterator {
+				return &TestKeyIterator{
+					idx: 0,
+					nxt: func(idx int) (key vault.StoredKey, err error) {
+						if idx == 0 {
+							return nil, vault.ErrKey
+						} else {
+							return nil, vault.ErrDone
+						}
+					},
+				}
+			},
+		},
+	}
+
+	priv, err := tezos.ParsePrivateKey(pk, nil)
+	require.NoError(t, err)
+
+	pub, err := tezos.EncodePublicKeyHash(priv.Public())
+	require.NoError(t, err)
+
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			conf := signatory.Config{
+				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
+				Watermark: signatory.IgnoreWatermark{},
+				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
+				}),
+				Policy: map[string]*signatory.Policy{
+					pub: &c.policy,
+				},
+			}
+			s, err := signatory.New(context.Background(), &conf)
+			require.NoError(t, err)
+			require.NoError(t, s.Unlock(context.Background()))
+
+			_, err = s.ListPublicKeys(context.Background())
 			if c.expected != "" {
 				require.EqualError(t, err, c.expected)
 			} else {
