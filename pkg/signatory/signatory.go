@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -203,14 +204,14 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
-		err := fmt.Errorf("%s is not listed in config", req.PublicKeyHash)
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(req.PublicKeyHash, "\n", "", -1))
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
-		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
