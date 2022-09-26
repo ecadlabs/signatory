@@ -2,11 +2,12 @@ package signatory
 
 import (
 	"encoding/json"
+	"net"
 )
 
 type PolicyHookRequest struct {
 	Request       []byte `json:"request"`
-	Source        string `json:"source"`
+	Source        net.IP `json:"source"`
 	ClientKeyHash string `json:"client_key_hash,omitempty"`
 	PublicKeyHash string `json:"public_key_hash"`
 	Nonce         []byte `json:"nonce"`

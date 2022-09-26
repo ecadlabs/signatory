@@ -86,11 +86,11 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	signRequest := signatory.SignRequest{
 		PublicKeyHash: mux.Vars(r)["key"],
 	}
-	var err error
-	signRequest.Source, _, err = net.SplitHostPort(r.RemoteAddr)
+	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		panic(err) // shouldn't happen with Go standard library
 	}
+	signRequest.Source = net.ParseIP(source)
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)

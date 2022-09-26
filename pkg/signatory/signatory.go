@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	stderr "errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sort"
 	"sync"
@@ -81,7 +82,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash string // optional, see policy
 	PublicKeyHash       string
-	Source              string // optional caller address
+	Source              net.IP // optional caller address
 	Message             []byte
 }
 
