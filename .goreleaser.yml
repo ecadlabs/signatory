@@ -1,7 +1,7 @@
 before:
   hooks:
 builds:
-  - id: signatory-linux-arm
+  - id: signatory-linux-armv6
     binary: signatory
     env:
       - CGO_ENABLED=1
@@ -15,7 +15,10 @@ builds:
       - linux
     goarch:
       - arm
-  - id: signatory-cli-linux-arm
+    goarm:
+      - '6'
+
+  - id: signatory-cli-linux-armv6
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
@@ -29,7 +32,40 @@ builds:
       - linux
     goarch:
       - arm
-
+    goarm:
+      - '6'
+  - id: signatory-linux-armv7
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+      - CXX=arm-linux-gnueabihf-g++
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - '7'
+  - id: signatory-cli-linux-armv7
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+      - CXX=arm-linux-gnueabihf-g++
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - '7'
   - id: signatory-linux-arm64
     binary: signatory
     env:
@@ -205,7 +241,21 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/arm64"
     goarch: arm64
-
+  - image_templates:
+    - 'ecadlabs/signatory:{{ .Tag }}-armv7'
+    - 'ecadlabs/signatory:latest-armv7'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--platform=linux/arm/v7"
+    goarch: arm
+    goarm: '7'
 checksum:
   name_template: checksums.txt
 snapshot:
