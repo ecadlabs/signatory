@@ -233,47 +233,59 @@ func IsEncryptedPrivateKey(data string) (bool, error) {
 	return ok, nil
 }
 
-func serializePublicKey(pub crypto.PublicKey) (pubPrefix, hashPrefix tzPrefix, payload []byte, err error) {
+type serializedPublicKey struct {
+	pubPrefix, hashPrefix tzPrefix
+	tag                   byte
+	payload               []byte
+}
+
+func serializePublicKey(pub crypto.PublicKey) (out *serializedPublicKey, err error) {
 	switch key := pub.(type) {
 	case *ecdsa.PublicKey:
 		switch key.Curve {
 		case elliptic.P256():
-			hashPrefix = pP256PublicKeyHash
-			pubPrefix = pP256PublicKey
+			return &serializedPublicKey{
+				hashPrefix: pP256PublicKeyHash,
+				pubPrefix:  pP256PublicKey,
+				tag:        tagPublicKeyP256,
+				payload:    elliptic.MarshalCompressed(key.Curve, key.X, key.Y),
+			}, nil
 		case cryptoutils.S256():
-			hashPrefix = pSECP256K1PublicKeyHash
-			pubPrefix = pSECP256K1PublicKey
+			return &serializedPublicKey{
+				hashPrefix: pSECP256K1PublicKeyHash,
+				pubPrefix:  pSECP256K1PublicKey,
+				tag:        tagPublicKeyHashSECP256K1,
+				payload:    elliptic.MarshalCompressed(key.Curve, key.X, key.Y),
+			}, nil
 		default:
-			err = fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
-			return
+			return nil, fmt.Errorf("tezos: unknown curve: %s", key.Params().Name)
 		}
-		payload = elliptic.MarshalCompressed(key.Curve, key.X, key.Y)
-		return
 
 	case ed25519.PublicKey:
-		hashPrefix = pED25519PublicKeyHash
-		pubPrefix = pED25519PublicKey
-		payload = key
-		return
-	}
+		return &serializedPublicKey{
+			hashPrefix: pED25519PublicKeyHash,
+			pubPrefix:  pED25519PublicKey,
+			tag:        tagPublicKeyHashED25519,
+			payload:    key,
+		}, nil
 
-	err = fmt.Errorf("tezos: unknown public key type: %T", pub)
-	return
+	default:
+		return nil, fmt.Errorf("tezos: unknown public key type: %T", pub)
+	}
 }
 
 // EncodePublicKey returns base58 encoded public key
 func EncodePublicKey(pub crypto.PublicKey) (res string, err error) {
-	prefix, _, payload, err := serializePublicKey(pub)
+	s, err := serializePublicKey(pub)
 	if err != nil {
 		return "", err
 	}
-
-	return encodeBase58(prefix, payload), nil
+	return encodeBase58(s.pubPrefix, s.payload), nil
 }
 
 // EncodePublicKeyHash returns base58 encoded public key hash
 func EncodePublicKeyHash(pub crypto.PublicKey) (hash string, err error) {
-	_, prefix, payload, err := serializePublicKey(pub)
+	s, err := serializePublicKey(pub)
 	if err != nil {
 		return "", err
 	}
@@ -282,15 +294,15 @@ func EncodePublicKeyHash(pub crypto.PublicKey) (hash string, err error) {
 	if err != nil {
 		return "", err
 	}
-	digest.Write(payload)
+	digest.Write(s.payload)
 	h := digest.Sum(nil)
 
-	return encodeBase58(prefix, h), nil
+	return encodeBase58(s.hashPrefix, h), nil
 }
 
 // GetPublicKeyHash returns BLAKE2B public key hash
 func GetPublicKeyHash(pub crypto.PublicKey) (hash []byte, err error) {
-	_, _, payload, err := serializePublicKey(pub)
+	s, err := serializePublicKey(pub)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +311,7 @@ func GetPublicKeyHash(pub crypto.PublicKey) (hash []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	digest.Write(payload)
+	digest.Write(s.payload)
 	return digest.Sum(nil), nil
 }
 
@@ -356,4 +368,24 @@ func EncodeBinaryPublicKeyHash(s string) (data []byte, err error) {
 	copy(data[1:], payload)
 
 	return data, nil
+}
+
+func EncodeBinaryPublicKeyHashFromKeyData(pub crypto.PublicKey) ([]byte, error) {
+	s, err := serializePublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	digest, err := blake2b.New(20, nil)
+	if err != nil {
+		return nil, err
+	}
+	digest.Write(s.payload)
+	h := digest.Sum(nil)
+
+	out := make([]byte, 1+len(h))
+	out[0] = s.tag
+	copy(out[1:], h)
+
+	return out, nil
 }

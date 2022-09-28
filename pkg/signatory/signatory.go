@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -29,12 +30,14 @@ const (
 	logPKH       = "pkh"
 	logVault     = "vault"
 	logVaultName = "vault_name"
-	logOp        = "op"
-	logKind      = "kind"
+	logReq       = "request"
+	logOps       = "ops"
+	logTotalOps  = "ops_total"
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
 	logClient    = "client_pkh"
+	logRaw       = "raw"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -44,8 +47,8 @@ type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 type SignInterceptorOptions struct {
 	Address string
 	Vault   string
-	Op      string
-	Kind    []string
+	Req     string
+	Stat    tezos.OperationsStat
 }
 
 // Policy contains policy data related to the key
@@ -201,27 +204,27 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
-		err := fmt.Errorf("%s is not listed in config", req.PublicKeyHash)
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(req.PublicKeyHash, "\n", "", -1))
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logOp, msg.MessageKind())
+	l = l.WithField(logReq, msg.MessageKind())
 
 	if m, ok := msg.(tezos.MessageWithLevel); ok {
 		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
 	}
 
-	var opKind []string
+	var opStat tezos.OperationsStat
 	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
-		opKind = ops.OperationKinds()
-		l = l.WithField(logKind, opKind)
+		opStat = ops.OperationsStat()
+		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -248,7 +251,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
+	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 		digest := utils.DigestFunc(message)
@@ -268,8 +271,8 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
-			Op:      msg.MessageKind(),
-			Kind:    opKind,
+			Req:     msg.MessageKind(),
+			Stat:    opStat,
 		}, func() (err error) {
 			sig, err = signFunc(ctx, req.Message, p.key)
 			return err
