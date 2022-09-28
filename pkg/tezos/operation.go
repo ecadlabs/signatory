@@ -1,7 +1,6 @@
 package tezos
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 
@@ -729,16 +728,16 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		if common.Source, err = parsePublicKeyHash(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.Fee, err = parseBigNum(buf); err != nil {
+		if common.Fee, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.Counter, err = parseBigNum(buf); err != nil {
+		if common.Counter, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.GasLimit, err = parseBigNum(buf); err != nil {
+		if common.GasLimit, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.StorageLimit, err = parseBigNum(buf); err != nil {
+		if common.StorageLimit, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 
@@ -756,7 +755,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpTransaction{
 				Manager: common,
 			}
-			if op.Amount, err = parseBigNum(buf); err != nil {
+			if op.Amount, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseDestination(buf); err != nil {
@@ -786,7 +785,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpOrigination{
 				Manager: common,
 			}
-			if op.Balance, err = parseBigNum(buf); err != nil {
+			if op.Balance, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			flag, err := utils.GetBool(buf)
@@ -852,7 +851,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
-				if op.Limit, err = parseBigNum(buf); err != nil {
+				if op.Limit, err = parseBigUint(buf); err != nil {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
@@ -862,7 +861,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpIncreasePaidStorage{
 				Manager: common,
 			}
-			op.Amount, err = parseStorage(buf)
+			op.Amount, err = parseBigInt(buf)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
@@ -910,7 +909,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 				if flag {
-					if op.BurnLimit, err = parseBigNum(buf); err != nil {
+					if op.BurnLimit, err = parseBigUint(buf); err != nil {
 						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 					}
 				}
@@ -1017,7 +1016,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 					}
 					op.Message = &m
 				}
-				if op.MessagePosition, err = parseBigNum(buf); err != nil {
+				if op.MessagePosition, err = parseBigUint(buf); err != nil {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 				ln, err := utils.GetUint32(buf)
@@ -1178,7 +1177,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			if op.TicketTicketer, err = parseDestination(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.TicketAmount, err = parseBigNum(buf); err != nil {
+			if op.TicketAmount, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseDestination(buf); err != nil {
@@ -1490,24 +1489,59 @@ func parseDestination(buf *[]byte) (pkh string, err error) {
 	return "", fmt.Errorf("tezos: unknown contract id tag: %d", t)
 }
 
-func parseBigNum(buf *[]byte) (val *big.Int, err error) {
-	val = new(big.Int)
-	b := *buf
-	msb := 0
-	for msb < len(b) && b[msb]&0x80 != 0 {
-		msb++
+func parseBigUint(buf *[]byte) (val *big.Int, err error) {
+	res := big.NewInt(0)
+	shift := uint(0)
+	for {
+		b, err := utils.GetByte(buf)
+		if err != nil {
+			return nil, err
+		}
+		tmp := big.NewInt(int64(b & 0x7f))
+		tmp.Lsh(tmp, shift)
+		res.Or(res, tmp)
+		shift += 7
+		if b&0x80 == 0 {
+			return res, nil
+		}
 	}
-	if msb == len(b) {
-		return nil, utils.ErrMsgUnexpectedEnd
+}
+
+func parseBigInt(buf *[]byte) (val *big.Int, err error) {
+	b, err := utils.GetByte(buf)
+	if err != nil {
+		return nil, err
 	}
-	for i := msb; i >= 0; i-- {
-		var tmp big.Int
-		tmp.SetInt64(int64(b[i] & 0x7f))
-		val.Lsh(val, 7)
-		val.Add(val, &tmp)
+	var sign int
+	if b&0x40 != 0 {
+		sign = -1
+	} else {
+		sign = 1
 	}
-	*buf = b[msb+1:]
-	return val, nil
+	res := big.NewInt(int64(b & 0x3f))
+	if b&0x80 == 0 {
+		if sign < 0 {
+			res.Neg(res)
+		}
+		return res, nil
+	}
+	shift := uint(6)
+	for {
+		b, err := utils.GetByte(buf)
+		if err != nil {
+			return nil, err
+		}
+		tmp := big.NewInt(int64(b & 0x7f))
+		tmp.Lsh(tmp, shift)
+		res.Or(res, tmp)
+		shift += 7
+		if b&0x80 == 0 {
+			if sign < 0 {
+				res.Neg(res)
+			}
+			return res, nil
+		}
+	}
 }
 
 const (
@@ -1551,70 +1585,4 @@ func parseEntrypoint(buf *[]byte) (e string, err error) {
 		return "", fmt.Errorf("tezos: unknown entrypoint tag: %d", t)
 	}
 	return e, nil
-}
-
-func parseStorage(buf *[]byte) (e *big.Int, err error) {
-	var bamt []byte
-	var last byte
-	for {
-		b, err := utils.GetByte(buf)
-		if err != nil {
-			return nil, err
-		}
-		bamt = append(bamt, b)
-		last = b & 0x80
-		if last == 0 {
-			break
-		}
-	}
-	return decodeStorageBytes(bamt)
-}
-
-// decodeStorageBytes decodes a zarith encoded integer from the entire input byte array.
-func decodeStorageBytes(bamt []byte) (*big.Int, error) {
-	if len(bamt) == 0 {
-		return nil, fmt.Errorf("expected non-empty byte array")
-	}
-
-	// Split input into 8-bit bitstrings
-	segments := make([]string, len(bamt))
-	for i, curByte := range bamt {
-		segments[i] = fmt.Sprintf("%08b", curByte)
-	}
-
-	// Trim off leading continuation bit from each segment
-	for i, segment := range segments {
-		segments[i] = segment[1:]
-	}
-
-	// Trim off the sign flag from the first segment
-	firstSegment := []rune(segments[0])
-	isNegative := firstSegment[0] == '1'
-	segments[0] = string(firstSegment[1:])
-
-	// Reverse the order of the segments.
-	for i := len(segments)/2 - 1; i >= 0; i-- {
-		opp := len(segments) - 1 - i
-		segments[i], segments[opp] = segments[opp], segments[i]
-	}
-
-	// Concat all the bits
-	bitStringBuf := bytes.Buffer{}
-	for _, segment := range segments {
-		bitStringBuf.WriteString(segment)
-	}
-	bitString := bitStringBuf.String()
-
-	// Add sign flag
-	if isNegative {
-		bitString = "-" + bitString
-	}
-
-	// Convert from base 2 to base 10
-	amt := new(big.Int)
-	_, success := amt.SetString(bitString, 2)
-	if !success {
-		return nil, fmt.Errorf("failed to parse bit string %s to big.Int", bitString)
-	}
-	return amt, nil
 }
