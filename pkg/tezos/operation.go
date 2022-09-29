@@ -21,6 +21,7 @@ const (
 	tagProposals                    = 5
 	tagBallot                       = 6
 	tagDoublePreendorsementEvidence = 7
+	tagVdfRevelation                = 8
 	tagEndorsementWithSlot          = 10
 	tagFailingNoop                  = 17
 	tagPreendorsement               = 20
@@ -31,6 +32,7 @@ const (
 	tagDelegation                   = 110
 	tagRegisterGlobalConstant       = 111
 	tagSetDepositsLimit             = 112
+	tagIncreasePaidStorageLimit     = 113
 	tagTxRollupOrigination          = 150
 	tagTxRollupSubmitBatch          = 151
 	tagTxRollupCommit               = 152
@@ -55,6 +57,7 @@ var opKinds = map[int]string{
 	tagProposals:                    "proposals",
 	tagBallot:                       "ballot",
 	tagDoublePreendorsementEvidence: "double_preendorsement_evidence",
+	tagVdfRevelation:                "vdf_revelation",
 	tagEndorsementWithSlot:          "endorsement_with_slot",
 	tagFailingNoop:                  "failing_noop",
 	tagPreendorsement:               "preendorsement",
@@ -65,6 +68,7 @@ var opKinds = map[int]string{
 	tagDelegation:                   "delegation",
 	tagRegisterGlobalConstant:       "register_global_constant",
 	tagSetDepositsLimit:             "set_deposits_limit",
+	tagIncreasePaidStorageLimit:     "increase_paid_storage",
 	tagTxRollupOrigination:          "tx_rollup_origination",
 	tagTxRollupSubmitBatch:          "tx_rollup_submit_batch",
 	tagTxRollupCommit:               "tx_rollup_commit",
@@ -454,6 +458,14 @@ type OpScRollupPublish struct {
 	Commitment Commitment
 }
 
+type OpIncreasePaidStorage struct {
+	Manager
+	Amount      *big.Int
+	Destination string
+}
+
+func (o *OpIncreasePaidStorage) OperationKind() string { return "increase_paid_storage" }
+
 type Commitment struct {
 	CompressedState  string
 	InboxLevel       int32
@@ -468,6 +480,10 @@ type OpFailingNoop []byte
 
 func (o OpFailingNoop) OperationKind() string { return "failing_noop" }
 
+type OpVdfRevelation []byte
+
+func (o OpVdfRevelation) OperationKind() string { return "vdf_revelation" }
+
 func parseOperation(buf *[]byte) (op Operation, err error) {
 	t, err := utils.GetByte(buf)
 	if err != nil {
@@ -475,6 +491,13 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	}
 
 	switch t {
+	case tagVdfRevelation:
+		var op OpVdfRevelation
+		if op, err = utils.GetBytes(buf, 200); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		return &op, nil
+
 	case tagEmmyEndorsement:
 		var op OpEmmyEndorsement
 		if op.Level, err = utils.GetInt32(buf); err != nil {
@@ -687,6 +710,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		tagDelegation,
 		tagRegisterGlobalConstant,
 		tagSetDepositsLimit,
+		tagIncreasePaidStorageLimit,
 		tagTxRollupOrigination,
 		tagTxRollupSubmitBatch,
 		tagTxRollupCommit,
@@ -704,16 +728,16 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		if common.Source, err = parsePublicKeyHash(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.Fee, err = parseBigNum(buf); err != nil {
+		if common.Fee, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.Counter, err = parseBigNum(buf); err != nil {
+		if common.Counter, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.GasLimit, err = parseBigNum(buf); err != nil {
+		if common.GasLimit, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
-		if common.StorageLimit, err = parseBigNum(buf); err != nil {
+		if common.StorageLimit, err = parseBigUint(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 
@@ -731,7 +755,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpTransaction{
 				Manager: common,
 			}
-			if op.Amount, err = parseBigNum(buf); err != nil {
+			if op.Amount, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseDestination(buf); err != nil {
@@ -761,7 +785,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			op := OpOrigination{
 				Manager: common,
 			}
-			if op.Balance, err = parseBigNum(buf); err != nil {
+			if op.Balance, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			flag, err := utils.GetBool(buf)
@@ -827,10 +851,25 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if flag {
-				if op.Limit, err = parseBigNum(buf); err != nil {
+				if op.Limit, err = parseBigUint(buf); err != nil {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 			}
+			return &op, nil
+
+		case tagIncreasePaidStorageLimit:
+			op := OpIncreasePaidStorage{
+				Manager: common,
+			}
+			op.Amount, err = parseBigInt(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			dest, err := parseDestination(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			op.Destination = string(dest)
 			return &op, nil
 
 		case tagTxRollupOrigination:
@@ -870,7 +909,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 				if flag {
-					if op.BurnLimit, err = parseBigNum(buf); err != nil {
+					if op.BurnLimit, err = parseBigUint(buf); err != nil {
 						return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 					}
 				}
@@ -977,7 +1016,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 					}
 					op.Message = &m
 				}
-				if op.MessagePosition, err = parseBigNum(buf); err != nil {
+				if op.MessagePosition, err = parseBigUint(buf); err != nil {
 					return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 				}
 				ln, err := utils.GetUint32(buf)
@@ -1138,7 +1177,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 			if op.TicketTicketer, err = parseDestination(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
-			if op.TicketAmount, err = parseBigNum(buf); err != nil {
+			if op.TicketAmount, err = parseBigUint(buf); err != nil {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			if op.Destination, err = parseDestination(buf); err != nil {
@@ -1450,24 +1489,59 @@ func parseDestination(buf *[]byte) (pkh string, err error) {
 	return "", fmt.Errorf("tezos: unknown contract id tag: %d", t)
 }
 
-func parseBigNum(buf *[]byte) (val *big.Int, err error) {
-	val = new(big.Int)
-	b := *buf
-	msb := 0
-	for msb < len(b) && b[msb]&0x80 != 0 {
-		msb++
+func parseBigUint(buf *[]byte) (val *big.Int, err error) {
+	res := big.NewInt(0)
+	shift := uint(0)
+	for {
+		b, err := utils.GetByte(buf)
+		if err != nil {
+			return nil, err
+		}
+		tmp := big.NewInt(int64(b & 0x7f))
+		tmp.Lsh(tmp, shift)
+		res.Or(res, tmp)
+		shift += 7
+		if b&0x80 == 0 {
+			return res, nil
+		}
 	}
-	if msb == len(b) {
-		return nil, utils.ErrMsgUnexpectedEnd
+}
+
+func parseBigInt(buf *[]byte) (val *big.Int, err error) {
+	b, err := utils.GetByte(buf)
+	if err != nil {
+		return nil, err
 	}
-	for i := msb; i >= 0; i-- {
-		var tmp big.Int
-		tmp.SetInt64(int64(b[i] & 0x7f))
-		val.Lsh(val, 7)
-		val.Add(val, &tmp)
+	var sign int
+	if b&0x40 != 0 {
+		sign = -1
+	} else {
+		sign = 1
 	}
-	*buf = b[msb+1:]
-	return val, nil
+	res := big.NewInt(int64(b & 0x3f))
+	if b&0x80 == 0 {
+		if sign < 0 {
+			res.Neg(res)
+		}
+		return res, nil
+	}
+	shift := uint(6)
+	for {
+		b, err := utils.GetByte(buf)
+		if err != nil {
+			return nil, err
+		}
+		tmp := big.NewInt(int64(b & 0x7f))
+		tmp.Lsh(tmp, shift)
+		res.Or(res, tmp)
+		shift += 7
+		if b&0x80 == 0 {
+			if sign < 0 {
+				res.Neg(res)
+			}
+			return res, nil
+		}
+	}
 }
 
 const (
