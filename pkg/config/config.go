@@ -21,10 +21,11 @@ type TezosConfig map[string]*TezosPolicy
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
-	AllowedOperations []string        `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
-	AllowedKinds      []string        `yaml:"allowed_kinds" validate:"dive,oneof=endorsement seed_nonce_revelation double_endorsement_evidence double_baking_evidence activate_account ballot proposals reveal transaction origination delegation"`
-	LogPayloads       bool            `yaml:"log_payloads"`
-	AuthorizedKeys    *AuthorizedKeys `yaml:"authorized_keys"`
+	Allow             map[string][]string `yaml:"allow"`
+	AllowedOperations []string            `yaml:"allowed_operations"`
+	AllowedKinds      []string            `yaml:"allowed_kinds"`
+	LogPayloads       bool                `yaml:"log_payloads"`
+	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
 }
 
 // VaultConfig represents single vault instance

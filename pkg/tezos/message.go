@@ -2,6 +2,7 @@ package tezos
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
@@ -413,10 +414,26 @@ func ParseRequest(data []byte) (u UnsignedMessage, err error) {
 	return parseRequest(&buf)
 }
 
-var (
-	_ MessageWithLevel = (*EmmyBlockRequest)(nil)
-	_ MessageWithLevel = (*EmmyEndorsementRequest)(nil)
-	_ MessageWithRound = (*TenderbakeBlockRequest)(nil)
-	_ MessageWithRound = (*TenderbakeEndorsementRequest)(nil)
-	_ MessageWithRound = (*PreendorsementRequest)(nil)
-)
+var requests = []UnsignedMessage{
+	&GenericOperationRequest{},
+	&EmmyBlockRequest{},
+	&EmmyEndorsementRequest{},
+	&TenderbakeBlockRequest{},
+	&TenderbakeEndorsementRequest{},
+	&PreendorsementRequest{},
+	&FailingNoopRequest{},
+}
+
+var RequestKinds []string
+
+func init() {
+	kinds := make(map[string]bool, len(requests))
+	for _, r := range requests {
+		kinds[r.MessageKind()] = true
+	}
+	RequestKinds = make([]string, 0, len(kinds))
+	for r := range kinds {
+		RequestKinds = append(RequestKinds, r)
+	}
+	sort.Strings(RequestKinds)
+}
