@@ -74,10 +74,10 @@ tezos:
 ```
 
 ## Backends
-
-<!-- * [Google Cloud KMS](/pkg/vault/cloudkms/README.md)
-* [Azure](/pkg/vault/azure/README.md)
-* [YubiHSM2](/pkg/vault/yubi/README.md) -->
+* [AWS](aws_kms.md)
+* [Google Cloud KMS](gcp_kms.md)
+* [Azure](azure_kms.md)
+* [YubiHSM2](yubihsm.md)
 
 ---
 

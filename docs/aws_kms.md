@@ -34,3 +34,5 @@ secret_access_key | string | OPTIONAL | IAM user detail
 region | string | ✅ | Region where key is created
 
 The fields `access_key_id` & `secret_access_key` can be set in the environment variables `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` respectively.
+
+Import command is not available for aws as there is no support for asymmetric keys in AWS KMS. (Ref: <https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html>)

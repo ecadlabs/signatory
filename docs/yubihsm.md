@@ -30,25 +30,25 @@ Signatory uses the `yubihsm-connector` daemon to interact with the YubiHSM USB d
 
 The connector requires you to have the libusb package installed on your system.
 
-```
+```bash
 apt-get install libusb-1.0-0
 ```
 
 To install the connector, find and install the 
 
-```
+```bash
 dpkg -i yubihsm-connector_2.1.0-1_amd64.deb
 ```
 
 To manage the YubiHSM2 device, you will need the `yubihsm-shell` utility. This utility requires the installation of the `libedit2` package.
 
-```
+```bash
 apt-get install libedit2
 ```
 
 To install yubihsm-shell, you must install the yubihsm-shell package and the supporting YubiHSM2 libraries. The `yubihsm-shell` is not required for the operation of Signatory and is only for the management of the YubiHSM2 device.
 
-```
+```bash
 dpkg -i yubihsm-shell_2.0.2-1_amd64.deb \
     libyubihsm1_2.0.2-1_amd64.deb \
     libyubihsm-http1_2.0.2-1_amd64.deb \
@@ -65,7 +65,7 @@ yubihsm-connector
 
 Run the command `yubihsm-shell`. You will get a prompt that looks like:
 
-```
+```bash
 yubihsm>
 ```
 
@@ -73,13 +73,13 @@ To connect to the device, type `connect`. It will automatically connect to local
 
 To open a new session with the device type. The default password on the YubiHSM2 is "password".
 
-```
+```bash
 yubihsm> session open 1 password
 ```
 
 To list all objects on the device, run the command.
 
-```
+```bash
 yubihsm> list objects 0 0
 ```
 
@@ -129,13 +129,13 @@ vaults:
 
 To import a secret key, we take the secret key from the above JSON examples. Do not include the "encrypted:" or "unencrypted:" prefix.
 
-```
+```bash
 signatory-cli import --config ./signatory.yaml --vault yubi edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb
 ```
 
 If the import is successful, the `signatory-cli` will report the PKH of your newly imported secret:
 
-```
+```bash
 INFO[0000] Initializing vault                            vault=yubihsm vault_name=yubi
 INFO[0000] Requesting import operation                   pkh=tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7 vault=YubiHSM vault_name="localhost:12345/1"
 INFO[0000] Successfully imported                         key_id=0cf8 pkh=tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7 vault=YubiHSM vault_name="localhost:12345/1"
@@ -149,14 +149,13 @@ You can use the `yubihsm-shell` utility command `list objects 0 0` to verify tha
 
 You can use the command `signatory-cli list` to list all keys in the YubiHSM2. `signatory-cli` also prints the configuration status for each address.
 
-```
+```bash
 signatory-cli -c ./signatory.yaml list
 Public Key Hash:    tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7
 Vault:              YubiHSM
 ID:                 0cf8
 Status:             Disabled
 ```
-
 
 ### Configuring your newly imported address
 
@@ -186,7 +185,7 @@ tezos:
 
 Rerun the `signatory-cli list` command to verify that your new address is getting picked up, and is configured as you expect.
 
-```
+```bash
 signatory-cli -c ./signatory.yaml list
 Public Key Hash:    tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7
 Vault:              YubiHSM

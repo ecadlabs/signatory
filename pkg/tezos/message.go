@@ -31,11 +31,14 @@ type GenericOperationRequest struct {
 	Contents []Operation
 }
 
-// OperationKinds returns list of operation kinds
-func (u *GenericOperationRequest) OperationKinds() []string {
-	ops := make([]string, len(u.Contents))
-	for i, o := range u.Contents {
-		ops[i] = o.OperationKind()
+type OperationsStat map[string]int
+
+// OperationsStat returns statistics of operations
+func (u *GenericOperationRequest) OperationsStat() OperationsStat {
+	ops := make(OperationsStat)
+	for _, o := range u.Contents {
+		k := o.OperationKind()
+		ops[k]++
 	}
 	return ops
 }
