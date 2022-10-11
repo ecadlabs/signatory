@@ -41,8 +41,8 @@ Contents of `secret.json` is:
 ```json
 [ 
   { 
-    "name": "your_secret_key",
-    "value": "unencrypted:edsk3DYwZpPmbNTRSdJW2wBeHoneNqjPt9Xj49Fnhcir6q47JpD5Vz" 
+    "name": "<address_alias>",
+    "value": "unencrypted:<your_secret_key>" 
   }
 ]
 ```
