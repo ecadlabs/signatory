@@ -118,7 +118,6 @@ server:
   utility_address: localhost:9583
 
 vaults:
-  # Name is used to identify backend during import process
   yubi:
     driver: yubihsm
     config:
@@ -167,20 +166,18 @@ server:
   utility_address: localhost:9583
 
 vaults:
-  # Name is used to identify backend during import process
   yubi:
     driver: yubihsm
     config:
-      address: localhost:12345 # Address for the yubihsm-connector
+      address: localhost:12345
       password: password
       auth_key_id: 1
 tezos:
   tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7:
     log_payloads: true
-    allowed_operations:
-      - generic
-    allowed_kinds:
-      - origination
+    allow:
+      generic:
+        - origination
 ```
 
 Rerun the `signatory-cli list` command to verify that your new address is getting picked up, and is configured as you expect.
@@ -192,7 +189,7 @@ Vault:              YubiHSM
 ID:                 0cf8
 Status:             Active
 Allowed Operations: [generic]
-Allowed Kinds:      [ballot]
+Allowed Kinds:      [origination]
 ```
 
 [yubihsm]: https://www.yubico.com/products/hardware-security-module/ 

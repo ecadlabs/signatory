@@ -14,28 +14,24 @@ Place the following YAML in a file named `signatory.yaml`
 
 ```yaml
 server:
-  # Address/Port that Signatory listens on
   address: :6732
-  # Address/Port that Signatory serves prometheus metrics on
   utility_address: :9583
 
 vaults:
-# Name of vault
-  local_file_keys:
+  local_secret:
     driver: file
     config:
       file: /etc/secret.json
 
-# List enabled public keys hashes here
 tezos:
-  # Default policy allows "block" and "endorsement" operations
   tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm:
     log_payloads: true
-    allowed_operations:
-    # List of [generic, block, endorsement]
-    - generic
-    - block
-    - endorsement
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
 ```
 
 The `tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm` key corresponds to the secret key that you will put in `/etc/secret.json`
@@ -43,9 +39,12 @@ The `tz1Wk1Wdczh5BzyZ1uz2DW9xdFg9B5cFuGFm` key corresponds to the secret key tha
 Contents of `secret.json` is:
 
 ```json
-[ { "name": "your_secret_key",
-    "value":
-      "unencrypted:edsk3DYwZpPmbNTRSdJW2wBeHoneNqjPt9Xj49Fnhcir6q47JpD5Vz" } ]
+[ 
+  { 
+    "name": "your_secret_key",
+    "value": "unencrypted:edsk3DYwZpPmbNTRSdJW2wBeHoneNqjPt9Xj49Fnhcir6q47JpD5Vz" 
+  }
+]
 ```
 
 ### Running Signatory

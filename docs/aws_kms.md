@@ -14,14 +14,15 @@ Search for IAM and create a user with "Programmatic access" for Signatory to acc
 
 Below are the minimum configuration required.
 
-```sh
-awskms:
+```yaml
+vaults:
+  aws:
     driver: awskms
     config:
-      user_name: sigy-tsty
-      access_key_id: AKIATXBC6RIH4YZT5U6B
-      secret_access_key: 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
-      region: us-west-2
+      user_name: <iam_username>
+      access_key_id: <aws_access_key_id>
+      secret_access_key: <aws_secret_access_key>
+      region: <aws_region>
 ```
 
 ### Configuration parameters
