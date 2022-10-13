@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/spf13/cobra"
 )
 
@@ -129,6 +130,39 @@ func newGetHighWatermarksCommand() *cobra.Command {
 	return &cmd
 }
 
+func newDeriveCommand() *cobra.Command {
+	var id string
+	cmd := cobra.Command{
+		Use:   "get-key <path>",
+		Short: "Get a derived public key by its BIP32 path",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			keyID, err := parseKeyIDNoCheck(args[0])
+			if err != nil {
+				return err
+			}
+			dev, err := deviceScanner.open(id)
+			if err != nil {
+				return err
+			}
+			defer dev.Close()
+			pub, err := dev.GetPublicKey(keyID.dt, keyID.path, false)
+			if err != nil {
+				return err
+			}
+			enc, err := tezos.EncodePublicKey(pub)
+			if err != nil {
+				return err
+			}
+			fmt.Println(enc)
+			return nil
+		},
+	}
+	f := cmd.Flags()
+	f.StringVarP(&id, "device", "d", "", "Ledger device ID")
+	return &cmd
+}
+
 func newLedgerCommand() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "ledger",
@@ -138,6 +172,7 @@ func newLedgerCommand() *cobra.Command {
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newSetupCommand())
 	cmd.AddCommand(newDeuthorizeCommand())
+	cmd.AddCommand(newDeriveCommand())
 	cmd.AddCommand(newSetHighWatermarkCommand())
 	cmd.AddCommand(newGetHighWatermarkCommand())
 	cmd.AddCommand(newGetHighWatermarksCommand())

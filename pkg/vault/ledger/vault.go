@@ -294,20 +294,27 @@ func New(ctx context.Context, conf *Config) (*Vault, error) {
 }
 
 func parseKeyID(s string) (*keyID, error) {
-	p := strings.SplitN(s, "/", 2)
-	if len(p) != 2 {
-		return nil, fmt.Errorf("error parsing key id: %s", s)
+	keyID, err := parseKeyIDNoCheck(s)
+	if err != nil {
+		return nil, err
 	}
+	if len(keyID.path) == 2 {
+		return nil, errors.New("root key isn't allowed to use")
+	}
+	return keyID, nil
+}
 
+func parseKeyIDNoCheck(s string) (*keyID, error) {
+	p := strings.SplitN(s, "/", 2)
 	dt, err := tezosapp.DerivationTypeFromString(p[0])
 	if err != nil {
 		return nil, err
 	}
-
-	path := tezosapp.ParseBIP32(p[1])
-	if path == nil {
-		return nil, fmt.Errorf("error parsing key path: %s", p[1])
+	var strPath string
+	if len(p) > 1 {
+		strPath = p[1]
 	}
+	path := tezosapp.ParseBIP32(strPath)
 	for _, p := range path {
 		if p&tezosapp.BIP32H == 0 {
 			return nil, errors.New("only hardened derivation is supported")
@@ -315,9 +322,6 @@ func parseKeyID(s string) (*keyID, error) {
 	}
 	if len(path) < 2 || path[0] != tezosapp.TezosBIP32Root[0] || path[1] != tezosapp.TezosBIP32Root[1] {
 		path = append(tezosapp.TezosBIP32Root, path...)
-	}
-	if len(path) == 2 {
-		return nil, errors.New("root key isn't allowed to use")
 	}
 
 	return &keyID{

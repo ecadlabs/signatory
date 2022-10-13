@@ -66,10 +66,10 @@ func (b BIP32) String() string {
 
 // ParseBIP32 parses BIP32 string into a binary representation
 func ParseBIP32(src string) BIP32 {
-	parts := strings.Split(src, "/")
-	if len(parts) == 0 {
-		return nil
+	if src == "" {
+		return BIP32{}
 	}
+	parts := strings.Split(src, "/")
 	if parts[0] == "m" {
 		parts = parts[1:]
 	}
