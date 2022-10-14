@@ -261,6 +261,44 @@ func TestPolicy(t *testing.T) {
 			},
 			expected: "operation `vdf_revelation' is not allowed",
 		},
+		{
+			title: "Update consensus key",
+			msg:   mustHex("03ebcaec6ed8ab1a8a515164df37f47be175fb92851249f2b83fb96b7434ec57d3720079cae4c9a1885f17d3995619bf28636c4394458bf102f31fcc08000202d56e7b5258aa58eeb61701476c46863e2f9f31b4b467ca3175fb2f1fed6b4106"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "Update consensus key",
+			msg:   mustHex("03ebcaec6ed8ab1a8a515164df37f47be175fb92851249f2b83fb96b7434ec57d3720079cae4c9a1885f17d3995619bf28636c4394458bf102f31fcc08000202d56e7b5258aa58eeb61701476c46863e2f9f31b4b467ca3175fb2f1fed6b4106"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
+				LogPayloads:     true,
+			},
+			expected: "operation `update_consensus_key' is not allowed",
+		},
+		{
+			title: "Drain delegate",
+			msg:   mustHex("0375959f80af0577302c9ed036371bc6c18644eeabf441fbad257c1a67d36a57fe090244cd5d0b4cb5a18d926b25bc37e58105e6786f0802f846b9ed8834c257a6f0c3cebeab4f58508b20ad0244cd5d0b4cb5a18d926b25bc37e58105e6786f08"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "drain_delegate"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "Drain delegate",
+			msg:   mustHex("0375959f80af0577302c9ed036371bc6c18644eeabf441fbad257c1a67d36a57fe090244cd5d0b4cb5a18d926b25bc37e58105e6786f0802f846b9ed8834c257a6f0c3cebeab4f58508b20ad0244cd5d0b4cb5a18d926b25bc37e58105e6786f08"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
+				LogPayloads:     true,
+			},
+			expected: "operation `drain_delegate' is not allowed",
+		},
 	}
 
 	priv, err := tezos.ParsePrivateKey(pk, nil)

@@ -23,6 +23,7 @@ const (
 	tagBallot                       = 6
 	tagDoublePreendorsementEvidence = 7
 	tagVdfRevelation                = 8
+	tagDrainDelegate                = 9
 	tagEndorsementWithSlot          = 10
 	tagFailingNoop                  = 17
 	tagPreendorsement               = 20
@@ -34,6 +35,7 @@ const (
 	tagRegisterGlobalConstant       = 111
 	tagSetDepositsLimit             = 112
 	tagIncreasePaidStorageLimit     = 113
+	tagUpdateConsensusKey           = 114
 	tagTxRollupOrigination          = 150
 	tagTxRollupSubmitBatch          = 151
 	tagTxRollupCommit               = 152
@@ -59,6 +61,7 @@ var opKinds = map[int]string{
 	tagBallot:                       "ballot",
 	tagDoublePreendorsementEvidence: "double_preendorsement_evidence",
 	tagVdfRevelation:                "vdf_revelation",
+	tagDrainDelegate:                "drain_delegate",
 	tagEndorsementWithSlot:          "endorsement_with_slot",
 	tagFailingNoop:                  "failing_noop",
 	tagPreendorsement:               "preendorsement",
@@ -70,6 +73,7 @@ var opKinds = map[int]string{
 	tagRegisterGlobalConstant:       "register_global_constant",
 	tagSetDepositsLimit:             "set_deposits_limit",
 	tagIncreasePaidStorageLimit:     "increase_paid_storage",
+	tagUpdateConsensusKey:           "update_consensus_key",
 	tagTxRollupOrigination:          "tx_rollup_origination",
 	tagTxRollupSubmitBatch:          "tx_rollup_submit_batch",
 	tagTxRollupCommit:               "tx_rollup_commit",
@@ -467,6 +471,22 @@ type OpIncreasePaidStorage struct {
 
 func (o *OpIncreasePaidStorage) OperationKind() string { return "increase_paid_storage" }
 
+type OpUpdateConsensusKey struct {
+	Manager
+	ConsesusKey string
+}
+
+func (o *OpUpdateConsensusKey) OperationKind() string { return "update_consensus_key" }
+
+type OpDrainDelegate struct {
+	Manager
+	ConsesusKey string
+	Delegate    string
+	Destination string
+}
+
+func (o *OpDrainDelegate) OperationKind() string { return "drain_delegate" }
+
 type Commitment struct {
 	CompressedState  string
 	InboxLevel       int32
@@ -495,6 +515,19 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 	case tagVdfRevelation:
 		var op OpVdfRevelation
 		if op, err = utils.GetBytes(buf, 200); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		return &op, nil
+
+	case tagDrainDelegate:
+		var op OpDrainDelegate
+		if op.ConsesusKey, err = parsePublicKeyHash(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		if op.Delegate, err = parsePublicKeyHash(buf); err != nil {
+			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+		}
+		if op.Destination, err = parsePublicKeyHash(buf); err != nil {
 			return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 		}
 		return &op, nil
@@ -712,6 +745,7 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 		tagRegisterGlobalConstant,
 		tagSetDepositsLimit,
 		tagIncreasePaidStorageLimit,
+		tagUpdateConsensusKey,
 		tagTxRollupOrigination,
 		tagTxRollupSubmitBatch,
 		tagTxRollupCommit,
@@ -871,6 +905,17 @@ func parseOperation(buf *[]byte) (op Operation, err error) {
 				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
 			}
 			op.Destination = string(dest)
+			return &op, nil
+
+		case tagUpdateConsensusKey:
+			op := OpUpdateConsensusKey{
+				Manager: common,
+			}
+			dest, err := parsePublicKey(buf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", opKinds[int(t)], err)
+			}
+			op.ConsesusKey = string(dest)
 			return &op, nil
 
 		case tagTxRollupOrigination:
