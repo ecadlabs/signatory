@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/kms v1.3.0
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
-	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/validator/v10 v10.7.0
 	github.com/google/tink/go v1.6.1
@@ -35,7 +35,6 @@ require (
 	github.com/aws/aws-sdk-go v1.43.0
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v2 v2.0.0 // indirect
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
