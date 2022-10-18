@@ -1,6 +1,7 @@
 package ledger
 
 import (
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"os"
@@ -131,7 +132,10 @@ func newGetHighWatermarksCommand() *cobra.Command {
 }
 
 func newDeriveCommand() *cobra.Command {
-	var id string
+	var (
+		id     string
+		hexOut bool
+	)
 	cmd := cobra.Command{
 		Use:   "get-key <path>",
 		Short: "Get a derived public key by its BIP32 path",
@@ -150,16 +154,25 @@ func newDeriveCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			enc, err := tezos.EncodePublicKey(pub)
-			if err != nil {
-				return err
+			if hexOut {
+				data, err := tezos.PublicKeyBytes(pub)
+				if err != nil {
+					return err
+				}
+				fmt.Println(hex.EncodeToString(data))
+			} else {
+				enc, err := tezos.EncodePublicKey(pub)
+				if err != nil {
+					return err
+				}
+				fmt.Println(enc)
 			}
-			fmt.Println(enc)
 			return nil
 		},
 	}
 	f := cmd.Flags()
 	f.StringVarP(&id, "device", "d", "", "Ledger device ID")
+	f.BoolVar(&hexOut, "hex", false, "Hex output")
 	return &cmd
 }
 

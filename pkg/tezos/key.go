@@ -274,6 +274,14 @@ func serializePublicKey(pub crypto.PublicKey) (out *serializedPublicKey, err err
 	}
 }
 
+func PublicKeyBytes(pub crypto.PublicKey) ([]byte, error) {
+	data, err := serializePublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+	return data.payload, nil
+}
+
 // EncodePublicKey returns base58 encoded public key
 func EncodePublicKey(pub crypto.PublicKey) (res string, err error) {
 	s, err := serializePublicKey(pub)
