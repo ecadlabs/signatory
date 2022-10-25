@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -34,7 +35,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		Use:   name,
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
-			if cmd.Use == "version" {
+			if cmd.Use == "version" ||
+				strings.Contains(cmd.CommandPath(), "ledger") ||
+				strings.Contains(cmd.CommandPath(), "list-requests") ||
+				strings.Contains(cmd.CommandPath(), "list-ops") {
 				return nil
 			}
 

@@ -8,8 +8,6 @@ module.exports = {
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
 	themeConfig: {
-		autoCollapseSidebarCategories: true,
-
 		colorMode: {
 			defaultMode: 'light',
 			disableSwitch: true,
@@ -27,6 +25,11 @@ module.exports = {
 			// 		marginLeft: '1px',
 			// 	},
 			// },
+		},
+		docs: {
+			sidebar: {
+			  autoCollapseCategories: true,
+			},
 		},
 		navbar: {
 			// hideOnScroll: true,

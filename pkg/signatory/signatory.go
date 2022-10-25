@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/auth"
@@ -21,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -34,12 +36,14 @@ const (
 	logPKH       = "pkh"
 	logVault     = "vault"
 	logVaultName = "vault_name"
-	logOp        = "op"
-	logKind      = "kind"
+	logReq       = "request"
+	logOps       = "ops"
+	logTotalOps  = "ops_total"
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
 	logClient    = "client_pkh"
+	logRaw       = "raw"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -49,14 +53,14 @@ type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 type SignInterceptorOptions struct {
 	Address string
 	Vault   string
-	Op      string
-	Kind    []string
+	Req     string
+	Stat    tezos.OperationsStat
 }
 
 // Policy contains policy data related to the key
 type Policy struct {
-	AllowedOperations   []string
-	AllowedKinds        []string
+	AllowedRequests     []string
+	AllowedOps          []string
 	LogPayloads         bool
 	AuthorizedKeyHashes []string
 }
@@ -133,7 +137,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = Policy{
-	AllowedOperations: []string{"block", "preendorsement", "endorsement"},
+	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
@@ -168,7 +172,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 
 	kind := msg.MessageKind()
 	var allowed bool
-	for _, k := range policy.AllowedOperations {
+	for _, k := range policy.AllowedRequests {
 		if kind == k {
 			allowed = true
 			break
@@ -183,7 +187,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
-			for _, k := range policy.AllowedKinds {
+			for _, k := range policy.AllowedOps {
 				if kind == k {
 					allowed = true
 					break
@@ -297,27 +301,27 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
-		err := fmt.Errorf("%s is not listed in config", req.PublicKeyHash)
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(req.PublicKeyHash, "\n", "", -1))
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logOp, msg.MessageKind())
+	l = l.WithField(logReq, msg.MessageKind())
 
 	if m, ok := msg.(tezos.MessageWithLevel); ok {
 		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
 	}
 
-	var opKind []string
+	var opStat tezos.OperationsStat
 	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
-		opKind = ops.OperationKinds()
-		l = l.WithField(logKind, opKind)
+		opStat = ops.OperationsStat()
+		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -349,7 +353,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
+	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 		digest := utils.DigestFunc(message)
@@ -369,8 +373,8 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
-			Op:      msg.MessageKind(),
-			Kind:    opKind,
+			Req:     msg.MessageKind(),
+			Stat:    opStat,
 		}, func() (err error) {
 			sig, err = signFunc(ctx, req.Message, p.key)
 			return err
@@ -591,16 +595,49 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 			LogPayloads: v.LogPayloads,
 		}
 
-		if v.AllowedKinds != nil {
-			pol.AllowedKinds = make([]string, len(v.AllowedKinds))
-			copy(pol.AllowedKinds, v.AllowedKinds)
-			sort.Strings(pol.AllowedKinds)
-		}
+		if v.Allow != nil {
+			pol.AllowedRequests = make([]string, 0, len(v.Allow))
+			for req := range v.Allow {
+				pol.AllowedRequests = append(pol.AllowedRequests, req)
+			}
+			sort.Strings(pol.AllowedRequests)
 
-		if v.AllowedOperations != nil {
-			pol.AllowedOperations = make([]string, len(v.AllowedOperations))
-			copy(pol.AllowedOperations, v.AllowedOperations)
-			sort.Strings(pol.AllowedOperations)
+			if ops, ok := v.Allow["generic"]; ok {
+				pol.AllowedOps = make([]string, len(ops))
+				copy(pol.AllowedOps, ops)
+				sort.Strings(pol.AllowedOps)
+			}
+		} else if v.AllowedKinds != nil || v.AllowedOperations != nil {
+			if v.AllowedOperations != nil {
+				pol.AllowedRequests = make([]string, len(v.AllowedOperations))
+				copy(pol.AllowedRequests, v.AllowedOperations)
+				sort.Strings(pol.AllowedRequests)
+			}
+			if v.AllowedKinds != nil {
+				pol.AllowedOps = make([]string, len(v.AllowedKinds))
+				copy(pol.AllowedOps, v.AllowedKinds)
+				sort.Strings(pol.AllowedOps)
+			}
+			log.Warnln("`allowed_operations` and `allowed_kinds` options are deprecated. Use `allow` instead:")
+			type example struct {
+				Allow map[string][]string `yaml:"allow"`
+			}
+			e := example{
+				Allow: make(map[string][]string),
+			}
+			for _, r := range pol.AllowedRequests {
+				e.Allow[r] = nil
+			}
+			if pol.AllowedOps != nil {
+				e.Allow["generic"] = pol.AllowedOps
+			}
+			out, err := yaml.Marshal(&e)
+			if err != nil {
+				panic(err)
+			}
+			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
+			pipe.Write(out)
+			pipe.Close()
 		}
 
 		if v.AuthorizedKeys != nil {

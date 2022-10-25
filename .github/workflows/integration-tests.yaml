@@ -13,7 +13,6 @@ jobs:
       matrix:
         testnet_endpoints:
           - https://ghostnet.ecadinfra.com
-          - https://jakartanet.ecadinfra.com
           - https://kathmandunet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
