@@ -17,9 +17,8 @@ import (
 type Context struct {
 	Context context.Context
 
-	config        *config.Config
-	authenticator auth.AuthorizedKeysStorage
-	signatory     *signatory.Signatory
+	config    *config.Config
+	signatory *signatory.Signatory
 }
 
 // NewRootCommand returns new root command
@@ -74,14 +73,6 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 			log.SetLevel(lv)
 
-			if conf.AuthorizedKeys != nil {
-				ak, err := auth.StaticAuthorizedKeysFromString(conf.AuthorizedKeys.List()...)
-				if err != nil {
-					return err
-				}
-				c.authenticator = ak
-			}
-
 			pol, err := signatory.PreparePolicy(conf.Tezos)
 			if err != nil {
 				return err
@@ -98,8 +89,12 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				sigConf.PolicyHook = &signatory.PolicyHook{
 					Address: conf.PolicyHook.Address,
 				}
-				if conf.PolicyHook.RequireAuthentication {
-					sigConf.PolicyHook.Auth = c.authenticator
+				if conf.PolicyHook.AuthorizedKeys != nil {
+					ak, err := auth.StaticAuthorizedKeysFromString(conf.PolicyHook.AuthorizedKeys.List()...)
+					if err != nil {
+						return err
+					}
+					sigConf.PolicyHook.Auth = ak
 				}
 			}
 

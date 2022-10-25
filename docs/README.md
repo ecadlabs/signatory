@@ -79,6 +79,10 @@ tezos:
 * [Azure](azure_kms.md)
 * [YubiHSM2](yubihsm.md)
 
+## External policy
+
+See [the documentation](remote_policy.md)
+
 ---
 
 ## Signatory service
