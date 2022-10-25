@@ -66,4 +66,4 @@ Just the HTTP status code is inspected. The sign operation is allowed if the ser
 
 ## Reference implementation
 
-See [Approve List Service](cmd/approve-list-svc)
+See [Approve List Service](/cmd/approve-list-svc)
