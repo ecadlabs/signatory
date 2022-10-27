@@ -5,7 +5,7 @@ to be implemented externally.
 
 The hook is called after the standard request type and operation checks. If the hook returned an error the sign operation is denied.
 
-The service response can be authenticated using a signature. To do so the service public key hash must be added to the `authorized_keys` list.
+The service response can be authenticated using a signature. To do so the service public key must be added to the `authorized_keys` list.
 
 ## Configuration
 
@@ -24,7 +24,7 @@ policy_hook:
 
 ### Request
 
-```json
+```jsonc
 {
     // Base64 encoded raw incoming sign request
     "request": "base64",
@@ -41,7 +41,7 @@ policy_hook:
 
 ### Authenticated reply
 
-```json
+```jsonc
 {
     "payload": {
         // Must reflect the HTTP status code. The sign operation is allowed if the service returned 2xx
