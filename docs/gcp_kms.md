@@ -77,37 +77,28 @@ Status:             FOUND_NOT_CONFIGURED
 
 **Update signatory.yaml config with PKH:**
 
-```sh
-signatory % cat /etc/s.yaml 
+```yaml
 server:
-  # Address/Port that Signatory listens on
   address: :6732
-  # Address/Port that Signatory serves prometheus metrics on
   utility_address: :9583
 
 vaults:
-  kms:
+  gcp:
     driver: cloudkms
     config:
-      project: signatory-testing
-      location: europe-south1
-      key_ring: sigy-key
+      project: <gcp_project>
+      location: <gcp_region>
+      key_ring: <key_ring_name>
+      application_credentials: <credentials_file_path>
 tezos:
-  # Default policy allows "block" and "endorsement" operations
   tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ:
-    # Setting `log_payloads` to `true` will cause Signatory to log operation
-    # payloads to `stdout`. This may be desirable for audit and investigative
-    # purposes.
     log_payloads: true
-    allowed_operations:
-      # List of [generic, block, endorsement]
-      - generic
-      - block
-      - endorsement
-    allowed_kinds:
-      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
-      - transaction
-      - endorsement
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
 ```
 
 ## **Key Import:**
