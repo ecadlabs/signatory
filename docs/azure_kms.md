@@ -289,6 +289,10 @@ Allowed Kinds:      [endorsement transaction]
 **Update signatory.yaml config with PKH:**
 
 ```yaml
+server:
+  address: :6732
+  utility_address: :9583
+
 vaults:
   azure:
     driver: azure
@@ -304,12 +308,11 @@ vaults:
 tezos:
   tz3d6nYmR1LmSDsgJ463Kgd8EbH53pYnuv8S:
     log_payloads: true
-    allowed_operations:
-      # List of [generic, block, endorsement]
-      - generic
-      - block
-      - endorsement
-    allowed_kinds:
-      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
-      - transaction
-      - endorsement
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
+        - reveal
+        - delegation

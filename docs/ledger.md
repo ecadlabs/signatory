@@ -38,7 +38,6 @@ Examples (equivalent): `bip32-ed25519/m/44'/1729'/0'/0'`,
 
 ```yaml
 vaults:
-# Name of vault
   ledger:
     driver: ledger
     config:
