@@ -1,3 +1,8 @@
+---
+id: remote_policy
+title: Remote Policy Service
+---
+
 # Remote policy service
 
 The remote policy service feature allows custom policy schemes beyond simple request and operation lookup
