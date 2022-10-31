@@ -261,6 +261,63 @@ func TestPolicy(t *testing.T) {
 			},
 			expected: "operation `vdf_revelation' is not allowed",
 		},
+		{
+			title: "Update consensus key",
+			msg:   mustHex("03ebcaec6ed8ab1a8a515164df37f47be175fb92851249f2b83fb96b7434ec57d3720079cae4c9a1885f17d3995619bf28636c4394458bf102f31fcc08000202d56e7b5258aa58eeb61701476c46863e2f9f31b4b467ca3175fb2f1fed6b4106"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "Update consensus key not allowed",
+			msg:   mustHex("03ebcaec6ed8ab1a8a515164df37f47be175fb92851249f2b83fb96b7434ec57d3720079cae4c9a1885f17d3995619bf28636c4394458bf102f31fcc08000202d56e7b5258aa58eeb61701476c46863e2f9f31b4b467ca3175fb2f1fed6b4106"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
+				LogPayloads:     true,
+			},
+			expected: "operation `update_consensus_key' is not allowed",
+		},
+		{
+			title: "Drain delegate",
+			msg:   mustHex("0375959f80af0577302c9ed036371bc6c18644eeabf441fbad257c1a67d36a57fe090244cd5d0b4cb5a18d926b25bc37e58105e6786f0802f846b9ed8834c257a6f0c3cebeab4f58508b20ad0244cd5d0b4cb5a18d926b25bc37e58105e6786f08"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "drain_delegate"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "Drain delegate not allowed",
+			msg:   mustHex("0375959f80af0577302c9ed036371bc6c18644eeabf441fbad257c1a67d36a57fe090244cd5d0b4cb5a18d926b25bc37e58105e6786f0802f846b9ed8834c257a6f0c3cebeab4f58508b20ad0244cd5d0b4cb5a18d926b25bc37e58105e6786f08"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
+				LogPayloads:     true,
+			},
+			expected: "operation `drain_delegate' is not allowed",
+		},
+		{
+			title: "Delegate with consesus key",
+			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a2302826e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "Delegate with consesus key not allowed",
+			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a2302826e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
+			policy: signatory.Policy{
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
+				LogPayloads:     true,
+			},
+			expected: "operation `update_consensus_key' is not allowed",
+		},
 	}
 
 	priv, err := tezos.ParsePrivateKey(pk, nil)
