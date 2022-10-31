@@ -6,7 +6,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
+	terminal "golang.org/x/term"
 )
 
 func NewImportCommand(c *Context) *cobra.Command {

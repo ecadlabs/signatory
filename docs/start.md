@@ -267,3 +267,13 @@ ID:                 https://signatory.vault.azure.net/keys/key0/fa9607734e584851
 *DISABLED*
 
 ```
+
+--- 
+
+## External policy service
+
+The remote policy service feature allows custom policy schemes beyond simple request and operation lookup to be implemented externally.
+
+The hook is called after the standard request type and operation checks. If the hook returns an error, Signatory denies signing the operation.
+
+See [the documentation](remote_policy.md) for more information

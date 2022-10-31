@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

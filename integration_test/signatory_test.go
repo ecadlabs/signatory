@@ -16,10 +16,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
