@@ -363,6 +363,9 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 		Key: key,
 		Hsm: true,
 	}
+	if req.Key.Curve == "secp256k1" {
+		req.Key.Curve = "P-256K"
+	}
 
 	r, err := json.Marshal(&req)
 	if err != nil {
