@@ -1,7 +1,7 @@
 # Integration test
 
 The test ensures that Signatory can perform an authenticated sign operations
-while assisting `tezos-client`.
+while assisting `octez-client`.
 
 From the project tree root
 
@@ -12,7 +12,7 @@ docker run -e 'ENV_ACTIVATION_KEY={...}' signatory-test
 
 where `ENV_ACTIVATION_KEY` is a contents of an activation JSON key file obtained
 from https://teztnets.xyz/jakartanet-faucet. The key must be activated using
-`tezos-client activate account` command.
+`octez-client activate account` command.
 
 ## Environment variables
 
