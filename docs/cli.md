@@ -7,25 +7,25 @@ title: CLI
 
 To import a secret key, we will use the `signatory-cli import` command.
 
-## Generating a key using tezos-client
+## Generating a key using octez-client
 
 This is not the only way to generate keys to import in signatory. Any existing key can be imported in the vaults via signatory if the vault supports the key curve.
 
 ```bash
-% tezos-client gen keys import-p256 -s p256 --encrypted
+% octez-client gen keys import-p256 -s p256 --encrypted
 Enter password to encrypt your key:
 Confirm password:
 ```
 
 ```bash
-% tezos-client list known addresses
+% octez-client list known addresses
 import-p256: tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo (encrypted sk known)
 ```
 
-The encrypted private key can be obtained from the `.tezos-client/` directory
+The encrypted private key can be obtained from the `.octez-client/` directory
 
 ```bash
-% cat ~/.tezos-client/secret_keys
+% cat ~/.octez-client/secret_keys
 [ { "name": "import-p256",
     "value":
       "encrypted:p2esk**********************************************************" }]
@@ -46,7 +46,7 @@ INFO[0007] Successfully imported                         key_id="https://forimpo
 
 If the import is successful, the `signatory-cli` will report the PKH (`tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo` in the above example) of your newly imported secret which in turn can be used in the config YAML to add the policies.
 
-**Note:** The PKH from Signatory and the PKH from `tezos-client list known addresess` command must be the same.
+**Note:** The PKH from Signatory and the PKH from `octez-client list known addresess` command must be the same.
 
 Name of the key can also be provided with the import command.
 
@@ -94,19 +94,15 @@ vaults:
 tezos:
   tz2***:
     log_payloads: true
-    allowed_operations:
-      # List of [generic, block, endorsement]
-      - generic
-      - block
-      - endorsement
-    allowed_kinds:
-      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
-      - transaction
-      - endorsement
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
   tz3***:
     log_payloads: true
-    allowed_operations:
-      - generic
-    allowed_kinds:
-      - transaction
+    allow:
+      generic:
+        - transaction
 ```
