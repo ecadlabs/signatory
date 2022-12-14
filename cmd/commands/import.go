@@ -19,7 +19,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 	importCmd := &cobra.Command{
 		Use:   "import <secret-key>",
 		Short: "Import Tezos private keys (edsk..., spsk..., p2sk...)",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o, err := utils.ParseMap(opt, ':', ',')
 			if err != nil {
@@ -41,11 +41,19 @@ func NewImportCommand(c *Context) *cobra.Command {
 				options[k] = v
 			}
 
-			for _, key := range args {
-				_, err := c.signatory.Import(c.Context, vaultName, key, passCB, options)
-				if err != nil {
-					return err
-				}
+			fmt.Print("Enter secret key: ")
+			key, err := terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return err
+			}
+			fmt.Println()
+			if len(key) == 0 {
+				return fmt.Errorf("enter a valid secret key")
+			}
+
+			_, err = c.signatory.Import(c.Context, vaultName, string(key), passCB, options)
+			if err != nil {
+				return err
 			}
 
 			return nil

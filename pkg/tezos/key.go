@@ -98,6 +98,7 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 			return nil, ErrPassphrase
 		}
 		passphrase, err := passFunc()
+		fmt.Println()
 		if err != nil {
 			return nil, err
 		}
