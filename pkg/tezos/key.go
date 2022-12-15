@@ -90,7 +90,6 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 	if err != nil {
 		return
 	}
-
 	// See https://github.com/murbard/pytezos/blob/master/pytezos/crypto.py#L67
 	if unencPrefix, ok := isEncrypted(prefix); ok {
 		// Decrypt
@@ -145,7 +144,6 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 		}
 		return ed25519.PrivateKey(pl), nil
 	}
-
 	return nil, ErrPrivateKey
 }
 
