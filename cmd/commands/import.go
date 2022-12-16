@@ -31,6 +31,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 				passCB = func() ([]byte, error) { return []byte(password), nil }
 			} else {
 				passCB = func() ([]byte, error) {
+					fmt.Println()
 					fmt.Print("Enter Password: ")
 					return terminal.ReadPassword(int(syscall.Stdin))
 				}
