@@ -17,5 +17,5 @@ func TestCrypto(t *testing.T) {
 		S: new(big.Int).Set(s),
 	}
 
-	require.NotPanics(t, func() { _ = CanonizeECDSASignature(sig) })
+	require.NotPanics(t, func() { _ = CanonizeSignature(sig) })
 }
