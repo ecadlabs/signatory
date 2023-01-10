@@ -1,6 +1,7 @@
 package cryptoutils
 
 import (
+	"crypto/elliptic"
 	"math/big"
 	"testing"
 
@@ -16,6 +17,10 @@ func TestCrypto(t *testing.T) {
 		R: new(big.Int).Set(r),
 		S: new(big.Int).Set(s),
 	}
+
+	require.NotPanics(t, func() { _ = CanonizeSignature(sig) })
+
+	sig.Curve = elliptic.P256()
 
 	require.NotPanics(t, func() { _ = CanonizeSignature(sig) })
 }
