@@ -210,7 +210,7 @@ func (h *HSM) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, 
 	}, nil
 }
 
-func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*cryptoutils.ECDSASignature, error) {
+func (h *HSM) signECDSA(digest []byte, id uint16) (*cryptoutils.ECDSASignature, error) {
 	command, err := commands.CreateSignDataEcdsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
@@ -233,9 +233,8 @@ func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*crypto
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}
 	return &cryptoutils.ECDSASignature{
-		R:     sig.R,
-		S:     sig.S,
-		Curve: curve,
+		R: sig.R,
+		S: sig.S,
 	}, nil
 }
 
@@ -268,9 +267,9 @@ func (h *HSM) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig c
 		return nil, fmt.Errorf("(YubiHSM/%s): not a YubiHSM key: %T", h.conf.id(), k)
 	}
 
-	switch k := key.pub.(type) {
+	switch key.pub.(type) {
 	case *ecdsa.PublicKey:
-		return h.signECDSA(digest, key.id, k.Curve)
+		return h.signECDSA(digest, key.id)
 	case ed25519.PublicKey:
 		return h.signED25519(digest, key.id)
 	}
