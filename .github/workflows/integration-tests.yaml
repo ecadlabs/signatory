@@ -13,7 +13,7 @@ jobs:
       matrix:
         testnet_endpoints:
           - https://ghostnet.ecadinfra.com
-          - https://kathmandunet.ecadinfra.com
+          - https://limanet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
       - name: Build image
