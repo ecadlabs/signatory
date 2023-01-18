@@ -17,7 +17,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 	)
 
 	importCmd := &cobra.Command{
-		Use:   "import <secret-key>",
+		Use:   "import <flags>",
 		Short: "Import Tezos private keys (edsk..., spsk..., p2sk...)",
 		Args:  cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
