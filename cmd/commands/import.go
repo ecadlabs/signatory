@@ -17,7 +17,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 	)
 
 	importCmd := &cobra.Command{
-		Use:   "import <flags>",
+		Use:   "import [flags]",
 		Short: "Import Tezos private keys (edsk..., spsk..., p2sk...)",
 		Args:  cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,7 +32,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 			} else {
 				passCB = func() ([]byte, error) {
 					fmt.Println()
-					fmt.Print("Enter Password: ")
+					fmt.Print("This key is encrypted, enter the password: ")
 					return terminal.ReadPassword(int(syscall.Stdin))
 				}
 			}
