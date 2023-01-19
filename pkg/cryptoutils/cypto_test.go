@@ -2,7 +2,6 @@ package cryptoutils
 
 import (
 	"crypto/elliptic"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -25,7 +24,6 @@ func TestCryptoCanonizeSignature(t *testing.T) {
 	t.Run("Without curve", func(t *testing.T) {
 		require.NotPanics(t, func() { nocurve = CanonizeSignature(sig).(*ECDSASignature) })
 		require.Nil(t, nocurve.Curve)
-		fmt.Println("Nocurve Signature: ", *nocurve)
 		sig.Curve = elliptic.P256()
 	})
 
