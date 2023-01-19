@@ -211,8 +211,10 @@ Flags:
       --vault string      Vault name for importing
 
 Global Flags:
-  -c, --config string   Config file path (default "signatory.yaml")
-      --log string      Log level: [error, warn, info, debug, trace] (default "info")
+      --base-dir string   Base directory. Takes priority over one specified in config
+  -c, --config string     Config file path (default "/etc/signatory.yaml")
+      --json-log          Use JSON structured logs
+      --log string        Log level: [error, warn, info, debug, trace] (default "info")
 ```
 
 ### Import a private key
