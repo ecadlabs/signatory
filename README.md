@@ -69,7 +69,6 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | Azure KMS                      | ✅     |
 | Google Cloud KMS               | ✅     |
 | AWS KMS                        | ✅     |
-| Yubico HSM2                    | ✅     |
 | Ledger Nano S/S+ (Baking only) | ✅     |
 
 ### Tezos Address Types
