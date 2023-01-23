@@ -116,5 +116,5 @@ tezos:
 Once the key is imported and made active, the value of the secret key in octez-client configuration is replaced with the key's URI in Signatory:
 
 ```bash
-% octez-client --endpoint https://ghostnet.ecadinfra.com import secret key import-p256 http://<signatory_host>:6732/tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
+% octez-client import secret key import-p256 http://<signatory_host>:6732/tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
 ```
