@@ -108,3 +108,15 @@ tezos:
       generic:
         - transaction
 ```
+
+**Note:** after importing the key it is made active by adding it to the config file
+
+## Configuring octez-client to use Signatory for remote signing
+
+Once the key is imported and made active, the value of the secret key in octez-client configuration is replaced with the key's URI in Signatory:
+
+```bash
+% cat ~/.tezos-client/secret_keys 
+[ { "name": "import-p256",
+    "value": "http://<signatory_host>:6732/tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo" } ]
+```
