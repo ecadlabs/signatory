@@ -80,7 +80,7 @@ yubihsm> session open 1 password
 To list all objects on the device, run the command.
 
 ```bash
-yubihsm> list objects 0 0
+yubihsm> list objects 1 0
 ```
 
 ### Importing a Secret key into the YubiHSM2 for Tezos
