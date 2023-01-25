@@ -7,6 +7,10 @@ module.exports = {
 	organizationName: 'ecadlabs', // Usually your GitHub org/user name.
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
+	markdown: {
+		mermaid: true,
+	},
+	themes: ['@docusaurus/theme-mermaid'],
 	themeConfig: {
 		colorMode: {
 			defaultMode: 'light',
