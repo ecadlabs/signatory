@@ -82,7 +82,7 @@ module.exports = {
 						},
 						{
 							label: 'Twitter',
-							to: 'https://twitter.com/tezostaqueria',
+							to: 'https://twitter.com/signatoryio',
 						},
 						{
 							label: 'Code of Conduct',
