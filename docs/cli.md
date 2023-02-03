@@ -37,9 +37,10 @@ A private key can be imported into any of the backend vaults (except: AWS & ledg
 If you import an encrypted key, the `signatory-cli` command will prompt you for the password.
 
 ```bash
-% ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure p2esk*****************
+% ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
-Enter Password: 
+Enter secret key: 
+Enter Password:
 INFO[0002] Requesting import operation                   pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0007] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/signatory-imported-2CsWhgGqeRdkEiA0LFm3WyN5DxS/9d2266b388734ef0b14203e0943465d7" pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
 ```
@@ -51,8 +52,9 @@ If the import is successful, the `signatory-cli` will report the PKH (`tz3gxd1y7
 Name of the key can also be provided with the import command.
 
 ```bash
-% ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure p2esk********************************** -o "name":test-name
+% ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure -o "name":test-name
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
+Enter secret key: 
 Enter Password: 
 INFO[0003] Requesting import operation                   pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0009] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/test-name/f503f20b309e4c8ea57982bd9736c412" pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
@@ -105,4 +107,14 @@ tezos:
     allow:
       generic:
         - transaction
+```
+
+**Note:** after importing the key it is made active by adding it to the config file
+
+## Configuring octez-client to use Signatory for remote signing
+
+Once the key is imported and made active, the value of the secret key in octez-client configuration is replaced with the key's URI in Signatory:
+
+```bash
+% octez-client import secret key import-p256 http://<signatory_host>:6732/tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
 ```
