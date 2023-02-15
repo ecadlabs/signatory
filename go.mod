@@ -16,18 +16,19 @@ require (
 	github.com/segmentio/ksuid v1.0.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v0.0.5
-	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	github.com/stretchr/testify v1.8.0
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	google.golang.org/api v0.67.0
 	google.golang.org/genproto v0.0.0-20220207164111-0872dc986b00
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
 	cloud.google.com/go/compute v0.1.0 // indirect
 	cloud.google.com/go/iam v0.1.0 // indirect
+	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 )
 
@@ -35,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go v1.43.0
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/ecadlabs/hdw v0.0.0-20221019154344-0b9e0a5909f0
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect

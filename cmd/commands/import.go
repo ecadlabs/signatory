@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"syscall"
 
+	"github.com/ecadlabs/signatory/pkg/seed"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 	terminal "golang.org/x/term"
@@ -14,6 +15,9 @@ func NewImportCommand(c *Context) *cobra.Command {
 		vaultName string
 		password  string
 		opt       string
+		path      string
+		method    string
+		hmac      bool
 	)
 
 	importCmd := &cobra.Command{
@@ -43,16 +47,21 @@ func NewImportCommand(c *Context) *cobra.Command {
 			}
 
 			fmt.Print("Enter secret key: ")
-			key, err := terminal.ReadPassword(int(syscall.Stdin))
+			in, err := terminal.ReadPassword(int(syscall.Stdin))
 			if err != nil {
 				return err
 			}
 			fmt.Println()
-			if len(key) == 0 {
+			if len(in) == 0 {
 				return fmt.Errorf("enter a valid secret key")
 			}
 
-			_, err = c.signatory.Import(c.Context, vaultName, string(key), passCB, options)
+			sk, err := seed.DerivePk(in, path, method, hmac)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Abi-->: ", sk)
+			_, err = c.signatory.Import(c.Context, vaultName, sk, passCB, options)
 			if err != nil {
 				return err
 			}
@@ -64,6 +73,9 @@ func NewImportCommand(c *Context) *cobra.Command {
 	importCmd.Flags().StringVar(&vaultName, "vault", "", "Vault name for importing")
 	importCmd.Flags().StringVar(&password, "password", "", "Password for private key(s)")
 	importCmd.Flags().StringVarP(&opt, "opt", "o", "", "Options to be passed to the backend. Syntax: key:val[,...]")
+	importCmd.Flags().StringVar(&path, "path", "", "Wallet derivation path")
+	importCmd.Flags().StringVar(&method, "method", "", "Wallet derivation method")
+	importCmd.Flags().BoolVar(&hmac, "hmac", false, "")
 	cobra.MarkFlagRequired(importCmd.Flags(), "vault")
 
 	return importCmd
