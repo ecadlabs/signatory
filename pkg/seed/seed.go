@@ -67,7 +67,7 @@ func slip10(sd string, path hdw.Path) (string, error) {
 		panic(err)
 	}
 
-	spk, err := tezos.EncodePrivateKey(priv.Naked().(ex25519.PrivateKey))
+	spk, err := tezos.EncodePrivateKey(priv.Naked().(ecdsa.PrivateKey))
 	if err != nil {
 		return "", err
 	}
