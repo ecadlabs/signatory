@@ -16,7 +16,6 @@ import (
 var seedData = "sense defy yellow arch cotton describe unit hill time unusual drip banana drum inspire wear recycle senior journey spend apple myth royal social again"
 
 func DerivePk(s []byte, path string, method string, hmac bool) (string, error) {
-	var key hdw.PrivateKey
 	var sk, p string
 
 	sd := strings.Split(string(s), " ")
@@ -30,16 +29,17 @@ func DerivePk(s []byte, path string, method string, hmac bool) (string, error) {
 		}
 		switch method {
 		case "slip10":
-			key = slip10(string(s), hp)
+			sk, err = slip10(string(s), hp)
+			if err != nil {
+				return "", err
+			}
 		case "bip32":
-			key = bip32(string(s), hp)
+			sk, err = bip32(string(s), hp)
+			if err != nil {
+				return "", err
+			}
 		default:
 			return "", fmt.Errorf("unknown derivation method")
-		}
-
-		sk, err = tezos.EncodePrivateKey(key.Naked().(ex25519.PrivateKey))
-		if err != nil {
-			return "", err
 		}
 
 	} else {
@@ -48,7 +48,7 @@ func DerivePk(s []byte, path string, method string, hmac bool) (string, error) {
 	return sk, nil
 }
 
-func slip10(sd string, path hdw.Path) hdw.PrivateKey {
+func slip10(sd string, path hdw.Path) (string, error) {
 	// alternatively use hdw.NewSeedFromMnemonic
 	seed, err := hex.DecodeString(seedData)
 	if err != nil {
@@ -67,10 +67,14 @@ func slip10(sd string, path hdw.Path) hdw.PrivateKey {
 		panic(err)
 	}
 
-	return priv
+	spk, err := tezos.EncodePrivateKey(priv.Naked().(ex25519.PrivateKey))
+	if err != nil {
+		return "", err
+	}
+	return spk, nil
 }
 
-func bip32(sd string, path hdw.Path) hdw.PrivateKey {
+func bip32(sd string, path hdw.Path) (string, error) {
 	fmt.Println("Lib test of HDW with phrase: ", seedData)
 	seed := hdw.NewSeedFromMnemonic(sd, "")
 	fmt.Println("Seed: ", string(seed))
@@ -87,5 +91,9 @@ func bip32(sd string, path hdw.Path) hdw.PrivateKey {
 		panic(err)
 	}
 
-	return priv
+	spk, err := tezos.EncodePrivateKey(priv.Naked().(ex25519.PrivateKey))
+	if err != nil {
+		return "", err
+	}
+	return spk, nil
 }
