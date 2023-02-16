@@ -27,6 +27,17 @@ github.com/ecadlabs/signatory or via email to security@ecadlabs.com
 
 Security issues can be encrypted using the keys available at https://keybase.io/jevonearth
 
+## How Signatory Works
+
+* A Tezos operation is sent to the Signatory API
+* Signatory decodes and checks that the operation is permitted based on the defined policy
+* Signatory sends the operation to the configured vault backend for signing
+* Upon receiving the signature produced by backend, Signatory validates the signature
+* Signatory returns the signature to Signatory client
+
+![Alt text](signatory-diagram.png)
+
+
 ## Configuration
 
 Signatory configuration is specified in a YAML file. Use the `signatory.yaml` file as a template to get started.

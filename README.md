@@ -53,6 +53,9 @@ Private-key import is an important security consideration when choosing a Cloud 
 * Signatory returns the signature to Signatory client
 
 
+![Alt text](sgnatory-diagram.png)
+
+
 ## Why
 
 Our goal in supporting multiple Cloud KMS/HSM services is to help prevent centralization on the _network_ or _infrastructure_ level. A goal of Tezos is to have a highly decentralized network of bakers. That goal is not fully realized if, of those bakers, a large majority operate on a single infrastructure provider.
