@@ -38,7 +38,7 @@ jobs:
           ./cc-test-reporter before-build
 
           echo "Running tests..."
-          go test -coverprofile c.out ./...
+          go test -coverprofile c.out -coverpkg=./... ./...
 
           mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
