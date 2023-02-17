@@ -35,8 +35,6 @@ Security issues can be encrypted using the keys available at https://keybase.io/
 * Upon receiving the signature produced by backend, Signatory validates the signature
 * Signatory returns the signature to Signatory client
 
-[![](https://mermaid.ink/img/pako:eNptkLEOwjAMRH8l8kr7Ax1YYGWhElMWKzlBRJOU1BkK4t9JW4FQwZNlvztb9yATLaihAbeMYLB3fE7sdVCljvBRoFp3Dkhq1zkEqevtdjNNWGIaGyW4x0HFHonFxaAW5QdY4-YCcx1UHztnxn_siXMnP7YLOe9WhsPc5oS1WcH-_f-loIo8kmdnSwCPSa9JLvDQ1JTWcrpq0uFZOM4S2zEYaiRlVJR7y_IO6z2EdeXyYQl0zvX5AvdheYk?type=png)](https://mermaid.live/edit#pako:eNptkLEOwjAMRH8l8kr7Ax1YYGWhElMWKzlBRJOU1BkK4t9JW4FQwZNlvztb9yATLaihAbeMYLB3fE7sdVCljvBRoFp3Dkhq1zkEqevtdjNNWGIaGyW4x0HFHonFxaAW5QdY4-YCcx1UHztnxn_siXMnP7YLOe9WhsPc5oS1WcH-_f-loIo8kmdnSwCPSa9JLvDQ1JTWcrpq0uFZOM4S2zEYaiRlVJR7y_IO6z2EdeXyYQl0zvX5AvdheYk)
-
 ## Configuration
 
 Signatory configuration is specified in a YAML file. Use the `signatory.yaml` file as a template to get started.
