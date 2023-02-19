@@ -9,6 +9,7 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/spf13/cobra"
@@ -50,12 +51,14 @@ func NewGenKeyCommand() *cobra.Command {
 				)
 
 				switch keyType {
-				case "edsk":
+				case "ed25519":
 					_, pk, err = ed25519.GenerateKey(rand.Reader)
-				case "spsk":
+				case "secp256k1":
 					pk, err = ecdsa.GenerateKey(cryptoutils.S256(), rand.Reader)
-				case "p2sk":
+				case "p256":
 					pk, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				case "bls":
+					pk, err = minpk.GenerateKey(rand.Reader)
 				default:
 					err = fmt.Errorf("unknown key type: %s", keyType)
 				}
@@ -85,8 +88,8 @@ func NewGenKeyCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&num, "n", 1, "Number of key pairs to generate")
-	cmd.Flags().StringVar(&keyType, "t", "edsk", "Key type [edsk, spsk, p2sk]")
+	cmd.Flags().IntVarP(&num, "num", "n", 1, "Number of key pairs to generate")
+	cmd.Flags().StringVarP(&keyType, "type", "t", "ed25519", "Key type [ed25519, secp256k1, p256, bls]")
 
 	return cmd
 }

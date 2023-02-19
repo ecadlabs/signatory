@@ -12,6 +12,8 @@ import (
 	"math/big"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	blst "github.com/ecadlabs/goblst"
+	"github.com/ecadlabs/goblst/minpk"
 )
 
 // CanonizeECDSASignature returns the canonical versions of the signature
@@ -75,9 +77,7 @@ func S256() elliptic.Curve {
 }
 
 // PrivateKey is implemented by private key types
-type PrivateKey interface {
-	Public() crypto.PublicKey
-}
+type PrivateKey = crypto.Signer
 
 // NamedCurve returns curve by its standard name or nil
 func NamedCurve(name string) elliptic.Curve {
@@ -108,6 +108,8 @@ func Sign(priv PrivateKey, hash []byte) (Signature, error) {
 		return &ECDSASignature{R: r, S: s, Curve: key.Curve}, nil
 	case ed25519.PrivateKey:
 		return ED25519Signature(ed25519.Sign(key, hash)), nil
+	case *minpk.PrivateKey:
+		return minpk.Sign(key, hash, blst.Augmentation), nil
 	}
 	return nil, fmt.Errorf("unsupported key type: %T", priv)
 }
@@ -136,6 +138,15 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 		if ok = ed25519.Verify(key, hash, s); !ok {
 			return ErrSignature
 		}
+	case *minpk.PublicKey:
+		s, ok := sig.(*minpk.Signature)
+		if !ok {
+			return ErrSignature
+		}
+		if err := minpk.Verify(key, hash, s, blst.Augmentation); err != nil {
+			return ErrSignature
+		}
+
 	default:
 		return fmt.Errorf("unsupported key type: %T", pub)
 	}
@@ -154,7 +165,7 @@ func PublicKeySuitableForTezos(pub crypto.PublicKey) bool {
 			return false
 		}
 
-	case ed25519.PublicKey:
+	case ed25519.PublicKey, *minpk.PublicKey:
 		return true
 
 	default:

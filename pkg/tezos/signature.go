@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 )
 
@@ -34,6 +35,10 @@ func encodeSignature(sig cryptoutils.Signature) (prefix tzPrefix, payload []byte
 		default:
 			prefix = pGenericSignature
 		}
+	case *minpk.Signature:
+		payload = s.Bytes()
+		prefix = pBLS12_381Signature
+
 	default:
 		return tzPrefix{}, nil, fmt.Errorf("tezos: unknown signature type %T (%v)", sig, sig)
 	}
@@ -79,6 +84,9 @@ func parseSignature(prefix tzPrefix, data []byte) (sig cryptoutils.Signature, er
 	case pED25519Signature:
 		return cryptoutils.ED25519Signature(data), nil
 
+	case pBLS12_381Signature, pGenericAggregateSignature:
+		return minpk.SignatureFromBytes(data)
+
 	default:
 		return nil, ErrSignature
 	}
@@ -105,6 +113,9 @@ func ParseSignature(s string, pub crypto.PublicKey) (sig cryptoutils.Signature, 
 
 		case ed25519.PublicKey:
 			prefix = pED25519Signature
+
+		case *minpk.PublicKey:
+			prefix = pBLS12_381Signature
 
 		default:
 			return nil, ErrSignature

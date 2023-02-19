@@ -1428,6 +1428,7 @@ const (
 	tagPublicKeyHashED25519 = iota
 	tagPublicKeyHashSECP256K1
 	tagPublicKeyHashP256
+	tagPublicKeyHashBLS12_381
 )
 
 func parsePublicKeyHash(buf *[]byte) (pkh string, err error) {
@@ -1444,6 +1445,8 @@ func parsePublicKeyHash(buf *[]byte) (pkh string, err error) {
 		prefix = pSECP256K1PublicKeyHash
 	case tagPublicKeyHashP256:
 		prefix = pP256PublicKeyHash
+	case tagPublicKeyHashBLS12_381:
+		prefix = pBLS12_381PublicKeyHash
 	default:
 		return "", fmt.Errorf("tezos: unknown public key hash tag: %d", t)
 	}
@@ -1460,6 +1463,7 @@ const (
 	tagPublicKeyED25519 = iota
 	tagPublicKeySECP256K1
 	tagPublicKeyP256
+	tagPublicKeyBLS12_381
 )
 
 func parsePublicKey(buf *[]byte) (pkh string, err error) {
@@ -1482,6 +1486,9 @@ func parsePublicKey(buf *[]byte) (pkh string, err error) {
 	case tagPublicKeyP256:
 		prefix = pP256PublicKey
 		ln = 33
+	case tagPublicKeyBLS12_381:
+		prefix = pBLS12_381PublicKey
+		ln = 48
 	default:
 		return "", fmt.Errorf("tezos: unknown public key tag: %d", t)
 	}

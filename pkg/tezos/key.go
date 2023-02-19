@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -80,6 +81,8 @@ func isEncrypted(prefix tzPrefix) (unencrypted tzPrefix, ok bool) {
 		return pSECP256K1SecretKey, true
 	case pP256EncryptedSecretKey:
 		return pP256SecretKey, true
+	case pBLS12_381EncryptedSecretKey:
+		return pBLS12_381SecretKey, true
 	}
 	return
 }
@@ -142,6 +145,9 @@ func ParsePrivateKey(data string, passFunc PassphraseFunc) (priv cryptoutils.Pri
 			return nil, fmt.Errorf("tezos: invalid ED25519 private key length: %d", l)
 		}
 		return ed25519.PrivateKey(pl), nil
+
+	case pBLS12_381SecretKey:
+		return minpk.PrivateKeyFromBytes(pl)
 	}
 	return nil, ErrPrivateKey
 }
@@ -216,6 +222,9 @@ func ParsePublicKey(data string) (pub crypto.PublicKey, err error) {
 			return nil, fmt.Errorf("tezos: invalid ED25519 public key length: %d", l)
 		}
 		return ed25519.PublicKey(pl), nil
+
+	case pBLS12_381PublicKey:
+		return minpk.PublicKeyFromBytes(pl)
 	}
 
 	return nil, ErrPublicKey
@@ -265,6 +274,14 @@ func serializePublicKey(pub crypto.PublicKey) (out *serializedPublicKey, err err
 			pubPrefix:  pED25519PublicKey,
 			tag:        tagPublicKeyHashED25519,
 			payload:    key,
+		}, nil
+
+	case *minpk.PublicKey:
+		return &serializedPublicKey{
+			hashPrefix: pBLS12_381PublicKeyHash,
+			pubPrefix:  pBLS12_381PublicKey,
+			tag:        tagPublicKeyHashBLS12_381,
+			payload:    key.Bytes(),
 		}, nil
 
 	default:
@@ -337,6 +354,10 @@ func EncodePrivateKey(priv cryptoutils.PrivateKey) (res string, err error) {
 	case ed25519.PrivateKey:
 		prefix = pED25519Seed
 		payload = key.Seed()
+
+	case *minpk.PrivateKey:
+		prefix = pBLS12_381SecretKey
+		payload = key.Bytes()
 	}
 
 	return encodeBase58(prefix, payload), nil
@@ -356,7 +377,9 @@ func EncodeBinaryPublicKeyHash(s string) (data []byte, err error) {
 	case pSECP256K1PublicKeyHash:
 		tag = tagPublicKeyHashSECP256K1
 	case pP256PublicKeyHash:
-		tag = tagPublicKeyP256
+		tag = tagPublicKeyHashP256
+	case pBLS12_381PublicKeyHash:
+		tag = tagPublicKeyHashBLS12_381
 	default:
 		return nil, errors.New("tezos: unknown public key type")
 	}
