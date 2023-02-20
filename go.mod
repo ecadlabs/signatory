@@ -7,6 +7,7 @@ require (
 	github.com/certusone/yubihsm-go v0.1.1-0.20190828101841-d0ca2ed0df7b
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34
 	github.com/go-playground/validator/v10 v10.7.0
 	github.com/google/tink/go v1.6.1
 	github.com/google/uuid v1.1.2
@@ -28,7 +29,6 @@ require (
 	cloud.google.com/go v0.100.2 // indirect
 	cloud.google.com/go/compute v0.1.0 // indirect
 	cloud.google.com/go/iam v0.1.0 // indirect
-	github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 )
 

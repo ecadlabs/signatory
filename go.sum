@@ -97,14 +97,6 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 h1:HbphB4TFFXpv7MNrT52FGrrgVXF1
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0/go.mod h1:DZGJHZMqrU4JJqFAWUS2UO1+lbSKsdiOoYi9Zzey7Fc=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
-github.com/ecadlabs/goblst v0.0.0-20230218212227-f839854ad6e9 h1:XNlT69opC138rez5iJR2f34rJJMVeXnYrxJLp+bd8PA=
-github.com/ecadlabs/goblst v0.0.0-20230218212227-f839854ad6e9/go.mod h1:VMZlGFO+4nCRAks/xY4vMVNIKDkhGCRGv8adgTuoAYU=
-github.com/ecadlabs/goblst v0.0.0-20230218220618-9efec780f97e h1:5tDXJU9Stnczs6DqdspaqWHPBNouuzboqBU85qNk62w=
-github.com/ecadlabs/goblst v0.0.0-20230218220618-9efec780f97e/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
-github.com/ecadlabs/goblst v0.0.0-20230218222712-dc02f69da2ad h1:2cVBnu+7FMPGZ+/a2/XP2681Ihfn8h8P1J3k6CDCyDI=
-github.com/ecadlabs/goblst v0.0.0-20230218222712-dc02f69da2ad/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
-github.com/ecadlabs/goblst v0.0.0-20230219193544-fc2f0cf15fdd h1:OG62OBDAtZ4N6QaX9lW7A/+r/zi76R/mGBuuh1Xgvn8=
-github.com/ecadlabs/goblst v0.0.0-20230219193544-fc2f0cf15fdd/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
 github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34 h1:90wYSD3+MHRUDdzNmcPjUe5yNhMy8Y9Ar8INomISgvU=
 github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
