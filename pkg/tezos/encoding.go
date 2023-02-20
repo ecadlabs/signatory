@@ -52,6 +52,7 @@ var (
 	pED25519PublicKey      = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 37, 217}}   // edpk(54)
 	pSECP256K1SecretKey    = tzPrefix{plen: 4, mlen: 32, p: [5]byte{17, 162, 224, 201}} // spsk(54)
 	pP256SecretKey         = tzPrefix{plen: 4, mlen: 32, p: [5]byte{16, 81, 238, 189}}  // p2sk(54)
+	pBLS12_381SecretKey    = tzPrefix{plen: 4, mlen: 32, p: [5]byte{3, 150, 192, 40}}   // BLsk(54)
 	pValueHash             = tzPrefix{plen: 3, mlen: 32, p: [5]byte{1, 106, 242}}       // vh(52)
 	pCycleNonce            = tzPrefix{plen: 3, mlen: 32, p: [5]byte{69, 220, 169}}      // nce(53)
 	pScriptExpr            = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 44, 64, 27}}    // expr(54)
@@ -67,6 +68,7 @@ var (
 	pED25519EncryptedSeed        = tzPrefix{plen: 5, mlen: 56, p: [5]byte{7, 90, 60, 179, 41}}    // edesk(88)
 	pSECP256K1EncryptedSecretKey = tzPrefix{plen: 5, mlen: 56, p: [5]byte{9, 237, 241, 174, 150}} // spesk(88)
 	pP256EncryptedSecretKey      = tzPrefix{plen: 5, mlen: 56, p: [5]byte{9, 48, 57, 115, 171}}   // p2esk(88)
+	pBLS12_381EncryptedSecretKey = tzPrefix{plen: 5, mlen: 88, p: [5]byte{2, 5, 30, 53, 25}}      // BLesk(88)
 
 	// 60
 	pSECP256K1EncryptedScalar = tzPrefix{plen: 5, mlen: 60, p: [5]byte{1, 131, 36, 86, 248}} // seesk(93)
@@ -93,20 +95,12 @@ var (
 	// 43
 	pSaplingAddress = tzPrefix{plen: 4, mlen: 43, p: [5]byte{18, 71, 40, 223}} // zet1(69)
 
-	// 141
-	pGenericAggregateSignature = tzPrefix{plen: 4, mlen: 141, p: [5]byte{2, 75, 234, 101}} // asig(96)
+	// 96
+	pGenericAggregateSignature = tzPrefix{plen: 4, mlen: 96, p: [5]byte{2, 75, 234, 101}}  // asig(141)
+	pBLS12_381Signature        = tzPrefix{plen: 4, mlen: 96, p: [5]byte{40, 171, 64, 207}} // BLsig(142)
 
-	// 142
-	pBLS12_381Signature = tzPrefix{plen: 4, mlen: 142, p: [5]byte{40, 171, 64, 207}} // BLsig(96)
-
-	// 76
-	pBLS12_381PublicKey = tzPrefix{plen: 4, mlen: 76, p: [5]byte{6, 149, 135, 204}} // BLpk(48)
-
-	// 54
-	pBLS12_381SecretKey = tzPrefix{plen: 4, mlen: 54, p: [5]byte{3, 150, 192, 40}} // BLsk(32)
-
-	// 88
-	pBLS12_381EncryptedSecretKey = tzPrefix{plen: 5, mlen: 88, p: [5]byte{2, 5, 30, 53, 25}} // BLesk(58)
+	// 48
+	pBLS12_381PublicKey = tzPrefix{plen: 4, mlen: 48, p: [5]byte{6, 149, 135, 204}} // BLpk(76)
 
 	// ?
 	pScCommitmentHash = tzPrefix{plen: 4, mlen: 0, p: [5]byte{17, 144, 21, 100}}  // scc1(54)

@@ -100,6 +100,9 @@ func ParseSignature(s string, pub crypto.PublicKey) (sig cryptoutils.Signature, 
 	}
 
 	if prefix == pGenericSignature {
+		if pub == nil {
+			return nil, errors.New("tezos: can't infer signature type")
+		}
 		switch key := pub.(type) {
 		case *ecdsa.PublicKey:
 			switch key.Curve {

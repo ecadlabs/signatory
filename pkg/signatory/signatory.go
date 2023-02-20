@@ -390,7 +390,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	l.WithField("raw", sig).Debug("Signed bytes")
 
-	encodedSig, err := tezos.EncodeGenericSignature(sig)
+	encodedSig, err := tezos.EncodeSignature(sig) // leave signature type
 	if err != nil {
 		return "", err
 	}
