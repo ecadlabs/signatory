@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	stderr "errors"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 
@@ -14,7 +14,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -48,11 +47,10 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 		return errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized)
 	}
 
-	signed, err := signatory.SignRequestAuthenticatedBytes(req)
+	authBytes, err := signatory.AuthenticatedBytesToSign(req)
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}
-	digest := utils.DigestFunc(signed)
 
 	sig, err := tezos.ParseSignature(v, nil)
 	if err != nil {
@@ -70,7 +68,7 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 			return err
 		}
 
-		err = cryptoutils.Verify(pub, digest[:], sig)
+		err = cryptoutils.Verify(pub, authBytes, sig)
 		if err == nil {
 			req.ClientPublicKeyHash = pkh
 			return nil
@@ -93,7 +91,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	signRequest.Source = net.ParseIP(source)
 
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.logger().Errorf("Error reading POST content: %v", err)
 		tezosJSONError(w, err)

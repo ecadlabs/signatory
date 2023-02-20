@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -116,7 +115,7 @@ func TestSign(t *testing.T) {
 
 			require.Equal(t, c.StatusCode, resp.StatusCode)
 
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -180,7 +179,7 @@ func TestGetPublicKey(t *testing.T) {
 
 			require.Equal(t, c.StatusCode, resp.StatusCode)
 
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}

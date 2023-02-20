@@ -16,7 +16,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -49,8 +48,7 @@ func serveHookAuth(status int, pk cryptoutils.PrivateKey) (func(w http.ResponseW
 			panic(err)
 		}
 
-		digest := utils.DigestFunc(buf)
-		sig, err := cryptoutils.Sign(pk, digest[:])
+		sig, err := cryptoutils.Sign(pk, buf)
 		if err != nil {
 			panic(err)
 		}

@@ -7,7 +7,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -32,13 +31,12 @@ func NewAuthRequestCommand() *cobra.Command {
 				PublicKeyHash: args[1],
 			}
 
-			data, err := signatory.SignRequestAuthenticatedBytes(&req)
+			data, err := signatory.AuthenticatedBytesToSign(&req)
 			if err != nil {
 				return err
 			}
 
-			digest := utils.DigestFunc(data)
-			sig, err := cryptoutils.Sign(priv, digest[:])
+			sig, err := cryptoutils.Sign(priv, data)
 			if err != nil {
 				return err
 			}

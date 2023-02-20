@@ -19,7 +19,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -256,8 +255,7 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		if err != nil {
 			return err
 		}
-		digest := utils.DigestFunc(reply.Payload)
-		if err = cryptoutils.Verify(pub, digest[:], sig); err != nil {
+		if err = cryptoutils.Verify(pub, reply.Payload, sig); err != nil {
 			if stderr.Is(err, cryptoutils.ErrSignature) {
 				return errors.Wrap(errors.New("invalid hook reply signature"), http.StatusForbidden)
 			}
@@ -356,16 +354,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-		digest := utils.DigestFunc(message)
-		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, digest[:], msg); err != nil {
+		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, message, msg); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
 		}
-		if rawSigner, ok := p.vault.(vault.RawSigner); ok {
-			return rawSigner.SignRaw(ctx, message, key)
-		}
-		return p.vault.Sign(ctx, digest[:], p.key)
+		return p.vault.SignMessage(ctx, message, p.key)
 	}
 
 	var sig cryptoutils.Signature

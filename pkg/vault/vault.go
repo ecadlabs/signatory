@@ -23,16 +23,11 @@ type StoredKeysIterator interface {
 	Next() (StoredKey, error)
 }
 
-// RawSigner may be implemented by some vaults that expect raw data instead of a precomputed hash
-type RawSigner interface {
-	SignRaw(ctx context.Context, data []byte, key StoredKey) (cryptoutils.Signature, error)
-}
-
 // Vault interface that represent a secure key store
 type Vault interface {
 	GetPublicKey(ctx context.Context, id string) (StoredKey, error)
 	ListPublicKeys(ctx context.Context) StoredKeysIterator
-	Sign(ctx context.Context, digest []byte, key StoredKey) (cryptoutils.Signature, error)
+	SignMessage(ctx context.Context, msg []byte, key StoredKey) (cryptoutils.Signature, error)
 	Name() string
 }
 

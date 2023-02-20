@@ -238,11 +238,8 @@ const (
 )
 
 // Sign signs the message or precalculated hash
-func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed bool) (sig cryptoutils.Signature, err error) {
+func (t *App) Sign(derivation DerivationType, path BIP32, data []byte) (sig cryptoutils.Signature, err error) {
 	ins := insSign
-	if prehashed {
-		ins = insSignUnsafe
-	}
 
 	apdu := ledger.APDUCommand{
 		Cla:  claTezos,

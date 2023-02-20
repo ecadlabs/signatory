@@ -4,12 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-
-	"golang.org/x/crypto/blake2b"
 )
-
-// DigestFunc is an alias for blake2b checksum algorithm
-var DigestFunc = blake2b.Sum256
 
 // ErrMsgUnexpectedEnd is returned when message is too short
 var ErrMsgUnexpectedEnd = errors.New("unexpected end of message")

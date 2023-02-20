@@ -9,7 +9,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 )
 
 type Server struct {
@@ -74,8 +73,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				return
 			}
 
-			digest := utils.DigestFunc(buf)
-			sig, err := cryptoutils.Sign(s.PrivateKey, digest[:])
+			sig, err := cryptoutils.Sign(s.PrivateKey, buf)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

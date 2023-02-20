@@ -262,7 +262,8 @@ func (h *HSM) signED25519(digest []byte, id uint16) (cryptoutils.ED25519Signatur
 }
 
 // Sign performs signing operation
-func (h *HSM) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
+func (h *HSM) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
+	digest := cryptoutils.Digest(message)
 	key, ok := k.(*hsmKey)
 	if !ok {
 		return nil, fmt.Errorf("(YubiHSM/%s): not a YubiHSM key: %T", h.conf.id(), k)
@@ -270,9 +271,9 @@ func (h *HSM) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig c
 
 	switch k := key.pub.(type) {
 	case *ecdsa.PublicKey:
-		return h.signECDSA(digest, key.id, k.Curve)
+		return h.signECDSA(digest[:], key.id, k.Curve)
 	case ed25519.PublicKey:
-		return h.signED25519(digest, key.id)
+		return h.signED25519(digest[:], key.id)
 	}
 
 	return nil, fmt.Errorf("(YubiHSM/%s): unexpected key type: %T", h.conf.id(), key.pub)

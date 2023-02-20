@@ -288,7 +288,8 @@ func (v *Vault) VaultName() string {
 }
 
 // Sign performs signing operation
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
+	digest := cryptoutils.Digest(message)
 	azureKey, ok := key.(*azureKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
@@ -298,7 +299,7 @@ func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (s
 	if req.Algorithm = algByCurveName(azureKey.bundle.Key.Curve); req.Algorithm == "" {
 		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): can't find corresponding signature algorithm for %s curve", v.config.Vault, azureKey.bundle.Key.Curve), http.StatusBadRequest)
 	}
-	req.Value = base64.RawURLEncoding.EncodeToString(digest)
+	req.Value = base64.RawURLEncoding.EncodeToString(digest[:])
 
 	u, err := v.makeURL(azureKey.bundle.Key.KeyID, "/sign")
 	if err != nil {

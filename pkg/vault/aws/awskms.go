@@ -132,11 +132,12 @@ func (v *Vault) Name() string {
 	return "AWSKMS"
 }
 
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	digest := cryptoutils.Digest(message)
 	kid := key.ID()
 	sout, err := v.kmsapi.Sign(&kms.SignInput{
 		KeyId:            &kid,
-		Message:          digest,
+		Message:          digest[:],
 		MessageType:      aws.String(kms.MessageTypeDigest),
 		SigningAlgorithm: aws.String(kms.SigningAlgorithmSpecEcdsaSha256),
 	})

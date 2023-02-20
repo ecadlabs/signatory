@@ -14,7 +14,11 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	blst "github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
+	"golang.org/x/crypto/blake2b"
 )
+
+// Digest is an alias for blake2b checksum algorithm
+var Digest = blake2b.Sum256
 
 // CanonizeECDSASignature returns the canonical versions of the signature
 // the canonical version enforce low S values
@@ -98,18 +102,20 @@ func NamedCurve(name string) elliptic.Curve {
 }
 
 // Sign sign a hash using this private key
-func Sign(priv PrivateKey, hash []byte) (Signature, error) {
+func Sign(priv PrivateKey, msg []byte) (Signature, error) {
 	switch key := priv.(type) {
 	case *ecdsa.PrivateKey:
-		r, s, err := ecdsa.Sign(rand.Reader, key, hash)
+		digest := Digest(msg)
+		r, s, err := ecdsa.Sign(rand.Reader, key, digest[:])
 		if err != nil {
 			return nil, err
 		}
 		return &ECDSASignature{R: r, S: s, Curve: key.Curve}, nil
 	case ed25519.PrivateKey:
-		return ED25519Signature(ed25519.Sign(key, hash)), nil
+		digest := Digest(msg)
+		return ED25519Signature(ed25519.Sign(key, digest[:])), nil
 	case *minpk.PrivateKey:
-		return minpk.Sign(key, hash, blst.Augmentation), nil
+		return minpk.Sign(key, msg, blst.Augmentation), nil
 	}
 	return nil, fmt.Errorf("unsupported key type: %T", priv)
 }
@@ -120,22 +126,24 @@ var (
 )
 
 // Verify verifies the signature
-func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
+func Verify(pub crypto.PublicKey, msg []byte, sig Signature) error {
 	switch key := pub.(type) {
 	case *ecdsa.PublicKey:
+		digest := Digest(msg)
 		s, ok := sig.(*ECDSASignature)
 		if !ok {
 			return ErrSignature
 		}
-		if ok = ecdsa.Verify(key, hash, s.R, s.S); !ok {
+		if ok = ecdsa.Verify(key, digest[:], s.R, s.S); !ok {
 			return ErrSignature
 		}
 	case ed25519.PublicKey:
+		digest := Digest(msg)
 		s, ok := sig.(ED25519Signature)
 		if !ok {
 			return ErrSignature
 		}
-		if ok = ed25519.Verify(key, hash, s); !ok {
+		if ok = ed25519.Verify(key, digest[:], s); !ok {
 			return ErrSignature
 		}
 	case *minpk.PublicKey:
@@ -143,7 +151,7 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 		if !ok {
 			return ErrSignature
 		}
-		if err := minpk.Verify(key, hash, s, blst.Augmentation); err != nil {
+		if err := minpk.Verify(key, msg, s, blst.Augmentation); err != nil {
 			return ErrSignature
 		}
 

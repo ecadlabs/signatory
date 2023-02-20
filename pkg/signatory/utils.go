@@ -2,7 +2,7 @@ package signatory
 
 import "github.com/ecadlabs/signatory/pkg/tezos"
 
-func SignRequestAuthenticatedBytes(req *SignRequest) ([]byte, error) {
+func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {
 	keyHashBytes, err := tezos.EncodeBinaryPublicKeyHash(req.PublicKeyHash)
 	if err != nil {
 		return nil, err

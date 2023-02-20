@@ -192,7 +192,8 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 }
 
 // Sign performs signing operation
-func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	digest := cryptoutils.Digest(message)
 	kmsKey, ok := key.(*cloudKMSKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key), http.StatusBadRequest)
@@ -202,7 +203,7 @@ func (c *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (c
 		Name: kmsKey.key.Name,
 		Digest: &kmspb.Digest{
 			Digest: &kmspb.Digest_Sha256{
-				Sha256: digest,
+				Sha256: digest[:],
 			},
 		},
 	}

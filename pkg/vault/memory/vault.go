@@ -131,12 +131,12 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 func (v *Vault) Name() string { return v.name }
 
 // Sign sign using the specified key
-func (v *Vault) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
 	key, ok := k.(*PrivateKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(%s): invalid key type: %T ", v.name, k), http.StatusBadRequest)
 	}
-	signature, err := cryptoutils.Sign(key.PrivateKey, digest)
+	signature, err := cryptoutils.Sign(key.PrivateKey, message)
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %v", v.name, err)
 	}
