@@ -37,11 +37,57 @@ func TestCryptoCanonizeSignature(t *testing.T) {
 }
 
 func TestSignVerify(t *testing.T) {
-	pk := "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
-	priv, err := tezos.ParsePrivateKey(pk, nil)
-	require.NoError(t, err)
-	signature, err := cryptoutils.Sign(priv, []byte("Hello"))
-	require.NoError(t, err)
-	err = cryptoutils.Verify(priv.Public(), []byte("Hello"), signature)
-	require.NoError(t, err)
+	type testCase struct {
+		title string
+		key   string
+	}
+
+	var cases = []testCase{
+		{
+			title: "ecdsa",
+			key:   "p2sk3HdQc93EjixRAWs9WZ6b3spNgPD7VriXU8FH8EiHN8sxCh7gmv",
+		},
+		{
+			title: "ed25519",
+			key:   "edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			priv, err := tezos.ParsePrivateKey(c.key, nil)
+			require.NoError(t, err)
+			signature, err := cryptoutils.Sign(priv, []byte("Hello"))
+			require.NoError(t, err)
+
+			err = cryptoutils.Verify(priv.Public(), []byte("Hello"), signature)
+			require.NoError(t, err)
+
+		})
+	}
+}
+
+func TestKeySuitableForTezos(t *testing.T) {
+	type testCase struct {
+		title string
+		key   string
+	}
+
+	var cases = []testCase{
+		{
+			title: "ecdsa",
+			key:   "p2sk3HdQc93EjixRAWs9WZ6b3spNgPD7VriXU8FH8EiHN8sxCh7gmv",
+		},
+		{
+			title: "ed25519",
+			key:   "edsk2rKA8YEExg9Zo2qNPiQnnYheF1DhqjLVmfKdxiFfu5GyGRZRnb",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			priv, err := tezos.ParsePrivateKey(c.key, nil)
+			require.NoError(t, err)
+			tz := cryptoutils.PublicKeySuitableForTezos(priv.Public())
+			require.True(t, tz)
+		})
+	}
 }
