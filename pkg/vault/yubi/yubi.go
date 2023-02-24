@@ -108,7 +108,7 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 			Y:     y,
 		}, true, nil
 
-	case commands.AlgorighmED25519:
+	case commands.AlgorithmED25519:
 		if len(r.KeyData) != ed25519.PublicKeySize {
 			return nil, false, fmt.Errorf("invalid public key length %d ", len(r.KeyData))
 		}
@@ -318,7 +318,7 @@ func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algo
 		return strings.ToLower(key.Params().Name), alg, commands.CapabilityAsymmetricSignEcdsa, key.D.Bytes(), nil
 
 	case ed25519.PrivateKey:
-		return "ed25519", commands.AlgorighmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
+		return "ed25519", commands.AlgorithmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
 	}
 
 	return "", 0, 0, nil, fmt.Errorf("unsupported private key type: %T", pk)
