@@ -2,6 +2,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'publish_docker_image_ghcr'
     tags:
       - 'v*'
   pull_request:
@@ -70,8 +71,9 @@ jobs:
         with:
           go-version: 1.17
 
-      - name: Write release-env file
+      - name: Login to DockerHub
         uses: DamianReeves/write-file-action@v1.0
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           path: ${{ github.workspace }}/.release-env
           contents: |
@@ -80,19 +82,30 @@ jobs:
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Login to GHCR
+        uses: DamianReeves/write-file-action@v1.0
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        with:
+          path: ${{ github.workspace }}/.release-env
+          contents: |
+            DOCKER_FAIL_ON_LOGIN_ERROR=true
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
+            DOCKER_REGISTRY=
+
       # - name: Write docker-creds file
       #   uses: DamianReeves/write-file-action@v1.0
       #   with:
       #     path: ${{ github.workspace }}/.docker-creds
       #     contents: |
       #       ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
-      -
-        name: goreleaser release-dry-run
-        run: make release-dry-run
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+      # -
+      #   name: goreleaser release-dry-run
+      #   run: make release-dry-run
+      #   if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - 
         name: goreleaser release
         run: make release
-        if: startsWith(github.ref, 'refs/tags/v')
 
