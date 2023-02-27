@@ -59,6 +59,8 @@ az keyvault create --name "sigy" --resource-group "sigy" --sku "premium"
 
 The `--sku` argument must be set to premium if you want to have your keys stored in a HSM.
 
+Take note of the returned values of `properties.vaultUri` and `properties.tenantId`, these will be used later in the Signatory configuration.
+
 ### **Create a Service Principal for authentication**
 
 This document describes a service principal creation flow and a backend configuration for a key-based authentication. Alternatively, you can use client secret-based authentication but it's not recommended.
@@ -78,6 +80,8 @@ openssl x509 -signkey "service-principal.key" -in "service-principal.csr" -req -
 ```
 
 Now you can safely delete the request file (`.csr`).
+
+**Note:** If running signatory in docker then the service-principal.crt should be within the docker. The full path of service-principal.crt within the container is a Signatory configuration file value.
 
 #### **Create a Service Principal for authentication**
 
@@ -115,8 +119,8 @@ Creating a role assignment under the scope of "/subscriptions/be273d20-6dc1-4bbc
   "tenant": "50c46f11-1d0a-4c56-b468-1bcb03a8f69e"
 }
 ```
+Take note of the returned value of `appId`, it is used in subsequent steps, and later in the Signatory configuration.
 
-**Note:** If running signatory in docker then the service-principal.crt should be within the docker
 
 #### **Create a PKCS #12 file (the Microsoft way)**
 
@@ -159,7 +163,7 @@ Example output:
 ]
 ```
 
-The `customKeyIdentifier` contains the certificate's SHA-1 hash (called a thumbprint in Azure documentation).
+The `customKeyIdentifier` contains the certificate's SHA-1 hash (called a thumbprint in Azure documentation). The thumbprint of the certificate can also be found in Azure portal, through Active Directory -> App Registrations -> Client Credentials.
 
 You don't need the certificate anymore.
 
