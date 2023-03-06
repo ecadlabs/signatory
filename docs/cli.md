@@ -33,7 +33,7 @@ The encrypted private key can be obtained from the `.octez-client/` directory
 
 ## Importing the generated key using signatory-cli
 
-A private key can be imported into any of the backend vaults (except: AWS & ledger) using the below command.
+A private key can be imported into any of the backend vaults (except: AWS,file & ledger) using the below command.
 If you import an encrypted key, the `signatory-cli` command will prompt you for the password.
 
 ```bash
