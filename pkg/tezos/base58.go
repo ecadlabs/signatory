@@ -38,7 +38,7 @@ func DecodeBase58(text string) ([]byte, error) {
 	// count and skip leading zeros
 	for ; i < len(text); i++ {
 		c := int(text[i]) - alphabetStart
-		if c >= len(base58alphabetF) || base58alphabetF[c] == -1 {
+		if c < 0 || c >= len(base58alphabetF) || base58alphabetF[c] == -1 {
 			return nil, fmt.Errorf("base58 decoding error: unexpected character at position %d: %c", i, text[i])
 		}
 		if base58alphabetF[c] != 0 {
