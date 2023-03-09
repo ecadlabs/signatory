@@ -18,8 +18,8 @@ signatory-cli:
 container: signatory signatory-cli
 	docker build -t ecadlabs/signatory:$(CONTAINER_TAG) .
 
-clean:
-	rm signatory signatory-cli
+clean: clean-coverage
+	rm -f signatory signatory-cli
 
 .PHONY: release-dry-run
 release-dry-run:
@@ -54,3 +54,15 @@ release:
 		release \
 		--rm-dist \
 		--skip-validate
+
+.PHONY: test
+test:
+	go test ./... -coverprofile=coverage.out
+
+.PHONY: coverage
+coverage: clean-coverage test
+	go tool cover -html=coverage.out
+
+.PHONY: clean-coverage
+clean-coverage:
+	rm -f coverage.out
