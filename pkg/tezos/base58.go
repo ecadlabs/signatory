@@ -37,9 +37,9 @@ func DecodeBase58(text string) ([]byte, error) {
 	i := 0
 	// count and skip leading zeros
 	for ; i < len(text); i++ {
-		c := int(text[i]) - alphabetStart
-		if c >= len(base58alphabetF) || base58alphabetF[c] == -1 {
-			return nil, fmt.Errorf("base58 decoding error: unexpected character at position %d: %c", i, text[i])
+		c, err := decodeByte(text[i])
+		if err != nil {
+			return nil, fmt.Errorf("%s at position %d", err.Error(), i)
 		}
 		if base58alphabetF[c] != 0 {
 			break
@@ -48,9 +48,9 @@ func DecodeBase58(text string) ([]byte, error) {
 	zeros := i
 	acc := make([]byte, 0, len(text)/4)
 	for ; i < len(text); i++ {
-		c := int(text[i]) - alphabetStart
-		if c >= len(base58alphabetF) || base58alphabetF[c] == -1 {
-			return nil, fmt.Errorf("base58 decoding error: unexpected character at position %d: %c", i, text[i])
+		c, err := decodeByte(text[i])
+		if err != nil {
+			return nil, fmt.Errorf("%s at position %d", err.Error(), i)
 		}
 		carry := int(base58alphabetF[c])
 		// for every symbol x
@@ -134,4 +134,12 @@ func EncodeBase58Check(data []byte) string {
 	s0 := sha256.Sum256(data)
 	s1 := sha256.Sum256(s0[:])
 	return EncodeBase58(append(data, s1[:4]...))
+}
+
+func decodeByte(b byte) (c int, err error) {
+	c = int(b) - alphabetStart
+	if c < 0 || c >= len(base58alphabetF) || base58alphabetF[c] == -1 {
+		err = fmt.Errorf("base58 decoding error: invalid character %c", b)
+	}
+	return
 }
