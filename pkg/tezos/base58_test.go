@@ -26,7 +26,6 @@ func Test_Decode_AlphabetBoundaries(t *testing.T) {
 	assert.Equal(t, input, e)
 }
 
-// todo: make this test each invalid char one at a time
 func Test_Decode_InvalidCharacters(t *testing.T) {
 	invalid := `0lIO~!@#$%^&*()-_=+\|[]{}'";:/?,.<>`
 	valid := "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789"
