@@ -15,10 +15,7 @@ sequenceDiagram
 autonumber
 participant C as Client
 participant S as Signatory
-
-box orange
 participant R as Remote Policy<br> Service
-end
 
 C->>S: Tezos Operation
 S-->>+R: POST operation and metadata
