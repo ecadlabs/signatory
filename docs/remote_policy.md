@@ -15,17 +15,12 @@ sequenceDiagram
 autonumber
 participant C as Client
 participant S as Signatory
-
-box orange Remote Policy Service
-participant R as RPS
-end
-
+participant R as Remote Policy<br> Service
 C->>S: Tezos Operation
 S-->>+R: POST operation and metadata
 R-->>S: Response 200 OK
 S-->>S: Signs 
 S->>C: 200 OK
-
 alt
 R-->>S: 403 Denied
 S->>C: 403 Denied
