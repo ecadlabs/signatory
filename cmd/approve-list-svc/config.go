@@ -9,7 +9,7 @@ import (
 	"net"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -42,7 +42,7 @@ func (conf *Config) Addresses() ([]net.IP, []*net.IPNet, error) {
 func (conf *Config) GetPrivateKey() (cryptoutils.PrivateKey, error) {
 	var keyData []byte
 	if conf.PrivateKey != "" {
-		if pk, err := tezos.ParsePrivateKey(conf.PrivateKey, nil); err == nil {
+		if pk, err := utils.ParsePrivateKey([]byte(conf.PrivateKey)); err == nil {
 			return pk, nil
 		} else {
 			keyData = []byte(conf.PrivateKey)

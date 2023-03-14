@@ -10,7 +10,7 @@ import (
 
 // Utility functions used by CLI
 
-func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string, err error) {
+func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (string, error) {
 	var hwm tezosapp.HWM
 	if chainID != "" {
 		cid, err := b58.ParseChainID([]byte(chainID))
@@ -21,21 +21,21 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string
 	}
 	key, err := parseKeyID(keyID)
 	if err != nil {
-		return
+		return "", err
 	}
 	dev, err := deviceScanner.open(id)
 	if err != nil {
-		return
+		return "", err
 	}
 	defer dev.Close()
 
 	pub, err := dev.SetupBaking(&hwm, key.dt, key.path)
 	if err != nil {
-		return
+		return "", err
 	}
-	pkh, err = utils.EncodePublicKeyHash(pub)
+	pkh, err := utils.EncodePublicKeyHash(pub)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	return pkh, nil

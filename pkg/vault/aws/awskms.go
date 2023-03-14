@@ -152,7 +152,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	}
 
 	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(AWSKMS/%s): %v", kid, err)
+		return nil, fmt.Errorf("(AWSKMS/%s): %w", kid, err)
 	}
 
 	pubkey := key.(*awsKMSKey)

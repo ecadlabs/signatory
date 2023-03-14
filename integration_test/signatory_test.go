@@ -21,7 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -49,7 +49,7 @@ type secretKeyJSON struct {
 
 func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 	if s := os.Getenv(envKey); s != "" {
-		return tezos.ParsePrivateKey(s, nil)
+		return utils.ParsePrivateKey([]byte(s))
 	}
 
 	if s := os.Getenv(envKeyJSON); s != "" {
@@ -63,7 +63,7 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 			salt := "mnemonic" + data.Email + data.Password
 			k := pbkdf2.Key([]byte(mnemonic), []byte(salt), 2048, 64, sha512.New)
 			pk := ed25519.NewKeyFromSeed(k[:32])
-			pkh, err := tezos.EncodePublicKeyHash(pk.Public())
+			pkh, err := utils.EncodePublicKeyHash(pk.Public())
 			if err != nil {
 				return nil, err
 			}
@@ -110,13 +110,13 @@ func genAuthKey() (pub, pkh, priv string, err error) {
 	if err != nil {
 		return
 	}
-	if pub, err = tezos.EncodePublicKey(pubk); err != nil {
+	if pub, err = utils.EncodePublicKey(pubk); err != nil {
 		return
 	}
-	if priv, err = tezos.EncodePrivateKey(privk); err != nil {
+	if priv, err = utils.EncodePrivateKey(privk); err != nil {
 		return
 	}
-	if pkh, err = tezos.EncodePublicKeyHash(pubk); err != nil {
+	if pkh, err = utils.EncodePublicKeyHash(pubk); err != nil {
 		return
 	}
 	return
@@ -132,7 +132,7 @@ func TestSignatory(t *testing.T) {
 	pk, err := secretKeyFromEnv()
 	require.NoError(t, err)
 
-	pub, err := tezos.EncodePublicKeyHash(pk.Public())
+	pub, err := utils.EncodePublicKeyHash(pk.Public())
 	require.NoError(t, err)
 
 	authPub, authPKH, authPriv, err := genAuthKey()

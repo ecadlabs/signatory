@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto"
 
-	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/utils"
 )
 
@@ -47,11 +46,7 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 func StaticAuthorizedKeysFromString(pub ...string) (AuthorizedKeysStorage, error) {
 	keys := make([]crypto.PublicKey, len(pub))
 	for i, s := range pub {
-		tzPk, err := b58.ParsePublicKey([]byte(s))
-		if err != nil {
-			return nil, err
-		}
-		k, err := tzPk.PublicKey()
+		k, err := utils.ParsePublicKey([]byte(s))
 		if err != nil {
 			return nil, err
 		}

@@ -10,15 +10,15 @@ import (
 	"text/template"
 
 	"github.com/ecadlabs/goblst/minpk"
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/spf13/cobra"
 )
 
 const genkeyTemplateSrc = `{{range . -}}
 Private Key:     {{.PrivateKey}}
 Public Key:      {{.PublicKey}}
-Public Key Hash: {{.PublicKeyHash}}
+Public Key Hash: {{.PublicKey.Hash}}
 
 {{end}}
 `
@@ -28,9 +28,8 @@ var (
 )
 
 type tplData struct {
-	PrivateKey    string
-	PublicKey     string
-	PublicKeyHash string
+	PrivateKey gotez.PrivateKey
+	PublicKey  gotez.PublicKey
 }
 
 func NewGenKeyCommand() *cobra.Command {
@@ -68,13 +67,10 @@ func NewGenKeyCommand() *cobra.Command {
 				}
 
 				var d tplData
-				if d.PrivateKey, err = tezos.EncodePrivateKey(pk); err != nil {
+				if d.PrivateKey, err = gotez.NewPrivateKey(pk); err != nil {
 					return err
 				}
-				if d.PublicKey, err = tezos.EncodePublicKey(pk.Public()); err != nil {
-					return err
-				}
-				if d.PublicKeyHash, err = tezos.EncodePublicKeyHash(pk.Public()); err != nil {
+				if d.PublicKey, err = gotez.NewPublicKey(pk.Public()); err != nil {
 					return err
 				}
 				data = append(data, &d)

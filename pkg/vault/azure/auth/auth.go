@@ -209,13 +209,13 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 	client := oauth2.NewClient(ctx, nil)
 	resp, err := client.PostForm(url, v)
 	if err != nil {
-		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %w", err)
 	}
 
 	if resp.StatusCode/100 != 2 {
@@ -232,7 +232,7 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 	}
 
 	if err := json.Unmarshal(body, &res); err != nil {
-		return nil, fmt.Errorf("auth: cannot fetch token: %v", err)
+		return nil, fmt.Errorf("auth: cannot fetch token: %w", err)
 	}
 
 	token := oauth2.Token{
@@ -261,7 +261,7 @@ func (j *jwtTokenSource) Token() (*oauth2.Token, error) {
 	jti := make([]byte, 20)
 	_, err := rand.Read(jti)
 	if err != nil {
-		return nil, fmt.Errorf("auth: %v", err)
+		return nil, fmt.Errorf("auth: %w", err)
 	}
 
 	now := time.Now()
@@ -283,7 +283,7 @@ func (j *jwtTokenSource) Token() (*oauth2.Token, error) {
 
 	assertion, err := assertionToken.SignedString(j.key)
 	if err != nil {
-		return nil, fmt.Errorf("auth: %v", err)
+		return nil, fmt.Errorf("auth: %w", err)
 	}
 
 	v := url.Values{
@@ -323,7 +323,7 @@ func (c *Config) TokenSource(ctx context.Context, scopes []string) (ts oauth2.To
 			ctx:    ctx,
 		}
 	} else if ts, err = c.jwtTokenSource(ctx, scopes); err != nil {
-		return nil, fmt.Errorf("auth: %v", err)
+		return nil, fmt.Errorf("auth: %w", err)
 	}
 
 	return oauth2.ReuseTokenSource(nil, ts), nil

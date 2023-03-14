@@ -85,11 +85,11 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 			key = k
 		} else {
 			id := k.KeyID
-			var err error
 			if id == "" {
+				var err error
 				id, err = utils.EncodePublicKeyHash(k.PrivateKey.Public())
 				if err != nil {
-					return nil, fmt.Errorf("(%s): %v", name, err)
+					return nil, fmt.Errorf("(%s): %w", name, err)
 				}
 			}
 			key = &PrivateKey{
@@ -138,7 +138,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, k vault.StoredK
 	}
 	signature, err := cryptoutils.Sign(key.PrivateKey, message)
 	if err != nil {
-		return nil, fmt.Errorf("(%s): %v", v.name, err)
+		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
 	return signature, nil
 }
@@ -163,22 +163,23 @@ func (v *Vault) Unlock(ctx context.Context) error {
 
 		tzPrivEnc, err := b58.ParseEncryptedPrivateKey([]byte(entry.Data))
 		if err != nil {
-			return fmt.Errorf("(%s): %v", v.name, err)
+			return fmt.Errorf("(%s): %w", v.name, err)
 		}
 		tzPriv, err := tzPrivEnc.Decrypt(utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
 		if err != nil {
-			return fmt.Errorf("(%s): %v", v.name, err)
+			return fmt.Errorf("(%s): %w", v.name, err)
 		}
 		priv, err := tzPriv.PrivateKey()
 		if err != nil {
-			return fmt.Errorf("(%s): %v", v.name, err)
+			return fmt.Errorf("(%s): %w", v.name, err)
 		}
 
 		id := entry.ID
 		if id == "" {
+			var err error
 			id, err = utils.EncodePublicKeyHash(priv.Public())
 			if err != nil {
-				return fmt.Errorf("(%s): %v", v.name, err)
+				return fmt.Errorf("(%s): %w", v.name, err)
 			}
 		}
 		key := PrivateKey{
@@ -202,13 +203,14 @@ func (v *Vault) Unlock(ctx context.Context) error {
 func (v *Vault) ImportKey(ctx context.Context, priv cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	id, ok, err := opt.GetString("name")
 	if err != nil {
-		return nil, fmt.Errorf("(%s): %v", v.name, err)
+		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
 
 	if !ok || id == "" {
+		var err error
 		id, err = utils.EncodePublicKeyHash(priv.Public())
 		if err != nil {
-			return nil, fmt.Errorf("(%s): %v", v.name, err)
+			return nil, fmt.Errorf("(%s): %w", v.name, err)
 		}
 	}
 	key := PrivateKey{

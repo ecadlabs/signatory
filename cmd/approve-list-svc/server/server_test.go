@@ -15,7 +15,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -43,7 +43,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 
 	_, signPk, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
-	signKeyHash, err := tezos.EncodePublicKeyHash(signPk.Public())
+	signKeyHash, err := utils.EncodePublicKeyHash(signPk.Public())
 	require.NoError(t, err)
 
 	conf := signatory.Config{

@@ -8,7 +8,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 )
 
 type Server struct {
@@ -20,7 +20,7 @@ type Server struct {
 
 func (s *Server) Handler() (http.Handler, error) {
 	pub := s.PrivateKey.Public()
-	hash, err := tezos.EncodePublicKeyHash(pub)
+	hash, err := utils.EncodePublicKeyHash(pub)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				return
 			}
 
-			s, err := tezos.EncodeGenericSignature(sig)
+			s, err := utils.EncodeSignature(sig)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

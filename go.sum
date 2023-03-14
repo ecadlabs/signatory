@@ -142,6 +142,8 @@ github.com/ecadlabs/gotez v0.0.0-20230314153330-4dbcbc3130b0 h1:m+zhUF1kDXKq//iX
 github.com/ecadlabs/gotez v0.0.0-20230314153330-4dbcbc3130b0/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
 github.com/ecadlabs/gotez v0.0.0-20230314161840-45b90768d7eb h1:jzW72xEZzYyXY5YJ8CasEKElJQWeRRWJjYLEYXmQjkY=
 github.com/ecadlabs/gotez v0.0.0-20230314161840-45b90768d7eb/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
+github.com/ecadlabs/gotez v0.0.0-20230314172003-fcc374ccc709 h1:P+zsME0HIMs+XYsR01qiH97gNoTJodI/LO4882Fmot8=
+github.com/ecadlabs/gotez v0.0.0-20230314172003-fcc374ccc709/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815/go.mod h1:wYFFK4LYXbX7j+76mOq7aiC/EAw2S22CrzPHqgsisPw=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

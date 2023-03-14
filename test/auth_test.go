@@ -14,7 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -69,10 +69,10 @@ func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
 	pk := "edsk3K3EwiTVXtEnfuERrjzjp3pa6pRrvQE3VA97cModhXVhXpnsAQ"
 	message := "\"03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00\""
 
-	priv, err := tezos.ParsePrivateKey(pk, nil)
+	priv, err := utils.ParsePrivateKey([]byte(pk))
 	require.NoError(t, err)
 
-	pub, err := tezos.EncodePublicKeyHash(priv.Public())
+	pub, err := utils.EncodePublicKeyHash(priv.Public())
 	require.NoError(t, err)
 
 	conf := signatory.Config{

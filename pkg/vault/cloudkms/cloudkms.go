@@ -120,7 +120,7 @@ func (c *cloudKMSIterator) Next() (key vault.StoredKey, err error) {
 						return nil, vault.ErrDone
 					}
 					if err != nil {
-						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %v", c.v.config.keyRingName(), err)
+						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.v.config.keyRingName(), err)
 					}
 					// List signing EC keys only
 					if resp.Purpose == kmspb.CryptoKey_ASYMMETRIC_SIGN {
@@ -134,11 +134,11 @@ func (c *cloudKMSIterator) Next() (key vault.StoredKey, err error) {
 				if err == nil {
 					break
 				} else if err != iterator.Done {
-					return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.v.config.keyRingName(), err)
+					return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %w", c.v.config.keyRingName(), err)
 				}
 			}
 		} else if err != nil {
-			return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %v", c.v.config.keyRingName(), err)
+			return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %w", c.v.config.keyRingName(), err)
 		}
 
 		if ver.State == kmspb.CryptoKeyVersion_ENABLED {
@@ -148,7 +148,7 @@ func (c *cloudKMSIterator) Next() (key vault.StoredKey, err error) {
 
 	ecKey, err := c.v.getPublicKey(c.ctx, ver.Name)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %v", c.v.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.v.config.keyRingName(), err)
 	}
 
 	return &cloudKMSKey{
@@ -174,7 +174,7 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 
 	resp, err := c.client.GetCryptoKeyVersion(ctx, &req)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) GetCryptoKeyVersion: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) GetCryptoKeyVersion: %w", c.config.keyRingName(), err)
 	}
 
 	if resp.State != kmspb.CryptoKeyVersion_ENABLED {
@@ -183,7 +183,7 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 
 	ecKey, err := c.getPublicKey(ctx, resp.Name)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.config.keyRingName(), err)
 	}
 
 	return &cloudKMSKey{
@@ -211,7 +211,7 @@ func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 
 	resp, err := c.client.AsymmetricSign(ctx, &req)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %w", c.config.keyRingName(), err)
 	}
 
 	var sig struct {
@@ -219,7 +219,7 @@ func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 		S *big.Int
 	}
 	if _, err = asn1.Unmarshal(resp.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}
 	return &signature.ECDSA{
 		R:     sig.R,
@@ -271,7 +271,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	keyName, ok, err := opt.GetString("name")
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}
 	if !ok {
 		keyName = "signatory-imported-" + ksuid.New().String()
@@ -303,7 +303,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 
 	newKey, err := c.client.CreateCryptoKey(ctx, &newKeyReq)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) CreateCryptoKey: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) CreateCryptoKey: %w", c.config.keyRingName(), err)
 	}
 
 	// Create an import job
@@ -318,14 +318,14 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 
 	job, err := c.client.CreateImportJob(ctx, &jobReq)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) CreateImportJob: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) CreateImportJob: %w", c.config.keyRingName(), err)
 	}
 
 	// Rely on context for cancellation
 	for job.State == kmspb.ImportJob_PENDING_GENERATION {
 		job, err = c.client.GetImportJob(ctx, &kmspb.GetImportJobRequest{Name: job.Name})
 		if err != nil {
-			return nil, fmt.Errorf("(CloudKMS/%s) GetImportJob: %v", c.config.keyRingName(), err)
+			return nil, fmt.Errorf("(CloudKMS/%s) GetImportJob: %w", c.config.keyRingName(), err)
 		}
 	}
 
@@ -337,7 +337,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 	pemBlock, _ := pem.Decode([]byte(job.PublicKey.Pem))
 	opaqueJobKey, err := cryptoutils.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}
 
 	jobPubKey, ok := opaqueJobKey.(*rsa.PublicKey)
@@ -348,7 +348,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 	// Wrap the key
 	wrappedKey, err := wrapPrivateKey(jobPubKey, pk)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}
 
 	// Do import
@@ -363,13 +363,13 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 
 	ver, err := c.client.ImportCryptoKeyVersion(ctx, &importReq)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) ImportCryptoKeyVersion: %v", c.config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s) ImportCryptoKeyVersion: %w", c.config.keyRingName(), err)
 	}
 
 	for ver.State == kmspb.CryptoKeyVersion_PENDING_IMPORT {
 		ver, err = c.client.GetCryptoKeyVersion(ctx, &kmspb.GetCryptoKeyVersionRequest{Name: ver.Name})
 		if err != nil {
-			return nil, fmt.Errorf("(CloudKMS/%s) ImportCryptoKeyVersion: %v", c.config.keyRingName(), err)
+			return nil, fmt.Errorf("(CloudKMS/%s) ImportCryptoKeyVersion: %w", c.config.keyRingName(), err)
 		}
 	}
 
@@ -405,7 +405,7 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 
 	client, err := kms.NewKeyManagementClient(ctx, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %v", config.keyRingName(), err)
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", config.keyRingName(), err)
 	}
 
 	return &Vault{

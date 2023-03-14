@@ -31,7 +31,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.12.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/ecadlabs/gotez v0.0.0-20230314161840-45b90768d7eb // indirect
+	github.com/ecadlabs/gotez v0.0.0-20230314172003-fcc374ccc709 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 )

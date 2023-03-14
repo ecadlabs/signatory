@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,7 @@ func NewAuthRequestCommand() *cobra.Command {
 		Short: "Authenticate (sign) a sign request",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			priv, err := tezos.ParsePrivateKey(args[0], nil)
+			priv, err := utils.ParsePrivateKey([]byte(args[0]))
 			if err != nil {
 				return err
 			}
@@ -41,11 +42,11 @@ func NewAuthRequestCommand() *cobra.Command {
 				return err
 			}
 
-			res, err := tezos.EncodeSignature(sig)
+			tzSig, err := gotez.NewSignature(sig)
 			if err != nil {
 				return err
 			}
-
+			res := tzSig.String()
 			fmt.Println(res)
 			return nil
 		},
