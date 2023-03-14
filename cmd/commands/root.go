@@ -3,7 +3,9 @@ package commands
 import (
 	"context"
 	"os"
+	"strings"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory"
@@ -25,16 +27,26 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 		level      string
 		configFile string
 		baseDir    string
+		jsonLog    bool
 	)
 
 	rootCmd := cobra.Command{
 		Use:   name,
 		Short: "A Tezos Remote Signer for signing block-chain operations with private keys",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+			if cmd.Use == "version" ||
+				strings.Contains(cmd.CommandPath(), "ledger") ||
+				strings.Contains(cmd.CommandPath(), "list-requests") ||
+				strings.Contains(cmd.CommandPath(), "list-ops") {
+				return nil
+			}
+
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
-				conf.Read(configFile)
+				if err := conf.Read(configFile); err != nil {
+					return err
+				}
 			}
 
 			if baseDir == "" {
@@ -48,6 +60,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			validate := config.Validator()
 			if err := validate.Struct(conf); err != nil {
 				return err
+			}
+
+			if jsonLog {
+				log.SetFormatter(&log.JSONFormatter{})
 			}
 
 			lv, err := log.ParseLevel(level)
@@ -67,6 +83,19 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
 				Watermark:   &signatory.FileWatermark{BaseDir: baseDir},
+			}
+
+			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {
+				sigConf.PolicyHook = &signatory.PolicyHook{
+					Address: conf.PolicyHook.Address,
+				}
+				if conf.PolicyHook.AuthorizedKeys != nil {
+					ak, err := auth.StaticAuthorizedKeysFromString(conf.PolicyHook.AuthorizedKeys.List()...)
+					if err != nil {
+						return err
+					}
+					sigConf.PolicyHook.Auth = ak
+				}
 			}
 
 			sig, err := signatory.New(c.Context, &sigConf)
@@ -89,6 +118,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 	f.StringVarP(&configFile, "config", "c", "/etc/signatory.yaml", "Config file path")
 	f.StringVar(&level, "log", "info", "Log level: [error, warn, info, debug, trace]")
 	f.StringVar(&baseDir, "base-dir", "", "Base directory. Takes priority over one specified in config")
+	f.BoolVar(&jsonLog, "json-log", false, "Use JSON structured logs")
 
 	return &rootCmd
 }

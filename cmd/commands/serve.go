@@ -5,14 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 // NewServeCommand returns new root command
 func NewServeCommand(c *Context) *cobra.Command {
+	var noList bool
+
 	serveCmd := cobra.Command{
 		Use:   "serve",
 		Short: "Run a server",
@@ -34,10 +36,19 @@ func NewServeCommand(c *Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			log.Printf("HTTP server is listening for connections on %s", srv.Addr)
+
+			if !noList {
+				w := log.StandardLogger().Writer()
+				err := listKeys(c.signatory, w, c.Context)
+				w.Close()
+				if err != nil {
+					return err
+				}
+			}
 
 			srvErrCh := make(chan error)
 			go func() {
+				log.Printf("HTTP server is listening for connections on %s", srv.Addr)
 				srvErrCh <- srv.ListenAndServe()
 			}()
 
@@ -77,6 +88,9 @@ func NewServeCommand(c *Context) *cobra.Command {
 			return nil
 		},
 	}
+
+	f := serveCmd.Flags()
+	f.BoolVar(&noList, "no-list", false, "Don't output the list of configured keys at startup")
 
 	return &serveCmd
 }

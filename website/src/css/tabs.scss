@@ -1,0 +1,35 @@
+.tabs-container {
+	.tabs {
+		height: fit-content;
+
+		.tabs__item:hover {
+			color: #a13455;
+			border-radius: 24px;
+		}
+		.tabs__item {
+			font-family: Fira Sans;
+			font-style: normal;
+			font-weight: 400;
+			font-size: 14px;
+			line-height: 18px;
+			letter-spacing: 0.3px;
+			color: #454545;
+			margin-right: 25px;
+			border-radius: 24px;
+			height: fit-content;
+		}
+		.tabs__item--active {
+			font-family: Fira Sans;
+			font-style: normal;
+			font-weight: 400;
+			font-size: 14px;
+			line-height: 18px;
+			letter-spacing: 0.3px;
+			color: #a13455;
+			background: rgba(161, 52, 85, 0.2);
+			border-radius: 24px;
+			border: none;
+			height: fit-content;
+		}
+	}
+}

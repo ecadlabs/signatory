@@ -1,0 +1,75 @@
+table {
+	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+	border-radius: 10px;
+	font-family: Fira Sans;
+	font-style: normal;
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 16px;
+	table-layout: auto !important;
+	//   border-color: rgba(211, 131, 43, 0.1);
+	//   border: 0.5px solid rgba(211, 131, 43, 0.7) !important;
+	//   border-bottom: 0.5px solid rgba(211, 131, 43, 0.7) !important;
+	width: calc(100% - 5px);
+	border: none;
+	overflow: hidden;
+	@media (max-width: 640px) {
+		overflow: auto;
+	}
+	thead {
+		background-color: #ae596c;
+		font-family: Fira Sans;
+		font-style: normal;
+		font-weight: 600;
+		font-size: 18px;
+		line-height: 12px;
+		width: 100%;
+		color: #ffffff;
+
+		tr {
+			border: none;
+
+			th {
+				border: none;
+				text-align: start;
+				font-weight: 600;
+				font-size: 18px;
+				line-height: 12px;
+			}
+		}
+	}
+	tbody {
+		width: 100%;
+		border: none;
+		tr:last-child {
+			td {
+				text-align: start;
+				border-bottom: none;
+			}
+		}
+		tr {
+			border: none;
+			td {
+				text-align: start;
+				border-color: rgba(161, 52, 85, 0.5);
+				width: 50vw !important;
+				a {
+					color: var(--ifm-white) !important;
+				}
+			}
+			td:first-child {
+				border-left: none;
+			}
+			td:last-child {
+				border-right: none;
+			}
+		}
+	}
+}
+table tr:nth-child(2n) {
+	background-color: rgba(161, 52, 85, 0.5);
+}
+
+[data-theme='dark'] table tr:nth-child(2n) {
+	background-color: rgba(161, 52, 85, 0.5);
+}

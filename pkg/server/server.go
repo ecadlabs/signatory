@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	stderr "errors"
 	"io/ioutil"
+	"net"
 	"net/http"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
@@ -85,6 +86,11 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	signRequest := signatory.SignRequest{
 		PublicKeyHash: mux.Vars(r)["key"],
 	}
+	source, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		panic(err) // shouldn't happen with Go standard library
+	}
+	signRequest.Source = net.ParseIP(source)
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)

@@ -34,18 +34,22 @@ tezos:
   # This example does not specifiy a policy, and be default will allow signing of "block" and "endorsement" operations only.
   tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
 
-  # This example specifies which operations and kinds Signatory will sign, and logs payloads. 
+  # This example specifies which operations and kinds Signatory will sign, and logs payloads.
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     # Setting `log_payloads` to `true` will cause Signatory to log operation
     # payloads to `stdout`. This may be desirable for audit and investigative
     # purposes.
     log_payloads: true
-    allowed_operations:
-      # List of [generic, block, endorsement]
-      - generic
-      - block
-      - endorsement
-    allowed_kinds:
-      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
-      - transaction
-      - endorsement
+    allow:
+      # List of [block, endorsement, failing_noop, generic, preendorsement]
+      generic:
+        # List of [activate_account, ballot, delegation, double_baking_evidence, double_endorsement_evidence,
+        # double_preendorsement_evidence, endorsement, failing_noop, origination, preendorsement, proposals,
+        # register_global_constant, reveal, sc_rollup_add_messages, sc_rollup_cement, sc_rollup_originate,
+        # sc_rollup_publish, seed_nonce_revelation, set_deposits_limit, transaction, transfer_ticket,
+        # tx_rollup_commit, tx_rollup_dispatch_tickets, tx_rollup_finalize_commitment, tx_rollup_origination,
+        # tx_rollup_rejection, tx_rollup_remove_commitment, tx_rollup_return_bond, tx_rollup_submit_batch]
+        - transaction
+        - endorsement
+      block:
+      endorsement:

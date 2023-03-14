@@ -59,7 +59,10 @@ type ReadinessChecker interface {
 }
 
 // ErrDone is the error returned by iterator when the iteration is done.
-var ErrDone = errors.New("done")
+var (
+	ErrDone = errors.New("done")
+	ErrKey  = errors.New("unsupported key type")
+)
 
 type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
 

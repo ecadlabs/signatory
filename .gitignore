@@ -19,3 +19,7 @@ vendor/
 .devcontainer
 
 dist
+.release-env
+.docker-creds
+signatory
+signatory-cli

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -83,8 +83,8 @@ func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
 		}),
 		Policy: map[string]*signatory.Policy{
 			pub: {
-				AllowedOperations:   []string{"generic", "block", "endorsement"},
-				AllowedKinds:        []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				AllowedRequests:     []string{"generic", "block", "endorsement"},
+				AllowedOps:          []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 				AuthorizedKeyHashes: []string{"tz1KpduK2jQizMyLSfycjDmbBijWK1kpemJ3"},
 			},
 		},

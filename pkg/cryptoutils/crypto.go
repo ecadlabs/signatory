@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/decred/dcrd/dcrec/secp256k1"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
 // CanonizeECDSASignature returns the canonical versions of the signature
@@ -21,10 +21,12 @@ func CanonizeECDSASignature(sig *ECDSASignature) *ECDSASignature {
 	r := new(big.Int).Set(sig.R)
 	s := new(big.Int).Set(sig.S)
 
-	order := sig.Curve.Params().N
-	quo := new(big.Int).Quo(order, new(big.Int).SetInt64(2))
-	if s.Cmp(quo) > 0 {
-		s = s.Sub(order, s)
+	if sig.Curve != nil {
+		order := sig.Curve.Params().N
+		quo := new(big.Int).Quo(order, new(big.Int).SetInt64(2))
+		if s.Cmp(quo) > 0 {
+			s = s.Sub(order, s)
+		}
 	}
 
 	return &ECDSASignature{
@@ -139,4 +141,23 @@ func Verify(pub crypto.PublicKey, hash []byte, sig Signature) error {
 	}
 
 	return nil
+}
+
+// PublicKeySuitable returns true if the key is Tezos compatible
+func PublicKeySuitableForTezos(pub crypto.PublicKey) bool {
+	switch k := pub.(type) {
+	case *ecdsa.PublicKey:
+		switch k.Curve {
+		case elliptic.P256(), S256():
+			return true
+		default:
+			return false
+		}
+
+	case ed25519.PublicKey:
+		return true
+
+	default:
+		return false
+	}
 }

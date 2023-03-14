@@ -2,6 +2,7 @@ package tezos
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
@@ -30,11 +31,14 @@ type GenericOperationRequest struct {
 	Contents []Operation
 }
 
-// OperationKinds returns list of uperation kinds
-func (u *GenericOperationRequest) OperationKinds() []string {
-	ops := make([]string, len(u.Contents))
-	for i, o := range u.Contents {
-		ops[i] = o.OperationKind()
+type OperationsStat map[string]int
+
+// OperationsStat returns statistics of operations
+func (u *GenericOperationRequest) OperationsStat() OperationsStat {
+	ops := make(OperationsStat)
+	for _, o := range u.Contents {
+		k := o.OperationKind()
+		ops[k]++
 	}
 	return ops
 }
@@ -129,6 +133,12 @@ func parseShellBlockHeader(buf *[]byte) (*ShellBlockHeader, error) {
 	return &b, nil
 }
 
+const (
+	lbVoteOn = iota
+	lbVoteOff
+	lbVotePass
+)
+
 // BlockHeader represents unsigned block header
 type BlockHeader struct {
 	ShellBlockHeader
@@ -136,7 +146,7 @@ type BlockHeader struct {
 	PayloadRound              int32
 	ProofOfWorkNonce          []byte
 	SeedNonceHash             string
-	LiquidityBakingEscapeVote bool
+	LiquidityBakingToggleVote string
 }
 
 func (b *BlockHeader) GetRound() int32 {
@@ -173,9 +183,19 @@ func parseUnsignedBlockHeader(buf *[]byte) (*BlockHeader, error) {
 		}
 		b.SeedNonceHash = encodeBase58(pCycleNonce, hash)
 	}
-	b.LiquidityBakingEscapeVote, err = utils.GetBool(buf)
+	vote, err := utils.GetByte(buf)
 	if err != nil {
 		return nil, err
+	}
+	switch vote {
+	case lbVoteOn:
+		b.LiquidityBakingToggleVote = "on"
+	case lbVoteOff:
+		b.LiquidityBakingToggleVote = "off"
+	case lbVotePass:
+		b.LiquidityBakingToggleVote = "pass"
+	default:
+		return nil, fmt.Errorf("invalid liquidity baking vote: %d", vote)
 	}
 	return &b, nil
 }
@@ -224,6 +244,15 @@ type TenderbakeEndorsementRequest struct {
 // GetChainID returns chain ID
 func (t *TenderbakeEndorsementRequest) GetChainID() string  { return t.ChainID }
 func (t *TenderbakeEndorsementRequest) MessageKind() string { return "endorsement" }
+
+type FailingNoopRequest struct {
+	ChainID string
+	*OpFailingNoop
+}
+
+// GetChainID returns chain ID
+func (t *FailingNoopRequest) GetChainID() string  { return t.ChainID }
+func (t *FailingNoopRequest) MessageKind() string { return "failing_noop" }
 
 func parseEmmyEndorsementRequest(buf *[]byte) (*EmmyEndorsementRequest, error) {
 	chainID, err := utils.GetBytes(buf, 4)
@@ -314,6 +343,7 @@ const (
 	magicEmmyBlock             = 0x01
 	magicEmmyEndorsement       = 0x02
 	magicGenericOperation      = 0x03
+	magicFailingNoop           = 0x05
 	magicTenderbakeBlock       = 0x11
 	magicPreendorsement        = 0x12
 	magicTenderbakeEndorsement = 0x13
@@ -326,6 +356,15 @@ func parseRequest(buf *[]byte) (u UnsignedMessage, err error) {
 	}
 
 	switch t {
+	case magicFailingNoop:
+		b, err := utils.GetBytes(buf, 4)
+		if err != nil {
+			return nil, err
+		}
+		return &FailingNoopRequest{
+			ChainID: encodeBase58(pChainID, b),
+		}, nil
+
 	case magicEmmyBlock:
 		b, err := utils.GetBytes(buf, 4)
 		if err != nil {
@@ -375,10 +414,26 @@ func ParseRequest(data []byte) (u UnsignedMessage, err error) {
 	return parseRequest(&buf)
 }
 
-var (
-	_ MessageWithLevel = (*EmmyBlockRequest)(nil)
-	_ MessageWithLevel = (*EmmyEndorsementRequest)(nil)
-	_ MessageWithRound = (*TenderbakeBlockRequest)(nil)
-	_ MessageWithRound = (*TenderbakeEndorsementRequest)(nil)
-	_ MessageWithRound = (*PreendorsementRequest)(nil)
-)
+var requests = []UnsignedMessage{
+	&GenericOperationRequest{},
+	&EmmyBlockRequest{},
+	&EmmyEndorsementRequest{},
+	&TenderbakeBlockRequest{},
+	&TenderbakeEndorsementRequest{},
+	&PreendorsementRequest{},
+	&FailingNoopRequest{},
+}
+
+var RequestKinds []string
+
+func init() {
+	kinds := make(map[string]bool, len(requests))
+	for _, r := range requests {
+		kinds[r.MessageKind()] = true
+	}
+	RequestKinds = make([]string, 0, len(kinds))
+	for r := range kinds {
+		RequestKinds = append(RequestKinds, r)
+	}
+	sort.Strings(RequestKinds)
+}
