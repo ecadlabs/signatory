@@ -1,15 +1,20 @@
 package signatory
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	stderr "errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -17,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -30,12 +36,14 @@ const (
 	logPKH       = "pkh"
 	logVault     = "vault"
 	logVaultName = "vault_name"
-	logOp        = "op"
-	logKind      = "kind"
+	logReq       = "request"
+	logOps       = "ops"
+	logTotalOps  = "ops_total"
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
 	logClient    = "client_pkh"
+	logRaw       = "raw"
 )
 
 // SignInterceptor is an observer function for signing request
@@ -45,14 +53,14 @@ type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 type SignInterceptorOptions struct {
 	Address string
 	Vault   string
-	Op      string
-	Kind    []string
+	Req     string
+	Stat    tezos.OperationsStat
 }
 
 // Policy contains policy data related to the key
 type Policy struct {
-	AllowedOperations   []string
-	AllowedKinds        []string
+	AllowedRequests     []string
+	AllowedOps          []string
 	LogPayloads         bool
 	AuthorizedKeyHashes []string
 }
@@ -78,6 +86,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash string // optional, see policy
 	PublicKeyHash       string
+	Source              net.IP // optional caller address
 	Message             []byte
 }
 
@@ -128,7 +137,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = Policy{
-	AllowedOperations: []string{"block", "preendorsement", "endorsement"},
+	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
@@ -163,7 +172,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 
 	kind := msg.MessageKind()
 	var allowed bool
-	for _, k := range policy.AllowedOperations {
+	for _, k := range policy.AllowedRequests {
 		if kind == k {
 			allowed = true
 			break
@@ -178,7 +187,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
-			for _, k := range policy.AllowedKinds {
+			for _, k := range policy.AllowedOps {
 				if kind == k {
 					allowed = true
 					break
@@ -192,6 +201,96 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 	return nil
 }
 
+func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error {
+	if s.config.PolicyHook == nil {
+		return nil
+	}
+	var nonce [32]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return err
+	}
+
+	hookReq := PolicyHookRequest{
+		Request:       req.Message,
+		Source:        req.Source,
+		PublicKeyHash: req.PublicKeyHash,
+		ClientKeyHash: req.ClientPublicKeyHash,
+		Nonce:         nonce[:],
+	}
+	body, err := json.Marshal(&hookReq)
+	if err != nil {
+		return err
+	}
+	r, err := http.NewRequestWithContext(ctx, "POST", s.config.PolicyHook.Address, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	r.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if s.config.PolicyHook.Auth != nil {
+		// authenticate the responce
+		var reply PolicyHookReply
+		if err := json.NewDecoder(resp.Body).Decode(&reply); err != nil {
+			return err
+		}
+		var pl PolicyHookReplyPayload
+		if err := json.Unmarshal(reply.Payload, &pl); err != nil {
+			return err
+		}
+		if pl.Status != resp.StatusCode {
+			return stderr.New("the policy hook reply status must match the HTTP header")
+		}
+		if !bytes.Equal(pl.Nonce, hookReq.Nonce) {
+			return errors.Wrap(errors.New("nonce mismatch"), http.StatusForbidden)
+		}
+		pub, err := s.config.PolicyHook.Auth.GetPublicKey(ctx, pl.PublicKeyHash)
+		if err != nil {
+			errors.Wrap(err, http.StatusForbidden)
+		}
+		sig, err := tezos.ParseSignature(reply.Signature, pub)
+		if err != nil {
+			return err
+		}
+		digest := utils.DigestFunc(reply.Payload)
+		if err = cryptoutils.Verify(pub, digest[:], sig); err != nil {
+			if stderr.Is(err, cryptoutils.ErrSignature) {
+				return errors.Wrap(errors.New("invalid hook reply signature"), http.StatusForbidden)
+			}
+			return err
+		}
+		if resp.StatusCode/100 != 2 {
+			var msg string
+			if pl.Error != "" {
+				msg = pl.Error
+			} else {
+				msg = resp.Status
+			}
+			var status int
+			if resp.StatusCode/100 == 4 {
+				status = http.StatusForbidden
+			} else {
+				status = http.StatusInternalServerError
+			}
+			return errors.Wrap(fmt.Errorf("policy hook: %s", msg), status)
+		}
+	} else if resp.StatusCode/100 != 2 {
+		var status int
+		if resp.StatusCode/100 == 4 {
+			status = http.StatusForbidden
+		} else {
+			status = http.StatusInternalServerError
+		}
+		return errors.Wrap(fmt.Errorf("policy hook: %s", resp.Status), status)
+	}
+
+	return nil
+}
+
 // Sign ask the vault to sign a message with the private key associated to keyHash
 func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) {
 	l := s.logger().WithField(logPKH, req.PublicKeyHash)
@@ -202,27 +301,27 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
-		err := fmt.Errorf("%s is not listed in config", req.PublicKeyHash)
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(req.PublicKeyHash, "\n", "", -1))
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
 	msg, err := tezos.ParseRequest(req.Message)
 	if err != nil {
-		l.WithField("raw", hex.EncodeToString(req.Message)).Error(err)
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logOp, msg.MessageKind())
+	l = l.WithField(logReq, msg.MessageKind())
 
 	if m, ok := msg.(tezos.MessageWithLevel); ok {
 		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
 	}
 
-	var opKind []string
+	var opStat tezos.OperationsStat
 	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
-		opKind = ops.OperationKinds()
-		l = l.WithField(logKind, opKind)
+		opStat = ops.OperationsStat()
+		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -243,13 +342,18 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
+	if err = s.callPolicyHook(ctx, req); err != nil {
+		l.Error(err)
+		return "", err
+	}
+
 	l.Info("Requesting signing operation")
 
 	level := log.DebugLevel
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
-	l.WithField("raw", hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
+	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
 		digest := utils.DigestFunc(message)
@@ -269,8 +373,8 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
-			Op:      msg.MessageKind(),
-			Kind:    opKind,
+			Req:     msg.MessageKind(),
+			Stat:    opStat,
 		}, func() (err error) {
 			sig, err = signFunc(ctx, req.Message, p.key)
 			return err
@@ -299,37 +403,41 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaultPair, list []*keyVaultPair, err error) {
 	ret = make(map[string]*keyVaultPair)
-	var isempty bool = true
 	for name, v := range s.vaults {
+		var vaultKeys []*keyVaultPair
 		iter := v.ListPublicKeys(ctx)
+	keys:
 		for {
 			key, err := iter.Next()
-			if err == vault.ErrDone {
-				break
-			}
 			if err != nil {
+				switch {
+				case stderr.Is(err, vault.ErrDone):
+					break keys
+				case stderr.Is(err, vault.ErrKey):
+					continue keys
+				default:
+					return nil, nil, err
+				}
+			}
+
+			if !cryptoutils.PublicKeySuitableForTezos(key.PublicKey()) {
 				continue
 			}
 
 			pkh, err := tezos.EncodePublicKeyHash(key.PublicKey())
 			if err != nil {
-				s.logger().WithFields(log.Fields{
-					logVaultName: name,
-					logKeyID:     strings.Split(key.ID(), "/")[1],
-				}).Warn(err)
-				continue
+				return nil, nil, err
 			}
 			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(pkh, p)
 
 			ret[pkh] = p
-			isempty = false
-			list = append(list, p)
+			vaultKeys = append(vaultKeys, p)
 		}
-		if isempty {
-			s.logger().WithField(logVaultName, name).Warn("No valid keys found in the vault")
+		if len(vaultKeys) == 0 {
+			s.logger().Error("No valid keys found in the vault ", name)
 		}
-		isempty = true
+		list = append(list, vaultKeys...)
 	}
 	return ret, list, nil
 }
@@ -340,15 +448,12 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	var i int = 0
+
 	ret := make([]*PublicKey, len(list))
-	for _, p := range list {
+	for i, p := range list {
 		enc, err := tezos.EncodePublicKey(p.key.PublicKey())
 		if err != nil {
-			s.logger().WithFields(log.Fields{
-				logVaultName: p.vault.Name(),
-				logPKH:       p.pkh}).Warn(err)
-			continue
+			return nil, err
 		}
 		ret[i] = &PublicKey{
 			PublicKey:     enc,
@@ -358,7 +463,6 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 			Policy:        s.fetchPolicyOrDefault(p.pkh),
 		}
 		ret[i].Active = ret[i].Policy != nil
-		i = i + 1
 	}
 	return ret, nil
 }
@@ -416,6 +520,11 @@ func (s *Signatory) Unlock(ctx context.Context) error {
 	return nil
 }
 
+type PolicyHook struct {
+	Address string
+	Auth    auth.AuthorizedKeysStorage
+}
+
 // Config represents Signatory configuration
 type Config struct {
 	Policy       map[string]*Policy
@@ -424,6 +533,7 @@ type Config struct {
 	Watermark    Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
+	PolicyHook   *PolicyHook
 }
 
 // New returns Signatory instance
@@ -485,16 +595,49 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 			LogPayloads: v.LogPayloads,
 		}
 
-		if v.AllowedKinds != nil {
-			pol.AllowedKinds = make([]string, len(v.AllowedKinds))
-			copy(pol.AllowedKinds, v.AllowedKinds)
-			sort.Strings(pol.AllowedKinds)
-		}
+		if v.Allow != nil {
+			pol.AllowedRequests = make([]string, 0, len(v.Allow))
+			for req := range v.Allow {
+				pol.AllowedRequests = append(pol.AllowedRequests, req)
+			}
+			sort.Strings(pol.AllowedRequests)
 
-		if v.AllowedOperations != nil {
-			pol.AllowedOperations = make([]string, len(v.AllowedOperations))
-			copy(pol.AllowedOperations, v.AllowedOperations)
-			sort.Strings(pol.AllowedOperations)
+			if ops, ok := v.Allow["generic"]; ok {
+				pol.AllowedOps = make([]string, len(ops))
+				copy(pol.AllowedOps, ops)
+				sort.Strings(pol.AllowedOps)
+			}
+		} else if v.AllowedKinds != nil || v.AllowedOperations != nil {
+			if v.AllowedOperations != nil {
+				pol.AllowedRequests = make([]string, len(v.AllowedOperations))
+				copy(pol.AllowedRequests, v.AllowedOperations)
+				sort.Strings(pol.AllowedRequests)
+			}
+			if v.AllowedKinds != nil {
+				pol.AllowedOps = make([]string, len(v.AllowedKinds))
+				copy(pol.AllowedOps, v.AllowedKinds)
+				sort.Strings(pol.AllowedOps)
+			}
+			log.Warnln("`allowed_operations` and `allowed_kinds` options are deprecated. Use `allow` instead:")
+			type example struct {
+				Allow map[string][]string `yaml:"allow"`
+			}
+			e := example{
+				Allow: make(map[string][]string),
+			}
+			for _, r := range pol.AllowedRequests {
+				e.Allow[r] = nil
+			}
+			if pol.AllowedOps != nil {
+				e.Allow["generic"] = pol.AllowedOps
+			}
+			out, err := yaml.Marshal(&e)
+			if err != nil {
+				panic(err)
+			}
+			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
+			pipe.Write(out)
+			pipe.Close()
 		}
 
 		if v.AuthorizedKeys != nil {

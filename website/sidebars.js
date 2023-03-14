@@ -22,6 +22,7 @@ const sidebars = {
 			className: 'sidebarHeader',
 			collapsed: false,
 			collapsible: false,
+
 			items: ['start', 'tezos-client'],
 		},
 		{
@@ -39,6 +40,8 @@ const sidebars = {
 			collapsed: false,
 			collapsible: false,
 			items: ['debugging_tips'],
+
+
 		},
 	],
 };

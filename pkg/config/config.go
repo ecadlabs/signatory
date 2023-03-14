@@ -9,6 +9,12 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+// PolicyHook is an external service for secondary validation of sign requests
+type PolicyHook struct {
+	Address        string          `yaml:"address"`
+	AuthorizedKeys *AuthorizedKeys `yaml:"authorized_keys"`
+}
+
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
 	Address        string          `yaml:"address" validate:"hostname_port"`
@@ -21,10 +27,11 @@ type TezosConfig map[string]*TezosPolicy
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
-	AllowedOperations []string        `yaml:"allowed_operations" validate:"dive,oneof=generic block endorsement"`
-	AllowedKinds      []string        `yaml:"allowed_kinds" validate:"dive,oneof=endorsement seed_nonce_revelation double_endorsement_evidence double_baking_evidence activate_account ballot proposals reveal transaction origination delegation"`
-	LogPayloads       bool            `yaml:"log_payloads"`
-	AuthorizedKeys    *AuthorizedKeys `yaml:"authorized_keys"`
+	Allow             map[string][]string `yaml:"allow"`
+	AllowedOperations []string            `yaml:"allowed_operations"`
+	AllowedKinds      []string            `yaml:"allowed_kinds"`
+	LogPayloads       bool                `yaml:"log_payloads"`
+	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
 }
 
 // VaultConfig represents single vault instance
@@ -35,10 +42,11 @@ type VaultConfig struct {
 
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
-	Vaults  map[string]*VaultConfig `yaml:"vaults" validate:"dive,required"`
-	Tezos   TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
-	Server  ServerConfig            `yaml:"server"`
-	BaseDir string                  `yaml:"base_dir" validate:"required"`
+	Vaults     map[string]*VaultConfig `yaml:"vaults" validate:"dive,required"`
+	Tezos      TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
+	Server     ServerConfig            `yaml:"server"`
+	PolicyHook *PolicyHook             `yaml:"policy_hook"`
+	BaseDir    string                  `yaml:"base_dir" validate:"required"`
 }
 
 var defaultConfig = Config{

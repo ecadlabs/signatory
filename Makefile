@@ -4,8 +4,8 @@ CONTAINER_TAG ?= $(shell git branch --show-current)
 
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
-PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
-GOLANG_CROSS_VERSION  ?= v1.17.6
+PACKAGE_NAME          := github.com/ecadlabs/signatory
+GOLANG_CROSS_VERSION  ?= v1.18.3
 
 all: signatory signatory-cli
 
@@ -14,12 +14,27 @@ signatory:
 signatory-cli:
 	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory-cli
 
-container:
-	docker build -t ghcr.io/ecadlabs/signatory:$(CONTAINER_TAG) .
-
+.PHONY: container
+container: signatory signatory-cli
+	docker build -t ecadlabs/signatory:$(CONTAINER_TAG) .
 
 clean:
 	rm signatory signatory-cli
+
+.PHONY: release-dry-run
+release-dry-run:
+	sudo rm -rf ./dist
+	docker run \
+		--rm \
+		--privileged \
+		-e CGO_ENABLED=1 \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(PACKAGE_NAME) \
+		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		release \
+		--rm-dist \
+		--snapshot
 
 .PHONY: release
 release:
@@ -36,4 +51,6 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist --skip-validate
+		release \
+		--rm-dist \
+		--skip-validate

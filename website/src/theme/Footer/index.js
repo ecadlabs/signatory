@@ -12,7 +12,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 import isInternalUrl from '@docusaurus/isInternalUrl';
 import styles from './styles.module.css';
 import ThemedImage from '@theme/ThemedImage';
-import IconExternalLink from '@theme/IconExternalLink';
+import IconExternalLink from '@theme/Icon/ExternalLink';
 import FooterForm from '../../components/FooterForm/FooterForm';
 import FooterLogoSvg from '../../../static/img/footer-logo.svg';
 
@@ -198,7 +198,7 @@ function Footer() {
 				)}
 			</div>
 			<div className='footer__copyright'>
-				{`Copyright © ${new Date().getFullYear()} ECAD Labs - Open Source MIT License`}
+				{`Copyright © ${new Date().getFullYear()} ECAD Labs - Apache License 2.0`}
 			</div>
 		</footer>
 	);

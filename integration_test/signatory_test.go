@@ -16,10 +16,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/server/auth"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -147,8 +147,8 @@ func TestSignatory(t *testing.T) {
 		}),
 		Policy: map[string]*signatory.Policy{
 			pub: {
-				AllowedOperations: []string{"generic", "block", "endorsement"},
-				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 			},
 		},
 	}
@@ -177,24 +177,24 @@ func TestSignatory(t *testing.T) {
 		dir := "./authenticated-tezos-client"
 		os.Mkdir(dir, 0777)
 		// initialize client
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
 		// add authentication key
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv))
 		// create transaction
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
 
 	t.Run("NoAuth", func(t *testing.T) {
 		dir := "./unauthenticated-tezos-client"
 		os.Mkdir(dir, 0777)
 		// initialize client
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, logExec(t, "tezos-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
 		// create transaction
-		require.Error(t, logExec(t, "tezos-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
+		require.Error(t, logExec(t, "octez-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
 
 	srv.Shutdown(context.Background())

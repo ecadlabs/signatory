@@ -7,6 +7,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
+
+	"golang.org/x/crypto/cryptobyte"
 )
 
 // partially copied from crypto/x509
@@ -17,24 +19,25 @@ var (
 	oidNamedCurveP384 = asn1.ObjectIdentifier{1, 3, 132, 0, 34}
 	oidNamedCurveP521 = asn1.ObjectIdentifier{1, 3, 132, 0, 35}
 	oidNamedCurveS256 = asn1.ObjectIdentifier{1, 3, 132, 0, 10} // http://www.secg.org/sec2-v2.pdf
+
 	oidPublicKeyECDSA = asn1.ObjectIdentifier{1, 2, 840, 10045, 2, 1}
 )
 
-func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
+func oidFromNamedCurve(curve elliptic.Curve) asn1.ObjectIdentifier {
 	switch curve {
 	case elliptic.P224():
-		return oidNamedCurveP224, true
+		return oidNamedCurveP224
 	case elliptic.P256():
-		return oidNamedCurveP256, true
+		return oidNamedCurveP256
 	case elliptic.P384():
-		return oidNamedCurveP384, true
+		return oidNamedCurveP384
 	case elliptic.P521():
-		return oidNamedCurveP521, true
+		return oidNamedCurveP521
 	case S256():
-		return oidNamedCurveS256, true
+		return oidNamedCurveS256
+	default:
+		return nil
 	}
-
-	return nil, false
 }
 
 // pkcs8 reflects an ASN.1, PKCS#8 PrivateKey. See
@@ -63,8 +66,8 @@ type ecPrivateKey struct {
 func marshalPKCS8ECDSAPrivateKey(key *ecdsa.PrivateKey) ([]byte, error) {
 	var privKey pkcs8
 
-	oid, ok := oidFromNamedCurve(key.Curve)
-	if !ok {
+	oid := oidFromNamedCurve(key.Curve)
+	if oid == nil {
 		return nil, errors.New("cryptoutils: unknown curve while marshaling to PKCS#8: " + key.Curve.Params().Name)
 	}
 
@@ -108,4 +111,64 @@ func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
 		return marshalPKCS8ECDSAPrivateKey(ecdsaKey)
 	}
 	return x509.MarshalPKCS8PrivateKey(key)
+}
+
+type publicKeyInfo struct {
+	Raw       asn1.RawContent
+	Algorithm pkix.AlgorithmIdentifier
+	PublicKey asn1.BitString
+}
+
+func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
+	switch {
+	case oid.Equal(oidNamedCurveP224):
+		return elliptic.P224()
+	case oid.Equal(oidNamedCurveP256):
+		return elliptic.P256()
+	case oid.Equal(oidNamedCurveP384):
+		return elliptic.P384()
+	case oid.Equal(oidNamedCurveP521):
+		return elliptic.P521()
+	case oid.Equal(oidNamedCurveS256):
+		return S256()
+	}
+	return nil
+}
+
+func parseECDSAPublicKey(keyData *publicKeyInfo) (any, error) {
+	der := cryptobyte.String(keyData.PublicKey.RightAlign())
+	paramsDer := cryptobyte.String(keyData.Algorithm.Parameters.FullBytes)
+	namedCurveOID := new(asn1.ObjectIdentifier)
+	if !paramsDer.ReadASN1ObjectIdentifier(namedCurveOID) {
+		return nil, errors.New("x509: invalid ECDSA parameters")
+	}
+	namedCurve := namedCurveFromOID(*namedCurveOID)
+	if namedCurve == nil {
+		return nil, errors.New("x509: unsupported elliptic curve")
+	}
+	x, y := elliptic.Unmarshal(namedCurve, der)
+	if x == nil {
+		return nil, errors.New("x509: failed to unmarshal elliptic curve point")
+	}
+	pub := &ecdsa.PublicKey{
+		Curve: namedCurve,
+		X:     x,
+		Y:     y,
+	}
+	return pub, nil
+}
+
+func ParsePKIXPublicKey(derBytes []byte) (pub any, err error) {
+	var pki publicKeyInfo
+	if rest, err := asn1.Unmarshal(derBytes, &pki); err != nil {
+		return nil, err
+	} else if len(rest) != 0 {
+		return nil, errors.New("x509: trailing data after ASN.1 of public-key")
+	}
+
+	if pki.Algorithm.Algorithm.Equal(oidPublicKeyECDSA) {
+		return parseECDSAPublicKey(&pki)
+	} else {
+		return x509.ParsePKIXPublicKey(derBytes)
+	}
 }

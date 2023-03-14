@@ -199,6 +199,8 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 
 				if len(res.Value) != 0 {
 					break
+				} else {
+					return nil, vault.ErrDone
 				}
 			}
 
@@ -272,7 +274,7 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 			pub:    ecpub,
 		}, nil
 	}
-	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
+	return nil, fmt.Errorf("(Azure/%s) %w: %T", v.config.Vault, vault.ErrKey, pub)
 }
 
 // Name returns backend name
@@ -360,6 +362,9 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 	req := importRequest{
 		Key: key,
 		Hsm: true,
+	}
+	if req.Key.Curve == "secp256k1" {
+		req.Key.Curve = "P-256K"
 	}
 
 	r, err := json.Marshal(&req)

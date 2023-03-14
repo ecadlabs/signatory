@@ -1,19 +1,23 @@
-name: Run integration tests
+name: Integration Tests 
 
 on:
   push:
+    branches:
+      - 'main'
   pull_request:
-    types: [opened]
 
 jobs:
-  test:
-    name: Test
+  integration-tests:
     runs-on: ubuntu-latest
-    env:
-      NODE_ADDR: https://ithacanet.ecadinfra.com
+    strategy:
+      fail-fast: false
+      matrix:
+        testnet_endpoints:
+          - https://ghostnet.ecadinfra.com
+          - https://limanet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
       - name: Build image
         run: docker build -t signatory-test -f ./integration_test/Dockerfile .
       - name: Run tests
-        run: docker run -e 'ENV_ACTIVATION_KEY=${{ secrets.FAUCET_ACTIVATION_KEY }}' -e "ENV_NODE_ADDR=${NODE_ADDR}" signatory-test
+        run: docker run -e 'ENV_SECRET_KEY=${{ secrets.ENV_SECRET_KEY }}' -e "ENV_NODE_ADDR=${{ matrix.testnet_endpoints }}" signatory-test

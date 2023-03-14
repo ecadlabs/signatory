@@ -108,7 +108,7 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 			Y:     y,
 		}, true, nil
 
-	case commands.AlgorighmED25519:
+	case commands.AlgorithmED25519:
 		if len(r.KeyData) != ed25519.PublicKeySize {
 			return nil, false, fmt.Errorf("invalid public key length %d ", len(r.KeyData))
 		}
@@ -210,7 +210,7 @@ func (h *HSM) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, 
 	}, nil
 }
 
-func (h *HSM) signECDSA(digest []byte, id uint16) (*cryptoutils.ECDSASignature, error) {
+func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*cryptoutils.ECDSASignature, error) {
 	command, err := commands.CreateSignDataEcdsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
@@ -233,8 +233,9 @@ func (h *HSM) signECDSA(digest []byte, id uint16) (*cryptoutils.ECDSASignature, 
 		return nil, fmt.Errorf("(YubiHSM/%s): %v", h.conf.id(), err)
 	}
 	return &cryptoutils.ECDSASignature{
-		R: sig.R,
-		S: sig.S,
+		R:     sig.R,
+		S:     sig.S,
+		Curve: curve,
 	}, nil
 }
 
@@ -267,9 +268,9 @@ func (h *HSM) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig c
 		return nil, fmt.Errorf("(YubiHSM/%s): not a YubiHSM key: %T", h.conf.id(), k)
 	}
 
-	switch key.pub.(type) {
+	switch k := key.pub.(type) {
 	case *ecdsa.PublicKey:
-		return h.signECDSA(digest, key.id)
+		return h.signECDSA(digest, key.id, k.Curve)
 	case ed25519.PublicKey:
 		return h.signED25519(digest, key.id)
 	}
@@ -317,7 +318,7 @@ func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algo
 		return strings.ToLower(key.Params().Name), alg, commands.CapabilityAsymmetricSignEcdsa, key.D.Bytes(), nil
 
 	case ed25519.PrivateKey:
-		return "ed25519", commands.AlgorighmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
+		return "ed25519", commands.AlgorithmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
 	}
 
 	return "", 0, 0, nil, fmt.Errorf("unsupported private key type: %T", pk)

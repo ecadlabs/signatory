@@ -6,7 +6,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
+	terminal "golang.org/x/term"
 )
 
 func NewImportCommand(c *Context) *cobra.Command {
@@ -17,9 +17,9 @@ func NewImportCommand(c *Context) *cobra.Command {
 	)
 
 	importCmd := &cobra.Command{
-		Use:   "import <pkh>",
+		Use:   "import [flags]",
 		Short: "Import Tezos private keys (edsk..., spsk..., p2sk...)",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o, err := utils.ParseMap(opt, ':', ',')
 			if err != nil {
@@ -31,7 +31,8 @@ func NewImportCommand(c *Context) *cobra.Command {
 				passCB = func() ([]byte, error) { return []byte(password), nil }
 			} else {
 				passCB = func() ([]byte, error) {
-					fmt.Print("Enter Password: ")
+					fmt.Println()
+					fmt.Print("This key is encrypted, enter the password: ")
 					return terminal.ReadPassword(int(syscall.Stdin))
 				}
 			}
@@ -41,11 +42,19 @@ func NewImportCommand(c *Context) *cobra.Command {
 				options[k] = v
 			}
 
-			for _, key := range args {
-				_, err := c.signatory.Import(c.Context, vaultName, key, passCB, options)
-				if err != nil {
-					return err
-				}
+			fmt.Print("Enter secret key: ")
+			key, err := terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return err
+			}
+			fmt.Println()
+			if len(key) == 0 {
+				return fmt.Errorf("enter a valid secret key")
+			}
+
+			_, err = c.signatory.Import(c.Context, vaultName, string(key), passCB, options)
+			if err != nil {
+				return err
 			}
 
 			return nil

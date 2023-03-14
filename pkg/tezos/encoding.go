@@ -39,23 +39,37 @@ var (
 	pP256PublicKeyHash      = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 164}}   // tz3(36)
 	pContractHash           = tzPrefix{plen: 3, mlen: 20, p: [5]byte{2, 90, 121}}    // KT1(36)
 	pBlindedPublicKeyHash   = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 2, 49, 223}} // btz1(37)
+	pBLS12_381PublicKeyHash = tzPrefix{plen: 3, mlen: 20, p: [5]byte{6, 161, 166}}   // tz4(36)
+	pL2Address              = pBLS12_381PublicKeyHash
+	pRollupAddress          = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 128, 120, 31}}  // txr1(37)
+	pScRollupHash           = tzPrefix{plen: 4, mlen: 20, p: [5]byte{1, 118, 132, 217}} // scr1(37)
 
 	// 16
 	pCryptoboxPublicKeyHash = tzPrefix{plen: 2, mlen: 16, p: [5]byte{153, 103}} // id(30)
 
 	// 32
-	pED25519Seed        = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 58, 7}}     // edsk(54)
-	pED25519PublicKey   = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 37, 217}}   // edpk(54)
-	pSECP256K1SecretKey = tzPrefix{plen: 4, mlen: 32, p: [5]byte{17, 162, 224, 201}} // spsk(54)
-	pP256SecretKey      = tzPrefix{plen: 4, mlen: 32, p: [5]byte{16, 81, 238, 189}}  // p2sk(54)
-	pValueHash          = tzPrefix{plen: 3, mlen: 32, p: [5]byte{1, 106, 242}}       // vh(52)
-	pCycleNonce         = tzPrefix{plen: 3, mlen: 32, p: [5]byte{69, 220, 169}}      // nce(53)
-	pScriptExpr         = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 44, 64, 27}}    // expr(54)
+	pED25519Seed           = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 58, 7}}     // edsk(54)
+	pED25519PublicKey      = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 15, 37, 217}}   // edpk(54)
+	pSECP256K1SecretKey    = tzPrefix{plen: 4, mlen: 32, p: [5]byte{17, 162, 224, 201}} // spsk(54)
+	pP256SecretKey         = tzPrefix{plen: 4, mlen: 32, p: [5]byte{16, 81, 238, 189}}  // p2sk(54)
+	pValueHash             = tzPrefix{plen: 3, mlen: 32, p: [5]byte{1, 106, 242}}       // vh(52)
+	pCycleNonce            = tzPrefix{plen: 3, mlen: 32, p: [5]byte{69, 220, 169}}      // nce(53)
+	pScriptExpr            = tzPrefix{plen: 4, mlen: 32, p: [5]byte{13, 44, 64, 27}}    // expr(54)
+	pInboxHash             = tzPrefix{plen: 3, mlen: 32, p: [5]byte{79, 148, 196}}      // txi(53)
+	pInboxListHash         = pInboxHash
+	pMessageHash           = tzPrefix{plen: 3, mlen: 32, p: [5]byte{79, 149, 30}}    // txm(53)
+	pCommitmentHash        = tzPrefix{plen: 3, mlen: 32, p: [5]byte{79, 148, 17}}    // txc(53)
+	pMessageResultHash     = tzPrefix{plen: 4, mlen: 32, p: [5]byte{18, 7, 206, 87}} // txmr(54)
+	pMessageResultListHash = tzPrefix{plen: 3, mlen: 32, p: [5]byte{79, 146, 82}}    // txM(53)
+	pWithdrawListHash      = tzPrefix{plen: 3, mlen: 32, p: [5]byte{79, 150, 72}}    // txw(53)
 
 	// 56
 	pED25519EncryptedSeed        = tzPrefix{plen: 5, mlen: 56, p: [5]byte{7, 90, 60, 179, 41}}    // edesk(88)
 	pSECP256K1EncryptedSecretKey = tzPrefix{plen: 5, mlen: 56, p: [5]byte{9, 237, 241, 174, 150}} // spesk(88)
 	pP256EncryptedSecretKey      = tzPrefix{plen: 5, mlen: 56, p: [5]byte{9, 48, 57, 115, 171}}   // p2esk(88)
+
+	// 60
+	pSECP256K1EncryptedScalar = tzPrefix{plen: 5, mlen: 60, p: [5]byte{1, 131, 36, 86, 248}} // seesk(93)
 
 	// 33
 	pSECP256K1PublicKey = tzPrefix{plen: 4, mlen: 33, p: [5]byte{3, 254, 226, 86}}  // sppk(55)
@@ -78,6 +92,25 @@ var (
 
 	// 43
 	pSaplingAddress = tzPrefix{plen: 4, mlen: 43, p: [5]byte{18, 71, 40, 223}} // zet1(69)
+
+	// 141
+	pGenericAggregateSignature = tzPrefix{plen: 4, mlen: 141, p: [5]byte{2, 75, 234, 101}} // asig(96)
+
+	// 142
+	pBLS12_381Signature = tzPrefix{plen: 4, mlen: 142, p: [5]byte{40, 171, 64, 207}} // BLsig(96)
+
+	// 76
+	pBLS12_381PublicKey = tzPrefix{plen: 4, mlen: 76, p: [5]byte{6, 149, 135, 204}} // BLpk(48)
+
+	// 54
+	pBLS12_381SecretKey = tzPrefix{plen: 4, mlen: 54, p: [5]byte{3, 150, 192, 40}} // BLsk(32)
+
+	// 88
+	pBLS12_381EncryptedSecretKey = tzPrefix{plen: 5, mlen: 88, p: [5]byte{2, 5, 30, 53, 25}} // BLesk(58)
+
+	// ?
+	pScCommitmentHash = tzPrefix{plen: 4, mlen: 0, p: [5]byte{17, 144, 21, 100}}  // scc1(54)
+	pScStateHash      = tzPrefix{plen: 4, mlen: 0, p: [5]byte{17, 144, 122, 202}} // scs1(54)
 )
 
 // Full list of prefixes with payload lengths
@@ -97,6 +130,8 @@ var commonPrefixes = []tzPrefix{
 	pP256PublicKeyHash,
 	pContractHash,
 	pBlindedPublicKeyHash,
+	pBLS12_381PublicKeyHash,
+	pRollupAddress,
 	pCryptoboxPublicKeyHash,
 	pED25519Seed,
 	pED25519PublicKey,
@@ -105,9 +140,17 @@ var commonPrefixes = []tzPrefix{
 	pValueHash,
 	pCycleNonce,
 	pScriptExpr,
+	pInboxHash,
+	pInboxListHash,
+	pMessageHash,
+	pCommitmentHash,
+	pMessageResultHash,
+	pMessageResultListHash,
+	pWithdrawListHash,
 	pED25519EncryptedSeed,
 	pSECP256K1EncryptedSecretKey,
 	pP256EncryptedSecretKey,
+	pSECP256K1EncryptedScalar,
 	pSECP256K1PublicKey,
 	pP256PublicKey,
 	pSECP256K1Scalar,
@@ -120,6 +163,14 @@ var commonPrefixes = []tzPrefix{
 	pChainID,
 	pSaplingSpendingKey,
 	pSaplingAddress,
+	pGenericAggregateSignature,
+	pBLS12_381Signature,
+	pBLS12_381PublicKey,
+	pBLS12_381SecretKey,
+	pBLS12_381EncryptedSecretKey,
+	pScCommitmentHash,
+	pScStateHash,
+	pScRollupHash,
 }
 
 // ErrPrefix is returned in case of unknown Tezos base58 prefix
@@ -133,7 +184,7 @@ func decodeBase58(data string) (prefix tzPrefix, payload []byte, err error) {
 	for _, p := range commonPrefixes {
 		prefix := p.prefix()
 		if bytes.HasPrefix(buf, prefix) {
-			if len(buf)-len(prefix) != p.mlen {
+			if p.mlen != 0 && len(buf)-len(prefix) != p.mlen {
 				return p, nil, fmt.Errorf("tezos: invalid base58 message length: expected %d, got %d", p.mlen, len(buf)-len(prefix))
 			}
 			return p, buf[len(prefix):], nil
