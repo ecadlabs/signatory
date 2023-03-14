@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -155,7 +156,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	}
 
 	pubkey := key.(*awsKMSKey)
-	return &cryptoutils.ECDSASignature{
+	return &signature.ECDSA{
 		R:     sig.R,
 		S:     sig.S,
 		Curve: pubkey.pub.Curve,

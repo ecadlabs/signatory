@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,8 +18,9 @@ func TestMnemonic(t *testing.T) {
 	pub, err := x509.ParsePKIXPublicKey(pubKey)
 	assert.NoError(t, err)
 
-	hash, err := tezos.EncodeBinaryPublicKeyHashFromKeyData(pub)
+	tzPub, err := gotez.NewPublicKey(pub)
 	assert.NoError(t, err)
+	hash := tzPub.Hash().ToBinary()
 	x = New(hash)
 	assert.Equal(t, Mnemonic{"zesty", "koala", "usable", "kiwi"}, x)
 }

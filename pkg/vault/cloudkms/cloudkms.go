@@ -15,6 +15,7 @@ import (
 	"net/http"
 
 	kms "cloud.google.com/go/kms/apiv1"
+	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -220,7 +221,7 @@ func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	if _, err = asn1.Unmarshal(resp.Signature, &sig); err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %v", c.config.keyRingName(), err)
 	}
-	return &cryptoutils.ECDSASignature{
+	return &signature.ECDSA{
 		R:     sig.R,
 		S:     sig.S,
 		Curve: kmsKey.pub.Curve,

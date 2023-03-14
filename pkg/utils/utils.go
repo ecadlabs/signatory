@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto"
 	"errors"
 	"fmt"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/ecadlabs/gotez"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -159,4 +161,12 @@ func KeyboardInteractivePassphraseFunc(prompt string) func() ([]byte, error) {
 		defer fmt.Println()
 		return terminal.ReadPassword(int(syscall.Stdin))
 	}
+}
+
+func EncodePublicKeyHash(pub crypto.PublicKey) (string, error) {
+	p, err := gotez.NewPublicKey(pub)
+	if err != nil {
+		return "", err
+	}
+	return p.Hash().String(), nil
 }

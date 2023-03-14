@@ -11,11 +11,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,7 @@ import (
 
 func serveHookAuth(status int, pk cryptoutils.PrivateKey) (func(w http.ResponseWriter, r *http.Request), error) {
 	pub := pk.Public()
-	hash, err := tezos.EncodePublicKeyHash(pub)
+	hash, err := utils.EncodePublicKeyHash(pub)
 	if err != nil {
 		return nil, err
 	}
@@ -53,10 +54,11 @@ func serveHookAuth(status int, pk cryptoutils.PrivateKey) (func(w http.ResponseW
 			panic(err)
 		}
 
-		s, err := tezos.EncodeGenericSignature(sig)
+		tzSig, err := tz.NewSignature(sig)
 		if err != nil {
 			panic(err)
 		}
+		s := tzSig.String()
 
 		reply := signatory.PolicyHookReply{
 			Payload:   buf,
@@ -90,9 +92,10 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	hookAuth, err := auth.StaticAuthorizedKeys(hookPub)
 	require.NoError(t, err)
 
-	_, signPk, err := ed25519.GenerateKey(rand.Reader)
+	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
-	signKeyHash, err := tezos.EncodePublicKeyHash(signPk.Public())
+
+	signKeyHash, err := utils.EncodePublicKeyHash(signPriv.Public())
 	require.NoError(t, err)
 
 	conf := signatory.Config{
@@ -101,7 +104,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPk,
+					PrivateKey: signPriv,
 					KeyID:      signKeyHash,
 				},
 			}, "Mock")
@@ -131,9 +134,10 @@ func testPolicyHook(t *testing.T, status int) error {
 	testSrv := httptest.NewServer(http.HandlerFunc(handler))
 	defer testSrv.Close()
 
-	_, signPk, err := ed25519.GenerateKey(rand.Reader)
+	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
-	signKeyHash, err := tezos.EncodePublicKeyHash(signPk.Public())
+
+	signKeyHash, err := utils.EncodePublicKeyHash(signPriv.Public())
 	require.NoError(t, err)
 
 	conf := signatory.Config{
@@ -142,7 +146,7 @@ func testPolicyHook(t *testing.T, status int) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPk,
+					PrivateKey: signPriv,
 					KeyID:      signKeyHash,
 				},
 			}, "Mock")

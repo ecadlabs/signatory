@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 )
@@ -281,7 +282,7 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte) (sig cryp
 		if len(res.Data) != ed25519.SignatureSize {
 			return nil, fmt.Errorf("invalid signature length: %d", len(res.Data))
 		}
-		return cryptoutils.ED25519Signature(res.Data), nil
+		return signature.ED25519(res.Data), nil
 
 	case DerivationSECP256K1, DerivationSECP256R1:
 		var curve elliptic.Curve
@@ -303,7 +304,7 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte) (sig cryp
 		if _, err = asn1.Unmarshal(res.Data, &sig); err != nil {
 			return nil, err
 		}
-		return &cryptoutils.ECDSASignature{
+		return &signature.ECDSA{
 			R:     sig.R,
 			S:     sig.S,
 			Curve: curve,

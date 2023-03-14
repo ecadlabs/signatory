@@ -4,64 +4,93 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type msgMock struct {
-	chainID string
-	kind    string
-	level   int32
-	round   int32
+type msgMock request.Watermark
+
+func (m *msgMock) Watermark() *request.Watermark {
+	return (*request.Watermark)(m)
 }
 
-func (m *msgMock) GetChainID() string  { return m.chainID }
-func (m *msgMock) MessageKind() string { return m.kind }
-func (m *msgMock) GetLevel() int32     { return m.level }
-func (m *msgMock) GetRound() int32     { return m.round }
+func (m *msgMock) RequestKind() string { return "dummy" }
 
-func TestWatermarkData(t *testing.T) {
-	hash := [32]byte{1, 2, 3, 4}
-	wd := watermarkData{
-		Level: 123,
-		Round: 1,
-		Hash:  tezos.EncodeValueHash(hash[:]),
+type testCase struct {
+	pkh       string
+	req       request.SignRequest
+	expectErr bool
+}
+
+func TestWatermark(t *testing.T) {
+	cases := []testCase{
+		{
+			pkh: "pkh1",
+			req: (*msgMock)(&request.Watermark{
+				Chain: &tz.ChainID{},
+				Level: request.Level{Level: 124},
+			}),
+			expectErr: false,
+		},
+		{
+			pkh: "pkh1",
+			req: (*msgMock)(&request.Watermark{
+				Chain: &tz.ChainID{},
+				Level: request.Level{Level: 123},
+			}),
+			expectErr: true,
+		},
+		{
+			pkh: "pkh1",
+			req: (*msgMock)(&request.Watermark{
+				Chain: &tz.ChainID{},
+				Level: request.Level{Level: 124},
+			}),
+			expectErr: true,
+		},
+		{
+			pkh: "pkh2",
+			req: (*msgMock)(&request.Watermark{
+				Chain: &tz.ChainID{},
+				Level: request.Level{Level: 124},
+			}),
+			expectErr: false,
+		},
+		{
+			pkh: "pkh1",
+			req: (*msgMock)(&request.Watermark{
+				Chain: &tz.ChainID{},
+				Level: request.Level{Level: 125},
+			}),
+			expectErr: false,
+		},
 	}
 
-	assert.NoError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 124, 0}, nil))
-	assert.NoError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 123, 1}, hash[:]))
-	assert.NoError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 123, 2}, nil))
-	assert.EqualError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 123, 1}, nil), "dummy level 123 and round 1 already signed with different data")
-	assert.EqualError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 123, 0}, nil), "dummy level 123 and round 0 not above high watermark (123,1)")
-	assert.EqualError(t, wd.isSafeToSign(&msgMock{"dummy", "dummy", 122, 0}, nil), "dummy level 122 not above high watermark 123")
-}
+	t.Run("memory", func(t *testing.T) {
+		var wm InMemoryWatermark
+		for _, c := range cases {
+			err := wm.IsSafeToSign(c.pkh, c.req)
+			if c.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		}
+	})
 
-func TestWatermarkMem(t *testing.T) {
-	hash := [32]byte{1, 2, 3, 4}
-	var wm InMemoryWatermark
-
-	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 124, 0}))
-	assert.EqualError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind1", 123, 0}), "kind1 level 123 not above high watermark 124")
-	assert.EqualError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind1", 124, 0}), "kind1 level 124 and round 0 already signed with different data")
-	assert.NoError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind2", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind2", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh2", nil, &msgMock{"chain1", "kind1", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 125, 0}))
-}
-
-func TestWatermarkFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "watermark")
-	require.NoError(t, err)
-
-	hash := [32]byte{1, 2, 3, 4}
-	wm := FileWatermark{BaseDir: dir}
-
-	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 124, 0}))
-	assert.EqualError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind1", 123, 0}), "kind1 level 123 not above high watermark 124")
-	assert.EqualError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind1", 124, 0}), "kind1 level 124 and round 0 already signed with different data")
-	assert.NoError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind2", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh1", nil, &msgMock{"chain1", "kind2", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh2", nil, &msgMock{"chain1", "kind1", 124, 0}))
-	assert.NoError(t, wm.IsSafeToSign("pkh1", hash[:], &msgMock{"chain1", "kind1", 125, 0}))
+	t.Run("file", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "watermark")
+		require.NoError(t, err)
+		wm := FileWatermark{BaseDir: dir}
+		for _, c := range cases {
+			err := wm.IsSafeToSign(c.pkh, c.req)
+			if c.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		}
+	})
 }

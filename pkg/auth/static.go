@@ -4,7 +4,8 @@ import (
 	"context"
 	"crypto"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/utils"
 )
 
 type staticAuthorizedKeys struct {
@@ -29,7 +30,7 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 	idx := make(map[string]crypto.PublicKey)
 	keys := make([]string, len(pub))
 	for i, k := range pub {
-		pkh, err := tezos.EncodePublicKeyHash(k)
+		pkh, err := utils.EncodePublicKeyHash(k)
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +47,11 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 func StaticAuthorizedKeysFromString(pub ...string) (AuthorizedKeysStorage, error) {
 	keys := make([]crypto.PublicKey, len(pub))
 	for i, s := range pub {
-		k, err := tezos.ParsePublicKey(s)
+		tzPk, err := b58.ParsePublicKey([]byte(s))
+		if err != nil {
+			return nil, err
+		}
+		k, err := tzPk.PublicKey()
 		if err != nil {
 			return nil, err
 		}

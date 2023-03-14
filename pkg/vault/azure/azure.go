@@ -16,6 +16,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -331,7 +332,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(b))
 	}
 
-	s := cryptoutils.ECDSASignature{
+	s := signature.ECDSA{
 		R:     new(big.Int).SetBytes(b[:byteLen]),
 		S:     new(big.Int).SetBytes(b[byteLen:]),
 		Curve: cryptoutils.NamedCurve(azureKey.bundle.Key.Curve),

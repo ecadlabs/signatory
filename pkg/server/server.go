@@ -9,11 +9,11 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,7 +52,11 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 		return errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	sig, err := tezos.ParseSignature(v, nil)
+	tzSig, err := b58.ParseSignature([]byte(v))
+	if err != nil {
+		return errors.Wrap(err, http.StatusBadRequest)
+	}
+	sig, err := tzSig.Signature(nil)
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}

@@ -3,7 +3,8 @@ package ledger
 import (
 	"encoding/hex"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
 
@@ -12,10 +13,11 @@ import (
 func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string, err error) {
 	var hwm tezosapp.HWM
 	if chainID != "" {
-		hwm.ChainID, err = tezos.DecodeChainID(chainID)
+		cid, err := b58.ParseChainID([]byte(chainID))
 		if err != nil {
-			return
+			return "", err
 		}
+		hwm.ChainID = *cid
 	}
 	key, err := parseKeyID(keyID)
 	if err != nil {
@@ -31,7 +33,7 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string
 	if err != nil {
 		return
 	}
-	pkh, err = tezos.EncodePublicKeyHash(pub)
+	pkh, err = utils.EncodePublicKeyHash(pub)
 	if err != nil {
 		return
 	}

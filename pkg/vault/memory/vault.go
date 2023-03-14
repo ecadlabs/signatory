@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 )
@@ -87,7 +87,7 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 			id := k.KeyID
 			var err error
 			if id == "" {
-				id, err = tezos.EncodePublicKeyHash(k.PrivateKey.Public())
+				id, err = utils.EncodePublicKeyHash(k.PrivateKey.Public())
 				if err != nil {
 					return nil, fmt.Errorf("(%s): %v", name, err)
 				}
@@ -161,20 +161,28 @@ func (v *Vault) Unlock(ctx context.Context) error {
 			name = "<unnamed>"
 		}
 
-		pk, err := tezos.ParsePrivateKey(entry.Data, utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
+		tzPrivEnc, err := b58.ParseEncryptedPrivateKey([]byte(entry.Data))
+		if err != nil {
+			return fmt.Errorf("(%s): %v", v.name, err)
+		}
+		tzPriv, err := tzPrivEnc.Decrypt(utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
+		if err != nil {
+			return fmt.Errorf("(%s): %v", v.name, err)
+		}
+		priv, err := tzPriv.PrivateKey()
 		if err != nil {
 			return fmt.Errorf("(%s): %v", v.name, err)
 		}
 
 		id := entry.ID
 		if id == "" {
-			id, err = tezos.EncodePublicKeyHash(pk.Public())
+			id, err = utils.EncodePublicKeyHash(priv.Public())
 			if err != nil {
 				return fmt.Errorf("(%s): %v", v.name, err)
 			}
 		}
 		key := PrivateKey{
-			PrivateKey: pk,
+			PrivateKey: priv,
 			KeyID:      id,
 		}
 		keys[i] = &key
@@ -191,20 +199,20 @@ func (v *Vault) Unlock(ctx context.Context) error {
 	return nil
 }
 
-func (v *Vault) ImportKey(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) ImportKey(ctx context.Context, priv cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	id, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %v", v.name, err)
 	}
 
 	if !ok || id == "" {
-		id, err = tezos.EncodePublicKeyHash(pk.Public())
+		id, err = utils.EncodePublicKeyHash(priv.Public())
 		if err != nil {
 			return nil, fmt.Errorf("(%s): %v", v.name, err)
 		}
 	}
 	key := PrivateKey{
-		PrivateKey: pk,
+		PrivateKey: priv,
 		KeyID:      id,
 	}
 

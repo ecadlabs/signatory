@@ -14,11 +14,15 @@ import (
 	"strings"
 	"sync"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -53,7 +57,7 @@ type SignInterceptorOptions struct {
 	Address string
 	Vault   string
 	Req     string
-	Stat    tezos.OperationsStat
+	Stat    operationsStat
 }
 
 // Policy contains policy data related to the key
@@ -150,7 +154,7 @@ func (s *Signatory) fetchPolicyOrDefault(keyHash string) *Policy {
 	return &defaultPolicy
 }
 
-func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) error {
+func matchFilter(policy *Policy, req *SignRequest, msg request.SignRequest) error {
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == "" {
 			return errors.New("authentication required")
@@ -169,7 +173,7 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		}
 	}
 
-	kind := msg.MessageKind()
+	kind := msg.RequestKind()
 	var allowed bool
 	for _, k := range policy.AllowedRequests {
 		if kind == k {
@@ -182,8 +186,8 @@ func matchFilter(policy *Policy, req *SignRequest, msg tezos.UnsignedMessage) er
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
-		for _, op := range ops.Contents {
+	if ops, ok := msg.(*request.GenericOperationRequest); ok {
+		for _, op := range ops.Operations {
 			kind := op.OperationKind()
 			allowed = false
 			for _, k := range policy.AllowedOps {
@@ -251,7 +255,11 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		if err != nil {
 			errors.Wrap(err, http.StatusForbidden)
 		}
-		sig, err := tezos.ParseSignature(reply.Signature, pub)
+		tzSig, err := b58.ParseSignature([]byte(reply.Signature))
+		if err != nil {
+			return err
+		}
+		sig, err := tzSig.Signature(pub)
 		if err != nil {
 			return err
 		}
@@ -304,22 +312,24 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		return "", errors.Wrap(err, http.StatusForbidden)
 	}
 
-	msg, err := tezos.ParseRequest(req.Message)
+	var msg request.SignRequest
+	_, err := encoding.Decode(req.Message, &msg)
 	if err != nil {
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return "", errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logReq, msg.MessageKind())
+	l = l.WithField(logReq, msg.RequestKind())
 
-	if m, ok := msg.(tezos.MessageWithLevel); ok {
-		l = l.WithFields(log.Fields{logChainID: m.GetChainID(), logLevel: m.GetLevel()})
+	if m, ok := msg.(request.WithWatermark); ok {
+		wm := m.Watermark()
+		l = l.WithFields(log.Fields{logChainID: wm.Chain.String(), logLevel: wm.Level.Level})
 	}
 
-	var opStat tezos.OperationsStat
-	if ops, ok := msg.(*tezos.GenericOperationRequest); ok {
-		opStat = ops.OperationsStat()
-		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
+	var opStat operationsStat
+	if ops, ok := msg.(*request.GenericOperationRequest); ok {
+		opStat = getOperationsStat(ops)
+		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Operations)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -354,7 +364,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, message, msg); err != nil {
+		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
@@ -367,7 +377,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
-			Req:     msg.MessageKind(),
+			Req:     msg.RequestKind(),
 			Stat:    opStat,
 		}, func() (err error) {
 			sig, err = signFunc(ctx, req.Message, p.key)
@@ -380,17 +390,15 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (string, error) 
 		return "", err
 	}
 
-	sig = cryptoutils.CanonizeSignature(sig)
-
 	l.WithField("raw", sig).Debug("Signed bytes")
-
-	encodedSig, err := tezos.EncodeSignature(sig) // leave signature type
+	tzSig, err := tz.NewSignature(sig)
 	if err != nil {
 		return "", err
 	}
+	encodedSig := tzSig.String()
 
 	l.Debugf("Encoded signature: %s", encodedSig)
-	l.Infof("Signed %s successfully", msg.MessageKind())
+	l.Infof("Signed %s successfully", msg.RequestKind())
 
 	return encodedSig, nil
 }
@@ -418,7 +426,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret map[string]*keyVaul
 				continue
 			}
 
-			pkh, err := tezos.EncodePublicKeyHash(key.PublicKey())
+			pkh, err := utils.EncodePublicKeyHash(key.PublicKey())
 			if err != nil {
 				return nil, nil, err
 			}
@@ -445,12 +453,12 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		enc, err := tezos.EncodePublicKey(p.key.PublicKey())
+		tzPk, err := tz.NewPublicKey(p.key.PublicKey())
 		if err != nil {
 			return nil, err
 		}
 		ret[i] = &PublicKey{
-			PublicKey:     enc,
+			PublicKey:     tzPk.String(),
 			PublicKeyHash: p.pkh,
 			VaultName:     p.vault.Name(),
 			ID:            p.key.ID(),
@@ -487,13 +495,12 @@ func (s *Signatory) GetPublicKey(ctx context.Context, keyHash string) (*PublicKe
 		return nil, err
 	}
 
-	enc, err := tezos.EncodePublicKey(p.key.PublicKey())
+	tzPk, err := tz.NewPublicKey(p.key.PublicKey())
 	if err != nil {
 		return nil, err
 	}
-
 	return &PublicKey{
-		PublicKey:     enc,
+		PublicKey:     tzPk.String(),
 		PublicKeyHash: keyHash,
 		VaultName:     p.vault.Name(),
 		ID:            p.key.ID(),
@@ -638,14 +645,11 @@ func PreparePolicy(src config.TezosConfig) (map[string]*Policy, error) {
 			keys := v.AuthorizedKeys.List()
 			pol.AuthorizedKeyHashes = make([]string, len(keys))
 			for i, k := range keys {
-				pub, err := tezos.ParsePublicKey(k)
+				pub, err := b58.ParsePublicKey([]byte(k))
 				if err != nil {
 					return nil, err
 				}
-				pol.AuthorizedKeyHashes[i], err = tezos.EncodePublicKeyHash(pub)
-				if err != nil {
-					return nil, err
-				}
+				pol.AuthorizedKeyHashes[i] = pub.Hash().String()
 			}
 		}
 		policy[k] = &pol

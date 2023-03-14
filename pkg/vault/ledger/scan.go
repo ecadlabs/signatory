@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonic"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
@@ -46,12 +46,16 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	if err != nil {
 		return nil, nil, err
 	}
-
-	hash, err := tezos.EncodeBinaryPublicKeyHashFromKeyData(rootPK)
+	tzPk, err := gotez.NewPublicKey(rootPK)
 	if err != nil {
 		return nil, nil, err
 	}
-	id := mnemonic.New(hash)
+
+	hash := tzPk.Hash().PublicKeyHash()
+	if err != nil {
+		return nil, nil, err
+	}
+	id := mnemonic.New(tzPk.Hash().ToBinary())
 
 	dev = &deviceInfo{
 		Path:    path,

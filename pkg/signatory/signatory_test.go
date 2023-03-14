@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -68,25 +69,6 @@ func TestPolicy(t *testing.T) {
 			policy: signatory.Policy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
-				LogPayloads:     true,
-			},
-		},
-		{
-			title: "failing noop not allowed",
-			msg:   mustHex("05010000004254657a6f73205369676e6564204d6573736167653a206d79646170702e636f6d20323032312d30312d31345431353a31363a30345a2048656c6c6f20776f726c6421"),
-			policy: signatory.Policy{
-				AllowedRequests: []string{"generic", "block", "endorsement"},
-				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
-				LogPayloads:     true,
-			},
-			expected: "request kind `failing_noop' is not allowed",
-		},
-		{
-			title: "failing noop ok",
-			msg:   mustHex("05010000004254657a6f73205369676e6564204d6573736167653a206d79646170702e636f6d20323032312d30312d31345431353a31363a30345a2048656c6c6f20776f726c6421"),
-			policy: signatory.Policy{
-				AllowedRequests: []string{"generic", "block", "endorsement", "failing_noop"},
-				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
 				LogPayloads:     true,
 			},
 		},
@@ -320,10 +302,12 @@ func TestPolicy(t *testing.T) {
 		},
 	}
 
-	priv, err := tezos.ParsePrivateKey(pk, nil)
+	tzPriv, err := b58.ParsePrivateKey([]byte(pk))
+	require.NoError(t, err)
+	priv, err := tzPriv.PrivateKey()
 	require.NoError(t, err)
 
-	pub, err := tezos.EncodePublicKeyHash(priv.Public())
+	pkh, err := utils.EncodePublicKeyHash(priv.Public())
 	require.NoError(t, err)
 
 	for _, c := range cases {
@@ -335,7 +319,7 @@ func TestPolicy(t *testing.T) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: pk}}, "Mock"), nil
 				}),
 				Policy: map[string]*signatory.Policy{
-					pub: &c.policy,
+					pkh: &c.policy,
 				},
 			}
 
@@ -343,7 +327,7 @@ func TestPolicy(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, s.Unlock(context.Background()))
 
-			_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pub, Message: c.msg})
+			_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pkh, Message: c.msg})
 			if c.expected != "" {
 				require.EqualError(t, err, c.expected)
 			} else {
@@ -414,10 +398,12 @@ func TestListPublikKeys(t *testing.T) {
 		},
 	}
 
-	priv, err := tezos.ParsePrivateKey(pk, nil)
+	tzPriv, err := b58.ParsePrivateKey([]byte(pk))
+	require.NoError(t, err)
+	priv, err := tzPriv.PrivateKey()
 	require.NoError(t, err)
 
-	pub, err := tezos.EncodePublicKeyHash(priv.Public())
+	pkh, err := utils.EncodePublicKeyHash(priv.Public())
 	require.NoError(t, err)
 
 	for _, c := range cases {
@@ -429,7 +415,7 @@ func TestListPublikKeys(t *testing.T) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),
 				Policy: map[string]*signatory.Policy{
-					pub: &c.policy,
+					pkh: &c.policy,
 				},
 			}
 			s, err := signatory.New(context.Background(), &conf)

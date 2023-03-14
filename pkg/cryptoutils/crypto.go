@@ -6,7 +6,6 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -14,16 +13,14 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	blst "github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
+	"github.com/ecadlabs/gotez/signature"
 	"golang.org/x/crypto/blake2b"
 )
 
 // Digest is an alias for blake2b checksum algorithm
 var Digest = blake2b.Sum256
 
-// CanonizeECDSASignature returns the canonical versions of the signature
-// the canonical version enforce low S values
-// if S is above order / 2 it negating the S (modulo the order (N))
-func CanonizeECDSASignature(sig *ECDSASignature) *ECDSASignature {
+func canonizeECDSASignature(sig *signature.ECDSA) *signature.ECDSA {
 	r := new(big.Int).Set(sig.R)
 	s := new(big.Int).Set(sig.S)
 
@@ -35,45 +32,15 @@ func CanonizeECDSASignature(sig *ECDSASignature) *ECDSASignature {
 		}
 	}
 
-	return &ECDSASignature{
+	return &signature.ECDSA{
 		R:     r,
 		S:     s,
 		Curve: sig.Curve,
 	}
 }
 
-// CanonizeSignature returns the canonical versions of the ECDSA signature if one is given
-func CanonizeSignature(sig Signature) Signature {
-	s, ok := sig.(*ECDSASignature)
-	if !ok {
-		return sig
-	}
-
-	return CanonizeECDSASignature(s)
-}
-
 // Signature is a type representing a digital signature.
-type Signature interface {
-	String() string
-}
-
-// ECDSASignature is a type representing an ecdsa signature.
-type ECDSASignature struct {
-	R     *big.Int
-	S     *big.Int
-	Curve elliptic.Curve
-}
-
-func (e *ECDSASignature) String() string {
-	return fmt.Sprintf("ecdsa:[c:%s,r:%x,s:%x]", e.Curve.Params().Name, e.R, e.S)
-}
-
-// ED25519Signature is a type representing an Ed25519 signature
-type ED25519Signature []byte
-
-func (e ED25519Signature) String() string {
-	return fmt.Sprintf("ed25519:[%s]", hex.EncodeToString(e))
-}
+type Signature = signature.Signature
 
 // S256 returns a Curve which implements secp256k1
 func S256() elliptic.Curve {
@@ -110,10 +77,10 @@ func Sign(priv PrivateKey, msg []byte) (Signature, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ECDSASignature{R: r, S: s, Curve: key.Curve}, nil
+		return canonizeECDSASignature(&signature.ECDSA{R: r, S: s, Curve: key.Curve}), nil
 	case ed25519.PrivateKey:
 		digest := Digest(msg)
-		return ED25519Signature(ed25519.Sign(key, digest[:])), nil
+		return signature.ED25519(ed25519.Sign(key, digest[:])), nil
 	case *minpk.PrivateKey:
 		return minpk.Sign(key, msg, blst.Augmentation), nil
 	}
@@ -130,7 +97,7 @@ func Verify(pub crypto.PublicKey, msg []byte, sig Signature) error {
 	switch key := pub.(type) {
 	case *ecdsa.PublicKey:
 		digest := Digest(msg)
-		s, ok := sig.(*ECDSASignature)
+		s, ok := sig.(*signature.ECDSA)
 		if !ok {
 			return ErrSignature
 		}
@@ -139,7 +106,7 @@ func Verify(pub crypto.PublicKey, msg []byte, sig Signature) error {
 		}
 	case ed25519.PublicKey:
 		digest := Digest(msg)
-		s, ok := sig.(ED25519Signature)
+		s, ok := sig.(signature.ED25519)
 		if !ok {
 			return ErrSignature
 		}
