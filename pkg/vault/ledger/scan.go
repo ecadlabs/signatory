@@ -10,6 +10,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonic"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
+	log "github.com/sirupsen/logrus"
 )
 
 type deviceInfo struct {
@@ -103,6 +104,7 @@ func (s *scanner) scan() ([]*deviceInfo, error) {
 	for _, d := range devs {
 		app, dev, err := s.openPath(d.Path)
 		if err != nil {
+			log.Warnf("%s: %v", d.Path, err)
 			continue
 		}
 		app.Close()
