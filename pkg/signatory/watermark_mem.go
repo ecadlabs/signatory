@@ -3,6 +3,7 @@ package signatory
 import (
 	"sync"
 
+	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
@@ -13,7 +14,7 @@ type InMemoryWatermark struct {
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemoryWatermark) IsSafeToSign(pkh string, req request.SignRequest) error {
+func (w *InMemoryWatermark) IsSafeToSign(pkh tz.PublicKeyHash, req request.SignRequest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -28,18 +29,18 @@ func (w *InMemoryWatermark) IsSafeToSign(pkh string, req request.SignRequest) er
 		w.chains = make(chainMap)
 	}
 
-	delegates, ok := w.chains[watermark.Chain.String()]
+	delegates, ok := w.chains[*watermark.Chain]
 	if ok {
-		if wm, ok := delegates[pkh]; ok {
+		if wm, ok := delegates.Get(pkh); ok {
 			if !watermark.Validate(wm) {
 				return ErrWatermark
 			}
 		}
 	} else {
-		delegates = make(watermarkMap)
-		w.chains[watermark.Chain.String()] = delegates
+		delegates = make(delegateMap)
+		w.chains[*watermark.Chain] = delegates
 	}
-	delegates[pkh] = watermark.Stored()
+	delegates.Insert(pkh, watermark.Stored())
 
 	return nil
 }

@@ -1,6 +1,7 @@
 package signatory
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,12 +10,14 @@ import (
 	"path/filepath"
 	"sync"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
 // chain -> delegate(pkh)
-type chainMap map[string]watermarkMap
-type watermarkMap map[string]*request.StoredWatermark
+type delegateMap = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *request.StoredWatermark]
+type chainMap map[tz.ChainID]delegateMap
 
 var ErrWatermark = errors.New("watermark validation failed")
 
@@ -25,7 +28,7 @@ type FileWatermark struct {
 	mtx     sync.Mutex
 }
 
-func (f *FileWatermark) IsSafeToSign(pkh string, req request.SignRequest) error {
+func (f *FileWatermark) IsSafeToSign(pkh tz.PublicKeyHash, req request.SignRequest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -56,27 +59,31 @@ func (f *FileWatermark) IsSafeToSign(pkh string, req request.SignRequest) error 
 		chains = make(chainMap)
 	}
 
-	delegates, ok := chains[watermark.Chain.String()]
+	delegates, ok := chains[*watermark.Chain]
 	if ok {
-		if wm, ok := delegates[pkh]; ok {
+		if wm, ok := delegates.Get(pkh); ok {
 			if !watermark.Validate(wm) {
 				return ErrWatermark
 			}
 		}
 	} else {
-		delegates = make(watermarkMap)
-		chains[watermark.Chain.String()] = delegates
+		delegates = make(delegateMap)
+		chains[*watermark.Chain] = delegates
 	}
-	delegates[pkh] = watermark.Stored()
+	delegates.Insert(pkh, watermark.Stored())
 
 	fd, err = os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer fd.Close()
-	enc := json.NewEncoder(fd)
+	w := bufio.NewWriter(fd)
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
-	return enc.Encode(chains)
+	if err := enc.Encode(chains); err != nil {
+		return err
+	}
+	return w.Flush()
 }
 
 var _ Watermark = (*FileWatermark)(nil)

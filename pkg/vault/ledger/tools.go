@@ -3,8 +3,8 @@ package ledger
 import (
 	"encoding/hex"
 
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
 
@@ -33,12 +33,13 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (string, er
 	if err != nil {
 		return "", err
 	}
-	pkh, err := utils.EncodePublicKeyHash(pub)
+
+	p, err := gotez.NewPublicKey(pub)
 	if err != nil {
 		return "", err
 	}
 
-	return pkh, nil
+	return p.Hash().String(), nil
 }
 
 func DeauthorizeBaking(id string) error {

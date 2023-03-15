@@ -1,10 +1,12 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -23,7 +25,7 @@ type ServerConfig struct {
 }
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig map[string]*TezosPolicy
+type TezosConfig = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *TezosPolicy]
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
@@ -59,7 +61,7 @@ var defaultConfig = Config{
 
 // Read read the config from a file
 func (c *Config) Read(file string) error {
-	yamlFile, err := ioutil.ReadFile(file)
+	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
@@ -81,40 +83,35 @@ func Validator() *validator.Validate {
 
 // AuthorizedKeys keeps list of authorized public keys
 type AuthorizedKeys struct {
-	value string
+	value tz.PublicKey
 	list  []*AuthorizedKeys
 }
 
 // List returns all keys as a string slice
-func (a *AuthorizedKeys) List() []string {
+func (a *AuthorizedKeys) List() []tz.PublicKey {
 	if a.list != nil {
-		var ret []string
+		var ret []tz.PublicKey
 		for _, v := range a.list {
 			ret = append(ret, v.List()...)
 		}
 		return ret
 	}
-	return []string{a.value}
+	return []tz.PublicKey{a.value}
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler
-func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) error {
-	var target interface{}
+func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) (err error) {
 	switch value.Kind {
 	case yaml.ScalarNode:
-		target = &a.value
+		var pub tz.PublicKey
+		pub, err = b58.ParsePublicKey([]byte(value.Value))
+		a.value = pub
+
 	case yaml.SequenceNode:
-		target = &a.list
+		err = value.Decode(&a.list)
+
 	default:
 		return errors.New("can't decode YAML node")
 	}
-	if err := value.Decode(target); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (a *AuthorizedKeys) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.List())
+	return err
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -34,12 +34,12 @@ var pubCmd = &cobra.Command{
 			return errors.New("private key is not specified")
 		}
 
-		pub, err := utils.EncodePublicKey(pk.Public())
+		pub, err := gotez.NewPublicKey(pk.Public())
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("Public key: %s\n", pub)
+		fmt.Printf("Public key: %v\n", pub)
 		return nil
 	},
 }

@@ -144,6 +144,12 @@ github.com/ecadlabs/gotez v0.0.0-20230314161840-45b90768d7eb h1:jzW72xEZzYyXY5YJ
 github.com/ecadlabs/gotez v0.0.0-20230314161840-45b90768d7eb/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
 github.com/ecadlabs/gotez v0.0.0-20230314172003-fcc374ccc709 h1:P+zsME0HIMs+XYsR01qiH97gNoTJodI/LO4882Fmot8=
 github.com/ecadlabs/gotez v0.0.0-20230314172003-fcc374ccc709/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
+github.com/ecadlabs/gotez v0.0.0-20230314214820-7468c610be19 h1:gSpneayDfaDPZNecJOL1DfiLWI0HGktOyIEQRrWXdj8=
+github.com/ecadlabs/gotez v0.0.0-20230314214820-7468c610be19/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
+github.com/ecadlabs/gotez v0.0.0-20230315081821-7b45eb55e14e h1:uw05vUdvGxJ5t28NCCrzTQ4VWuqBwHz2NFJMBRsO6fU=
+github.com/ecadlabs/gotez v0.0.0-20230315081821-7b45eb55e14e/go.mod h1:ch9YLM621VwTWdBQuZupaCasbnf2lByY8eSo7oMlDSg=
+github.com/ecadlabs/gotez v0.0.0-20230315121104-74af206eb902 h1:3ROpmw7Q/zmaZPSMw3Fxh3CM/FrVo8KMFjieP9HSOCU=
+github.com/ecadlabs/gotez v0.0.0-20230315121104-74af206eb902/go.mod h1:9q90TlywoitzjikNaX3Em2y+mk9OfxY22tRmJL6gRck=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815/go.mod h1:wYFFK4LYXbX7j+76mOq7aiC/EAw2S22CrzPHqgsisPw=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

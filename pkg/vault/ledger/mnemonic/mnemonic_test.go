@@ -1,10 +1,12 @@
 package mnemonic
 
 import (
+	"bytes"
 	"crypto/x509"
 	"testing"
 
 	"github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/encoding"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +22,12 @@ func TestMnemonic(t *testing.T) {
 
 	tzPub, err := gotez.NewPublicKey(pub)
 	assert.NoError(t, err)
-	hash := tzPub.Hash().ToBinary()
+
+	var buf bytes.Buffer
+	pkh := tzPub.Hash()
+	// pass pointer to interface to preserve type information to encode correctly
+	assert.NoError(t, encoding.Encode(&buf, &pkh))
+	hash := buf.Bytes()
 	x = New(hash)
 	assert.Equal(t, Mnemonic{"zesty", "koala", "usable", "kiwi"}, x)
 }

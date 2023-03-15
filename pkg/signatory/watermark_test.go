@@ -19,7 +19,7 @@ func (m *msgMock) Watermark() *request.Watermark {
 func (m *msgMock) RequestKind() string { return "dummy" }
 
 type testCase struct {
-	pkh       string
+	pkh       tz.PublicKeyHash
 	req       request.SignRequest
 	expectErr bool
 }
@@ -27,7 +27,7 @@ type testCase struct {
 func TestWatermark(t *testing.T) {
 	cases := []testCase{
 		{
-			pkh: "pkh1",
+			pkh: &tz.Ed25519PublicKeyHash{0},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
@@ -35,7 +35,7 @@ func TestWatermark(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			pkh: "pkh1",
+			pkh: &tz.Ed25519PublicKeyHash{0},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 123},
@@ -43,7 +43,7 @@ func TestWatermark(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			pkh: "pkh1",
+			pkh: &tz.Ed25519PublicKeyHash{0},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
@@ -51,7 +51,7 @@ func TestWatermark(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			pkh: "pkh2",
+			pkh: &tz.Ed25519PublicKeyHash{1},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
@@ -59,7 +59,7 @@ func TestWatermark(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			pkh: "pkh1",
+			pkh: &tz.Ed25519PublicKeyHash{0},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 125},

@@ -16,12 +16,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -49,7 +51,11 @@ type secretKeyJSON struct {
 
 func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 	if s := os.Getenv(envKey); s != "" {
-		return utils.ParsePrivateKey([]byte(s))
+		priv, err := b58.ParsePrivateKey([]byte(s))
+		if err != nil {
+			return nil, err
+		}
+		return priv.PrivateKey()
 	}
 
 	if s := os.Getenv(envKeyJSON); s != "" {
@@ -62,15 +68,20 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 			mnemonic := strings.Join(data.Mnemonic, " ")
 			salt := "mnemonic" + data.Email + data.Password
 			k := pbkdf2.Key([]byte(mnemonic), []byte(salt), 2048, 64, sha512.New)
-			pk := ed25519.NewKeyFromSeed(k[:32])
-			pkh, err := utils.EncodePublicKeyHash(pk.Public())
+			p := ed25519.NewKeyFromSeed(k[:32])
+			priv, err := tz.NewPrivateKey(p)
 			if err != nil {
 				return nil, err
 			}
-			if data.PKH != pkh {
+			pub, err := tz.NewPublicKey(priv)
+			if err != nil {
+				return nil, err
+			}
+			pkh := pub.Hash()
+			if data.PKH != pkh.String() {
 				return nil, errors.New("public key hash mismatch")
 			}
-			return pk, nil
+			return p, nil
 		}
 	}
 
@@ -80,7 +91,7 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 // Signatory wrapper to keep Sign calls arguments and returned data
 type signCall struct {
 	request   *signatory.SignRequest
-	signature string
+	signature tz.Signature
 	err       error
 }
 
@@ -90,7 +101,7 @@ type signerWrapper struct {
 	mtx   sync.Mutex
 }
 
-func (s *signerWrapper) Sign(ctx context.Context, req *signatory.SignRequest) (string, error) {
+func (s *signerWrapper) Sign(ctx context.Context, req *signatory.SignRequest) (tz.Signature, error) {
 	signature, err := s.Signatory.Sign(ctx, req)
 	s.mtx.Lock()
 	s.calls = append(s.calls, &signCall{request: req, signature: signature, err: err})
@@ -105,18 +116,15 @@ func (s *signerWrapper) signCalls() []*signCall {
 }
 
 // Generate authentication key
-func genAuthKey() (pub, pkh, priv string, err error) {
+func genAuthKey() (pub tz.PublicKey, priv tz.PrivateKey, err error) {
 	pubk, privk, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		return
 	}
-	if pub, err = utils.EncodePublicKey(pubk); err != nil {
+	if pub, err = tz.NewPublicKey(pubk); err != nil {
 		return
 	}
-	if priv, err = utils.EncodePrivateKey(privk); err != nil {
-		return
-	}
-	if pkh, err = utils.EncodePublicKeyHash(pubk); err != nil {
+	if priv, err = tz.NewPrivateKey(privk); err != nil {
 		return
 	}
 	return
@@ -132,10 +140,10 @@ func TestSignatory(t *testing.T) {
 	pk, err := secretKeyFromEnv()
 	require.NoError(t, err)
 
-	pub, err := utils.EncodePublicKeyHash(pk.Public())
+	pub, err := tz.NewPublicKey(pk.Public())
 	require.NoError(t, err)
 
-	authPub, authPKH, authPriv, err := genAuthKey()
+	authPub, authPriv, err := genAuthKey()
 	require.NoError(t, err)
 
 	// setup Signatory instance
@@ -145,12 +153,15 @@ func TestSignatory(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: pk}}, "")
 		}),
-		Policy: map[string]*signatory.Policy{
-			pub: {
-				AllowedRequests: []string{"generic", "block", "endorsement"},
-				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{
+			{
+				Key: pub.Hash(),
+				Val: &signatory.PublicKeyPolicy{
+					AllowedRequests: []string{"generic", "block", "endorsement"},
+					AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				},
 			},
-		},
+		}),
 	}
 
 	s, err := signatory.New(context.Background(), &conf)
@@ -162,7 +173,7 @@ func TestSignatory(t *testing.T) {
 	srvCfg := server.Server{
 		Signer:  &signer,
 		Address: listenAddr,
-		Auth:    auth.Must(auth.StaticAuthorizedKeysFromString(authPub)),
+		Auth:    auth.Must(auth.StaticAuthorizedKeysFromRaw(authPub)),
 	}
 
 	srv, err := srvCfg.New()
@@ -179,9 +190,9 @@ func TestSignatory(t *testing.T) {
 		// initialize client
 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
 		// add authentication key
-		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv.String()))
 		// create transaction
 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
@@ -192,7 +203,7 @@ func TestSignatory(t *testing.T) {
 		// initialize client
 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
 		// import key
-		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub))
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
 		// create transaction
 		require.Error(t, logExec(t, "octez-client", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
@@ -201,5 +212,5 @@ func TestSignatory(t *testing.T) {
 
 	calls := signer.signCalls()
 	require.Equal(t, 1, len(calls))
-	require.Equal(t, authPKH, calls[0].request.ClientPublicKeyHash)
+	require.Equal(t, authPub.Hash(), calls[0].request.ClientPublicKeyHash)
 }

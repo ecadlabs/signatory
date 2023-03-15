@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net"
 
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -42,8 +42,8 @@ func (conf *Config) Addresses() ([]net.IP, []*net.IPNet, error) {
 func (conf *Config) GetPrivateKey() (cryptoutils.PrivateKey, error) {
 	var keyData []byte
 	if conf.PrivateKey != "" {
-		if pk, err := utils.ParsePrivateKey([]byte(conf.PrivateKey)); err == nil {
-			return pk, nil
+		if priv, err := b58.ParsePrivateKey([]byte(conf.PrivateKey)); err == nil {
+			return priv.PrivateKey()
 		} else {
 			keyData = []byte(conf.PrivateKey)
 		}

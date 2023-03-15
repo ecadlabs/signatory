@@ -7,25 +7,25 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
 
-func serveHookAuth(status int, pk cryptoutils.PrivateKey) (func(w http.ResponseWriter, r *http.Request), error) {
-	pub := pk.Public()
-	hash, err := utils.EncodePublicKeyHash(pub)
+func serveHookAuth(status int, priv cryptoutils.PrivateKey) (func(w http.ResponseWriter, r *http.Request), error) {
+	pub, err := tz.NewPublicKey(priv.Public())
 	if err != nil {
 		return nil, err
 	}
@@ -34,23 +34,26 @@ func serveHookAuth(status int, pk cryptoutils.PrivateKey) (func(w http.ResponseW
 		var req signatory.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		replyPl := signatory.PolicyHookReplyPayload{
 			Status:        status,
-			PublicKeyHash: hash,
+			PublicKeyHash: pub.Hash().String(),
 			Nonce:         req.Nonce,
 		}
 
 		buf, err := json.Marshal(&replyPl)
 		if err != nil {
+			log.Println(err)
 			panic(err)
 		}
 
-		sig, err := cryptoutils.Sign(pk, buf)
+		sig, err := cryptoutils.Sign(priv, buf)
 		if err != nil {
+			log.Println(err)
 			panic(err)
 		}
 
@@ -95,8 +98,9 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
 
-	signKeyHash, err := utils.EncodePublicKeyHash(signPriv.Public())
+	signPub, err := tz.NewPublicKey(signPriv.Public())
 	require.NoError(t, err)
+	signKeyHash := signPub.Hash()
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
@@ -105,13 +109,12 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 			return memory.New([]*memory.PrivateKey{
 				{
 					PrivateKey: signPriv,
-					KeyID:      signKeyHash,
+					KeyID:      signKeyHash.String(),
 				},
 			}, "Mock")
 		}),
-		Policy: map[string]*signatory.Policy{
-			signKeyHash: nil,
-		},
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
 			Auth:    hookAuth,
@@ -137,8 +140,9 @@ func testPolicyHook(t *testing.T, status int) error {
 	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
 
-	signKeyHash, err := utils.EncodePublicKeyHash(signPriv.Public())
+	signPub, err := tz.NewPublicKey(signPriv.Public())
 	require.NoError(t, err)
+	signKeyHash := signPub.Hash()
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
@@ -147,13 +151,11 @@ func testPolicyHook(t *testing.T, status int) error {
 			return memory.New([]*memory.PrivateKey{
 				{
 					PrivateKey: signPriv,
-					KeyID:      signKeyHash,
+					KeyID:      signKeyHash.String(),
 				},
 			}, "Mock")
 		}),
-		Policy: map[string]*signatory.Policy{
-			signKeyHash: nil,
-		},
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
 		},

@@ -40,7 +40,7 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 		return nil, err
 	}
 
-	hash := pub.Hash().String()
+	hash := pub.Hash()
 	l := s.logger().WithFields(log.Fields{
 		logPKH:   hash,
 		logVault: importer.Name(),
@@ -58,11 +58,11 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 		return nil, err
 	}
 
-	s.cache.push(hash, &keyVaultPair{key: stored, vault: importer})
+	s.cache.push(&keyVaultPair{pkh: hash, key: stored, vault: importer})
 
 	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
 	return &PublicKey{
-		PublicKey:     pub.String(),
+		PublicKey:     pub,
 		PublicKeyHash: hash,
 		VaultName:     importer.Name(),
 		ID:            stored.ID(),

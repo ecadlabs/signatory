@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"crypto"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,9 +8,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"golang.org/x/term"
 )
 
@@ -163,52 +159,4 @@ func KeyboardInteractivePassphraseFunc(prompt string) func() ([]byte, error) {
 		defer fmt.Println()
 		return term.ReadPassword(int(syscall.Stdin))
 	}
-}
-
-func EncodePublicKeyHash(pub crypto.PublicKey) (string, error) {
-	p, err := gotez.NewPublicKey(pub)
-	if err != nil {
-		return "", err
-	}
-	return p.Hash().String(), nil
-}
-
-func EncodePrivateKey(priv cryptoutils.PrivateKey) (string, error) {
-	p, err := gotez.NewPrivateKey(priv)
-	if err != nil {
-		return "", err
-	}
-	return p.String(), nil
-}
-
-func EncodePublicKey(pub crypto.PublicKey) (string, error) {
-	p, err := gotez.NewPublicKey(pub)
-	if err != nil {
-		return "", err
-	}
-	return p.String(), nil
-}
-
-func EncodeSignature(sig cryptoutils.Signature) (string, error) {
-	p, err := gotez.NewSignature(sig)
-	if err != nil {
-		return "", err
-	}
-	return p.String(), nil
-}
-
-func ParsePublicKey(src []byte) (crypto.PublicKey, error) {
-	pub, err := b58.ParsePublicKey(src)
-	if err != nil {
-		return nil, err
-	}
-	return pub.PublicKey()
-}
-
-func ParsePrivateKey(src []byte) (cryptoutils.PrivateKey, error) {
-	priv, err := b58.ParsePrivateKey(src)
-	if err != nil {
-		return nil, err
-	}
-	return priv.PrivateKey()
 }

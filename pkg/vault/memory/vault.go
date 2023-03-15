@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -86,11 +87,11 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 		} else {
 			id := k.KeyID
 			if id == "" {
-				var err error
-				id, err = utils.EncodePublicKeyHash(k.PrivateKey.Public())
+				pub, err := gotez.NewPublicKey(k.PrivateKey.Public())
 				if err != nil {
 					return nil, fmt.Errorf("(%s): %w", name, err)
 				}
+				id = pub.Hash().String()
 			}
 			key = &PrivateKey{
 				PrivateKey: k.PrivateKey,
@@ -176,11 +177,11 @@ func (v *Vault) Unlock(ctx context.Context) error {
 
 		id := entry.ID
 		if id == "" {
-			var err error
-			id, err = utils.EncodePublicKeyHash(priv.Public())
+			pub, err := gotez.NewPublicKey(priv.Public())
 			if err != nil {
-				return fmt.Errorf("(%s): %w", v.name, err)
+				return fmt.Errorf("(%s): %w", name, err)
 			}
+			id = pub.Hash().String()
 		}
 		key := PrivateKey{
 			PrivateKey: priv,
@@ -207,11 +208,11 @@ func (v *Vault) ImportKey(ctx context.Context, priv cryptoutils.PrivateKey, opt 
 	}
 
 	if !ok || id == "" {
-		var err error
-		id, err = utils.EncodePublicKeyHash(priv.Public())
+		pub, err := gotez.NewPublicKey(priv.Public())
 		if err != nil {
 			return nil, fmt.Errorf("(%s): %w", v.name, err)
 		}
+		id = pub.Hash().String()
 	}
 	key := PrivateKey{
 		PrivateKey: priv,

@@ -11,11 +11,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -41,9 +42,12 @@ func testServer(t *testing.T, addr []net.IP) error {
 	hookAuth, err := auth.StaticAuthorizedKeys(pk.Public())
 	require.NoError(t, err)
 
-	_, signPk, err := ed25519.GenerateKey(rand.Reader)
+	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
-	signKeyHash, err := utils.EncodePublicKeyHash(signPk.Public())
+	signPub, err := tz.NewPublicKey(signPriv.Public())
+	require.NoError(t, err)
+
+	signKeyHash := signPub.Hash()
 	require.NoError(t, err)
 
 	conf := signatory.Config{
@@ -52,14 +56,16 @@ func testServer(t *testing.T, addr []net.IP) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPk,
-					KeyID:      signKeyHash,
+					PrivateKey: signPriv,
 				},
 			}, "Mock")
 		}),
-		Policy: map[string]*signatory.Policy{
-			signKeyHash: nil,
-		},
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{
+			{
+				Key: signKeyHash,
+				Val: nil,
+			},
+		}),
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
 			Auth:    hookAuth,

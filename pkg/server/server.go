@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 
+	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -22,8 +23,8 @@ const defaultAddr = ":6732"
 
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
-	Sign(ctx context.Context, req *signatory.SignRequest) (string, error)
-	GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error)
+	Sign(ctx context.Context, req *signatory.SignRequest) (tz.Signature, error)
+	GetPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) (*signatory.PublicKey, error)
 }
 
 // Server struct containing the information necessary to run a tezos remote signers
@@ -85,8 +86,13 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 }
 
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
+	if err != nil {
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+		return
+	}
 	signRequest := signatory.SignRequest{
-		PublicKeyHash: mux.Vars(r)["key"],
+		PublicKeyHash: pkh,
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -130,7 +136,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := struct {
-		Signature string `json:"signature"`
+		Signature tz.Signature `json:"signature"`
 	}{
 		Signature: signature,
 	}
@@ -139,15 +145,19 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 	keyHash := mux.Vars(r)["key"]
-
-	key, err := s.Signer.GetPublicKey(r.Context(), keyHash)
+	pkh, err := b58.ParsePublicKeyHash([]byte(keyHash))
+	if err != nil {
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+		return
+	}
+	key, err := s.Signer.GetPublicKey(r.Context(), pkh)
 	if err != nil {
 		tezosJSONError(w, err)
 		return
 	}
 
 	resp := struct {
-		PublicKey string `json:"public_key"`
+		PublicKey tz.PublicKey `json:"public_key"`
 	}{
 		PublicKey: key.PublicKey,
 	}
@@ -156,7 +166,7 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
-		AuthorizedKeys []string `json:"authorized_keys,omitempty"`
+		AuthorizedKeys []tz.PublicKeyHash `json:"authorized_keys,omitempty"`
 	}{}
 
 	if s.Auth != nil {

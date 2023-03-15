@@ -4,50 +4,55 @@ package test_test
 
 import (
 	"context"
+	"crypto"
+	"crypto/ed25519"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
-/*
-Auth:
-Private Key:     edsk3xMUYWwM2Gstbeeyd1pvsoYoGGdhjej1jGZk2EdMpYsgZcj5Pm
-Public Key:      edpkvN5hM4s88nzgxZGkNrVqtQfaiVpix356TFrAwQoVGrKseahWG6
-Public Key Hash: tz1KpduK2jQizMyLSfycjDmbBijWK1kpemJ3
+func TestAuthenticatedRequest(t *testing.T) {
+	signPub, signPriv, _ := ed25519.GenerateKey(rand.Reader)
+	signPubTz, err := tz.NewPublicKey(signPub)
+	require.NoError(t, err)
 
-Private Key:     edsk32vZZSKSLWDCUFKSbLYvv9GNAS3ErBftYfFgG1RiDbve5MoN5P
-Public Key:      edpkuv8KcJf1aG6vsJa1XuXsqto39tHNd8YB6qfZQ6FUX6ikQoh5Dq
-Public Key Hash: tz1LaPcNukJrEEJoNp2UqnhGfcqQtDPtSQ5o
+	authPub1, authPriv1, _ := ed25519.GenerateKey(rand.Reader)
+	authPubTz1, err := tz.NewPublicKey(authPub1)
+	require.NoError(t, err)
 
-Sign:
-Private Key:     edsk3K3EwiTVXtEnfuERrjzjp3pa6pRrvQE3VA97cModhXVhXpnsAQ
-Public Key:      edpkvVV6zH5xxewkxPN98SUTspBjYmDYZPX6PGSSDjCK5iDoT8vDQV
-Public Key Hash: tz1cJaw1s1o6o2hMv9r9Q8HWwJLAnD9wqg26
-*/
+	authPub2, authPriv2, _ := ed25519.GenerateKey(rand.Reader)
+	authPubTz2, err := tz.NewPublicKey(authPub2)
+	require.NoError(t, err)
 
-func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
+	_, authPriv3, _ := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
 	type testCase struct {
 		name       string
-		signature  string
+		signWith   crypto.Signer
 		statusCode int
 	}
 
 	cases := []testCase{
 		{
 			name:       "Ok",
-			signature:  "edsigtkjMUUeReAm22MSYW5eR5gby4RQZfjakeKV2zwDwXmF4Gxe68zMuMK8scrbESDHWbPRkebQPVrdnsUsJ46pfP4hXT8oXZZ",
+			signWith:   authPriv1,
 			statusCode: http.StatusOK,
 		},
 		{
@@ -56,38 +61,34 @@ func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
 		},
 		{
 			name:       "Disabled in policy",
-			signature:  "edsigtbakQb6EmsjHpXvjqDTre3EmauHei6LCqhBhRp6neyBNL2F3FX3jQsM9n8KYefWnjUABBWeATEAimaLZGSoGVqHjLc6NLM",
+			signWith:   authPriv2,
 			statusCode: http.StatusForbidden,
 		},
 		{
 			name:       "Invalid signature",
-			signature:  "spsig1SbAZ2AWQP6fXYusCW8XowTxieZw874YcuBtKYkGEEDrvyTgReLY3jKAuoBamBALRtrEsEMG5N7zxmuxfE9MDLgsMP1YJh",
+			signWith:   authPriv3,
 			statusCode: http.StatusForbidden,
 		},
 	}
 
-	pk := "edsk3K3EwiTVXtEnfuERrjzjp3pa6pRrvQE3VA97cModhXVhXpnsAQ"
-	message := "\"03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00\""
-
-	priv, err := utils.ParsePrivateKey([]byte(pk))
-	require.NoError(t, err)
-
-	pub, err := utils.EncodePublicKeyHash(priv.Public())
-	require.NoError(t, err)
+	message := "03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00"
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: signatory.IgnoreWatermark{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.NewUnparsed([]*memory.UnparsedKey{{Data: pk}}, "Mock"), nil
+			return memory.New([]*memory.PrivateKey{{PrivateKey: signPriv}}, "Mock")
 		}),
-		Policy: map[string]*signatory.Policy{
-			pub: {
-				AllowedRequests:     []string{"generic", "block", "endorsement"},
-				AllowedOps:          []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
-				AuthorizedKeyHashes: []string{"tz1KpduK2jQizMyLSfycjDmbBijWK1kpemJ3"},
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{
+			{
+				Key: signPubTz.Hash(),
+				Val: &signatory.PublicKeyPolicy{
+					AllowedRequests:     []string{"generic", "block", "endorsement"},
+					AllowedOps:          []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+					AuthorizedKeyHashes: []tz.PublicKeyHash{authPubTz1.Hash()},
+				},
 			},
-		},
+		}),
 	}
 
 	signer, err := signatory.New(context.Background(), &conf)
@@ -96,7 +97,7 @@ func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
 
 	srv := server.Server{
 		Signer: signer,
-		Auth:   auth.Must(auth.StaticAuthorizedKeysFromString("edpkvN5hM4s88nzgxZGkNrVqtQfaiVpix356TFrAwQoVGrKseahWG6", "edpkuv8KcJf1aG6vsJa1XuXsqto39tHNd8YB6qfZQ6FUX6ikQoh5Dq")),
+		Auth:   auth.Must(auth.StaticAuthorizedKeysFromRaw(authPubTz1, authPubTz2)),
 	}
 
 	handler, err := srv.Handler()
@@ -107,14 +108,26 @@ func TestAuthenticatedRequestInMemoryVault(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			body := strings.NewReader(message)
-			u, _ := url.Parse(s.URL + "/keys/" + pub)
-			if c.signature != "" {
+			u, _ := url.Parse(s.URL + "/keys/" + signPubTz.Hash().String())
+			if c.signWith != nil {
+				msgBytes, err := hex.DecodeString(message)
+				require.NoError(t, err)
+				authBytes, err := signatory.AuthenticatedBytesToSign(&signatory.SignRequest{
+					PublicKeyHash: signPubTz.Hash(),
+					Message:       msgBytes,
+				})
+				require.NoError(t, err)
+				sig, err := cryptoutils.Sign(c.signWith, authBytes)
+				require.NoError(t, err)
+				tzSig, err := tz.NewSignature(sig)
+				require.NoError(t, err)
+
 				u.RawQuery = url.Values{
-					"authentication": []string{c.signature},
+					"authentication": []string{tzSig.String()},
 				}.Encode()
 			}
 
+			body := strings.NewReader("\"" + message + "\"")
 			req, err := http.NewRequest("POST", u.String(), body)
 			require.NoError(t, err)
 

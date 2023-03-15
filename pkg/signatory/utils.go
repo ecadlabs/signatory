@@ -1,16 +1,18 @@
 package signatory
 
 import (
-	"github.com/ecadlabs/gotez/b58"
+	"bytes"
+
+	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
 func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {
-	pkh, err := b58.ParsePublicKeyHash([]byte(req.PublicKeyHash))
-	if err != nil {
+	var buf bytes.Buffer
+	if err := encoding.Encode(&buf, &req.PublicKeyHash); err != nil {
 		return nil, err
 	}
-	keyHashBytes := pkh.ToBinary()
+	keyHashBytes := buf.Bytes()
 	data := make([]byte, 2+len(req.Message)+len(keyHashBytes))
 	data[0] = 4
 	data[1] = 1
