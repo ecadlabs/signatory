@@ -58,6 +58,30 @@ Example:
 close_after: 3600s
 ```
 
+### Transports
+
+By default Ledger vault uses `usb` transport. Another available transport is `tcp` used primarily for interaction with [Speculos](https://github.com/LedgerHQ/speculos)
+emulator. It can be enabled using `transport` option:
+
+```yaml
+vaults:
+  ledger:
+    driver: ledger
+    config:
+      id: 3944f7a0
+      transport: tcp://127.0.0.1:9999
+      keys:
+        - "bip32-ed25519/0'/0'"
+        - "secp256k1/0'/1'"
+      close_after: 3600s
+```
+
+In addition `signatory-cli ledger` command also accepts `-t` / `--transport` key with the same URL-like syntax:
+
+```sh
+signatory-cli ledger --transport 'tcp://127.0.0.1:9999' list
+```
+
 ## Getting data from ledger for signatory configuration using CLI
 
 Keep tezos-wallet app open for the below commands and for signing any wallet transactions.
