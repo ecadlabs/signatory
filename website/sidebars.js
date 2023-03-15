@@ -3,9 +3,7 @@
  - create an ordered group of docs
  - render a sidebar for each doc of that group
  - provide next/previous navigation
-
  The sidebars can be generated from the filesystem, or explicitly defined here.
-
  Create as many sidebars as you want.
  */
 
@@ -22,26 +20,7 @@ const sidebars = {
 			className: 'sidebarHeader',
 			collapsed: false,
 			collapsible: false,
-
-			items: ['start', 'tezos-client'],
-		},
-		{
-			type: 'category',
-			label: 'Vaults',
-			className: 'sidebarHeader',
-			collapsed: false,
-			collapsible: false,
-			items: ['file_based', 'yubihsm', 'azure_kms', 'ledger'],
-		},
-		{
-			type: 'category',
-			label: 'Internals',
-			className: 'sidebarHeader',
-			collapsed: false,
-			collapsible: false,
-			items: ['debugging_tips'],
-
-
+			items: ['start', 'file_based', 'yubihsm', 'azure_kms', 'gcp_kms', 'aws_kms', 'ledger', `cli`, 'remote_policy', 'debugging_tips'],
 		},
 	],
 };

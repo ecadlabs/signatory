@@ -111,6 +111,77 @@ tezos:
 
 **Note:** after importing the key it is made active by adding it to the config file
 
+## Octez Client
+The `octez-client` is the official Octez CLI tool. This document shows how to configure a new account in `octez-client` that Signatory backs.
+
+`octez-client` helps with verifying the setup and fills a need when operators of a baker require to transfer tokens out of their baking account to, for example, a hot wallet.
+
+### Getting octez-client
+
+Download the latest `octez-client` binary from the _Releases_ page at https://github.com/serokell/tezos-packaging 
+Make sure to choose the appropriate binary for your operating system and architecture.
+
+The `octez-client` is also included `octez-client` in the official Octez docker images.
+
+### octez-client configuration
+
+`octez-client` stores configuration in the directory `${HOME}/.octez-client` by default. 
+
+The main configuration file for `octez-client` is `${HOME}/.octez-client/config`.
+
+To display the configuration, run the command `octez-client config show`
+
+If no configuration exists, you can have `octez-client` initialize a new configuration directory and file by running the command: 
+
+```
+octez-client config init --endpoint https://jakartanet.ecadinfra.com
+```
+
+You can specify the preferred RPC address of the Tezos network you wish to use. You can find a list of public RPC nodes here: https://tezostaquito.io/docs/rpc_nodes/
+
+### octez-client listing and showing accounts
+
+To list all accounts, `octez-client` has been configured.
+
+- `octez-client list known addresses` Lists all addresses that are present in the `~/.octez-client` configuration 
+
+To display all information about a specific account, including the secret or secret pointer.
+
+- `octez-client show address ${alias} --show-secret` Displays all information about a given known address  
+
+### Importing a remote signer account with `octez-client`
+
+For `octez-client` to use a remote signer, octez-client needs to know the address of the remote signer service.
+
+`octez-client` has a subcommand called `import secret key`, which allows users to import both actual secret key material and "import" a pointer to a remote signer that manages the secret.
+
+Assuming you have a remote signer running on `http://localhost:6732/` and a key configured for `tz1M3kiQUMPcTseo72i1twdiV4iTY5yiGNSz`, you can then "import" a pointer to that secret into your `octez-client` configuration.
+
+```
+octez-client import secret key remote_signer_alias http://localhost:6732/tz1M3kiQUMPcTseo72i1twdiV4iTY5yiGNSz
+```
+
+You can then verify the details of this import by running the command:
+
+```
+$ octez-client show address remote_signer_alias --show-secret
+Hash: tz1M3kiQUMPcTseo72i1twdiV4iTY5yiGNSz
+Public Key: edpkuNyLH57vRp2dyzeDSg2G7AarZcp29DQnkQaXrSNdkRkAE4B1ZA
+Secret Key: http://localhost:6732/tz1M3kiQUMPcTseo72i1twdiV4iTY5yiGNSz
+```
+
+Note that we passed the `--show-secret` flag. This flag displays the URL to the remote signer but not the secret. In this case, the secret is in the remote signer's custody.
+
+### Test a signing request using `octez-client`
+
+To sign arbitrary data using `octez-client,` run the command:
+
+```
+octez-client sign bytes 0x50deadbeef for octez_signer_local_key
+```
+
+If the remote signer allows signing operations with magic byte `0x05`, or "Michelson Data", the `octez-client` will output a Signature.
+
 ## Configuring octez-client to use Signatory for remote signing
 
 Once the key is imported and made active, the value of the secret key in octez-client configuration is replaced with the key's URI in Signatory:

@@ -1,30 +1,6 @@
 ---
 id: ledger
-
-title: (DRAFT) Ledger hardware wallet setup
----
-
-Steps for a ledger to be setup for baking.
-
-
-Install the Ledger Tezos Baking app
-Connect the ledger to your computer
-
-
-## tezos-client steps
-
-Ensuring that the ledger device is connected, and the tezos baker app is running, 
-
-List connected ledgers
-
-```
-tezos-signer list connected ledgers
-```
-
-You should have a list of ledgers.
-
-
-title: Ledger
+title: Ledger hardware wallet setup
 ---
 
 # Ledger vault
@@ -145,7 +121,7 @@ signatory-cli ledger setup-baking [--chain-id <chain_id>] [--main-hwm <hwm>] [--
 
 Example:
 
-```sh
+```sh!
 signatory-cli ledger setup-baking -d 3944f7a0 "bip32-ed25519/44'/1729'/0'/0'"
 ```
 
