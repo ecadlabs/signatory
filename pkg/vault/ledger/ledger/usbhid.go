@@ -273,4 +273,4 @@ func (u *USBHIDTransport) Open(path string) (Exchanger, error) {
 	return &rt, nil
 }
 
-var _ Transport = &USBHIDTransport{}
+var _ Transport = (*USBHIDTransport)(nil)

@@ -9,7 +9,7 @@ import (
 
 // Utility functions used by CLI
 
-func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string, err error) {
+func SetupBaking(transport string, id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string, err error) {
 	var hwm tezosapp.HWM
 	if chainID != "" {
 		hwm.ChainID, err = tezos.DecodeChainID(chainID)
@@ -21,7 +21,11 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string
 	if err != nil {
 		return
 	}
-	dev, err := deviceScanner.open(id)
+	s, err := getScanner(transport)
+	if err != nil {
+		return
+	}
+	dev, err := s.open(id)
 	if err != nil {
 		return
 	}
@@ -39,8 +43,12 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string
 	return pkh, nil
 }
 
-func DeauthorizeBaking(id string) error {
-	dev, err := deviceScanner.open(id)
+func DeauthorizeBaking(transport string, id string) error {
+	s, err := getScanner(transport)
+	if err != nil {
+		return err
+	}
+	dev, err := s.open(id)
 	if err != nil {
 		return err
 	}
@@ -52,8 +60,12 @@ func DeauthorizeBaking(id string) error {
 	return nil
 }
 
-func SetHighWatermark(id string, hwm uint32) error {
-	dev, err := deviceScanner.open(id)
+func SetHighWatermark(transport string, id string, hwm uint32) error {
+	s, err := getScanner(transport)
+	if err != nil {
+		return err
+	}
+	dev, err := s.open(id)
 	if err != nil {
 		return err
 	}
@@ -61,8 +73,12 @@ func SetHighWatermark(id string, hwm uint32) error {
 	return dev.SetHighWatermark(hwm)
 }
 
-func GetHighWatermark(id string) (hwm uint32, err error) {
-	dev, err := deviceScanner.open(id)
+func GetHighWatermark(transport string, id string) (hwm uint32, err error) {
+	s, err := getScanner(transport)
+	if err != nil {
+		return
+	}
+	dev, err := s.open(id)
 	if err != nil {
 		return
 	}
@@ -70,8 +86,12 @@ func GetHighWatermark(id string) (hwm uint32, err error) {
 	return dev.GetHighWatermark()
 }
 
-func GetHighWatermarks(id string) (mainHWM, testHWM uint32, chainID string, err error) {
-	dev, err := deviceScanner.open(id)
+func GetHighWatermarks(transport string, id string) (mainHWM, testHWM uint32, chainID string, err error) {
+	s, err := getScanner(transport)
+	if err != nil {
+		return
+	}
+	dev, err := s.open(id)
 	if err != nil {
 		return
 	}
