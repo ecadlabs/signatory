@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         testnet_endpoints:
-         # - https://ghostnet.ecadinfra.com
+          - https://ghostnet.ecadinfra.com
           - https://limanet.ecadinfra.com
     steps:
       - uses: actions/checkout@v2
