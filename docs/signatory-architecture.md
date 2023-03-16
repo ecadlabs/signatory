@@ -223,7 +223,7 @@ TN["Tezos Node
 [Infrastructure]
 hosts RPC service"]
 
-W["Watermark
+W["Magic Byte
 [Bytes]
 prefix the operation request"]
 
@@ -251,11 +251,10 @@ TJ-- "Forge RPC" -->TN
 TN-- "Broadcast " -->TB
 TB-- "Add" -->W
 W-- "Hash" -->B
-B-- "Sign" -->ED
-SK-- "Reveal" -->ED
+B-- "Send" -->ED
+SK-- "Provide" -->ED
 ED-- "Compose" -->SIG
 SIG--"Hash " -->ST
-TB-- "Verify" -->ST
 ST-- "Injection RPC" -->TN
 
 classDef node fill:#0C36F1,stroke:#0b4884,color:#ffffff
