@@ -6,7 +6,7 @@ import (
 
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/gotez/hashmap"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
 )

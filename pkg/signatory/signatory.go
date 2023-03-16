@@ -17,11 +17,11 @@ import (
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/gotez/encoding"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
@@ -434,11 +434,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []
 				continue
 			}
 
-			pk, err := tz.NewPublicKey(key.PublicKey())
-			if err != nil {
-				return nil, nil, err
-			}
-			pkh := pk.Hash()
+			pkh := tz.NewPublicKey(key.PublicKey()).Hash()
 			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(p)
 
@@ -462,10 +458,7 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		pk, err := tz.NewPublicKey(p.key.PublicKey())
-		if err != nil {
-			return nil, err
-		}
+		pk := tz.NewPublicKey(p.key.PublicKey())
 		ret[i] = &PublicKey{
 			PublicKey:     pk,
 			PublicKeyHash: p.pkh,
@@ -504,12 +497,9 @@ func (s *Signatory) GetPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) 
 		return nil, err
 	}
 
-	tzPk, err := tz.NewPublicKey(p.key.PublicKey())
-	if err != nil {
-		return nil, err
-	}
+	pk := tz.NewPublicKey(p.key.PublicKey())
 	return &PublicKey{
-		PublicKey:     tzPk,
+		PublicKey:     pk,
 		PublicKeyHash: keyHash,
 		VaultName:     p.vault.Name(),
 		ID:            p.key.ID(),

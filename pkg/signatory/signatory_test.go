@@ -10,8 +10,8 @@ import (
 
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
@@ -307,9 +307,7 @@ func TestPolicy(t *testing.T) {
 	require.NoError(t, err)
 	priv, err := tzPriv.PrivateKey()
 	require.NoError(t, err)
-
-	pk, err := tz.NewPublicKey(priv.Public())
-	require.NoError(t, err)
+	pk := tz.NewPublicKey(priv.Public())
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
@@ -402,8 +400,7 @@ func TestListPublikKeys(t *testing.T) {
 	priv, err := tzPriv.PrivateKey()
 	require.NoError(t, err)
 
-	pk, err := tz.NewPublicKey(priv.Public())
-	require.NoError(t, err)
+	pk := tz.NewPublicKey(priv.Public())
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {

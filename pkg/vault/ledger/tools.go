@@ -34,11 +34,7 @@ func SetupBaking(id, keyID, chainID string, mainHWM, testHWM uint32) (string, er
 		return "", err
 	}
 
-	p, err := gotez.NewPublicKey(pub)
-	if err != nil {
-		return "", err
-	}
-
+	p := gotez.NewPublicKey(pub)
 	return p.Hash().String(), nil
 }
 

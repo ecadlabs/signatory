@@ -48,15 +48,7 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	if err != nil {
 		return nil, nil, err
 	}
-	tzPk, err := gotez.NewPublicKey(rootPK)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	hash := tzPk.Hash().PublicKeyHash()
-	if err != nil {
-		return nil, nil, err
-	}
+	tzPk := gotez.NewPublicKey(rootPK)
 
 	var buf bytes.Buffer
 	pkh := tzPk.Hash()
@@ -66,6 +58,7 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	}
 	id := mnemonic.New(buf.Bytes())
 
+	hash := pkh.PublicKeyHash()
 	dev = &deviceInfo{
 		Path:    path,
 		Version: ver,

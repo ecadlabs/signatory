@@ -20,8 +20,7 @@ func TestMnemonic(t *testing.T) {
 	pub, err := x509.ParsePKIXPublicKey(pubKey)
 	assert.NoError(t, err)
 
-	tzPub, err := gotez.NewPublicKey(pub)
-	assert.NoError(t, err)
+	tzPub := gotez.NewPublicKey(pub)
 
 	var buf bytes.Buffer
 	pkh := tzPub.Hash()

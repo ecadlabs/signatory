@@ -35,10 +35,7 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 	if err != nil {
 		return nil, err
 	}
-	pub, err := tz.NewPublicKey(priv.Public())
-	if err != nil {
-		return nil, err
-	}
+	pub := tz.NewPublicKey(priv.Public())
 
 	hash := pub.Hash()
 	l := s.logger().WithFields(log.Fields{

@@ -34,11 +34,7 @@ var pubCmd = &cobra.Command{
 			return errors.New("private key is not specified")
 		}
 
-		pub, err := gotez.NewPublicKey(pk.Public())
-		if err != nil {
-			return err
-		}
-
+		pub := gotez.NewPublicKey(pk.Public())
 		fmt.Printf("Public key: %v\n", pub)
 		return nil
 	},

@@ -5,7 +5,7 @@ import (
 	"crypto"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/hashmap"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 )
 
 type authorizedKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, crypto.PublicKey]
@@ -31,10 +31,7 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 	idx := make(authorizedKeys)
 	keys := make([]tz.PublicKeyHash, len(pub))
 	for i, k := range pub {
-		pk, err := tz.NewPublicKey(k)
-		if err != nil {
-			return nil, err
-		}
+		pk := tz.NewPublicKey(k)
 		pkh := pk.Hash()
 		keys[i] = pkh
 		idx.Insert(pkh, k)

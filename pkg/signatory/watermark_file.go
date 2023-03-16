@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/hashmap"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 

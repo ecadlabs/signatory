@@ -87,10 +87,7 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 		} else {
 			id := k.KeyID
 			if id == "" {
-				pub, err := gotez.NewPublicKey(k.PrivateKey.Public())
-				if err != nil {
-					return nil, fmt.Errorf("(%s): %w", name, err)
-				}
+				pub := gotez.NewPublicKey(k.PrivateKey.Public())
 				id = pub.Hash().String()
 			}
 			key = &PrivateKey{
@@ -177,10 +174,7 @@ func (v *Vault) Unlock(ctx context.Context) error {
 
 		id := entry.ID
 		if id == "" {
-			pub, err := gotez.NewPublicKey(priv.Public())
-			if err != nil {
-				return fmt.Errorf("(%s): %w", name, err)
-			}
+			pub := gotez.NewPublicKey(priv.Public())
 			id = pub.Hash().String()
 		}
 		key := PrivateKey{
@@ -208,10 +202,7 @@ func (v *Vault) ImportKey(ctx context.Context, priv cryptoutils.PrivateKey, opt 
 	}
 
 	if !ok || id == "" {
-		pub, err := gotez.NewPublicKey(priv.Public())
-		if err != nil {
-			return nil, fmt.Errorf("(%s): %w", v.name, err)
-		}
+		pub := gotez.NewPublicKey(priv.Public())
 		id = pub.Hash().String()
 	}
 	key := PrivateKey{

@@ -67,12 +67,8 @@ func NewGenKeyCommand() *cobra.Command {
 				}
 
 				var d tplData
-				if d.PrivateKey, err = gotez.NewPrivateKey(pk); err != nil {
-					return err
-				}
-				if d.PublicKey, err = gotez.NewPublicKey(pk.Public()); err != nil {
-					return err
-				}
+				d.PrivateKey = gotez.NewPrivateKey(pk)
+				d.PublicKey = gotez.NewPublicKey(pk.Public())
 				data = append(data, &d)
 			}
 

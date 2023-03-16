@@ -19,10 +19,7 @@ type Server struct {
 }
 
 func (s *Server) Handler() (http.Handler, error) {
-	pub, err := gotez.NewPublicKey(s.PrivateKey.Public())
-	if err != nil {
-		return nil, err
-	}
+	pub := gotez.NewPublicKey(s.PrivateKey.Public())
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req signatory.PolicyHookRequest

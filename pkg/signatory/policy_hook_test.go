@@ -13,10 +13,10 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
@@ -25,11 +25,7 @@ import (
 )
 
 func serveHookAuth(status int, priv cryptoutils.PrivateKey) (func(w http.ResponseWriter, r *http.Request), error) {
-	pub, err := tz.NewPublicKey(priv.Public())
-	if err != nil {
-		return nil, err
-	}
-
+	pub := tz.NewPublicKey(priv.Public())
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req signatory.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
@@ -98,8 +94,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
 
-	signPub, err := tz.NewPublicKey(signPriv.Public())
-	require.NoError(t, err)
+	signPub := tz.NewPublicKey(signPriv.Public())
 	signKeyHash := signPub.Hash()
 
 	conf := signatory.Config{
@@ -140,8 +135,7 @@ func testPolicyHook(t *testing.T, status int) error {
 	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
 
-	signPub, err := tz.NewPublicKey(signPriv.Public())
-	require.NoError(t, err)
+	signPub := tz.NewPublicKey(signPriv.Public())
 	signKeyHash := signPub.Hash()
 
 	conf := signatory.Config{

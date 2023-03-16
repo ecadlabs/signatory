@@ -15,10 +15,10 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -29,18 +29,12 @@ import (
 
 func TestAuthenticatedRequest(t *testing.T) {
 	signPub, signPriv, _ := ed25519.GenerateKey(rand.Reader)
-	signPubTz, err := tz.NewPublicKey(signPub)
-	require.NoError(t, err)
-
+	signPubTz := tz.NewPublicKey(signPub)
 	authPub1, authPriv1, _ := ed25519.GenerateKey(rand.Reader)
-	authPubTz1, err := tz.NewPublicKey(authPub1)
-	require.NoError(t, err)
-
+	authPubTz1 := tz.NewPublicKey(authPub1)
 	authPub2, authPriv2, _ := ed25519.GenerateKey(rand.Reader)
-	authPubTz2, err := tz.NewPublicKey(authPub2)
-	require.NoError(t, err)
-
-	_, authPriv3, _ := ed25519.GenerateKey(rand.Reader)
+	authPubTz2 := tz.NewPublicKey(authPub2)
+	_, authPriv3, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
 
 	type testCase struct {

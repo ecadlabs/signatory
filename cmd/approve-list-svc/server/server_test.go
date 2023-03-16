@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
@@ -44,8 +44,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 
 	_, signPriv, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
-	signPub, err := tz.NewPublicKey(signPriv.Public())
-	require.NoError(t, err)
+	signPub := tz.NewPublicKey(signPriv.Public())
 
 	signKeyHash := signPub.Hash()
 	require.NoError(t, err)
