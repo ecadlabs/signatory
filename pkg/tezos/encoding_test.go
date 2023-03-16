@@ -26,3 +26,20 @@ func Test_DecodeChainID_FailWrongLength(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "invalid chain ID")
 }
+
+func Test_EncodeValueHash_Success(t *testing.T) {
+	b := []byte{0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
+	res := EncodeValueHash(b)
+	require.NotNil(t, res)
+	b1, err := DecodeValueHash(res)
+	require.Nil(t, err)
+	for i, _ := range b {
+		assert.Equal(t, b[i], b1[i])
+	}
+}
+
+func Test_DecodeValueHash_FailInvalidChar(t *testing.T) {
+	_, err := DecodeValueHash("101")
+	require.NotNil(t, err)
+	assert.Contains(t, err.Error(), "invalid character 0 at position 1")
+}

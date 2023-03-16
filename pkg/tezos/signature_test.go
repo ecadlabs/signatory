@@ -9,6 +9,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type TestBadSignature struct {
@@ -116,4 +117,12 @@ func Test_EncodeSignatureEcdsaUnsupportedCurveP224(t *testing.T) {
 	_, err = ParseSignature(encoded, pk.Public)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "unknown signature type")
+}
+
+func Test_ParseSignature_FailureInvalidChar(t *testing.T) {
+	pk, err := ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+	require.Nil(t, err)
+	_, err = ParseSignature("101", pk)
+	require.NotNil(t, err)
+	assert.Contains(t, err.Error(), "invalid character 0 at position 1")
 }
