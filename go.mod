@@ -7,7 +7,7 @@ require (
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34
+	github.com/ecadlabs/goblst v1.0.0
 	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/tink/go v1.7.0

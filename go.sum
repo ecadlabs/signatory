@@ -32,6 +32,8 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumC
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34 h1:90wYSD3+MHRUDdzNmcPjUe5yNhMy8Y9Ar8INomISgvU=
 github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
+github.com/ecadlabs/goblst v1.0.0 h1:8/e3SQGwqbV0+ul+pg0aSNFfC3lgQcvEed3VdDBXSl8=
+github.com/ecadlabs/goblst v1.0.0/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
 github.com/ecadlabs/gotez v1.0.0 h1:/+xAO6ZbwnENGs1IE4+raZk6Suy2E8SRJb6VD1b0+34=
 github.com/ecadlabs/gotez v1.0.0/go.mod h1:M0wxvBFDo+xzUvwkdYt2ntEbu2IejGTz8F0XuEgaNEU=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
