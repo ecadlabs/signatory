@@ -1,8 +1,7 @@
 package ledger
 
 import (
-	"encoding/hex"
-
+	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
@@ -96,5 +95,5 @@ func GetHighWatermarks(transport string, id string) (mainHWM, testHWM uint32, ch
 	if err != nil {
 		return
 	}
-	return hwm.Main, hwm.Test, hex.EncodeToString(hwm.ChainID[:]), nil
+	return hwm.Main, hwm.Test, gotez.ChainID(hwm.ChainID).String(), nil
 }
