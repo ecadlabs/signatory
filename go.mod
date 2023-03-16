@@ -1,6 +1,6 @@
 module github.com/ecadlabs/signatory
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/kms v1.9.0
