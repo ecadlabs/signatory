@@ -2,19 +2,19 @@ package auth
 
 import (
 	"context"
-	"crypto"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 )
 
-type authorizedKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, crypto.PublicKey]
+type authorizedKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, crypt.PublicKey]
 type staticAuthorizedKeys struct {
 	idx  authorizedKeys
-	keys []tz.PublicKeyHash
+	keys []crypt.PublicKeyHash
 }
 
-func (s *staticAuthorizedKeys) GetPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) (crypto.PublicKey, error) {
+func (s *staticAuthorizedKeys) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (crypt.PublicKey, error) {
 	pk, ok := s.idx.Get(keyHash)
 	if !ok {
 		return nil, ErrPublicKeyNotFound
@@ -22,19 +22,18 @@ func (s *staticAuthorizedKeys) GetPublicKey(ctx context.Context, keyHash tz.Publ
 	return pk, nil
 }
 
-func (s *staticAuthorizedKeys) ListPublicKeys(ctx context.Context) ([]tz.PublicKeyHash, error) {
+func (s *staticAuthorizedKeys) ListPublicKeys(ctx context.Context) ([]crypt.PublicKeyHash, error) {
 	return s.keys, nil
 }
 
 // StaticAuthorizedKeys returns an AuthorizedKeysStorage that uses the given public keys
-func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error) {
+func StaticAuthorizedKeys(pub ...crypt.PublicKey) (AuthorizedKeysStorage, error) {
 	idx := make(authorizedKeys)
-	keys := make([]tz.PublicKeyHash, len(pub))
-	for i, k := range pub {
-		pk := tz.NewPublicKey(k)
+	keys := make([]crypt.PublicKeyHash, len(pub))
+	for i, pk := range pub {
 		pkh := pk.Hash()
 		keys[i] = pkh
-		idx.Insert(pkh, k)
+		idx.Insert(pkh, pk)
 	}
 	return &staticAuthorizedKeys{
 		idx:  idx,
@@ -45,9 +44,9 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 // StaticAuthorizedKeysFromRaw returns an AuthorizedKeysStorage that uses the given public keys
 func StaticAuthorizedKeysFromRaw(pub ...tz.PublicKey) (AuthorizedKeysStorage, error) {
 	idx := make(authorizedKeys)
-	keys := make([]tz.PublicKeyHash, len(pub))
+	keys := make([]crypt.PublicKeyHash, len(pub))
 	for i, k := range pub {
-		pk, err := k.PublicKey()
+		pk, err := crypt.NewPublicKey(k)
 		if err != nil {
 			return nil, err
 		}

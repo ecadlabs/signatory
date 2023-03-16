@@ -12,23 +12,24 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/stretchr/testify/require"
 )
 
 type signerMock struct {
-	SignResponse      tz.Signature
+	SignResponse      crypt.Signature
 	SignError         error
 	PublicKeyResponse *signatory.PublicKey
 	PublicKeyError    error
 }
 
-func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (tz.Signature, error) {
+func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error) {
 	return c.SignResponse, c.SignError
 }
 
-func (c *signerMock) GetPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) (*signatory.PublicKey, error) {
+func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error) {
 	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
 		return nil, errors.New("key not found")
 	}
@@ -82,8 +83,15 @@ func TestSign(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			sig := &signerMock{
-				SignError:    c.Error,
-				SignResponse: c.Response,
+				SignError: c.Error,
+			}
+
+			if c.Response != nil {
+				s, err := crypt.NewSignature(c.Response)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sig.SignResponse = s
 			}
 
 			srv := &server.Server{
@@ -133,6 +141,14 @@ func TestGetPublicKey(t *testing.T) {
 		Expected   string
 	}
 
+	mustPk := func(pk tz.PublicKey) crypt.PublicKey {
+		out, err := crypt.NewPublicKey(pk)
+		if err != nil {
+			panic(err)
+		}
+		return out
+	}
+
 	cases := []testCase{
 		{
 			Name:       "ReadError",
@@ -143,7 +159,7 @@ func TestGetPublicKey(t *testing.T) {
 		{
 			Name:       "Normal",
 			StatusCode: http.StatusOK,
-			Response:   &signatory.PublicKey{PublicKey: &tz.Ed25519PublicKey{1, 2, 3}},
+			Response:   &signatory.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})},
 			Expected:   "{\"public_key\":\"edpktefgU4dfKqN1rZVBwBP8ZueBoJZfhDS3kHPSbo8c3aGPrMrunt\"}\n",
 		},
 	}

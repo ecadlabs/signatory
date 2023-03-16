@@ -19,7 +19,7 @@ import (
 	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
@@ -54,7 +54,7 @@ type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
 
 // SignInterceptorOptions contains SignInterceptor arguments to avoid confusion
 type SignInterceptorOptions struct {
-	Address tz.PublicKeyHash
+	Address crypt.PublicKeyHash
 	Vault   string
 	Req     string
 	Stat    operationsStat
@@ -65,13 +65,13 @@ type PublicKeyPolicy struct {
 	AllowedRequests     []string
 	AllowedOps          []string
 	LogPayloads         bool
-	AuthorizedKeyHashes []tz.PublicKeyHash
+	AuthorizedKeyHashes []crypt.PublicKeyHash
 }
 
 // PublicKey contains public key with its hash
 type PublicKey struct {
-	PublicKey     tz.PublicKey
-	PublicKeyHash tz.PublicKeyHash
+	PublicKey     crypt.PublicKey
+	PublicKeyHash crypt.PublicKeyHash
 	VaultName     string
 	ID            string
 	Policy        *PublicKeyPolicy
@@ -87,21 +87,21 @@ type Signatory struct {
 
 // SignRequest represents a sign request which may be authenticated with the client key
 type SignRequest struct {
-	ClientPublicKeyHash tz.PublicKeyHash // optional, see policy
-	PublicKeyHash       tz.PublicKeyHash
+	ClientPublicKeyHash crypt.PublicKeyHash // optional, see policy
+	PublicKeyHash       crypt.PublicKeyHash
 	Source              net.IP // optional caller address
 	Message             []byte
 }
 
 type keyVaultPair struct {
-	pkh   tz.PublicKeyHash
+	pkh   crypt.PublicKeyHash
 	key   vault.StoredKey
 	vault vault.Vault
 	name  string
 }
 
 type keyCache struct {
-	cache hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *keyVaultPair]
+	cache hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair]
 	mtx   sync.Mutex
 }
 
@@ -110,12 +110,12 @@ func (k *keyCache) push(pair *keyVaultPair) {
 	defer k.mtx.Unlock()
 
 	if k.cache == nil {
-		k.cache = make(hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *keyVaultPair])
+		k.cache = make(hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair])
 	}
 	k.cache.Insert(pair.pkh, pair)
 }
 
-func (k *keyCache) get(pkh tz.PublicKeyHash) *keyVaultPair {
+func (k *keyCache) get(pkh crypt.PublicKeyHash) *keyVaultPair {
 	k.mtx.Lock()
 	defer k.mtx.Unlock()
 
@@ -143,7 +143,7 @@ var defaultPolicy = PublicKeyPolicy{
 	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
 }
 
-func (s *Signatory) fetchPolicyOrDefault(keyHash tz.PublicKeyHash) *PublicKeyPolicy {
+func (s *Signatory) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKeyPolicy {
 	val, ok := s.config.Policy.Get(keyHash)
 	if !ok {
 		return nil
@@ -262,19 +262,12 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		if err != nil {
 			errors.Wrap(err, http.StatusForbidden)
 		}
-		tzSig, err := b58.ParseSignature([]byte(reply.Signature))
+		sig, err := crypt.ParseSignature([]byte(reply.Signature))
 		if err != nil {
 			return err
 		}
-		sig, err := tzSig.Signature(pub)
-		if err != nil {
-			return err
-		}
-		if err = cryptoutils.Verify(pub, reply.Payload, sig); err != nil {
-			if stderr.Is(err, cryptoutils.ErrSignature) {
-				return errors.Wrap(errors.New("invalid hook reply signature"), http.StatusForbidden)
-			}
-			return err
+		if !sig.Verify(pub, reply.Payload) {
+			return errors.Wrap(errors.New("invalid hook reply signature"), http.StatusForbidden)
 		}
 		if resp.StatusCode/100 != 2 {
 			var msg string
@@ -305,7 +298,7 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 }
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
-func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (tz.Signature, error) {
+func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
 	l := s.logger().WithField(logPKH, req.PublicKeyHash)
 
 	if req.ClientPublicKeyHash != nil {
@@ -370,7 +363,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (tz.Signature, e
 	}
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 
-	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
 		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
@@ -379,7 +372,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (tz.Signature, e
 		return p.vault.SignMessage(ctx, message, p.key)
 	}
 
-	var sig cryptoutils.Signature
+	var sig crypt.Signature
 	if s.config.Interceptor != nil {
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
@@ -398,18 +391,13 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (tz.Signature, e
 	}
 
 	l.WithField("raw", sig).Debug("Signed bytes")
-	tzSig, err := tz.NewSignature(sig)
-	if err != nil {
-		return nil, err
-	}
-
-	l.Debugf("Encoded signature: %v", tzSig)
+	l.Debugf("Encoded signature: %v", sig)
 	l.Infof("Signed %s successfully", msg.RequestKind())
 
-	return tzSig, nil
+	return sig, nil
 }
 
-type publicKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *keyVaultPair]
+type publicKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair]
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []*keyVaultPair, err error) {
 	ret = make(publicKeys)
@@ -429,12 +417,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []
 					return nil, nil, err
 				}
 			}
-
-			if !cryptoutils.PublicKeySuitableForTezos(key.PublicKey()) {
-				continue
-			}
-
-			pkh := tz.NewPublicKey(key.PublicKey()).Hash()
+			pkh := key.PublicKey().Hash()
 			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
 			s.cache.push(p)
 
@@ -458,7 +441,7 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		pk := tz.NewPublicKey(p.key.PublicKey())
+		pk := p.key.PublicKey()
 		ret[i] = &PublicKey{
 			PublicKey:     pk,
 			PublicKeyHash: p.pkh,
@@ -471,7 +454,7 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 	return ret, nil
 }
 
-func (s *Signatory) getPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) (*keyVaultPair, error) {
+func (s *Signatory) getPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*keyVaultPair, error) {
 	cached := s.cache.get(keyHash)
 	if cached != nil {
 		return cached, nil
@@ -491,15 +474,14 @@ func (s *Signatory) getPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) 
 }
 
 // GetPublicKey retrieve the public key from a vault
-func (s *Signatory) GetPublicKey(ctx context.Context, keyHash tz.PublicKeyHash) (*PublicKey, error) {
+func (s *Signatory) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*PublicKey, error) {
 	p, err := s.getPublicKey(ctx, keyHash)
 	if err != nil {
 		return nil, err
 	}
 
-	pk := tz.NewPublicKey(p.key.PublicKey())
 	return &PublicKey{
-		PublicKey:     pk,
+		PublicKey:     p.key.PublicKey(),
 		PublicKeyHash: keyHash,
 		VaultName:     p.vault.Name(),
 		ID:            p.key.ID(),
@@ -525,7 +507,7 @@ type PolicyHook struct {
 	Auth    auth.AuthorizedKeysStorage
 }
 
-type Policy = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *PublicKeyPolicy]
+type Policy = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *PublicKeyPolicy]
 
 // Config represents Signatory configuration
 type Config struct {
@@ -587,7 +569,7 @@ func (s *Signatory) Ready(ctx context.Context) (bool, error) {
 // PreparePolicy prepares policy data by hashing keys etc
 func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 	policy := make(Policy, len(src))
-	src.ForEach(func(k tz.PublicKeyHash, v *config.TezosPolicy) bool {
+	src.ForEach(func(k crypt.PublicKeyHash, v *config.TezosPolicy) bool {
 		if v == nil {
 			policy.Insert(k, nil) // default policy
 			return true
@@ -644,7 +626,7 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 
 		if v.AuthorizedKeys != nil {
 			keys := v.AuthorizedKeys.List()
-			pol.AuthorizedKeyHashes = make([]tz.PublicKeyHash, len(keys))
+			pol.AuthorizedKeyHashes = make([]crypt.PublicKeyHash, len(keys))
 			for i, k := range keys {
 				pol.AuthorizedKeyHashes[i] = k.Hash()
 			}

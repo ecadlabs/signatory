@@ -3,26 +3,24 @@ package memory
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
 	"sync"
 
-	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 )
 
 type PrivateKey struct {
-	PrivateKey cryptoutils.PrivateKey
+	PrivateKey crypt.PrivateKey
 	KeyID      string
 }
 
 // PublicKey get the public key associated with this key
-func (f *PrivateKey) PublicKey() crypto.PublicKey {
+func (f *PrivateKey) PublicKey() crypt.PublicKey {
 	return f.PrivateKey.Public()
 }
 
@@ -87,8 +85,7 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 		} else {
 			id := k.KeyID
 			if id == "" {
-				pub := gotez.NewPublicKey(k.PrivateKey.Public())
-				id = pub.Hash().String()
+				id = k.PrivateKey.Public().Hash().String()
 			}
 			key = &PrivateKey{
 				PrivateKey: k.PrivateKey,
@@ -129,12 +126,12 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 func (v *Vault) Name() string { return v.name }
 
 // Sign sign using the specified key
-func (v *Vault) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig crypt.Signature, err error) {
 	key, ok := k.(*PrivateKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(%s): invalid key type: %T ", v.name, k), http.StatusBadRequest)
 	}
-	signature, err := cryptoutils.Sign(key.PrivateKey, message)
+	signature, err := key.PrivateKey.Sign(message)
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
@@ -167,15 +164,14 @@ func (v *Vault) Unlock(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("(%s): %w", v.name, err)
 		}
-		priv, err := tzPriv.PrivateKey()
+		priv, err := crypt.NewPrivateKey(tzPriv)
 		if err != nil {
 			return fmt.Errorf("(%s): %w", v.name, err)
 		}
 
 		id := entry.ID
 		if id == "" {
-			pub := gotez.NewPublicKey(priv.Public())
-			id = pub.Hash().String()
+			id = priv.Public().Hash().String()
 		}
 		key := PrivateKey{
 			PrivateKey: priv,
@@ -195,15 +191,14 @@ func (v *Vault) Unlock(ctx context.Context) error {
 	return nil
 }
 
-func (v *Vault) ImportKey(ctx context.Context, priv cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) ImportKey(ctx context.Context, priv crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	id, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
 
 	if !ok || id == "" {
-		pub := gotez.NewPublicKey(priv.Public())
-		id = pub.Hash().String()
+		id = priv.Public().Hash().String()
 	}
 	key := PrivateKey{
 		PrivateKey: priv,
@@ -222,7 +217,7 @@ type Importer struct {
 	*Vault
 }
 
-func (i *Importer) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (i *Importer) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	return i.ImportKey(ctx, pk, opt)
 }
 

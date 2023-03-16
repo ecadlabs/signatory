@@ -25,7 +25,7 @@ func NewServeCommand(c *Context) *cobra.Command {
 			}
 
 			if c.config.Server.AuthorizedKeys != nil {
-				ak, err := auth.StaticAuthorizedKeysFromRaw(c.config.Server.AuthorizedKeys.List()...)
+				ak, err := auth.StaticAuthorizedKeys(c.config.Server.AuthorizedKeys.List()...)
 				if err != nil {
 					return err
 				}

@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
 func TestHashMap(t *testing.T) {
-	m := hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, string]{
+	m := hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, string]{
 		{
 			&tz.Ed25519PublicKeyHash{0}, "a",
 		},
@@ -30,7 +31,7 @@ func TestHashMap(t *testing.T) {
 		buf, err := json.Marshal(m)
 		require.NoError(t, err)
 
-		var res hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, string]
+		var res hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, string]
 		err = json.Unmarshal(buf, &res)
 		require.NoError(t, err)
 		require.Equal(t, m, res)
@@ -39,7 +40,7 @@ func TestHashMap(t *testing.T) {
 	t.Run("YAML", func(t *testing.T) {
 		buf, err := yaml.Marshal(m)
 		require.NoError(t, err)
-		var res hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, string]
+		var res hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, string]
 		err = yaml.Unmarshal(buf, &res)
 		require.NoError(t, err)
 		require.Equal(t, m, res)

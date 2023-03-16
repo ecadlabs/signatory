@@ -2,7 +2,6 @@ package awskms
 
 import (
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"encoding/asn1"
 	"errors"
@@ -14,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
-	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
@@ -50,8 +49,8 @@ type awsKMSIterator struct {
 }
 
 // PublicKey returns encoded public key
-func (c *awsKMSKey) PublicKey() crypto.PublicKey {
-	return c.pub
+func (c *awsKMSKey) PublicKey() crypt.PublicKey {
+	return (*crypt.ECDSAPublicKey)(c.pub)
 }
 
 // ID returnd a unique key ID
@@ -133,8 +132,8 @@ func (v *Vault) Name() string {
 	return "AWSKMS"
 }
 
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	digest := cryptoutils.Digest(message)
+func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
+	digest := crypt.Digest(message)
 	kid := key.ID()
 	sout, err := v.kmsapi.Sign(&kms.SignInput{
 		KeyId:            &kid,
@@ -156,7 +155,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	}
 
 	pubkey := key.(*awsKMSKey)
-	return &signature.ECDSA{
+	return &crypt.ECDSASignature{
 		R:     sig.R,
 		S:     sig.S,
 		Curve: pubkey.pub.Curve,

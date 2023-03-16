@@ -11,12 +11,13 @@ import (
 	"sync"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
 // chain -> delegate(pkh)
-type delegateMap = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *request.StoredWatermark]
+type delegateMap = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *request.StoredWatermark]
 type chainMap map[tz.ChainID]delegateMap
 
 var ErrWatermark = errors.New("watermark validation failed")
@@ -28,7 +29,7 @@ type FileWatermark struct {
 	mtx     sync.Mutex
 }
 
-func (f *FileWatermark) IsSafeToSign(pkh tz.PublicKeyHash, req request.SignRequest) error {
+func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required

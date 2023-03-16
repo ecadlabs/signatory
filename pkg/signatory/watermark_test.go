@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ func (m *msgMock) Watermark() *request.Watermark {
 func (m *msgMock) RequestKind() string { return "dummy" }
 
 type testCase struct {
-	pkh       tz.PublicKeyHash
+	pkh       crypt.PublicKeyHash
 	req       request.SignRequest
 	expectErr bool
 }

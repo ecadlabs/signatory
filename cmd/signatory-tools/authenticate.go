@@ -4,9 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/spf13/cobra"
 )
@@ -17,11 +16,7 @@ func NewAuthRequestCommand() *cobra.Command {
 		Short: "Authenticate (sign) a sign request",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tzPriv, err := b58.ParsePrivateKey([]byte(args[0]))
-			if err != nil {
-				return err
-			}
-			priv, err := tzPriv.PrivateKey()
+			priv, err := crypt.ParsePrivateKey([]byte(args[0]))
 			if err != nil {
 				return err
 			}
@@ -46,15 +41,11 @@ func NewAuthRequestCommand() *cobra.Command {
 				return err
 			}
 
-			sig, err := cryptoutils.Sign(priv, data)
+			sig, err := priv.Sign(data)
 			if err != nil {
 				return err
 			}
-			tzSig, err := gotez.NewSignature(sig)
-			if err != nil {
-				return err
-			}
-			fmt.Println(tzSig)
+			fmt.Println(sig)
 			return nil
 		},
 	}

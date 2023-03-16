@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonic"
@@ -48,10 +47,9 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 	if err != nil {
 		return nil, nil, err
 	}
-	tzPk := gotez.NewPublicKey(rootPK)
 
 	var buf bytes.Buffer
-	pkh := tzPk.Hash()
+	pkh := rootPK.Hash()
 	// pass pointer to interface to preserve type information to encode correctly
 	if err := encoding.Encode(&buf, &pkh); err != nil {
 		return nil, nil, err

@@ -8,6 +8,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ecadlabs/goblst v0.0.0-20230219220446-8f6d51806c34
+	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.3.0
@@ -26,14 +27,13 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.12.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/ecadlabs/gotez v0.0.0-20230315193601-02e8f745d715 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 )
 
 require (

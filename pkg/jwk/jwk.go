@@ -133,7 +133,7 @@ func (j *JWK) PublicKey() (crypto.PublicKey, error) {
 }
 
 // PrivateKey decodes a private key represented in JWK
-func (j *JWK) PrivateKey() (cryptoutils.PrivateKey, error) {
+func (j *JWK) PrivateKey() (crypto.PrivateKey, error) {
 	switch j.KeyType {
 	case "EC", "EC-HSM":
 		if j.D == "" {
@@ -211,7 +211,7 @@ func (j *JWK) populateRSAPublicKey(key *rsa.PublicKey) {
 }
 
 // EncodePrivateKey returns a JWT populated with data from the private key
-func EncodePrivateKey(key cryptoutils.PrivateKey) (jwk *JWK, err error) {
+func EncodePrivateKey(key crypto.PrivateKey) (jwk *JWK, err error) {
 	jwk = new(JWK)
 	switch k := key.(type) {
 	case *ecdsa.PrivateKey:

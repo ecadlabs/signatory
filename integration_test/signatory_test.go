@@ -17,11 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/gotez/hashmap"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -49,13 +48,13 @@ type secretKeyJSON struct {
 	Email    string   `json:"email"`
 }
 
-func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
+func secretKeyFromEnv() (crypt.PrivateKey, error) {
 	if s := os.Getenv(envKey); s != "" {
-		priv, err := b58.ParsePrivateKey([]byte(s))
+		priv, err := crypt.ParsePrivateKey([]byte(s))
 		if err != nil {
 			return nil, err
 		}
-		return priv.PrivateKey()
+		return priv, nil
 	}
 
 	if s := os.Getenv(envKeyJSON); s != "" {
@@ -68,20 +67,12 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 			mnemonic := strings.Join(data.Mnemonic, " ")
 			salt := "mnemonic" + data.Email + data.Password
 			k := pbkdf2.Key([]byte(mnemonic), []byte(salt), 2048, 64, sha512.New)
-			p := ed25519.NewKeyFromSeed(k[:32])
-			priv, err := tz.NewPrivateKey(p)
-			if err != nil {
-				return nil, err
-			}
-			pub, err := tz.NewPublicKey(priv)
-			if err != nil {
-				return nil, err
-			}
-			pkh := pub.Hash()
+			priv := crypt.Ed25519PrivateKey(ed25519.NewKeyFromSeed(k[:32]))
+			pkh := priv.Public().Hash()
 			if data.PKH != pkh.String() {
 				return nil, errors.New("public key hash mismatch")
 			}
-			return p, nil
+			return priv, nil
 		}
 	}
 
@@ -91,7 +82,7 @@ func secretKeyFromEnv() (cryptoutils.PrivateKey, error) {
 // Signatory wrapper to keep Sign calls arguments and returned data
 type signCall struct {
 	request   *signatory.SignRequest
-	signature tz.Signature
+	signature crypt.Signature
 	err       error
 }
 
@@ -101,7 +92,7 @@ type signerWrapper struct {
 	mtx   sync.Mutex
 }
 
-func (s *signerWrapper) Sign(ctx context.Context, req *signatory.SignRequest) (tz.Signature, error) {
+func (s *signerWrapper) Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error) {
 	signature, err := s.Signatory.Sign(ctx, req)
 	s.mtx.Lock()
 	s.calls = append(s.calls, &signCall{request: req, signature: signature, err: err})
@@ -116,18 +107,12 @@ func (s *signerWrapper) signCalls() []*signCall {
 }
 
 // Generate authentication key
-func genAuthKey() (pub tz.PublicKey, priv tz.PrivateKey, err error) {
-	pubk, privk, err := ed25519.GenerateKey(nil)
+func genAuthKey() (crypt.PublicKey, crypt.PrivateKey, error) {
+	pub, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
-	if pub, err = tz.NewPublicKey(pubk); err != nil {
-		return
-	}
-	if priv, err = tz.NewPrivateKey(privk); err != nil {
-		return
-	}
-	return
+	return crypt.Ed25519PublicKey(pub), crypt.Ed25519PrivateKey(priv), nil
 }
 
 func logExec(t *testing.T, name string, arg ...string) error {
@@ -137,11 +122,9 @@ func logExec(t *testing.T, name string, arg ...string) error {
 }
 
 func TestSignatory(t *testing.T) {
-	pk, err := secretKeyFromEnv()
+	priv, err := secretKeyFromEnv()
 	require.NoError(t, err)
-
-	pub, err := tz.NewPublicKey(pk.Public())
-	require.NoError(t, err)
+	pub := priv.Public()
 
 	authPub, authPriv, err := genAuthKey()
 	require.NoError(t, err)
@@ -151,9 +134,9 @@ func TestSignatory(t *testing.T) {
 		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
 		Watermark: signatory.IgnoreWatermark{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.New([]*memory.PrivateKey{{PrivateKey: pk}}, "")
+			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
 		}),
-		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
 			{
 				Key: pub.Hash(),
 				Val: &signatory.PublicKeyPolicy{
@@ -173,7 +156,7 @@ func TestSignatory(t *testing.T) {
 	srvCfg := server.Server{
 		Signer:  &signer,
 		Address: listenAddr,
-		Auth:    auth.Must(auth.StaticAuthorizedKeysFromRaw(authPub)),
+		Auth:    auth.Must(auth.StaticAuthorizedKeys(authPub)),
 	}
 
 	srv, err := srvCfg.New()

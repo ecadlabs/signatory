@@ -4,7 +4,6 @@ package test_test
 
 import (
 	"context"
-	"crypto"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -17,7 +16,7 @@ import (
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
@@ -27,19 +26,27 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func generateKey() (crypt.PublicKey, crypt.PrivateKey, error) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	return crypt.Ed25519PublicKey(pub), crypt.Ed25519PrivateKey(priv), nil
+}
+
 func TestAuthenticatedRequest(t *testing.T) {
-	signPub, signPriv, _ := ed25519.GenerateKey(rand.Reader)
-	signPubTz := tz.NewPublicKey(signPub)
-	authPub1, authPriv1, _ := ed25519.GenerateKey(rand.Reader)
-	authPubTz1 := tz.NewPublicKey(authPub1)
-	authPub2, authPriv2, _ := ed25519.GenerateKey(rand.Reader)
-	authPubTz2 := tz.NewPublicKey(authPub2)
-	_, authPriv3, err := ed25519.GenerateKey(rand.Reader)
+	signPub, signPriv, err := generateKey()
+	require.NoError(t, err)
+	authPub1, authPriv1, err := generateKey()
+	require.NoError(t, err)
+	authPub2, authPriv2, err := generateKey()
+	require.NoError(t, err)
+	_, authPriv3, err := generateKey()
 	require.NoError(t, err)
 
 	type testCase struct {
 		name       string
-		signWith   crypto.Signer
+		signWith   crypt.PrivateKey
 		statusCode int
 	}
 
@@ -73,13 +80,13 @@ func TestAuthenticatedRequest(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: signPriv}}, "Mock")
 		}),
-		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
 			{
-				Key: signPubTz.Hash(),
+				Key: signPub.Hash(),
 				Val: &signatory.PublicKeyPolicy{
 					AllowedRequests:     []string{"generic", "block", "endorsement"},
 					AllowedOps:          []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
-					AuthorizedKeyHashes: []tz.PublicKeyHash{authPubTz1.Hash()},
+					AuthorizedKeyHashes: []crypt.PublicKeyHash{authPub1.Hash()},
 				},
 			},
 		}),
@@ -91,7 +98,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 
 	srv := server.Server{
 		Signer: signer,
-		Auth:   auth.Must(auth.StaticAuthorizedKeysFromRaw(authPubTz1, authPubTz2)),
+		Auth:   auth.Must(auth.StaticAuthorizedKeys(authPub1, authPub2)),
 	}
 
 	handler, err := srv.Handler()
@@ -102,22 +109,20 @@ func TestAuthenticatedRequest(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			u, _ := url.Parse(s.URL + "/keys/" + signPubTz.Hash().String())
+			u, _ := url.Parse(s.URL + "/keys/" + signPub.Hash().String())
 			if c.signWith != nil {
 				msgBytes, err := hex.DecodeString(message)
 				require.NoError(t, err)
 				authBytes, err := signatory.AuthenticatedBytesToSign(&signatory.SignRequest{
-					PublicKeyHash: signPubTz.Hash(),
+					PublicKeyHash: signPub.Hash(),
 					Message:       msgBytes,
 				})
 				require.NoError(t, err)
-				sig, err := cryptoutils.Sign(c.signWith, authBytes)
-				require.NoError(t, err)
-				tzSig, err := tz.NewSignature(sig)
+				sig, err := c.signWith.Sign(authBytes)
 				require.NoError(t, err)
 
 				u.RawQuery = url.Values{
-					"authentication": []string{tzSig.String()},
+					"authentication": []string{sig.String()},
 				}.Encode()
 			}
 

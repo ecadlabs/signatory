@@ -2,11 +2,12 @@ package mnemonic
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/x509"
 	"testing"
 
-	"github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/encoding"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ func TestMnemonic(t *testing.T) {
 	pub, err := x509.ParsePKIXPublicKey(pubKey)
 	assert.NoError(t, err)
 
-	tzPub := gotez.NewPublicKey(pub)
+	tzPub := crypt.Ed25519PublicKey(pub.(ed25519.PublicKey))
 
 	var buf bytes.Buffer
 	pkh := tzPub.Hash()

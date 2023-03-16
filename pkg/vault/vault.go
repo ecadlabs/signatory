@@ -2,11 +2,10 @@ package vault
 
 import (
 	"context"
-	"crypto"
 	"errors"
 	"fmt"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -14,7 +13,7 @@ import (
 
 // StoredKey represents a public key which has a private counterpart stored on the backend side
 type StoredKey interface {
-	PublicKey() crypto.PublicKey
+	PublicKey() crypt.PublicKey
 	ID() string
 }
 
@@ -27,14 +26,14 @@ type StoredKeysIterator interface {
 type Vault interface {
 	GetPublicKey(ctx context.Context, id string) (StoredKey, error)
 	ListPublicKeys(ctx context.Context) StoredKeysIterator
-	SignMessage(ctx context.Context, msg []byte, key StoredKey) (cryptoutils.Signature, error)
+	SignMessage(ctx context.Context, msg []byte, key StoredKey) (crypt.Signature, error)
 	Name() string
 }
 
 // Importer interface representing an importer backend
 type Importer interface {
 	Vault
-	Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (StoredKey, error)
+	Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (StoredKey, error)
 }
 
 // Unlocker interface representing an unlocker backend

@@ -3,7 +3,6 @@ package azure
 import (
 	"bytes"
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
@@ -16,8 +15,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/jwk"
@@ -61,8 +60,8 @@ type azureKey struct {
 	pub    *ecdsa.PublicKey
 }
 
-func (a *azureKey) PublicKey() crypto.PublicKey { return a.pub }
-func (a *azureKey) ID() string                  { return a.bundle.Key.KeyID }
+func (a *azureKey) PublicKey() crypt.PublicKey { return (*crypt.ECDSAPublicKey)(a.pub) }
+func (a *azureKey) ID() string                 { return a.bundle.Key.KeyID }
 
 // New creates new Azure KeyVault backend
 func New(ctx context.Context, config *Config) (vault *Vault, err error) {
@@ -289,8 +288,8 @@ func (v *Vault) VaultName() string {
 }
 
 // Sign performs signing operation
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (sig cryptoutils.Signature, err error) {
-	digest := cryptoutils.Digest(message)
+func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (sig crypt.Signature, err error) {
+	digest := crypt.Digest(message)
 	azureKey, ok := key.(*azureKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
@@ -332,7 +331,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(b))
 	}
 
-	s := signature.ECDSA{
+	s := crypt.ECDSASignature{
 		R:     new(big.Int).SetBytes(b[:byteLen]),
 		S:     new(big.Int).SetBytes(b[byteLen:]),
 		Curve: cryptoutils.NamedCurve(azureKey.bundle.Key.Curve),
@@ -342,7 +341,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 }
 
 // Import imports a private key
-func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	keyName, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
@@ -351,12 +350,12 @@ func (v *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 		keyName = "signatory-imported-" + ksuid.New().String()
 	}
 
-	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
+	ecdsaKey, ok := pk.(*crypt.ECDSAPrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(Azure/%s) Unsupported key type: %T", v.config.Vault, pk)
 	}
 
-	key, err := jwk.EncodePrivateKey(ecdsaKey)
+	key, err := jwk.EncodePrivateKey(ecdsaKey.Unwrap())
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}

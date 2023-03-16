@@ -2,12 +2,16 @@ package cryptoutils
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
+	"fmt"
 
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"golang.org/x/crypto/cryptobyte"
 )
 
@@ -33,7 +37,7 @@ func oidFromNamedCurve(curve elliptic.Curve) asn1.ObjectIdentifier {
 		return oidNamedCurveP384
 	case elliptic.P521():
 		return oidNamedCurveP521
-	case S256():
+	case secp256k1.S256():
 		return oidNamedCurveS256
 	default:
 		return nil
@@ -52,8 +56,10 @@ type pkcs8 struct {
 
 // ecPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
 // References:
-//   RFC 5915
-//   SEC1 - http://www.secg.org/sec1-v2.pdf
+//
+//	RFC 5915
+//	SEC1 - http://www.secg.org/sec1-v2.pdf
+//
 // Per RFC 5915 the NamedCurveOID is marked as ASN.1 OPTIONAL, however in
 // most cases it is not.
 type ecPrivateKey struct {
@@ -106,11 +112,17 @@ func marshalECPrivateKeyWithOID(key *ecdsa.PrivateKey, oid asn1.ObjectIdentifier
 }
 
 // MarshalPKCS8PrivateKey converts a private key to PKCS#8, ASN.1 DER form.
-func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
-	if ecdsaKey, ok := key.(*ecdsa.PrivateKey); ok {
-		return marshalPKCS8ECDSAPrivateKey(ecdsaKey)
+func MarshalPKCS8PrivateKey(key any) ([]byte, error) {
+	switch key := key.(type) {
+	case *crypt.ECDSAPrivateKey:
+		return marshalPKCS8ECDSAPrivateKey((*ecdsa.PrivateKey)(key))
+	case *ecdsa.PrivateKey:
+		return marshalPKCS8ECDSAPrivateKey(key)
+	case crypt.PrivateKey:
+		return x509.MarshalPKCS8PrivateKey(key.Unwrap())
+	default:
+		return x509.MarshalPKCS8PrivateKey(key)
 	}
-	return x509.MarshalPKCS8PrivateKey(key)
 }
 
 type publicKeyInfo struct {
@@ -130,7 +142,7 @@ func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
 	case oid.Equal(oidNamedCurveP521):
 		return elliptic.P521()
 	case oid.Equal(oidNamedCurveS256):
-		return S256()
+		return secp256k1.S256()
 	}
 	return nil
 }
@@ -170,5 +182,27 @@ func ParsePKIXPublicKey(derBytes []byte) (pub any, err error) {
 		return parseECDSAPublicKey(&pki)
 	} else {
 		return x509.ParsePKIXPublicKey(derBytes)
+	}
+}
+
+// ParsePKCS8PrivateKey wraps standard library function and returns a wrapped private key.
+// Secp256k1 is NOT supported
+func ParsePKCS8PrivateKey(der []byte) (crypt.PrivateKey, error) {
+	key, err := x509.ParsePKCS8PrivateKey(der)
+	if err != nil {
+		return nil, err
+	}
+
+	switch key := key.(type) {
+	case ed25519.PrivateKey:
+		return crypt.Ed25519PrivateKey(key), nil
+	case *ecdsa.PrivateKey:
+		if key.Curve == elliptic.P256() {
+			return (*crypt.ECDSAPrivateKey)(key), nil
+		} else {
+			return nil, fmt.Errorf("unsupported curve: %v", key.Curve.Params())
+		}
+	default:
+		return nil, fmt.Errorf("unsupported PKCS#8 key type: %T", key)
 	}
 }

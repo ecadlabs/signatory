@@ -6,21 +6,19 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 )
 
 type Server struct {
 	Address    string
-	PrivateKey cryptoutils.PrivateKey
+	PrivateKey crypt.PrivateKey
 	Addresses  []net.IP
 	Nets       []*net.IPNet
 }
 
 func (s *Server) Handler() (http.Handler, error) {
-	pub := gotez.NewPublicKey(s.PrivateKey.Public())
-
+	pub := s.PrivateKey.Public()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req signatory.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
@@ -69,13 +67,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				return
 			}
 
-			sig, err := cryptoutils.Sign(s.PrivateKey, buf)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			s, err := gotez.NewSignature(sig)
+			sig, err := s.PrivateKey.Sign(buf)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -83,7 +75,7 @@ func (s *Server) Handler() (http.Handler, error) {
 
 			reply := signatory.PolicyHookReply{
 				Payload:   buf,
-				Signature: s.String(),
+				Signature: sig.String(),
 			}
 
 			w.Header().Set("Content-Type", "application/json")

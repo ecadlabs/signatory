@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -303,11 +303,9 @@ func TestPolicy(t *testing.T) {
 		},
 	}
 
-	tzPriv, err := b58.ParsePrivateKey([]byte(privateKey))
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
 	require.NoError(t, err)
-	priv, err := tzPriv.PrivateKey()
-	require.NoError(t, err)
-	pk := tz.NewPublicKey(priv.Public())
+	pk := priv.Public()
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
@@ -317,7 +315,7 @@ func TestPolicy(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
-				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 
 			s, err := signatory.New(context.Background(), &conf)
@@ -334,7 +332,7 @@ func TestPolicy(t *testing.T) {
 	}
 }
 
-func TestListPublikKeys(t *testing.T) {
+func TestListPublicKeys(t *testing.T) {
 	type testCase struct {
 		title    string
 		policy   signatory.PublicKeyPolicy
@@ -395,12 +393,9 @@ func TestListPublikKeys(t *testing.T) {
 		},
 	}
 
-	tzPriv, err := b58.ParsePrivateKey([]byte(privateKey))
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
 	require.NoError(t, err)
-	priv, err := tzPriv.PrivateKey()
-	require.NoError(t, err)
-
-	pk := tz.NewPublicKey(priv.Public())
+	pk := priv.Public()
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
@@ -410,7 +405,7 @@ func TestListPublikKeys(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),
-				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[tz.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 			s, err := signatory.New(context.Background(), &conf)
 			require.NoError(t, err)

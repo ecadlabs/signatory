@@ -2,14 +2,13 @@ package ledger
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
@@ -43,7 +42,7 @@ type signReq struct {
 	key  *keyID
 	data []byte
 
-	sig chan<- cryptoutils.Signature
+	sig chan<- crypt.Signature
 	err chan<- error
 }
 
@@ -70,11 +69,11 @@ type Config struct {
 
 type ledgerKey struct {
 	id  *keyID
-	pub crypto.PublicKey
+	pub crypt.PublicKey
 }
 
-func (l *ledgerKey) PublicKey() crypto.PublicKey { return l.pub }
-func (l *ledgerKey) ID() string                  { return l.id.String() }
+func (l *ledgerKey) PublicKey() crypt.PublicKey { return l.pub }
+func (l *ledgerKey) ID() string                 { return l.id.String() }
 
 type ledgerIterator struct {
 	ctx context.Context
@@ -133,13 +132,13 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	}
 }
 
-func (v *Vault) SignMessage(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
+func (v *Vault) SignMessage(ctx context.Context, digest []byte, key vault.StoredKey) (crypt.Signature, error) {
 	pk, ok := key.(*ledgerKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Ledger/%s): not a Ledger key: %T ", v.config.ID, key), http.StatusBadRequest)
 	}
 
-	res := make(chan cryptoutils.Signature, 1)
+	res := make(chan crypt.Signature, 1)
 	errCh := make(chan error, 1)
 
 	v.req <- &signReq{

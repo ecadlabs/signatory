@@ -5,7 +5,7 @@ import (
 	"os"
 
 	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
@@ -25,7 +25,7 @@ type ServerConfig struct {
 }
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig = hashmap.HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, *TezosPolicy]
+type TezosConfig = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *TezosPolicy]
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
@@ -83,28 +83,28 @@ func Validator() *validator.Validate {
 
 // AuthorizedKeys keeps list of authorized public keys
 type AuthorizedKeys struct {
-	value tz.PublicKey
+	value crypt.PublicKey
 	list  []*AuthorizedKeys
 }
 
 // List returns all keys as a string slice
-func (a *AuthorizedKeys) List() []tz.PublicKey {
+func (a *AuthorizedKeys) List() []crypt.PublicKey {
 	if a.list != nil {
-		var ret []tz.PublicKey
+		var ret []crypt.PublicKey
 		for _, v := range a.list {
 			ret = append(ret, v.List()...)
 		}
 		return ret
 	}
-	return []tz.PublicKey{a.value}
+	return []crypt.PublicKey{a.value}
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler
 func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) (err error) {
 	switch value.Kind {
 	case yaml.ScalarNode:
-		var pub tz.PublicKey
-		pub, err = b58.ParsePublicKey([]byte(value.Value))
+		var pub crypt.PublicKey
+		pub, err = crypt.ParsePublicKey([]byte(value.Value))
 		a.value = pub
 
 	case yaml.SequenceNode:

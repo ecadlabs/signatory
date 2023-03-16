@@ -9,9 +9,9 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/goblst/minpk"
-	"github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/spf13/cobra"
 )
 
@@ -28,8 +28,8 @@ var (
 )
 
 type tplData struct {
-	PrivateKey gotez.PrivateKey
-	PublicKey  gotez.PublicKey
+	PrivateKey crypt.PrivateKey
+	PublicKey  crypt.PublicKey
 }
 
 func NewGenKeyCommand() *cobra.Command {
@@ -45,19 +45,27 @@ func NewGenKeyCommand() *cobra.Command {
 			var data []*tplData
 			for i := 0; i < num; i++ {
 				var (
-					pk  cryptoutils.PrivateKey
-					err error
+					priv crypt.PrivateKey
+					err  error
 				)
 
 				switch keyType {
 				case "ed25519":
-					_, pk, err = ed25519.GenerateKey(rand.Reader)
+					var k ed25519.PrivateKey
+					_, k, err = ed25519.GenerateKey(rand.Reader)
+					priv = crypt.Ed25519PrivateKey(k)
 				case "secp256k1":
-					pk, err = ecdsa.GenerateKey(cryptoutils.S256(), rand.Reader)
+					var k *ecdsa.PrivateKey
+					k, err = ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+					priv = (*crypt.ECDSAPrivateKey)(k)
 				case "p256":
-					pk, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+					var k *ecdsa.PrivateKey
+					k, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+					priv = (*crypt.ECDSAPrivateKey)(k)
 				case "bls":
-					pk, err = minpk.GenerateKey(rand.Reader)
+					var k *minpk.PrivateKey
+					k, err = minpk.GenerateKey(rand.Reader)
+					priv = (*crypt.BLSPrivateKey)(k)
 				default:
 					err = fmt.Errorf("unknown key type: %s", keyType)
 				}
@@ -66,10 +74,10 @@ func NewGenKeyCommand() *cobra.Command {
 					return err
 				}
 
-				var d tplData
-				d.PrivateKey = gotez.NewPrivateKey(pk)
-				d.PublicKey = gotez.NewPublicKey(pk.Public())
-				data = append(data, &d)
+				data = append(data, &tplData{
+					PrivateKey: priv,
+					PublicKey:  priv.Public(),
+				})
 			}
 
 			if err := genkeyTpl.Execute(os.Stdout, data); err != nil {

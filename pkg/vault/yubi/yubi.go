@@ -3,8 +3,6 @@ package yubi
 import (
 	"bytes"
 	"context"
-	"crypto"
-	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"encoding/asn1"
@@ -18,9 +16,9 @@ import (
 	"github.com/certusone/yubihsm-go"
 	"github.com/certusone/yubihsm-go/commands"
 	"github.com/certusone/yubihsm-go/connector"
-	"github.com/ecadlabs/gotez/signature"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -50,11 +48,11 @@ func (c *Config) id() string {
 
 type hsmKey struct {
 	id  uint16
-	pub crypto.PublicKey
+	pub crypt.PublicKey
 }
 
-func (h *hsmKey) PublicKey() crypto.PublicKey { return h.pub }
-func (h *hsmKey) ID() string                  { return fmt.Sprintf("%04x", h.id) }
+func (h *hsmKey) PublicKey() crypt.PublicKey { return h.pub }
+func (h *hsmKey) ID() string                 { return fmt.Sprintf("%04x", h.id) }
 
 // HSM struct containing information required to interrogate a YubiHSM
 type HSM struct {
@@ -78,13 +76,13 @@ type yubihsmStoredKeysIterator struct {
 	idx     int
 }
 
-func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, error) {
+func parsePublicKey(r *commands.GetPubKeyResponse) (crypt.PublicKey, bool, error) {
 	switch r.Algorithm {
 	case commands.AlgorithmP256, commands.AlgorithmSecp256k1:
 		var curve elliptic.Curve
 		switch r.Algorithm {
 		case commands.AlgorithmSecp256k1:
-			curve = cryptoutils.S256()
+			curve = secp256k1.S256()
 		case commands.AlgorithmP256:
 			curve = elliptic.P256()
 		}
@@ -103,7 +101,7 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 			return nil, false, fmt.Errorf("invalid EC point [%x,%x]", x, y)
 		}
 
-		return &ecdsa.PublicKey{
+		return &crypt.ECDSAPublicKey{
 			Curve: curve,
 			X:     x,
 			Y:     y,
@@ -113,7 +111,7 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypto.PublicKey, bool, erro
 		if len(r.KeyData) != ed25519.PublicKeySize {
 			return nil, false, fmt.Errorf("invalid public key length %d ", len(r.KeyData))
 		}
-		return ed25519.PublicKey(r.KeyData), true, nil
+		return crypt.Ed25519PublicKey(r.KeyData), true, nil
 	}
 
 	return nil, false, nil
@@ -220,7 +218,7 @@ func (h *HSM) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, 
 	}, nil
 }
 
-func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*signature.ECDSA, error) {
+func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*crypt.ECDSASignature, error) {
 	command, err := commands.CreateSignDataEcdsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
@@ -242,14 +240,14 @@ func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*signat
 	if _, err = asn1.Unmarshal(ecdsaResponse.Signature, &sig); err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
 	}
-	return &signature.ECDSA{
+	return &crypt.ECDSASignature{
 		R:     sig.R,
 		S:     sig.S,
 		Curve: curve,
 	}, nil
 }
 
-func (h *HSM) signED25519(digest []byte, id uint16) (signature.ED25519, error) {
+func (h *HSM) signED25519(digest []byte, id uint16) (crypt.Ed25519Signature, error) {
 	command, err := commands.CreateSignDataEddsaCommand(id, digest)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
@@ -268,21 +266,21 @@ func (h *HSM) signED25519(digest []byte, id uint16) (signature.ED25519, error) {
 		return nil, fmt.Errorf("(YubiHSM/%s): invalid ED25519 signature length: %d", h.conf.id(), len(eddsaResponse.Signature))
 	}
 
-	return signature.ED25519(eddsaResponse.Signature), nil
+	return crypt.Ed25519Signature(eddsaResponse.Signature), nil
 }
 
 // Sign performs signing operation
-func (h *HSM) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
-	digest := cryptoutils.Digest(message)
+func (h *HSM) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig crypt.Signature, err error) {
+	digest := crypt.Digest(message)
 	key, ok := k.(*hsmKey)
 	if !ok {
 		return nil, fmt.Errorf("(YubiHSM/%s): not a YubiHSM key: %T", h.conf.id(), k)
 	}
 
 	switch k := key.pub.(type) {
-	case *ecdsa.PublicKey:
+	case *crypt.ECDSAPublicKey:
 		return h.signECDSA(digest[:], key.id, k.Curve)
-	case ed25519.PublicKey:
+	case crypt.Ed25519PublicKey:
 		return h.signED25519(digest[:], key.id)
 	}
 
@@ -315,20 +313,20 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algorithm, caps uint64, p []byte, err error) {
+func getPrivateKeyData(pk crypt.PrivateKey) (typ string, alg commands.Algorithm, caps uint64, p []byte, err error) {
 	switch key := pk.(type) {
-	case *ecdsa.PrivateKey:
+	case *crypt.ECDSAPrivateKey:
 		switch key.Curve {
 		case elliptic.P256():
 			alg = commands.AlgorithmP256
-		case cryptoutils.S256():
+		case secp256k1.S256():
 			alg = commands.AlgorithmSecp256k1
 		default:
 			return "", 0, 0, nil, fmt.Errorf("unsupported curve: %s", key.Params().Name)
 		}
 		return strings.ToLower(key.Params().Name), alg, commands.CapabilityAsymmetricSignEcdsa, key.D.Bytes(), nil
 
-	case ed25519.PrivateKey:
+	case crypt.Ed25519PrivateKey:
 		return "ed25519", commands.AlgorithmED25519, commands.CapabilityAsymmetricSignEddsa, key.Seed(), nil
 	}
 
@@ -336,7 +334,7 @@ func getPrivateKeyData(pk cryptoutils.PrivateKey) (typ string, alg commands.Algo
 }
 
 // Import imports a private key
-func (h *HSM) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (h *HSM) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	typ, alg, caps, p, err := getPrivateKeyData(pk)
 	if err != nil {
 		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)

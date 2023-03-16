@@ -2,7 +2,6 @@ package vault
 
 import (
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -15,8 +14,8 @@ import (
 	"net/http"
 
 	kms "cloud.google.com/go/kms/apiv1"
-	"github.com/ecadlabs/gotez/signature"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
@@ -56,8 +55,8 @@ type cloudKMSKey struct {
 }
 
 // PublicKey returns encoded public key
-func (c *cloudKMSKey) PublicKey() crypto.PublicKey {
-	return c.pub
+func (c *cloudKMSKey) PublicKey() crypt.PublicKey {
+	return (*crypt.ECDSAPublicKey)(c.pub)
 }
 
 // ID returnd a unique key ID
@@ -193,8 +192,8 @@ func (c *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 }
 
 // Sign performs signing operation
-func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	digest := cryptoutils.Digest(message)
+func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
+	digest := crypt.Digest(message)
 	kmsKey, ok := key.(*cloudKMSKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(CloudKMS/%s): not a CloudKMS key: %T ", c.config.keyRingName(), key), http.StatusBadRequest)
@@ -221,7 +220,7 @@ func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	if _, err = asn1.Unmarshal(resp.Signature, &sig); err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}
-	return &signature.ECDSA{
+	return &crypt.ECDSASignature{
 		R:     sig.R,
 		S:     sig.S,
 		Curve: kmsKey.pub.Curve,
@@ -229,8 +228,8 @@ func (c *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 }
 
 // PKCS#11 CKM_RSA_AES_KEY_WRAP
-func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error) {
-	pkcs8Key, err := cryptoutils.MarshalPKCS8PrivateKey(pk)
+func wrapPrivateKey(pubKey *rsa.PublicKey, priv crypt.PrivateKey) ([]byte, error) {
+	pkcs8Key, err := cryptoutils.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +267,7 @@ func wrapPrivateKey(pubKey *rsa.PublicKey, pk crypto.PrivateKey) ([]byte, error)
 }
 
 // Import imports a private key
-func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (c *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	keyName, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
@@ -277,7 +276,7 @@ func (c *Vault) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils
 		keyName = "signatory-imported-" + ksuid.New().String()
 	}
 
-	ecdsaKey, ok := pk.(*ecdsa.PrivateKey)
+	ecdsaKey, ok := pk.(*crypt.ECDSAPrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("(CloudKMS/%s) unsupported key type: %T", c.config.keyRingName(), pk)
 	}

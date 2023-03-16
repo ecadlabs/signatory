@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
@@ -31,12 +31,11 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 	if err != nil {
 		return nil, err
 	}
-	priv, err := decrypted.PrivateKey()
+	priv, err := crypt.NewPrivateKey(decrypted)
 	if err != nil {
 		return nil, err
 	}
-	pub := tz.NewPublicKey(priv.Public())
-
+	pub := priv.Public()
 	hash := pub.Hash()
 	l := s.logger().WithFields(log.Fields{
 		logPKH:   hash,
