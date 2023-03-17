@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
@@ -315,7 +314,7 @@ func TestPolicy(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
-				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 
 			s, err := signatory.New(context.Background(), &conf)
@@ -405,7 +404,7 @@ func TestListPublicKeys(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),
-				Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 			s, err := signatory.New(context.Background(), &conf)
 			require.NoError(t, err)

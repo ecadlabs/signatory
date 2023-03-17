@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -68,7 +67,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
 			{
 				Key: signKeyHash,
 				Val: nil,

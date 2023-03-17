@@ -17,7 +17,7 @@ import (
 )
 
 // chain -> delegate(pkh)
-type delegateMap = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *request.StoredWatermark]
+type delegateMap = hashmap.PublicKeyHashMap[*request.StoredWatermark]
 type chainMap map[tz.ChainID]delegateMap
 
 var ErrWatermark = errors.New("watermark validation failed")

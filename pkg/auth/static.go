@@ -8,7 +8,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 )
 
-type authorizedKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, crypt.PublicKey]
+type authorizedKeys = hashmap.PublicKeyHashMap[crypt.PublicKey]
 type staticAuthorizedKeys struct {
 	idx  authorizedKeys
 	keys []crypt.PublicKeyHash

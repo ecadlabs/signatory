@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/auth"
@@ -101,7 +100,7 @@ type keyVaultPair struct {
 }
 
 type keyCache struct {
-	cache hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair]
+	cache hashmap.PublicKeyHashMap[*keyVaultPair]
 	mtx   sync.Mutex
 }
 
@@ -110,7 +109,7 @@ func (k *keyCache) push(pair *keyVaultPair) {
 	defer k.mtx.Unlock()
 
 	if k.cache == nil {
-		k.cache = make(hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair])
+		k.cache = make(hashmap.PublicKeyHashMap[*keyVaultPair])
 	}
 	k.cache.Insert(pair.pkh, pair)
 }
@@ -397,7 +396,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	return sig, nil
 }
 
-type publicKeys = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *keyVaultPair]
+type publicKeys = hashmap.PublicKeyHashMap[*keyVaultPair]
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []*keyVaultPair, err error) {
 	ret = make(publicKeys)
@@ -507,7 +506,7 @@ type PolicyHook struct {
 	Auth    auth.AuthorizedKeysStorage
 }
 
-type Policy = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *PublicKeyPolicy]
+type Policy = hashmap.PublicKeyHashMap[*PublicKeyPolicy]
 
 // Config represents Signatory configuration
 type Config struct {

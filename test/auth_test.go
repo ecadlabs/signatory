@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
@@ -80,7 +79,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: signPriv}}, "Mock")
 		}),
-		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
 			{
 				Key: signPub.Hash(),
 				Val: &signatory.PublicKeyPolicy{

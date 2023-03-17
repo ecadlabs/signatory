@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/go-playground/validator/v10"
@@ -25,7 +24,7 @@ type ServerConfig struct {
 }
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig = hashmap.HashMap[tz.EncodedPublicKeyHash, crypt.PublicKeyHash, *TezosPolicy]
+type TezosConfig = hashmap.PublicKeyHashMap[*TezosPolicy]
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
