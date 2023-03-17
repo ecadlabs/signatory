@@ -227,7 +227,7 @@ B["Blake2b Hash
 [Bytes]
 hash the operation request"]
 
-ED["Ed255109 Sign
+ED["Ed25519 Sign
 [Bytes]
 sign the operation request"]
 
@@ -263,7 +263,7 @@ SIG--"Hash " -->ST
 end
 
 ST-- "Injection RPC<br>
-curl -v -H ... <br>/injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
+../injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
 
 classDef node fill:#0C36F1,stroke:#0b4884,color:#ffffff
 classDef key fill:#F41F38,stroke:#0b4884,color:#ffffff
