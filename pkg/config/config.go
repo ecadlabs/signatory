@@ -45,7 +45,7 @@ type VaultConfig struct {
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
 	Vaults     map[string]*VaultConfig `yaml:"vaults" validate:"dive,required"`
-	Tezos      TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3|startswith=tz4,len=36,endkeys"`
+	Tezos      TezosConfig             `yaml:"tezos"`
 	Server     ServerConfig            `yaml:"server"`
 	PolicyHook *PolicyHook             `yaml:"policy_hook"`
 	BaseDir    string                  `yaml:"base_dir" validate:"required"`
