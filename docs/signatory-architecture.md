@@ -200,10 +200,6 @@ Vault->>+Signature service : Send Error or Signature
 Signature service->>+Client: Send Error or Signature
 ```
 
-The C4 system architectural model provides a set of diagrams that provide a high-level view of a software system and its environment and more detailed views of the system's components and their interactions. The four levels of the C4 model provide increasing detail about the software system.
-
-Developers and clients can take advantage of the detail offered by Signatory's C4 architecture model by understanding the different components of the system and their interactions. This can help them better understand how the system fits into the larger business context and how the different components of the system interact with one another.
-
 ### 4. Tezos Signing Component Model
 
 Tezos uses elliptic curve cryptography to manage private/public key addresses, sign data, and check signatures. Signing a transaction involves hashing the operation request, prefixing it with a watermark, and then signing the resulting byte string with the user's secret key. The signature is then appended to the operation request to create a signed transaction, which can be broadcast to the network for confirmation.
