@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -19,13 +20,6 @@ import (
 )
 
 const defaultCloseAfter = time.Second * 10
-
-var (
-	transport     = ledger.USBHIDTransport{}
-	deviceScanner = scanner{
-		tr: &transport,
-	}
-)
 
 type devRequest interface {
 	devRequest()
@@ -57,9 +51,10 @@ type keyID struct {
 
 // Vault is a Ledger signer backend
 type Vault struct {
-	config Config
-	keys   []*keyID
-	req    chan devRequest
+	config  Config
+	keys    []*keyID
+	req     chan devRequest
+	scanner *scanner
 }
 
 // Config represents Ledger signer backend configuration
@@ -67,6 +62,7 @@ type Config struct {
 	ID         string        `yaml:"id"`
 	Keys       []string      `yaml:"keys"`
 	CloseAfter time.Duration `yaml:"close_after"`
+	Transport  string        `yaml:"transport"`
 }
 
 type ledgerKey struct {
@@ -202,7 +198,7 @@ func (v *Vault) worker() {
 				return nil
 			}
 		}
-		dev, err = deviceScanner.open(v.config.ID)
+		dev, err = v.scanner.open(v.config.ID)
 		if err != nil {
 			return err
 		}
@@ -282,10 +278,16 @@ func New(ctx context.Context, conf *Config) (*Vault, error) {
 		keys[i] = kid
 	}
 
+	sc, err := getScanner(conf.Transport)
+	if err != nil {
+		return nil, err
+	}
+
 	v := &Vault{
-		config: *conf,
-		keys:   keys,
-		req:    make(chan devRequest, 10),
+		config:  *conf,
+		keys:    keys,
+		req:     make(chan devRequest, 10),
+		scanner: sc,
 	}
 
 	go v.worker()
@@ -328,6 +330,39 @@ func parseKeyID(s string) (*keyID, error) {
 
 func (k *keyID) String() string {
 	return k.dt.String() + "/" + k.path.String()
+}
+
+var (
+	hidTransport = ledger.USBHIDTransport{}
+	hidScanner   = scanner{
+		tr: &hidTransport,
+	}
+)
+
+func getScanner(transport string) (*scanner, error) {
+	u, err := url.Parse(transport)
+	if err != nil {
+		return nil, err
+	}
+	var tr string
+	if u.Scheme != "" && u.Host != "" {
+		tr = u.Scheme
+	} else {
+		tr = transport
+	}
+
+	switch tr {
+	case "usb", "":
+		return &hidScanner, nil
+	case "tcp":
+		var model string
+		if u.User != nil {
+			model = u.User.Username()
+		}
+		return &scanner{tr: &ledger.TCPTransport{Addr: u.Host, Model: model}}, nil
+	default:
+		return nil, fmt.Errorf("undefined transport: %s", tr)
+	}
 }
 
 func init() {

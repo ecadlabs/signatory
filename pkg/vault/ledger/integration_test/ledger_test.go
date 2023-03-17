@@ -56,7 +56,7 @@ func TestLedger(t *testing.T) {
 	setup, _ := strconv.ParseBool(os.Getenv("SETUP_BAKING"))
 
 	if setup {
-		pkh, err := ledger.SetupBaking("c4c56423", "bip25519/0'/0'", "", 0, 0)
+		pkh, err := ledger.SetupBaking("", "c4c56423", "bip25519/0'/0'", "", 0, 0)
 		require.NoError(t, err)
 		require.Equal(t, publicKeyHash, pkh)
 	}
@@ -72,8 +72,8 @@ func TestLedger(t *testing.T) {
 		}),
 		Policy: map[string]*signatory.Policy{
 			publicKeyHash: {
-				AllowedOperations: []string{"generic", "block", "endorsement"},
-				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 			},
 		},
 	}
@@ -91,8 +91,8 @@ func TestLedger(t *testing.T) {
 			VaultName:     "Ledger",
 			ID:            "bip32-ed25519/44'/1729'/0'/0'",
 			Policy: &signatory.Policy{
-				AllowedOperations: []string{"generic", "block", "endorsement"},
-				AllowedKinds:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				AllowedRequests: []string{"generic", "block", "endorsement"},
+				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 			},
 			Active: true,
 		},

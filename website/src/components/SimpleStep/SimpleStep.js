@@ -9,7 +9,7 @@ const FeatureList = [
 				icon: require('../../../static/img/hand.svg').default,
 				title: 'Easy to start, trivial to secure',
 				description:
-					'Start prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense.',
+					'Start by prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense.',
 			},
 			{
 				icon: require('../../../static/img/book.svg').default,

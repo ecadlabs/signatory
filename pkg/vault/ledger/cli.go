@@ -18,12 +18,16 @@ Version:	{{.Version}}
 
 var listTpl = template.Must(template.New("list").Parse(listTemplateSrc))
 
-func newListCommand() *cobra.Command {
+func newListCommand(ctx *ledgerCommandContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List connected Ledgers",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			devs, err := deviceScanner.scan()
+			s, err := getScanner(ctx.transport)
+			if err != nil {
+				return err
+			}
+			devs, err := s.scan()
 			if err != nil {
 				return err
 			}
@@ -32,7 +36,7 @@ func newListCommand() *cobra.Command {
 	}
 }
 
-func newSetupCommand() *cobra.Command {
+func newSetupCommand(ctx *ledgerCommandContext) *cobra.Command {
 	var (
 		id      string
 		mainHWM uint32
@@ -45,7 +49,7 @@ func newSetupCommand() *cobra.Command {
 		Short: "Authorize a key for baking",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pkh, err := SetupBaking(id, args[0], chainID, mainHWM, testHWM)
+			pkh, err := SetupBaking(ctx.transport, id, args[0], chainID, mainHWM, testHWM)
 			if err != nil {
 				return err
 			}
@@ -61,13 +65,13 @@ func newSetupCommand() *cobra.Command {
 	return &cmd
 }
 
-func newDeuthorizeCommand() *cobra.Command {
+func newDeuthorizeCommand(ctx *ledgerCommandContext) *cobra.Command {
 	var id string
 	cmd := cobra.Command{
 		Use:   "deauthorize-baking <key id>",
 		Short: "Deuthorize a key",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return DeauthorizeBaking(id)
+			return DeauthorizeBaking(ctx.transport, id)
 		},
 	}
 	f := cmd.Flags()
@@ -75,7 +79,7 @@ func newDeuthorizeCommand() *cobra.Command {
 	return &cmd
 }
 
-func newSetHighWatermarkCommand() *cobra.Command {
+func newSetHighWatermarkCommand(ctx *ledgerCommandContext) *cobra.Command {
 	var id string
 	cmd := cobra.Command{
 		Use:   "set-high-watermark <hwm>",
@@ -83,7 +87,7 @@ func newSetHighWatermarkCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			hwm, _ := strconv.ParseUint(args[0], 10, 32)
-			return SetHighWatermark(id, uint32(hwm))
+			return SetHighWatermark(ctx.transport, id, uint32(hwm))
 		},
 	}
 	f := cmd.Flags()
@@ -91,13 +95,13 @@ func newSetHighWatermarkCommand() *cobra.Command {
 	return &cmd
 }
 
-func newGetHighWatermarkCommand() *cobra.Command {
+func newGetHighWatermarkCommand(ctx *ledgerCommandContext) *cobra.Command {
 	var id string
 	cmd := cobra.Command{
 		Use:   "get-high-watermark",
 		Short: "Get high water mark",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			hwm, err := GetHighWatermark(id)
+			hwm, err := GetHighWatermark(ctx.transport, id)
 			if err != nil {
 				return err
 			}
@@ -110,13 +114,13 @@ func newGetHighWatermarkCommand() *cobra.Command {
 	return &cmd
 }
 
-func newGetHighWatermarksCommand() *cobra.Command {
+func newGetHighWatermarksCommand(ctx *ledgerCommandContext) *cobra.Command {
 	var id string
 	cmd := cobra.Command{
 		Use:   "get-high-watermarks",
 		Short: "Get all high water marks and chain ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mainHWM, testHWM, chainID, err := GetHighWatermarks(id)
+			mainHWM, testHWM, chainID, err := GetHighWatermarks(ctx.transport, id)
 			if err != nil {
 				return err
 			}
@@ -129,18 +133,27 @@ func newGetHighWatermarksCommand() *cobra.Command {
 	return &cmd
 }
 
+type ledgerCommandContext struct {
+	transport string
+}
+
 func newLedgerCommand() *cobra.Command {
+	var ctx ledgerCommandContext
+
 	cmd := cobra.Command{
 		Use:   "ledger",
 		Short: "Ledger specific operations",
 	}
 
-	cmd.AddCommand(newListCommand())
-	cmd.AddCommand(newSetupCommand())
-	cmd.AddCommand(newDeuthorizeCommand())
-	cmd.AddCommand(newSetHighWatermarkCommand())
-	cmd.AddCommand(newGetHighWatermarkCommand())
-	cmd.AddCommand(newGetHighWatermarksCommand())
+	f := cmd.PersistentFlags()
+	f.StringVarP(&ctx.transport, "transport", "t", "", "Transport")
+
+	cmd.AddCommand(newListCommand(&ctx))
+	cmd.AddCommand(newSetupCommand(&ctx))
+	cmd.AddCommand(newDeuthorizeCommand(&ctx))
+	cmd.AddCommand(newSetHighWatermarkCommand(&ctx))
+	cmd.AddCommand(newGetHighWatermarkCommand(&ctx))
+	cmd.AddCommand(newGetHighWatermarksCommand(&ctx))
 
 	return &cmd
 }
