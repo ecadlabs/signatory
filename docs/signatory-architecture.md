@@ -279,6 +279,5 @@ class TN node
 class SK key
 class ED,SIG,ST signature
 ```
-```
 Diagram adapted from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
 
