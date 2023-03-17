@@ -213,17 +213,17 @@ flowchart TB
 
 TJ["Transaction
 [JSON]
-a transfer operation request"]
-
-TB["Transaction
-[Bytes]
-a transfer operation request"]
+a transfer operation request<br>./octez-client -l transfer 1 from alice to bob --burn-cap 0.06425"]
 
 TN["Tezos Node
 [Infrastructure]
 hosts RPC service"]
 
-W["Magic Byte
+TB["Transaction in Binary
+[Bytes]
+a transfer operation request"]
+
+W["Magic Byte 
 [Bytes]
 prefix the operation request"]
 
@@ -237,7 +237,7 @@ sign the operation request"]
 
 SK["Secret Key
 [Bytes]
-stored somewhere"]
+alice_sk.hex"]
 
 SIG["Signature
 [Bytes]
@@ -245,17 +245,29 @@ signed byte string"]
 
 ST["Signed Transaction
 [Bytes]
-signed hashed prefixed operation"]
+signed hashed prefixed operation
+signature.hex"]
 
 TJ-- "Forge RPC" -->TN
-TN-- "Broadcast " -->TB
+TN-- "Serialize
+" -->TB
+
+
+subgraph Prepare the operation byte string
 TB-- "Add" -->W
 W-- "Hash" -->B
-B-- "Send" -->ED
-SK-- "Provide" -->ED
-ED-- "Compose" -->SIG
+end
+
+B-- "Send operation.hex" -->ED
+SK-- "Send alice_sk.hex" -->ED
+
+subgraph Signing the operation byte string
+ED  -->SIG
 SIG--"Hash " -->ST
-ST-- "Injection RPC" -->TN
+end
+
+ST-- "Injection RPC<br>
+curl -v -H ... <br>/injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
 
 classDef node fill:#0C36F1,stroke:#0b4884,color:#ffffff
 classDef key fill:#F41F38,stroke:#0b4884,color:#ffffff
@@ -267,5 +279,6 @@ class TN node
 class SK key
 class ED,SIG,ST signature
 ```
-Diagram from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
+```
+Diagram adapted from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
 
