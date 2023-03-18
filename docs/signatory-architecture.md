@@ -235,9 +235,11 @@ SK["Secret Key
 [Bytes]
 alice_sk.hex"]
 
-SIG["Signature
-[Bytes]
-signed byte string"]
+SIGNATORY["Signatory Signing Listener
+[HTTP Service]
+captures operation signing requests"]
+
+
 
 ST["Signed Transaction
 [Bytes]
@@ -245,22 +247,18 @@ signed hashed prefixed operation
 signature.hex"]
 
 TJ-- "Forge RPC" -->TN
-TN-- "Serialize
-" -->TB
+TN-- "Serialize" -->TB
 
 
-subgraph Prepare the operation byte string
 TB-- "Add" -->W
 W-- "Hash" -->B
-end
 
-B-- "Send operation.hex" -->ED
-SK-- "Send alice_sk.hex" -->ED
+B-- "operation.hex" -->ED
+SK-- "from vault" -->SIGNATORY
+SIGNATORY-- "alice_sk.hex" -->ED
 
-subgraph Signing the operation byte string
-ED  -->SIG
-SIG--"Hash " -->ST
-end
+
+ED--"Hash " -->ST
 
 ST-- "Injection RPC<br>
 ../injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
