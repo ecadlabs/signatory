@@ -207,13 +207,19 @@ Tezos uses elliptic curve cryptography to manage private/public key addresses, s
 ```mermaid
 flowchart TB
 
-TJ["Transaction
+TJ["Transfer operation
 [JSON]
-a transfer operation request<br>./octez-client -l transfer 1 from alice to bob --burn-cap 0.06425"]
+Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob --burn-cap 0.06425"]
 
 TN["Tezos Node
 [Infrastructure]
 hosts RPC service"]
+
+FT{First<br>Transaction?}
+
+Reveal["Reveal operation
+[Bytes]
+Declare Alice's Public Key "]
 
 TB["Transaction in Binary
 [Bytes]
@@ -221,7 +227,7 @@ a transfer operation request"]
 
 W["Magic Byte 
 [Bytes]
-prefix the operation request"]
+prefix the request with 0x03"]
 
 B["Blake2b Hash
 [Bytes]
@@ -246,16 +252,20 @@ ST["Signed Transaction
 signed hashed prefixed operation
 signature.hex"]
 
-TJ-- "Forge RPC" -->TN
+TJ --> FT
+FT -- "Yes" --> Reveal 
+FT -- "No<br>Forge RPC" --> TN 
+Reveal -- "operation.kind=reveal<br>Forge RPC" --> TN
+
 TN-- "Serialize" -->TB
 
 
 TB-- "Add" -->W
 W-- "Hash" -->B
 
-B-- "operation.hex" -->ED
+B-- "Send operation.hex" -->ED
 SK-- "from vault" -->SIGNATORY
-SIGNATORY-- "alice_sk.hex" -->ED
+SIGNATORY-- "Send alice_sk.hex" -->ED
 
 
 ED--"Hash " -->ST
@@ -268,7 +278,7 @@ classDef key fill:#F41F38,stroke:#0b4884,color:#ffffff
 classDef transaction fill:#2591BE,stroke:#0b4884,color:#ffffff
 classDef signature fill:#F1A40C,stroke:#0b4884,color:#000000
 
-class TJ,TB,W,B transaction
+class FT,Reveal,TJ,TB,W,B transaction
 class TN node
 class SK key
 class ED,SIG,ST signature
