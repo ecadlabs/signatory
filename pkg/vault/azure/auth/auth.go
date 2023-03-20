@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/pkcs12"
 	"golang.org/x/oauth2"
 )
@@ -245,12 +245,14 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 
 	var (
 		p      jwt.Parser
-		claims jwt.StandardClaims
+		claims jwt.Claims
 	)
-	if _, _, err := p.ParseUnverified(res.AccessToken, &claims); err == nil {
-		// Token itself gives us exact time instead of time interval
-		if claims.ExpiresAt > 0 {
-			token.Expiry = time.Unix(claims.ExpiresAt, 0)
+	if _, _, err := p.ParseUnverified(res.AccessToken, claims); err == nil {
+		exp, err := claims.GetExpirationTime()
+		if err != nil {
+			return nil, fmt.Errorf("auth: cannot fetch expiration time: %v", err)
+		} else {
+			token.Expiry = exp.Time
 		}
 	}
 	return &token, nil
