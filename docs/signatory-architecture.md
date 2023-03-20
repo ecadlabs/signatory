@@ -206,78 +206,55 @@ Tezos uses elliptic curve cryptography to manage private/public key addresses, s
 
 ```mermaid
 flowchart TB
-
 TJ["Transfer operation
 [JSON]
 Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob --burn-cap 0.06425"]
-
 TN["Tezos Node
 [Infrastructure]
 hosts RPC service"]
-
 FT{First<br>Transaction?}
-
 Reveal["Reveal operation
 [Bytes]
-Declare Alice's Public Key "]
-
+Declare Public Key "]
 TB["Transaction in Binary
 [Bytes]
 a transfer operation request"]
-
 W["Magic Byte 
 [Bytes]
 prefix the request with 0x03"]
-
 B["Blake2b Hash
 [Bytes]
 hash the operation request"]
-
 ED["Ed25519 Sign
 [Bytes]
 sign the operation request"]
-
 SK["Secret Key
 [Bytes]
 alice_sk.hex"]
-
 SIGNATORY["Signatory Signing Listener
 [HTTP Service]
 captures operation signing requests"]
-
-
-
 ST["Signed Transaction
 [Bytes]
 signed hashed prefixed operation
 signature.hex"]
-
 TJ --> FT
+FT -- "No<br>operation.kind=transaction<br>Forge RPC" --> TN 
 FT -- "Yes" --> Reveal 
-FT -- "No<br>Forge RPC" --> TN 
-Reveal -- "operation.kind=reveal<br>Forge RPC" --> TN
-
+Reveal -- "operation.kind=reveal<br>Forge RPC" --> FT
 TN-- "Serialize" -->TB
-
-
 TB-- "Add" -->W
 W-- "Hash" -->B
-
 B-- "Send operation.hex" -->ED
 SK-- "from vault" -->SIGNATORY
 SIGNATORY-- "Send alice_sk.hex" -->ED
-
-
 ED--"Hash " -->ST
-
 ST-- "Injection RPC<br>
 ../injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
-
 classDef node fill:#0C36F1,stroke:#0b4884,color:#ffffff
 classDef key fill:#F41F38,stroke:#0b4884,color:#ffffff
 classDef transaction fill:#2591BE,stroke:#0b4884,color:#ffffff
 classDef signature fill:#F1A40C,stroke:#0b4884,color:#000000
-
 class FT,Reveal,TJ,TB,W,B transaction
 class TN node
 class SK key
@@ -285,3 +262,30 @@ class ED,SIG,ST signature
 ```
 Diagram adapted from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
 
+### Simplified Signing Model
+This Mermaid sequence diagram shows the steps in signing a transaction on the Tezos blockchain.
+
+- The transaction is first forged using the Tezos RPC.
+- The resulting operation hexadecimal is then sent to a remote signer for signing.
+- The remote signer receives the operation and the secret key corresponding to the sender's address (in this case, Alice's).
+- The remote signer signs the transaction and returns the resulting signature hexadecimal.
+- The signed transaction is then sent back to the Tezos RPC for injection into the blockchain. 
+```mermaid
+sequenceDiagram
+    participant T as Transaction
+    participant TR as Tezos RPC
+    participant RS as Remote Signer
+    participant SK as Secret Key
+    participant ST as Signed Transaction
+    T->>TR: Forge RPC
+    Note over T,TR : octez-client -l transfer 1 from<br>alice to bob 
+    TR->>RS: operation.hex
+    Note over TR,RS: 0b6b28b6285d1a7146c17dd85f<br>b54b7dc7f68bd7b9a49569ac8f<br>9d6150baa2946c00172d6807f4<br>977e1c67252bdfabbfb37875e3<br>1d4f009dbb0180bd3fe0d403c0<br>843d00001be972fc31a358a26c<br>e970e921e357d95d5abe2400<br>
+    SK->>RS : alice.hex
+    Note over SK, RS: bab4df908ea857e3abecc4<br>0a49e84b4fdc47121b73af<br>461398fc133715199569
+    RS->>ST: signature.hex
+    Note over RS,ST: b965f666f400c1889915a0c6f1a1092cd96c0814d1b<br>bb765678fcf2c86c5079ae1f3735878f8717c230859<br>85c7aa9536fcc9228f42c5d4b6160c2b52a010970b
+    ST->>TR: Send to RPC for Injection
+    Note over ST,TR :  'http://127.0.0.1:8732/injection/operation?chain=main' <br>--data '"'$(cat operation.hex)$(cat signature.hex)'"'
+    
+```
