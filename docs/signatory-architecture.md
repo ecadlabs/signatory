@@ -263,7 +263,7 @@ class ED,SIG,ST signature
 Diagram adapted from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
 
 ### Simplified Signing Model
-This Mermaid sequence diagram shows the steps in signing a transaction on the Tezos blockchain.
+This Mermaid sequence diagram is a simplified depiction of signing a transaction on the Tezos blockchain.
 
 - The transaction is first forged using the Tezos RPC.
 - The resulting operation hexadecimal is then sent to a remote signer for signing.
@@ -272,20 +272,24 @@ This Mermaid sequence diagram shows the steps in signing a transaction on the Te
 - The signed transaction is then sent back to the Tezos RPC for injection into the blockchain. 
 ```mermaid
 sequenceDiagram
-    participant T as Transaction
+    actor U as User
+    participant OC as Octez Client
     participant TR as Tezos RPC
     participant RS as Remote Signer
-    participant SK as Secret Key
-    participant ST as Signed Transaction
-    T->>TR: Forge RPC
-    Note over T,TR : octez-client -l transfer 1 from<br>alice to bob 
+    participant V as Vault
+    U->>OC: 
+    Note over U, OC : octez-client -l transfer 1 from<br>alice to bob 
+    OC->>TR: Serialized
+        Note over OC,TR: 0b6b28b6285d1a7146c17dd85f<br>b54b7dc7f68bd7b9a49569ac8f<br>9d6150baa2946c00172d6807f4<br>977e1c67252bdfabbfb37875e3<br>1d4f009dbb0180bd3fe0d403c0<br>843d00001be972fc31a358a26c<br>e970e921e357d95d5abe2400<br>
+    TR->>TR: Add Magic Byte
+            Note over TR: 030b6b28b6285d1a7146c17dd85f<br>b54b7dc7f68bd7b9a49569ac8f<br>9d6150baa2946c00172d6807f4<br>977e1c67252bdfabbfb37875e3<br>1d4f009dbb0180bd3fe0d403c0<br>843d00001be972fc31a358a26c<br>e970e921e357d95d5abe2400<br>
+    TR->>TR: Blake58 Hash
+    V->>RS : alice.hex
+    Note over V, RS: bab4df908ea857e3abecc4<br>0a49e84b4fdc47121b73af<br>461398fc133715199569
+    RS->>RS: signature.hex
+    Note over RS: b965f666f400c1889915a0c6f1a1092cd96c0814d1b<br>bb765678fcf2c86c5079ae1f3735878f8717c230859<br>85c7aa9536fcc9228f42c5d4b6160c2b52a010970b
     TR->>RS: operation.hex
-    Note over TR,RS: 0b6b28b6285d1a7146c17dd85f<br>b54b7dc7f68bd7b9a49569ac8f<br>9d6150baa2946c00172d6807f4<br>977e1c67252bdfabbfb37875e3<br>1d4f009dbb0180bd3fe0d403c0<br>843d00001be972fc31a358a26c<br>e970e921e357d95d5abe2400<br>
-    SK->>RS : alice.hex
-    Note over SK, RS: bab4df908ea857e3abecc4<br>0a49e84b4fdc47121b73af<br>461398fc133715199569
-    RS->>ST: signature.hex
-    Note over RS,ST: b965f666f400c1889915a0c6f1a1092cd96c0814d1b<br>bb765678fcf2c86c5079ae1f3735878f8717c230859<br>85c7aa9536fcc9228f42c5d4b6160c2b52a010970b
-    ST->>TR: Send to RPC for Injection
-    Note over ST,TR :  'http://127.0.0.1:8732/injection/operation?chain=main' <br>--data '"'$(cat operation.hex)$(cat signature.hex)'"'
+RS->>TR: Send to RPC for Injection
+    Note over RS,TR :  'http://127.0.0.1:8732/injection/<br>operation?chain=main' --data '"'$(<br>cat operation.hex)$(cat signature.hex)'"'
     
 ```
