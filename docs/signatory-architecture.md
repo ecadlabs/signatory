@@ -208,7 +208,7 @@ Tezos uses elliptic curve cryptography to manage private/public key addresses, s
 flowchart TB
 TJ["Transfer operation
 [JSON]
-Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob --burn-cap 0.06425"]
+Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob"]
 TN["Tezos Node
 [Infrastructure]
 hosts RPC service"]
