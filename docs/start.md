@@ -296,22 +296,3 @@ The remote policy service feature allows custom policy schemes beyond simple req
 The hook is called after the standard request type and operation checks. If the hook returns an error, Signatory denies signing the operation.
 
 See [the documentation](remote_policy.md) for more information
-
---- 
-## Giving USB Port Access to Signatory in Docker Using Volume Mount
-
-When running Signatory in a Docker container, giving the container access to USB ports on the host machine may be necessary. This is often the case when working with hardware wallets such as Ledger or Trezor.
-
-To give a Docker container access to USB ports, you must use a volume mount to pass through the USB device to the container. Here are the steps to follow:
-
-1. Determine the path to the USB device on the host machine. This can be done by running the `lsusb` command in a terminal and looking for the device you want to use. The output should include a line with the device's vendor and product IDs and the bus and device numbers. The path to the device will be `/dev/bus/usb/<bus>/<device>`.
-2. Start the Docker container with the `-privileged` flag to give it access to USB devices. This flag allows the container to access all devices on the host machine, so use it cautiously.
-3. Use a volume mount to pass the USB device through to the container. The mount point should be the same as the device path on the host machine. Here's an example command for a Ledger Nano S:
-```bash!
-docker run --privileged -v /dev/bus/usb:/dev/bus/usb -it signatory:latest --ledger
-```
-This command starts a Signatory container with access to USB devices, mounts the USB bus to the container, and specifies using a Ledger Nano S.
-
-By following these steps, you can give a Docker container access to USB ports on the host machine, allowing it to communicate with hardware wallets and other USB devices.
-
-Note that giving container access to all devices on the host machine can be a security risk. Use caution when running privileged containers and limit access to specific devices when possible.
