@@ -202,7 +202,7 @@ Signature service->>+Client: Send Error or Signature
 
 ### 4. Tezos Signing Component Model
 
-Tezos uses elliptic curve cryptography to manage private/public key addresses, sign data, and check signatures. Signing a transaction involves hashing the operation request, prefixing it with a watermark, and then signing the resulting byte string with the user's secret key. The signature is then appended to the operation request to create a signed transaction, which can be broadcast to the network for confirmation.
+Tezos uses elliptic curve cryptography to manage private/public key addresses, sign data, and check signatures. Signing a transaction involves prefixing it with a magic-byte, hashing the operation request, and then signing the resulting byte string with the user's secret key. The signature is then appended to the operation request to create a signed transaction, which can be broadcast to the network for confirmation.
 
 ```mermaid
 flowchart TB
