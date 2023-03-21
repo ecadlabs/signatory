@@ -10,6 +10,23 @@ to be implemented externally.
 
 The hook is called after the standard request type and operation checks. If the hook returned an error the sign operation is denied.
 
+```mermaid
+sequenceDiagram
+autonumber
+participant C as Client
+participant S as Signatory
+participant R as Remote Policy<br> Service
+C->>S: Tezos Operation
+S-->>+R: POST operation and metadata
+R-->>S: Response 200 OK
+S-->>S: Signs 
+S->>C: 200 OK
+alt
+R-->>S: 403 Denied
+S->>C: 403 Denied
+end
+```
+
 The service response can be authenticated using a signature. To do so the service public key must be added to the `authorized_keys` list.
 
 ## Configuration
