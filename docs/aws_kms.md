@@ -6,11 +6,7 @@ title: AWSKMS
 
 # AWS KMS Configuration
 
-Some resources are available here
-- [KMS Overview](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
-- [Keys and Management Overview](https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#key-mgmt)
-
-Create an asymetric key with usage as "sign and verify" in your AWS account.
+Create an asymmetric key with usage as "sign and verify" in your AWS account.
 Note: Support for "ECC_SECG_P256K1" spec is not there yet.
 
 Search for IAM and create a user with "Programmatic access" for Signatory to access the key resources. Save the details at the end which will be given only once on creation of the user.
@@ -44,8 +40,6 @@ The fields `access_key_id` & `secret_access_key` can be set in the environment v
 ## Importing a key into AWS
 
 The Import command is not available for aws as there is no support for asymmetric keys in AWS KMS. (Ref: <https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html>) 
-
-However, you can generate a private key in an external environment and then import it into AWS using this [guide](https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html)
 
 ## Key generation in AWS
 

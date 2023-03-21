@@ -5,12 +5,6 @@ title: Ledger
 
 # Ledger vault
 
-Some resources are available here
-- [Ledger Website](https://www.ledger.com/)
-- [Nano S Overview](https://shop.ledger.com/products/ledger-nano-s)
-- [Ledger Academy](https://www.ledger.com/academy)
-- [Ledger Live](https://www.ledger.com/ledger-live)
-
 Connect the ledger device to the system in which signatory is running.
 Install tezos-wallet and tezos-baker apps from [ledger live](https://www.ledger.com/ledger-live/download).
 
