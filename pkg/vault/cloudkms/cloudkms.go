@@ -90,61 +90,63 @@ type cloudKMSIterator struct {
 }
 
 // Next implements vault.StoredKeysIterator
-func (c *cloudKMSIterator) Next() (key vault.StoredKey, err error) {
+func (c *cloudKMSIterator) Next() (vault.StoredKey, error) {
 	if c.keyIter == nil {
 		return nil, vault.ErrDone
 	}
 
-	var ver *kmspb.CryptoKeyVersion
 	for {
+		// get next version
+		var (
+			ver *kmspb.CryptoKeyVersion
+			err error
+		)
 		if c.verIter != nil {
 			ver, err = c.verIter.Next()
+			if err != nil && err != iterator.Done {
+				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
+			}
 		}
 		if c.verIter == nil || err == iterator.Done {
+			// get next key
+			var (
+				key *kmspb.CryptoKey
+				err error
+			)
 			for {
-				var resp *kmspb.CryptoKey
-				for {
-					resp, err = c.keyIter.Next()
+				key, err = c.keyIter.Next()
+				if err != nil {
 					if err == iterator.Done {
 						c.keyIter = nil
 						return nil, vault.ErrDone
-					}
-					if err != nil {
+					} else {
 						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 					}
-					// List signing EC keys only
-					if resp.Purpose == kmspb.CryptoKey_ASYMMETRIC_SIGN {
-						break
-					}
 				}
-
-				// Get key versions
-				c.verIter = c.vault.client.ListCryptoKeyVersions(c.ctx, &kmspb.ListCryptoKeyVersionsRequest{Parent: resp.Name})
-				ver, err = c.verIter.Next()
-				if err == nil {
+				// List signing EC keys only
+				if key.Purpose == kmspb.CryptoKey_ASYMMETRIC_SIGN {
 					break
-				} else if err != iterator.Done {
-					return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %w", c.vault.config.keyRingName(), err)
 				}
 			}
-		} else if err != nil {
-			return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeyVersions: %w", c.vault.config.keyRingName(), err)
-		}
-
-		if ver.State == kmspb.CryptoKeyVersion_ENABLED {
-			break
+			// get key versions
+			c.verIter = c.vault.client.ListCryptoKeyVersions(c.ctx, &kmspb.ListCryptoKeyVersionsRequest{Parent: key.Name})
+		} else {
+			pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
+			if err != nil {
+				return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
+			}
+			if err != nil {
+				if err != crypt.ErrUnsupportedKeyType {
+					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
+				}
+			} else {
+				return &cloudKMSKey{
+					key: ver,
+					pub: pub,
+				}, nil
+			}
 		}
 	}
-
-	ecKey, err := c.vault.getPublicKey(c.ctx, ver.Name)
-	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
-	}
-
-	return &cloudKMSKey{
-		key: ver,
-		pub: ecKey,
-	}, nil
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
