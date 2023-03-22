@@ -2,11 +2,8 @@ package awskms
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"encoding/asn1"
 	"errors"
 	"fmt"
-	"math/big"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,7 +34,7 @@ type Vault struct {
 // awsKMSKey represents a key stored in AWS KMS
 type awsKMSKey struct {
 	key *kms.GetPublicKeyOutput
-	pub *ecdsa.PublicKey
+	pub crypt.PublicKey
 }
 
 type awsKMSIterator struct {
@@ -50,7 +47,7 @@ type awsKMSIterator struct {
 
 // PublicKey returns encoded public key
 func (c *awsKMSKey) PublicKey() crypt.PublicKey {
-	return (*crypt.ECDSAPublicKey)(c.pub)
+	return c.pub
 }
 
 // ID returnd a unique key ID
@@ -75,47 +72,46 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	ecKey, ok := pkixKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("%w: %T", vault.ErrKey, ecKey)
+	pub, err := crypt.NewPublicKeyFrom(pkixKey)
+	if err != nil {
+		return nil, err
 	}
 
 	return &awsKMSKey{
 		key: pkresp,
-		pub: ecKey,
+		pub: pub,
 	}, nil
 }
 
 func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
-	if i.lko == nil || i.index == len(i.lko.Keys) {
-		// get next page
-		if i.lko != nil && i.lko.NextMarker == nil {
-			// end of the list
-			return nil, vault.ErrDone
-		}
-		var lkin *kms.ListKeysInput
-		if i.lko != nil {
-			lkin = &kms.ListKeysInput{
-				Marker: i.lko.NextMarker,
+	for {
+		if i.lko == nil || i.index == len(i.lko.Keys) {
+			// get next page
+			if i.lko != nil && i.lko.NextMarker == nil {
+				// end of the list
+				return nil, vault.ErrDone
 			}
-		} // otherwise leave it nil
-		i.lko, err = i.kmsapi.ListKeys(lkin)
-		if err != nil {
+			var lkin *kms.ListKeysInput
+			if i.lko != nil {
+				lkin = &kms.ListKeysInput{
+					Marker: i.lko.NextMarker,
+				}
+			} // otherwise leave it nil
+			i.lko, err = i.kmsapi.ListKeys(lkin)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
+		i.index += 1
+
+		if err == nil {
+			return key, nil
+		} else if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() != "AccessDeniedException" || err != crypt.ErrUnsupportedKeyType {
 			return nil, err
 		}
 	}
-
-	key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
-	i.index += 1
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case "AccessDeniedException":
-				return i.Next() // If access denied, return Next
-			}
-		}
-	}
-	return key, err
 }
 
 // ListPublicKeys returns a list of keys stored under the backend
@@ -144,22 +140,13 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	if err != nil {
 		return nil, err
 	}
+	pubkey := key.(*awsKMSKey)
 
-	var sig struct {
-		R *big.Int
-		S *big.Int
-	}
-
-	if _, err = asn1.Unmarshal(sout.Signature, &sig); err != nil {
+	sig, err := crypt.NewSignatureFromBytes(sout.Signature, pubkey.pub)
+	if err != nil {
 		return nil, fmt.Errorf("(AWSKMS/%s): %w", kid, err)
 	}
-
-	pubkey := key.(*awsKMSKey)
-	return &crypt.ECDSASignature{
-		R:     sig.R,
-		S:     sig.S,
-		Curve: pubkey.pub.Curve,
-	}, nil
+	return sig, nil
 }
 
 // New creates new AWS KMS backend

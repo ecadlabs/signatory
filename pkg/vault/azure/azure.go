@@ -3,7 +3,6 @@ package azure
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -57,10 +57,10 @@ type Vault struct {
 
 type azureKey struct {
 	bundle *keyBundle
-	pub    *ecdsa.PublicKey
+	pub    crypt.PublicKey
 }
 
-func (a *azureKey) PublicKey() crypt.PublicKey { return (*crypt.ECDSAPublicKey)(a.pub) }
+func (a *azureKey) PublicKey() crypt.PublicKey { return a.pub }
 func (a *azureKey) ID() string                 { return a.bundle.Key.KeyID }
 
 // New creates new Azure KeyVault backend
@@ -224,16 +224,17 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 			return nil, err
 		}
 
-		pub, err := bundle.Key.PublicKey()
+		p, err := bundle.Key.PublicKey()
 		if err != nil {
 			return nil, fmt.Errorf("(Azure/%s): %w", a.v.config.Vault, err)
 		}
-
-		if ecpub, ok := pub.(*ecdsa.PublicKey); ok {
+		if pub, err := crypt.NewPublicKeyFrom(p); err == nil {
 			return &azureKey{
 				bundle: &bundle,
-				pub:    ecpub,
+				pub:    pub,
 			}, nil
+		} else if err != crypt.ErrUnsupportedKeyType {
+			return nil, fmt.Errorf("(Azure/%s): %w", a.v.config.Vault, err)
 		}
 	}
 }
@@ -263,18 +264,19 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 		return nil, err
 	}
 
-	pub, err := bundle.Key.PublicKey()
+	p, err := bundle.Key.PublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
+	}
+	pub, err := crypt.NewPublicKeyFrom(p)
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
 
-	if ecpub, ok := pub.(*ecdsa.PublicKey); ok {
-		return &azureKey{
-			bundle: &bundle,
-			pub:    ecpub,
-		}, nil
-	}
-	return nil, fmt.Errorf("(Azure/%s) %w: %T", v.config.Vault, vault.ErrKey, pub)
+	return &azureKey{
+		bundle: &bundle,
+		pub:    pub,
+	}, nil
 }
 
 // Name returns backend name
@@ -288,7 +290,7 @@ func (v *Vault) VaultName() string {
 }
 
 // Sign performs signing operation
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (sig crypt.Signature, err error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
 	digest := crypt.Digest(message)
 	azureKey, ok := key.(*azureKey)
 	if !ok {
@@ -321,27 +323,40 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 		return nil, err
 	}
 
-	b, err := base64.RawURLEncoding.DecodeString(res.Value)
+	sig, err := base64.RawURLEncoding.DecodeString(res.Value)
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
 
-	byteLen := (azureKey.pub.Params().BitSize + 7) >> 3
-	if len(b) != byteLen*2 {
-		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(b))
-	}
+	switch pub := azureKey.pub.(type) {
+	case *crypt.ECDSAPublicKey:
+		byteLen := (pub.Params().BitSize + 7) >> 3
+		if len(sig) != byteLen*2 {
+			return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(sig))
+		}
+		return &crypt.ECDSASignature{
+			R:     new(big.Int).SetBytes(sig[:byteLen]),
+			S:     new(big.Int).SetBytes(sig[byteLen:]),
+			Curve: cryptoutils.NamedCurve(azureKey.bundle.Key.Curve),
+		}, nil
 
-	s := crypt.ECDSASignature{
-		R:     new(big.Int).SetBytes(b[:byteLen]),
-		S:     new(big.Int).SetBytes(b[byteLen:]),
-		Curve: cryptoutils.NamedCurve(azureKey.bundle.Key.Curve),
-	}
+	case crypt.Ed25519PublicKey:
+		return crypt.Ed25519Signature(sig), nil
 
-	return &s, nil
+	case *crypt.BLSPublicKey:
+		s, err := minpk.SignatureFromBytes(sig)
+		if err != nil {
+			return nil, err
+		}
+		return (*crypt.BLSSignature)(s), nil
+
+	default:
+		panic(fmt.Sprintf("unknown public key type: %T", pub))
+	}
 }
 
 // Import imports a private key
-func (v *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	keyName, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
@@ -350,9 +365,9 @@ func (v *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Optio
 		keyName = "signatory-imported-" + ksuid.New().String()
 	}
 
-	ecdsaKey, ok := pk.(*crypt.ECDSAPrivateKey)
+	ecdsaKey, ok := priv.(*crypt.ECDSAPrivateKey)
 	if !ok {
-		return nil, fmt.Errorf("(Azure/%s) Unsupported key type: %T", v.config.Vault, pk)
+		return nil, fmt.Errorf("(Azure/%s) Unsupported key type: %T", v.config.Vault, priv)
 	}
 
 	key, err := jwk.EncodePrivateKey(ecdsaKey.Unwrap())
@@ -388,18 +403,20 @@ func (v *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Optio
 		return nil, err
 	}
 
-	pub, err := bundle.Key.PublicKey()
+	p, err := bundle.Key.PublicKey()
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
 
-	if ecpub, ok := pub.(*ecdsa.PublicKey); ok {
-		return &azureKey{
-			bundle: &bundle,
-			pub:    ecpub,
-		}, nil
+	pub, err := crypt.NewPublicKeyFrom(p)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
-	return nil, fmt.Errorf("(Azure/%s): not an EC key: %T", v.config.Vault, pub)
+
+	return &azureKey{
+		bundle: &bundle,
+		pub:    pub,
+	}, nil
 }
 
 // Ready implements vault.ReadinessChecker

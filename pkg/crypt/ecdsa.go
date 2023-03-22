@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -170,11 +169,6 @@ func canonizeSignature(sig *ECDSASignature) *ECDSASignature {
 		Curve: sig.Curve,
 	}
 }
-
-var (
-	ErrInvalidPublicKey  = errors.New("crypt: invalid public key")
-	ErrInvalidPrivateKey = errors.New("crypt: invalid private key")
-)
 
 // See https://github.com/golang/go/blob/master/src/crypto/elliptic/elliptic.go
 func unmarshalCompressed(data []byte, curve elliptic.Curve) (x, y *big.Int, err error) {

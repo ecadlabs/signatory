@@ -5,16 +5,26 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/goblst/minpk"
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/cryptobyte"
+	"golang.org/x/crypto/cryptobyte/asn1"
 )
 
 var Digest = blake2b.Sum256
+
+var (
+	ErrUnsupportedKeyType = errors.New("crypt: unsupported key type")
+	ErrInvalidPublicKey   = errors.New("crypt: invalid public key")
+	ErrInvalidPrivateKey  = errors.New("crypt: invalid private key")
+)
 
 type PublicKeyHash = tz.PublicKeyHash
 
@@ -122,6 +132,26 @@ func NewPublicKey(pub tz.PublicKey) (PublicKey, error) {
 	}
 }
 
+// NewPublicKeyFrom tries to make PublicKey from a raw one.
+// It returns ErrUnsupportedKeyType if the key is of unsupported type
+func NewPublicKeyFrom(pub crypto.PublicKey) (PublicKey, error) {
+	switch pub := pub.(type) {
+	case *ecdsa.PublicKey:
+		switch pub.Curve {
+		case secp256k1.S256(), elliptic.P256():
+			return (*ECDSAPublicKey)(pub), nil
+		default:
+			return nil, ErrUnsupportedKeyType
+		}
+	case ed25519.PublicKey:
+		return Ed25519PublicKey(pub), nil
+	case *minpk.PublicKey:
+		return (*BLSPublicKey)(pub), nil
+	default:
+		return nil, ErrUnsupportedKeyType
+	}
+}
+
 func NewSignature(sig tz.Signature) (Signature, error) {
 	switch sig := sig.(type) {
 	case *tz.GenericSignature:
@@ -158,6 +188,45 @@ func NewSignature(sig tz.Signature) (Signature, error) {
 
 	default:
 		return nil, fmt.Errorf("crypt: unknown signature type: %T", sig)
+	}
+}
+
+// NewSignatureFromBytes tries to parse signature coming from a third party.
+// It makes an assumption about signature type base on the public key.
+// For ECDSA it expects the signature to be serialized to ASN.1
+func NewSignatureFromBytes(sig []byte, pub PublicKey) (Signature, error) {
+	switch pub := pub.(type) {
+	case *ECDSAPublicKey:
+		var (
+			inner cryptobyte.String
+			r, s  big.Int
+		)
+		input := cryptobyte.String(sig)
+		if !input.ReadASN1(&inner, asn1.SEQUENCE) ||
+			!input.Empty() ||
+			!inner.ReadASN1Integer(&r) ||
+			!inner.ReadASN1Integer(&s) ||
+			!inner.Empty() {
+			return nil, errors.New("crypt: invalid ASN.1")
+		}
+		return &ECDSASignature{
+			R:     &r,
+			S:     &s,
+			Curve: pub.Curve,
+		}, nil
+
+	case Ed25519PublicKey:
+		return Ed25519Signature(sig), nil
+
+	case *BLSPublicKey:
+		s, err := minpk.SignatureFromBytes(sig)
+		if err != nil {
+			return nil, err
+		}
+		return (*BLSSignature)(s), nil
+
+	default:
+		return nil, fmt.Errorf("crypt: unknown public key type: %T", pub)
 	}
 }
 
