@@ -48,7 +48,7 @@ func (priv *ECDSAPrivateKey) ToProtocol() tz.PrivateKey {
 	case secp256k1.S256():
 		return tz.NewSecp256k1PrivateKey(priv.D)
 	default:
-		panic(fmt.Sprintf("crypt: unknown curve: %v", priv.Curve))
+		panic(fmt.Sprintf("crypt: unknown curve: %v", priv.Curve.Params()))
 	}
 }
 
@@ -102,7 +102,7 @@ func (pub *ECDSAPublicKey) ToProtocol() tz.PublicKey {
 	case secp256k1.S256():
 		return tz.NewSecp256k1PublicKey(elliptic.MarshalCompressed(pub.Curve, pub.X, pub.Y))
 	default:
-		panic(fmt.Sprintf("crypt: unknown curve: %v", pub.Curve))
+		panic(fmt.Sprintf("crypt: unknown curve: %v", pub.Curve.Params()))
 	}
 }
 
