@@ -108,7 +108,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
@@ -147,7 +147,7 @@ func testPolicyHook(t *testing.T, status int) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
 		},

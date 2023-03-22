@@ -79,7 +79,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: signPriv}}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
 			{
 				Key: signPub.Hash(),
 				Val: &signatory.PublicKeyPolicy{

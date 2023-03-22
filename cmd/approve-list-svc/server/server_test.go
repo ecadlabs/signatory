@@ -67,7 +67,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
 			{
 				Key: signKeyHash,
 				Val: nil,

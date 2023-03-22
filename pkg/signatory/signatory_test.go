@@ -314,7 +314,7 @@ func TestPolicy(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
-				Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 
 			s, err := signatory.New(context.Background(), &conf)
@@ -404,7 +404,7 @@ func TestListPublicKeys(t *testing.T) {
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),
-				Policy: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 			s, err := signatory.New(context.Background(), &conf)
 			require.NoError(t, err)

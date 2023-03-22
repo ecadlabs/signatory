@@ -16,7 +16,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
@@ -136,7 +135,7 @@ func TestSignatory(t *testing.T) {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
 		}),
-		Policy: hashmap.New[tz.EncodedPublicKeyHash]([]hashmap.KV[crypt.PublicKeyHash, *signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
 			{
 				Key: pub.Hash(),
 				Val: &signatory.PublicKeyPolicy{

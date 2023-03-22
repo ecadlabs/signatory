@@ -43,11 +43,17 @@ func New[H tz.Comparable[K], K tz.ToComparable[H, K], V any](init []KV[K, V]) Ha
 	return m
 }
 
+type PublicKeyKV[V any] KV[tz.PublicKeyHash, V]
+
 // PublicKeyHashMap is a shortcut for a map with gotez.PublicKeyHash keys
 type PublicKeyHashMap[V any] HashMap[tz.EncodedPublicKeyHash, tz.PublicKeyHash, V]
 
-func NewPublicKeyHashMap[V any](init []KV[tz.PublicKeyHash, V]) PublicKeyHashMap[V] {
-	return PublicKeyHashMap[V](New[tz.EncodedPublicKeyHash](init))
+func NewPublicKeyHashMap[V any](init []PublicKeyKV[V]) PublicKeyHashMap[V] {
+	tmp := make([]KV[tz.PublicKeyHash, V], len(init))
+	for i, x := range init {
+		tmp[i] = KV[tz.PublicKeyHash, V](x)
+	}
+	return PublicKeyHashMap[V](New[tz.EncodedPublicKeyHash](tmp))
 }
 
 func (m PublicKeyHashMap[V]) Insert(key tz.PublicKeyHash, val V) (V, bool) {

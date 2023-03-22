@@ -116,7 +116,7 @@ tezos:
 					},
 				},
 			},
-			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *TezosPolicy]{
+			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*TezosPolicy]{
 				{
 					Key: mustPKH("tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus"),
 					Val: nil,
@@ -264,7 +264,7 @@ tezos:
 					},
 				},
 			},
-			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *TezosPolicy]{
+			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*TezosPolicy]{
 				{
 					Key: mustPKH("tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus"),
 					Val: nil,
@@ -373,7 +373,7 @@ tezos:
 					},
 				},
 			},
-			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *TezosPolicy]{
+			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*TezosPolicy]{
 				{
 					Key: mustPKH("tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus"),
 					Val: nil,
@@ -425,7 +425,7 @@ tezos:
 			Vaults: map[string]*VaultConfig{
 				"kms": nil,
 			},
-			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.KV[crypt.PublicKeyHash, *TezosPolicy]{
+			Tezos: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*TezosPolicy]{
 				{
 					Key: mustPKH("tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus"),
 					Val: nil,
