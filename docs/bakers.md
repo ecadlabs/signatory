@@ -350,7 +350,89 @@ DEBU[0668] usb device already open                       Correlation-ID=e08fb56a
 DEBU[0668] usb endpoint write                            Correlation-ID=e08fb56a-deac-4d28-8069-39b41b7f6892 buf="[4 0 17 2 199 78 161 173 85 75 86 143 162 70 155 208 62 14 98 48]" err="<nil>" len=20 n=20
 DEBU[0668] usb endpoint read                             Correlation-ID=e08fb56a-deac-4d28-8069-39b41b7f6892 buf="[132 0 0]" err="<nil>" len=3 n=3
 ```
-### 4. Azure Key Vault
+
+### 4. AWS KMS
+Follow the Signatory Vault installation instructions for AWS KMS at https://signatory.io/docs/aws_kms
+
+- AWS KMS needs programmatic access
+
+
+Signatory will expose the key in the vault to the baker. The set up of keys and bakers is the same as for the simpler examples above. The baker needs to be setup for baking with the key that was created using the cryptographic curve histed by AWS KMS. Signatory will expose this key and apply policy to operations.
+
+```bash!
+server:
+  address: :6732
+  utility_address: :9583
+  
+vaults:
+  aws:
+    driver: awskms
+    config:
+      user_name: <iam_username>
+      access_key_id: <aws_access_key_id>
+      secret_access_key: <aws_secret_access_key>
+      region: <aws_region>
+
+tezos:
+  tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri:
+    log_payloads: true
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
+``` 
+Here `tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri` is the key returned by Signatory.
+
+```bash
+./signatory-cli list -c awskms.yaml
+
+INFO[0000] Initializing vault                            vault=awskms vault_name=aws
+Public Key Hash:    tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri
+Vault:              AWSKMS
+ID:                 arn:aws:kms:us-east-1:757500755852:key/60d6c5f2-1824-4ee8-af3d-5bbc462e1875
+Active:             true
+Allowed Requests:   [block endorsement generic preendorsement]
+Allowed Operations: [endorsement proposals transaction]
+```
+
+To manage baking with this key using octez-client you can import the key":
+
+```bash
+ ./octez-client import secret key awskms http://localhost:6732/tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri
+```
+
+### 5. GCPKeyManagement
+Follow the Signatory Vault installation instructions for GCPKeyManagement at https://signatory.io/docs/gcp_kms
+
+Signatory will expose the key in the vault to the baker. The set up of keys and bakers is the same as for the simpler examples above. The baker needs to be setup for baking with the key as supplied by Signatory.
+
+```bash!
+server:
+  address: :6732
+  utility_address: :9583
+
+vaults:
+  gcp:
+    driver: cloudkms
+    config:
+      project: <gcp_project>
+      location: <gcp_region>
+      key_ring: <key_ring_name>
+      application_credentials: <credentials_file_path>
+      
+tezos:
+  tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ:
+    log_payloads: true
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
+```
+### 6. Azure Key Vault
 Follow the Signatory Vault installation instructions for Azure Key Vault at https://signatory.io/docs/azure_kms
 
 Signatory will expose the key in the vault to the baker. The set up of keys and bakers is the same as for the simpler examples above. The baker needs to be setup for baking with the key as supplied by Signatory.
@@ -383,64 +465,5 @@ tezos:
         - transaction
         - reveal
         - delegation
-```
-
-### 5. AWS KMS
-Follow the Signatory Vault installation instructions for AWS KMS at https://signatory.io/docs/aws_kms
-
-Signatory will expose the key in the vault to the baker. The set up of keys and bakers is the same as for the simpler examples above. The baker needs to be setup for baking with the key as supplied by Signatory.
-
-```bash!
-server:
-  address: :6732
-  utility_address: :9583
-  
-vaults:
-  aws:
-    driver: awskms
-    config:
-      user_name: <iam_username>
-      access_key_id: <aws_access_key_id>
-      secret_access_key: <aws_secret_access_key>
-      region: <aws_region>
-
-tezos:
-  tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ:
-    log_payloads: true
-    allow:
-      block:
-      endorsement:
-      preendorsement:
-      generic:
-        - transaction
-``` 
-### 6. GCPKeyManagement
-Follow the Signatory Vault installation instructions for GCPKeyManagement at https://signatory.io/docs/gcp_kms
-
-Signatory will expose the key in the vault to the baker. The set up of keys and bakers is the same as for the simpler examples above. The baker needs to be setup for baking with the key as supplied by Signatory.
-
-```bash!
-server:
-  address: :6732
-  utility_address: :9583
-
-vaults:
-  gcp:
-    driver: cloudkms
-    config:
-      project: <gcp_project>
-      location: <gcp_region>
-      key_ring: <key_ring_name>
-      application_credentials: <credentials_file_path>
-      
-tezos:
-  tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ:
-    log_payloads: true
-    allow:
-      block:
-      endorsement:
-      preendorsement:
-      generic:
-        - transaction
 ```
 
