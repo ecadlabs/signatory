@@ -13,7 +13,6 @@ docker run --rm  -e 'ENV_NODE_ADDR={...}' -e 'ENV_SECRET_KEY={...}' signatory-te
 where `ENV_NODE_ADDR` is the name of a testnet node example: https://ghostnet.ecadinfra.com
 and `ENV_SECRET_KEY` is an unencrypted private key of an implicit, funded account on the testnet
 the private key of alice can be used: edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq
-or, if you need the same account that is used by the tests run in github workflows, request it's value from your github admin.
 
 ## Environment variables
 
