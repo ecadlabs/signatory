@@ -383,7 +383,9 @@ tezos:
       generic:
         - transaction
 ``` 
-Here `tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri` is the key returned by Signatory.
+Here `tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri` is the key returned by Signatory when you run `./signatory-cli list -c awskms.yaml`.
+
+The vault should be active when listed:
 
 ```bash
 ./signatory-cli list -c awskms.yaml
@@ -397,12 +399,11 @@ Allowed Requests:   [block endorsement generic preendorsement]
 Allowed Operations: [endorsement proposals transaction]
 ```
 
-To manage baking with this key using octez-client you can import the key":
+To manage baking with this key using octez-client you can import the key:
 
 ```bash
  ./octez-client import secret key awskms http://localhost:6732/tz2KtieusLufPkLEEocrr2etP4rb1QR3k8ri
 ```
-
 ### 5. GCPKeyManagement
 Follow the Signatory Vault installation instructions for GCPKeyManagement at https://signatory.io/docs/gcp_kms
 
@@ -423,7 +424,7 @@ vaults:
       application_credentials: <credentials_file_path>
       
 tezos:
-  tz3fK7rVYSg2HTEAmUYdfjJWSDGfsKrxH3xQ:
+  tz2PgBeeL6ddBuejPDs26iYExRchEn3K6ZXp:
     log_payloads: true
     allow:
       block:
@@ -432,6 +433,28 @@ tezos:
       generic:
         - transaction
 ```
+Here `tz2PgBeeL6ddBuejPDs26iYExRchEn3K6ZXp` is the key returned by Signatory when you run `./signatory-cli list -c google.yaml`.
+
+The vault should be active when listed:
+
+```bash
+./signatory-cli list -c google.yaml
+INFO[0000] Initializing vault                            vault=cloudkms vault_name=gcp
+Public Key Hash:    tz2PgBeeL6ddBuejPDs26iYExRchEn3K6ZXp
+Vault:              CloudKMS
+ID:                 projects/signatory-testing/locations/northamerica-northeast2/keyRings/googlebaker/cryptoKeys/baker/cryptoKeyVersions/1
+Active:             true
+Allowed Requests:   [block endorsement generic preendorsement]
+Allowed Operations: [transaction]
+```
+To manage baking with this key using octez-client you can import the key:
+
+```bash
+ ./octez-client import secret key gcpkms http://localhost:6732/tz2PgBeeL6ddBuejPDs26iYExRchEn3K6ZXp
+```
+
+
+
 ### 6. Azure Key Vault
 Follow the Signatory Vault installation instructions for Azure Key Vault at https://signatory.io/docs/azure_kms
 
