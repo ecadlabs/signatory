@@ -305,7 +305,7 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	}
 
 	var req signRequest
-	if req.Algorithm = algByCurve(azureKey.pub); req.Algorithm == "" {
+	if req.Algorithm = algByCurve(azureKey.pub.Curve); req.Algorithm == "" {
 		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): can't find corresponding signature algorithm for %s curve", v.config.Vault, azureKey.bundle.Key.Curve), http.StatusBadRequest)
 	}
 	req.Value = base64.RawURLEncoding.EncodeToString(digest[:])
@@ -369,9 +369,6 @@ func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Opt
 	req := importRequest{
 		Key: key,
 		Hsm: true,
-	}
-	if req.Key.Curve == "secp256k1" {
-		req.Key.Curve = "P-256K"
 	}
 
 	r, err := json.Marshal(&req)
