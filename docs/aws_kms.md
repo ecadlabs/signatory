@@ -7,7 +7,6 @@ title: AWSKMS
 # AWS KMS Configuration
 
 Create an asymmetric key with usage as "sign and verify" in your AWS account.
-Note: Support for "ECC_SECG_P256K1" spec is not there yet.
 
 Search for IAM and create a user with "Programmatic access" for Signatory to access the key resources. Save the details at the end which will be given only once on creation of the user.
 
