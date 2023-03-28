@@ -8,13 +8,13 @@ Signatory's remote policy service feature allows custom policy schemes beyond si
 
 ## Authentication
 
-Authentication is the process of verifying the identity of a user or system. In the context of cryptographic keys, authentication ensures that the keys are legitimate and belong to the authorized parties.
+Authentication is the process of verifying the identity of a user or system. Client applications can provide signed requests to a service proving their identity through possession of the private key.
 
 The authorized key authentication feature in Signatory allows the server to verify that the response from the policy service is authentic. This is done by checking the signature of the payload against the authorized public keys in the authorized_keys list.
 
 ## When to Use the Feature
 
-The authorized key authentication feature should be used when there is a need to protect the system from unauthorized access or tampering. For example, if keys are provided by a third party or created on a different system, the feature can ensure that only legitimate keys are imported into the system.
+The authorized key authentication feature should be used when there is a need to protect the system from unauthorized access or tampering. 
 
 ## Importance of Naming Keys
 
@@ -22,12 +22,12 @@ Naming keys is important as it helps to identify the key and its purpose. This i
 
 ## Testing the Feature
 
-To test the authorized key authentication feature, you can use the reference implementation provided by Signatory. The reference implementation is the approve list service, which allows authorized keys to be added or removed from the list.
+To test the authorized key authentication feature, you can use the reference implementation provided by Signatory. The reference implementation is the approve list service, which verifies a client's identity.
 
 To test the feature, you can perform the following steps:
 
-1. Add a public key to the authorized_keys list using the approve list service.
-2. Send a request to the policy service with a payload signed using the authorized key.
-3. Verify that the response from the policy service is authenticated using the authorized public key.
+1. Send an unauthenticated request.
+2. Watch that the request fails.
+3. Add the authentication, and see it pass.
 
 By following these steps, you can ensure that the authorized key authentication feature is working as intended and that only legitimate keys are being used to access the system.
