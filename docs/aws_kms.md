@@ -38,7 +38,7 @@ The fields `access_key_id` & `secret_access_key` can be set in the environment v
 
 ## Importing a key into AWS
 
-The Import command is not available for aws as there is no support for asymmetric keys in AWS KMS. (Ref: <https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html>) 
+The Import command is not available for AWS as there is no support for asymmetric keys in AWS KMS. (Ref: <https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html>) 
 
 ## Key generation in AWS
 
@@ -54,7 +54,7 @@ To generate a new private key withing AWS, you must:
 
 ## Example Configuration for the AWS KMS vault in Signatory
 
-This example shows a signatory vault configuration for AWS KMS. Text in `{}` must be replaced, for example, `{AWS_User_Name}` should be replaced with your AWS username.
+This example shows a Signatory vault configuration for AWS KMS. Text in `{}` must be replaced, for example, `{AWS_User_Name}` should be replaced with your AWS username.
 
 
 ```
@@ -90,7 +90,7 @@ tezos:
 
 ### Signatory-cli features for AWS KMS
 
-Once you have signatory binaries and the appropriate AWS pieces set up, it is time to test the connection between the hardware and signatory. After completing the setup for the key and signatory we can test it by using the signatory-cli command `list`. Here is an example:
+Once you have Signatory binaries and the appropriate AWS pieces set up, it is time to test the connection between the hardware and Signatory. After completing the setup for the key and Signatory we can test it by using the signatory-cli command `list`. Here is an example:
 ```
 $ ./signatory-cli list --help
 List public keys
@@ -113,7 +113,7 @@ Allowed Kinds:      [delegation endorsement reveal transaction]
 ```
 
 ### Final Signatory Verification Test
-We can finally see that all the pieces are working together by curling the signatory service and asking for the public key associated with our active public key hash:
+We can finally see that all the pieces are working together by curling the Signatory service and asking for the public key associated with our active public key hash:
 `curl http://localhost:6732/keys/tz3WxgnteyTpM5YzJSTFFtnNYB8Du31gf3bQ`
 
 The output can be verified by checking the public_keys file in the .tezos-client directory
