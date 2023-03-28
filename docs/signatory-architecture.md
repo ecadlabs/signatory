@@ -6,7 +6,7 @@ sidebar_label: Signatory Architecture
 
 # Signatory C4 Architecture Model 
 
-Signatory is the perfect solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/?utm_source=google&utm_medium=pd:search&utm_campaign=US_B2C_LeadGen_Google_SEM_Brand&utm_content=&gclid=CjwKCAiAmJGgBhAZEiwA1JZolnAOjpSi_GVY8qz7NyLHASwkXHBu2t1aPNWl2WWHl4Nb2S19OsAWMBoCGucQAvD_BwE), to protect cryptographic keys.
+Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/?utm_source=google&utm_medium=pd:search&utm_campaign=US_B2C_LeadGen_Google_SEM_Brand&utm_content=&gclid=CjwKCAiAmJGgBhAZEiwA1JZolnAOjpSi_GVY8qz7NyLHASwkXHBu2t1aPNWl2WWHl4Nb2S19OsAWMBoCGucQAvD_BwE), to protect cryptographic keys.
 
 Using Signatory, users can securely store their secret keys and control which operations can be signed, reducing the risk of losing or having their keys stolen. Signatory also allows users to sign transactions on hardware not connected to the internet, providing an additional layer of security.
 
@@ -14,19 +14,13 @@ Using Signatory, users can securely store their secret keys and control which op
 
 [Domain-driven design](https://martinfowler.com/tags/domain%20driven%20design.html) ([DDD](https://learn.microsoft.com/en-us/archive/msdn-magazine/2009/february/best-practice-an-introduction-to-domain-driven-design)) is a software development approach emphasizing the importance of understanding the business domain to create effective software solutions. C4 diagrams can help developers understand the domain of the system they are building and design software that aligns with the domain concepts and principles. By using C4 diagrams to visualize the system's architecture, developers can better understand how the system fits into the larger business context and how the different components of the system interact with one another.
 
-The C4 system architectural model is a set of diagrams used to represent the architecture of a software system. There are four levels in the C4 model, each providing an increasing level of detail about the software system.
-
-1. System Context Diagram: This is the highest level of the C4 model and provides a high-level view of the software system and its environment. It shows the system as a box in the center, surrounded by its users and other systems it interacts with. The diagram also shows the relationships between the system and its environment, such as data flow and requests.
-2. Container Diagram: The container diagram shows the software system as a set of containers, each containing its own set of components. It shows how the different containers interact with each other to form a larger system. This level of the C4 model provides more detail about the software system's components and their interactions.
-3. Component Diagram: The component diagram provides a more detailed view of the software system's components and their interaction. It shows the internal structure of each container and the relationships between the components. This level of the C4 model provides a detailed view of the software system's components and their interactions.
-4. Code Diagram: This is the lowest level of the C4 model, and it provides a detailed view of the code structure of each component. It shows the classes, functions, and other code artifacts that make up each component.
+The C4 system architectural model is a set of diagrams used to represent the architecture of a software system. There are four levels in the C4 model, a System Context Diagram, a Container Diagram, a Component Diagram and a Code Diagram. The details are at the [The C4 model for visualising software architecture](https://c4model.com/) website.
 
 There is no requirement to detail every container and component. Often the high-level description is enough to convey the required understanding. It is also unnecessary to detail the code level, as a sufficiently detailed component diagram can suffice.
 
 ### 1. Signatory System Context
 
-
-For Signatory, a remote signer application for the Tezos blockchain, the C4 system context diagram shows the Signatory software system as the central box. The diagram includes the Signatory user, responsible for setting up the system's configuration, and the client software system, which submits requests to the Tezos API. The diagram also shows various vaults, such as AWS KMS and YubiHSM, which Signatory uses to store cryptographic keys, and the Prometheus service, which stores and tracks metrics data.
+For Signatory, a remote signer application for the Tezos blockchain, the C4 system context diagram shows the Signatory software system as the central box. The diagram includes the Signatory user, responsible for setting up the system's configuration, and the client software system, which submits requests to the Tezos API. The diagram also shows various vaults, such as AWS KMS and YubiHSM, which Signatory uses to store cryptographic keys, and the Prometheus service, which pulls and aggregates metrics data.
 ```mermaid
 flowchart TD
 User["Signatory User Setup
@@ -202,7 +196,7 @@ Signature service->>+Client: Send Error or Signature
 
 ### 4. Tezos Signing Component Model
 
-Tezos uses elliptic curve cryptography to manage private/public key addresses, sign data, and check signatures. Signing a transaction involves prefixing it with a magic-byte, hashing the operation request, and then signing the resulting byte string with the user's secret key. The signature is then appended to the operation request to create a signed transaction, which can be broadcast to the network for confirmation.
+Tezos uses elliptic curve cryptography to manage private/public key pairs, sign data, and check signatures. Signing a transaction involves prefixing it with a magic-byte, hashing the operation request, and then signing the resulting byte string with the user's secret key. The signature is then appended to the operation request to create a signed transaction, which can be broadcast to the network for confirmation.
 
 ```mermaid
 flowchart TB
