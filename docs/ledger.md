@@ -110,6 +110,10 @@ ID:      tz1Qrqpz6bVUgZc5o5qARHB7j2v57z6knm55 / 3944f7a0
 Version: TezBake 2.2.11 a6fbd27f
 ```
 
+### Ledger device lock
+
+Signatory acquires a read lock on the ledger device when in operation. Be aware that when the Signatory service is running, and it has a valid configuration for a ledger device, the signatory-cli binary will encounter error "ledger: hidapi: failed to open device" trying to list ledgers. Only 1 process can acquire a read lock on the ledger device.
+
 ## Setup baking with signatory and ledger
 
 Keep tezos-baker app open for the below configurations and when the baker is running.
