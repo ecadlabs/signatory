@@ -6,7 +6,7 @@ sidebar_label: Signatory Architecture
 
 # Signatory C4 Architecture Model 
 
-Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/?utm_source=google&utm_medium=pd:search&utm_campaign=US_B2C_LeadGen_Google_SEM_Brand&utm_content=&gclid=CjwKCAiAmJGgBhAZEiwA1JZolnAOjpSi_GVY8qz7NyLHASwkXHBu2t1aPNWl2WWHl4Nb2S19OsAWMBoCGucQAvD_BwE), to protect cryptographic keys.
+Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/), to protect cryptographic keys.
 
 Using Signatory, users can securely store their secret keys and control which operations can be signed, reducing the risk of losing or having their keys stolen. Signatory also allows users to sign transactions on hardware not connected to the internet, providing an additional layer of security.
 
