@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 )
 
 // Import a keyPair inside the vault
-func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB tezos.PassphraseFunc, opt utils.Options) (*PublicKey, error) {
+func (s *Signatory) Import(ctx context.Context, importerName string, secretKey string, passCB func() ([]byte, error), opt utils.Options) (*PublicKey, error) {
 	v, ok := s.vaults[importerName]
 	if !ok {
 		return nil, fmt.Errorf("import: vault %s is not found", importerName)
@@ -22,18 +23,20 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 		return nil, fmt.Errorf("import: vault %s doesn't support import operation", importerName)
 	}
 
-	pk, err := tezos.ParsePrivateKey(secretKey, passCB)
+	maybeEncrypted, err := b58.ParseEncryptedPrivateKey([]byte(secretKey))
 	if err != nil {
 		return nil, err
 	}
-
-	pub := pk.Public()
-
-	hash, err := tezos.EncodePublicKeyHash(pub)
+	decrypted, err := maybeEncrypted.Decrypt(passCB)
 	if err != nil {
 		return nil, err
 	}
-
+	priv, err := crypt.NewPrivateKey(decrypted)
+	if err != nil {
+		return nil, err
+	}
+	pub := priv.Public()
+	hash := pub.Hash()
 	l := s.logger().WithFields(log.Fields{
 		logPKH:   hash,
 		logVault: importer.Name(),
@@ -46,22 +49,16 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 
 	l.Info("Requesting import operation")
 
-	stored, err := importer.Import(ctx, pk, opt)
+	stored, err := importer.Import(ctx, priv, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	s.cache.push(hash, &keyVaultPair{key: stored, vault: importer})
+	s.cache.push(&keyVaultPair{pkh: hash, key: stored, vault: importer})
 
 	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
-
-	enc, err := tezos.EncodePublicKey(pub)
-	if err != nil {
-		return nil, err
-	}
-
 	return &PublicKey{
-		PublicKey:     enc,
+		PublicKey:     pub,
 		PublicKeyHash: hash,
 		VaultName:     importer.Name(),
 		ID:            stored.ID(),

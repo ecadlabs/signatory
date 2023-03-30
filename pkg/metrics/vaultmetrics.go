@@ -60,7 +60,7 @@ func Interceptor(opt *signatory.SignInterceptorOptions, sing func() error) error
 	}
 
 	for op, cnt := range opt.Stat {
-		signingOpCount.WithLabelValues(opt.Address, opt.Vault, opt.Req, op).Add(float64(cnt))
+		signingOpCount.WithLabelValues(string(opt.Address.ToBase58()), opt.Vault, opt.Req, op).Add(float64(cnt))
 	}
 
 	return err
