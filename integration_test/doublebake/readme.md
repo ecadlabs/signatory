@@ -35,3 +35,7 @@ monitor the watermark file on Sigy
 monitor the watermark file on the first double baker instance
 
 `docker exec -it doublebake-octez-1 watch -n 1 cat /home/tezos/.tezos-client/NetXo5iVw1vBo_highwatermarks`
+
+query the rpc node
+
+`curl http://localhost:20000/chains/main/blocks/head/header`
