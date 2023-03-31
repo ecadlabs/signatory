@@ -21,13 +21,17 @@ this folder deploys 3 containers:
 ### Useful commands for troubleshooting
 
 monitor Sigy logs while filtering out healthcheck noise
+
 `docker logs -f signatory 2>&1 | grep -v authorized_keys`
 
 monitor the watermark file on the flextesa baker
+
 `docker exec -it flextesa watch -n 1 cat /tmp/mini-box/Client-base-C-N000/NetXo5iVw1vBo_highwatermarks`
 
 monitor the watermark file on Sigy
+
 `docker exec -it signatory watch -n 1 cat /var/lib/signatory/watermark/NetXo5iVw1vBoxM.json`
 
 monitor the watermark file on the first double baker instance
+
 `docker exec -it doublebake-octez-1 watch -n 1 cat /home/tezos/.tezos-client/NetXo5iVw1vBo_highwatermarks`
