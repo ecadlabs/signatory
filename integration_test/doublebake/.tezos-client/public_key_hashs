@@ -1,0 +1,4 @@
+[ { "name": "alice", "value": "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" },
+  { "name": "bob", "value": "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" },
+  { "name": "speculos", "value": "tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA" },
+  { "name": "baker", "value": "tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf" } ]

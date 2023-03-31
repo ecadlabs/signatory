@@ -1,0 +1,84 @@
+version: "3.9"
+networks:
+  ecadnet: {}
+services:
+
+  flextesa:
+    container_name: flextesa
+    image: oxheadalpha/flextesa:latest
+    ports:
+      - "20000:20000"
+      - "20001:20001"
+    networks:
+      - ecadnet
+    volumes:
+      - ./.tezos-node/data-dir:/tmp/mini-box/node-N000/data-dir
+      - ./sigybox.sh:/usr/bin/sigybox
+      - ./.baker-client:/tmp/mini-box/Client-base-C-N000
+    depends_on:
+      signatory:
+        condition: service_healthy  
+    environment:
+      - block_time=3
+    command: sigybox start
+    healthcheck:
+      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
+
+  octez:
+    image: tezos/tezos:arm64_v16.0-rc3
+    networks:
+      - ecadnet
+    entrypoint: startbaker
+    #entrypoint: tail -f /dev/null
+    volumes:
+      - ./.tezos-node/data-dir:/home/tezos/.tezos-node
+      - ./.tezos-client/config:/home/tezos/.tezos-client/config
+      - ./.tezos-client/secret_keys:/home/tezos/.tezos-client/secret_keys
+      - ./.tezos-client/public_keys:/home/tezos/.tezos-client/public_keys
+      - ./.tezos-client/public_key_hashs:/home/tezos/.tezos-client/public_key_hashs
+      - ./startbaker.sh:/usr/bin/startbaker
+    depends_on:
+      flextesa:
+        condition: service_healthy
+      signatory:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD","stat","/etc/passwd"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+    
+  signatory:
+    container_name: signatory
+    image: ecadlabs/signatory:v1.0.0-beta3-arm64
+    ports:
+      - "7632:7632"
+      - "9583:9583"
+    networks:
+      - ecadnet
+    configs:
+      - source: sigy-config
+        target: /etc/signatory.yaml
+      - source: sigy-secret
+        target: /etc/secret.json
+    command: serve
+    healthcheck:
+      test: "curl --fail http://localhost:6732/authorized_keys || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
+
+configs:
+  sigy-config:
+    file: ./signatory.yaml
+  sigy-secret:
+    file: ./signatory-local-secret.json

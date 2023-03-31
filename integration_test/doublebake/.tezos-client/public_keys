@@ -1,0 +1,14 @@
+[
+  { "name": "alice", "value": 
+    { "locator": "http://signatory:6732/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb",
+      "key": "edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn" }},
+  { "name": "bob", "value": 
+    { "locator": "http://signatory:6732/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6",
+      "key": "edpkurPsQ8eUApnLUJ9ZPDvu98E8VNj4KtJa1aZr16Cr5ow5VHKnz4" }},
+  { "name": "speculos", "value": 
+    { "locator": "http://signatory:6732/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA",
+      "key": "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp" }},
+  { "name": "baker", "value":
+    { "locator": "http://signatory:6732/tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf",
+      "key": "edpkuFt8yrNyseDKXvMsQ12NTEoqJEnkPQaCp4Kw5WPCEJHr5YV48m" } }      
+]
