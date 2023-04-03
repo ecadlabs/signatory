@@ -21,5 +21,3 @@ vendor/
 dist
 .release-env
 .docker-creds
-signatory
-signatory-cli

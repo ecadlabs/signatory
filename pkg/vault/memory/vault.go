@@ -3,25 +3,24 @@ package memory
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
 	"sync"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 )
 
 type PrivateKey struct {
-	PrivateKey cryptoutils.PrivateKey
+	PrivateKey crypt.PrivateKey
 	KeyID      string
 }
 
 // PublicKey get the public key associated with this key
-func (f *PrivateKey) PublicKey() crypto.PublicKey {
+func (f *PrivateKey) PublicKey() crypt.PublicKey {
 	return f.PrivateKey.Public()
 }
 
@@ -85,12 +84,8 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 			key = k
 		} else {
 			id := k.KeyID
-			var err error
 			if id == "" {
-				id, err = tezos.EncodePublicKeyHash(k.PrivateKey.Public())
-				if err != nil {
-					return nil, fmt.Errorf("(%s): %v", name, err)
-				}
+				id = k.PrivateKey.Public().Hash().String()
 			}
 			key = &PrivateKey{
 				PrivateKey: k.PrivateKey,
@@ -131,14 +126,14 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 func (v *Vault) Name() string { return v.name }
 
 // Sign sign using the specified key
-func (v *Vault) Sign(ctx context.Context, digest []byte, k vault.StoredKey) (sig cryptoutils.Signature, err error) {
+func (v *Vault) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig crypt.Signature, err error) {
 	key, ok := k.(*PrivateKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(%s): invalid key type: %T ", v.name, k), http.StatusBadRequest)
 	}
-	signature, err := cryptoutils.Sign(key.PrivateKey, digest)
+	signature, err := key.PrivateKey.Sign(message)
 	if err != nil {
-		return nil, fmt.Errorf("(%s): %v", v.name, err)
+		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
 	return signature, nil
 }
@@ -161,20 +156,25 @@ func (v *Vault) Unlock(ctx context.Context) error {
 			name = "<unnamed>"
 		}
 
-		pk, err := tezos.ParsePrivateKey(entry.Data, utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
+		tzPrivEnc, err := b58.ParseEncryptedPrivateKey([]byte(entry.Data))
 		if err != nil {
-			return fmt.Errorf("(%s): %v", v.name, err)
+			return fmt.Errorf("(%s): %w", v.name, err)
+		}
+		tzPriv, err := tzPrivEnc.Decrypt(utils.KeyboardInteractivePassphraseFunc(fmt.Sprintf("(%s): Enter password to unlock key `%s': ", v.name, name)))
+		if err != nil {
+			return fmt.Errorf("(%s): %w", v.name, err)
+		}
+		priv, err := crypt.NewPrivateKey(tzPriv)
+		if err != nil {
+			return fmt.Errorf("(%s): %w", v.name, err)
 		}
 
 		id := entry.ID
 		if id == "" {
-			id, err = tezos.EncodePublicKeyHash(pk.Public())
-			if err != nil {
-				return fmt.Errorf("(%s): %v", v.name, err)
-			}
+			id = priv.Public().Hash().String()
 		}
 		key := PrivateKey{
-			PrivateKey: pk,
+			PrivateKey: priv,
 			KeyID:      id,
 		}
 		keys[i] = &key
@@ -191,20 +191,17 @@ func (v *Vault) Unlock(ctx context.Context) error {
 	return nil
 }
 
-func (v *Vault) ImportKey(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) ImportKey(ctx context.Context, priv crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	id, ok, err := opt.GetString("name")
 	if err != nil {
-		return nil, fmt.Errorf("(%s): %v", v.name, err)
+		return nil, fmt.Errorf("(%s): %w", v.name, err)
 	}
 
 	if !ok || id == "" {
-		id, err = tezos.EncodePublicKeyHash(pk.Public())
-		if err != nil {
-			return nil, fmt.Errorf("(%s): %v", v.name, err)
-		}
+		id = priv.Public().Hash().String()
 	}
 	key := PrivateKey{
-		PrivateKey: pk,
+		PrivateKey: priv,
 		KeyID:      id,
 	}
 
@@ -220,7 +217,7 @@ type Importer struct {
 	*Vault
 }
 
-func (i *Importer) Import(ctx context.Context, pk cryptoutils.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (i *Importer) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
 	return i.ImportKey(ctx, pk, opt)
 }
 

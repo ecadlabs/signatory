@@ -46,12 +46,12 @@ func init() {
 
 		content, err := ioutil.ReadFile(conf.File)
 		if err != nil {
-			return nil, fmt.Errorf("(File): %v", err)
+			return nil, fmt.Errorf("(File): %w", err)
 		}
 
 		var entries []*tezosSecretJSONEntry
 		if err := json.Unmarshal(content, &entries); err != nil {
-			return nil, fmt.Errorf("(File): %v", err)
+			return nil, fmt.Errorf("(File): %w", err)
 		}
 
 		data := make([]*memory.UnparsedKey, len(entries))

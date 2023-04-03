@@ -6,26 +6,19 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 )
 
 type Server struct {
 	Address    string
-	PrivateKey cryptoutils.PrivateKey
+	PrivateKey crypt.PrivateKey
 	Addresses  []net.IP
 	Nets       []*net.IPNet
 }
 
 func (s *Server) Handler() (http.Handler, error) {
 	pub := s.PrivateKey.Public()
-	hash, err := tezos.EncodePublicKeyHash(pub)
-	if err != nil {
-		return nil, err
-	}
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req signatory.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
@@ -60,7 +53,7 @@ func (s *Server) Handler() (http.Handler, error) {
 
 			replyPl := signatory.PolicyHookReplyPayload{
 				Status:        status,
-				PublicKeyHash: hash,
+				PublicKeyHash: pub.Hash().String(),
 				Nonce:         req.Nonce,
 			}
 
@@ -74,14 +67,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				return
 			}
 
-			digest := utils.DigestFunc(buf)
-			sig, err := cryptoutils.Sign(s.PrivateKey, digest[:])
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			s, err := tezos.EncodeGenericSignature(sig)
+			sig, err := s.PrivateKey.Sign(buf)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -89,7 +75,7 @@ func (s *Server) Handler() (http.Handler, error) {
 
 			reply := signatory.PolicyHookReply{
 				Payload:   buf,
-				Signature: s,
+				Signature: sig.String(),
 			}
 
 			w.Header().Set("Content-Type", "application/json")
