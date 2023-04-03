@@ -2,7 +2,6 @@ package ledger
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
@@ -34,11 +33,10 @@ type getKeyReq struct {
 func (g *getKeyReq) devRequest() {}
 
 type signReq struct {
-	key       *keyID
-	data      []byte
-	prehashed bool
+	key  *keyID
+	data []byte
 
-	sig chan<- cryptoutils.Signature
+	sig chan<- crypt.Signature
 	err chan<- error
 }
 
@@ -67,11 +65,11 @@ type Config struct {
 
 type ledgerKey struct {
 	id  *keyID
-	pub crypto.PublicKey
+	pub crypt.PublicKey
 }
 
-func (l *ledgerKey) PublicKey() crypto.PublicKey { return l.pub }
-func (l *ledgerKey) ID() string                  { return l.id.String() }
+func (l *ledgerKey) PublicKey() crypt.PublicKey { return l.pub }
+func (l *ledgerKey) ID() string                 { return l.id.String() }
 
 type ledgerIterator struct {
 	ctx context.Context
@@ -130,21 +128,20 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	}
 }
 
-func (v *Vault) signData(ctx context.Context, digest []byte, key vault.StoredKey, prehashed bool) (cryptoutils.Signature, error) {
+func (v *Vault) SignMessage(ctx context.Context, digest []byte, key vault.StoredKey) (crypt.Signature, error) {
 	pk, ok := key.(*ledgerKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Ledger/%s): not a Ledger key: %T ", v.config.ID, key), http.StatusBadRequest)
 	}
 
-	res := make(chan cryptoutils.Signature, 1)
+	res := make(chan crypt.Signature, 1)
 	errCh := make(chan error, 1)
 
 	v.req <- &signReq{
-		key:       pk.id,
-		data:      digest,
-		prehashed: prehashed,
-		sig:       res,
-		err:       errCh,
+		key:  pk.id,
+		data: digest,
+		sig:  res,
+		err:  errCh,
 	}
 
 	select {
@@ -155,16 +152,6 @@ func (v *Vault) signData(ctx context.Context, digest []byte, key vault.StoredKey
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-}
-
-// Sign returns a signature
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return v.signData(ctx, digest, key, true)
-}
-
-// SignRaw implements RawSigner interface
-func (v *Vault) SignRaw(ctx context.Context, data []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return v.signData(ctx, data, key, false)
 }
 
 // Name returns a backend name i.e. Ledger
@@ -241,7 +228,7 @@ func (v *Vault) worker() {
 						r.err <- err
 						break
 					}
-					sig, err := dev.Sign(r.key.dt, r.key.path, r.data, r.prehashed)
+					sig, err := dev.Sign(r.key.dt, r.key.path, r.data)
 					if err != nil {
 						if attempt == 1 {
 							r.err <- err
@@ -384,5 +371,3 @@ func init() {
 
 	vault.RegisterCommand(newLedgerCommand())
 }
-
-var _ vault.RawSigner = (*Vault)(nil)

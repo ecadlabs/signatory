@@ -1,10 +1,13 @@
 package mnemonic
 
 import (
+	"bytes"
+	"crypto/ed25519"
 	"crypto/x509"
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/encoding"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,8 +21,13 @@ func TestMnemonic(t *testing.T) {
 	pub, err := x509.ParsePKIXPublicKey(pubKey)
 	assert.NoError(t, err)
 
-	hash, err := tezos.EncodeBinaryPublicKeyHashFromKeyData(pub)
-	assert.NoError(t, err)
+	tzPub := crypt.Ed25519PublicKey(pub.(ed25519.PublicKey))
+
+	var buf bytes.Buffer
+	pkh := tzPub.Hash()
+	// pass pointer to interface to preserve type information to encode correctly
+	assert.NoError(t, encoding.Encode(&buf, &pkh))
+	hash := buf.Bytes()
 	x = New(hash)
 	assert.Equal(t, Mnemonic{"zesty", "koala", "usable", "kiwi"}, x)
 }

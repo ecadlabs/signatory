@@ -2,9 +2,12 @@ package commands
 
 import (
 	"os"
+	"sort"
 	"text/template"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/encoding"
+	"github.com/ecadlabs/gotez/protocol"
+	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +33,16 @@ func NewListRequests(c *Context) *cobra.Command {
 		Use:   "list-requests",
 		Short: "Print possible request types",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return listReqTpl.Execute(os.Stdout, tezos.RequestKinds)
+			kindsMap := make(map[string]struct{})
+			encoding.ForEachInEnum(func(tag uint8, req request.SignRequest) {
+				kindsMap[req.RequestKind()] = struct{}{}
+			})
+			var kinds []string
+			for k := range kindsMap {
+				kinds = append(kinds, k)
+			}
+			sort.Strings(kinds)
+			return listReqTpl.Execute(os.Stdout, kinds)
 		},
 	}
 
@@ -42,7 +54,16 @@ func NewListOps(c *Context) *cobra.Command {
 		Use:   "list-ops",
 		Short: "Print possible operation types inside the `generic` request",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return listOpsTpl.Execute(os.Stdout, tezos.Operations)
+			opsMap := make(map[string]struct{})
+			encoding.ForEachInEnum(func(tag uint8, req protocol.OperationContents) {
+				opsMap[req.OperationKind()] = struct{}{}
+			})
+			var ops []string
+			for k := range opsMap {
+				ops = append(ops, k)
+			}
+			sort.Strings(ops)
+			return listOpsTpl.Execute(os.Stdout, ops)
 		},
 	}
 

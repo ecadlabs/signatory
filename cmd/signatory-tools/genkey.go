@@ -9,15 +9,16 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ecadlabs/goblst/minpk"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/spf13/cobra"
 )
 
 const genkeyTemplateSrc = `{{range . -}}
 Private Key:     {{.PrivateKey}}
 Public Key:      {{.PublicKey}}
-Public Key Hash: {{.PublicKeyHash}}
+Public Key Hash: {{.PublicKey.Hash}}
 
 {{end}}
 `
@@ -27,9 +28,8 @@ var (
 )
 
 type tplData struct {
-	PrivateKey    string
-	PublicKey     string
-	PublicKeyHash string
+	PrivateKey crypt.PrivateKey
+	PublicKey  crypt.PublicKey
 }
 
 func NewGenKeyCommand() *cobra.Command {
@@ -45,17 +45,27 @@ func NewGenKeyCommand() *cobra.Command {
 			var data []*tplData
 			for i := 0; i < num; i++ {
 				var (
-					pk  cryptoutils.PrivateKey
-					err error
+					priv crypt.PrivateKey
+					err  error
 				)
 
 				switch keyType {
-				case "edsk":
-					_, pk, err = ed25519.GenerateKey(rand.Reader)
-				case "spsk":
-					pk, err = ecdsa.GenerateKey(cryptoutils.S256(), rand.Reader)
-				case "p2sk":
-					pk, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				case "ed25519":
+					var k ed25519.PrivateKey
+					_, k, err = ed25519.GenerateKey(rand.Reader)
+					priv = crypt.Ed25519PrivateKey(k)
+				case "secp256k1":
+					var k *ecdsa.PrivateKey
+					k, err = ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+					priv = (*crypt.ECDSAPrivateKey)(k)
+				case "p256":
+					var k *ecdsa.PrivateKey
+					k, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+					priv = (*crypt.ECDSAPrivateKey)(k)
+				case "bls":
+					var k *minpk.PrivateKey
+					k, err = minpk.GenerateKey(rand.Reader)
+					priv = (*crypt.BLSPrivateKey)(k)
 				default:
 					err = fmt.Errorf("unknown key type: %s", keyType)
 				}
@@ -64,17 +74,10 @@ func NewGenKeyCommand() *cobra.Command {
 					return err
 				}
 
-				var d tplData
-				if d.PrivateKey, err = tezos.EncodePrivateKey(pk); err != nil {
-					return err
-				}
-				if d.PublicKey, err = tezos.EncodePublicKey(pk.Public()); err != nil {
-					return err
-				}
-				if d.PublicKeyHash, err = tezos.EncodePublicKeyHash(pk.Public()); err != nil {
-					return err
-				}
-				data = append(data, &d)
+				data = append(data, &tplData{
+					PrivateKey: priv,
+					PublicKey:  priv.Public(),
+				})
 			}
 
 			if err := genkeyTpl.Execute(os.Stdout, data); err != nil {
@@ -85,8 +88,8 @@ func NewGenKeyCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&num, "n", 1, "Number of key pairs to generate")
-	cmd.Flags().StringVar(&keyType, "t", "edsk", "Key type [edsk, spsk, p2sk]")
+	cmd.Flags().IntVarP(&num, "num", "n", 1, "Number of key pairs to generate")
+	cmd.Flags().StringVarP(&keyType, "type", "t", "ed25519", "Key type [ed25519, secp256k1, p256, bls]")
 
 	return cmd
 }

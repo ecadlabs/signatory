@@ -3,13 +3,14 @@ package jwk
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
 // JWK represents a A JSON Web Key
@@ -73,7 +74,7 @@ func parseBase64UInt(s string) (*big.Int, error) {
 
 func (j *JWK) ecPublicKey() (k *ecdsa.PublicKey, err error) {
 	var key ecdsa.PublicKey
-	if key.Curve = cryptoutils.NamedCurve(j.Curve); key.Curve == nil {
+	if key.Curve = curveByName(j.Curve); key.Curve == nil {
 		return nil, fmt.Errorf("jwk: unknown curve: %s", j.Curve)
 	}
 	if key.X, err = parseBase64UInt(j.X); err != nil {
@@ -133,7 +134,7 @@ func (j *JWK) PublicKey() (crypto.PublicKey, error) {
 }
 
 // PrivateKey decodes a private key represented in JWK
-func (j *JWK) PrivateKey() (cryptoutils.PrivateKey, error) {
+func (j *JWK) PrivateKey() (crypto.PrivateKey, error) {
 	switch j.KeyType {
 	case "EC", "EC-HSM":
 		if j.D == "" {
@@ -199,7 +200,7 @@ func (j *JWK) PrivateKey() (cryptoutils.PrivateKey, error) {
 
 func (j *JWK) populateECPublicKey(key *ecdsa.PublicKey) {
 	j.KeyType = "EC"
-	j.Curve = key.Params().Name
+	j.Curve = curveName(key.Curve)
 	j.X = b64.EncodeToString(key.X.Bytes())
 	j.Y = b64.EncodeToString(key.Y.Bytes())
 }
@@ -211,7 +212,7 @@ func (j *JWK) populateRSAPublicKey(key *rsa.PublicKey) {
 }
 
 // EncodePrivateKey returns a JWT populated with data from the private key
-func EncodePrivateKey(key cryptoutils.PrivateKey) (jwk *JWK, err error) {
+func EncodePrivateKey(key crypto.PrivateKey) (jwk *JWK, err error) {
 	jwk = new(JWK)
 	switch k := key.(type) {
 	case *ecdsa.PrivateKey:
@@ -263,4 +264,39 @@ func EncodePublicKey(key crypto.PublicKey) (jwk *JWK, err error) {
 	}
 
 	return jwk, nil
+}
+
+// curveByName returns curve by its standard name or nil
+func curveByName(name string) elliptic.Curve {
+	switch name {
+	case "P-224":
+		return elliptic.P224()
+	case "P-256":
+		return elliptic.P256()
+	case "P-384":
+		return elliptic.P384()
+	case "P-521":
+		return elliptic.P521()
+	case "P-256K", "SECP256K1", "secp256k1":
+		return secp256k1.S256()
+	default:
+		return nil
+	}
+}
+
+func curveName(curve elliptic.Curve) string {
+	switch curve {
+	case elliptic.P224():
+		return "P-224"
+	case elliptic.P256():
+		return "P-256"
+	case elliptic.P384():
+		return "P-384"
+	case elliptic.P521():
+		return "P-521"
+	case secp256k1.S256():
+		return "P-256K" // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/security/keyvault/azkeys/constants.go
+	default:
+		return ""
+	}
 }
