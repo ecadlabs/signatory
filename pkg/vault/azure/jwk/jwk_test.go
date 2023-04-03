@@ -3,6 +3,7 @@
 package jwk
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/x509"
@@ -160,7 +161,7 @@ rk2MM537ENmaxPCFEFd+oGVe//blcqigJgIMzHFTFnf8TJ+0jbm5
 		as.Equal(expect, priv)
 
 		if expect != nil {
-			jj, err := EncodePrivateKey(expect.(cryptoutils.PrivateKey))
+			jj, err := EncodePrivateKey(expect.(crypto.PrivateKey))
 			require.NoError(t, err)
 			as.Equal(&j, jj)
 		}

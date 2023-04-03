@@ -4,10 +4,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +16,12 @@ func NewAuthRequestCommand() *cobra.Command {
 		Short: "Authenticate (sign) a sign request",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			priv, err := tezos.ParsePrivateKey(args[0], nil)
+			priv, err := crypt.ParsePrivateKey([]byte(args[0]))
+			if err != nil {
+				return err
+			}
+
+			pkh, err := b58.ParsePublicKeyHash([]byte(args[0]))
 			if err != nil {
 				return err
 			}
@@ -29,26 +33,19 @@ func NewAuthRequestCommand() *cobra.Command {
 
 			req := signatory.SignRequest{
 				Message:       msg,
-				PublicKeyHash: args[1],
+				PublicKeyHash: pkh,
 			}
 
-			data, err := signatory.SignRequestAuthenticatedBytes(&req)
+			data, err := signatory.AuthenticatedBytesToSign(&req)
 			if err != nil {
 				return err
 			}
 
-			digest := utils.DigestFunc(data)
-			sig, err := cryptoutils.Sign(priv, digest[:])
+			sig, err := priv.Sign(data)
 			if err != nil {
 				return err
 			}
-
-			res, err := tezos.EncodeSignature(sig)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(res)
+			fmt.Println(sig)
 			return nil
 		},
 	}

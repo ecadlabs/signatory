@@ -78,6 +78,7 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 * `tz1` - [Ed25519](https://ed25519.cr.yp.to/)
 * `tz2` - [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1) __aka: P256K__
 * `tz3` - P-256
+* `tz4` - BLS12-381
 
 ## Signing Algorithm Support From Various Backends
 

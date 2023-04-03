@@ -1,8 +1,6 @@
 package tezosapp
 
 import (
-	"crypto"
-	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"encoding/asn1"
@@ -11,7 +9,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 )
 
@@ -147,7 +146,7 @@ func pathValid(path BIP32) error {
 	return nil
 }
 
-func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKey, err error) {
+func parsePublicKey(data []byte, derivation DerivationType) (pub crypt.PublicKey, err error) {
 	if len(data) < 2 {
 		return nil, errors.New("public key reply is too short")
 	}
@@ -167,7 +166,7 @@ func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKe
 		if len(key) != ed25519.PublicKeySize {
 			return nil, fmt.Errorf("invalid public key length: %d", len(key))
 		}
-		return ed25519.PublicKey(key), nil
+		return crypt.Ed25519PublicKey(key), nil
 
 	case DerivationSECP256K1, DerivationSECP256R1:
 		if comp != tagUncompressed {
@@ -179,7 +178,7 @@ func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKe
 
 		var curve elliptic.Curve
 		if derivation == DerivationSECP256K1 {
-			curve = cryptoutils.S256()
+			curve = secp256k1.S256()
 		} else {
 			curve = elliptic.P256()
 		}
@@ -191,7 +190,7 @@ func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKe
 			return nil, fmt.Errorf("point is not on %s", curve.Params().Name)
 		}
 
-		return &ecdsa.PublicKey{
+		return &crypt.ECDSAPublicKey{
 			Curve: curve,
 			X:     x,
 			Y:     y,
@@ -203,7 +202,7 @@ func parsePublicKey(data []byte, derivation DerivationType) (pub crypto.PublicKe
 }
 
 // GetPublicKey returns a public key for a newly derived pair
-func (t *App) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypto.PublicKey, err error) {
+func (t *App) GetPublicKey(derivation DerivationType, path BIP32, prompt bool) (pub crypt.PublicKey, err error) {
 	ins := insGetPublicKey
 	if prompt {
 		ins = insPromptPublicKey
@@ -238,11 +237,8 @@ const (
 )
 
 // Sign signs the message or precalculated hash
-func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed bool) (sig cryptoutils.Signature, err error) {
+func (t *App) Sign(derivation DerivationType, path BIP32, data []byte) (sig crypt.Signature, err error) {
 	ins := insSign
-	if prehashed {
-		ins = insSignUnsafe
-	}
 
 	apdu := ledger.APDUCommand{
 		Cla:  claTezos,
@@ -284,12 +280,12 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed
 		if len(res.Data) != ed25519.SignatureSize {
 			return nil, fmt.Errorf("invalid signature length: %d", len(res.Data))
 		}
-		return cryptoutils.ED25519Signature(res.Data), nil
+		return crypt.Ed25519Signature(res.Data), nil
 
 	case DerivationSECP256K1, DerivationSECP256R1:
 		var curve elliptic.Curve
 		if derivation == DerivationSECP256K1 {
-			curve = cryptoutils.S256()
+			curve = secp256k1.S256()
 		} else {
 			curve = elliptic.P256()
 		}
@@ -306,7 +302,7 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte, prehashed
 		if _, err = asn1.Unmarshal(res.Data, &sig); err != nil {
 			return nil, err
 		}
-		return &cryptoutils.ECDSASignature{
+		return &crypt.ECDSASignature{
 			R:     sig.R,
 			S:     sig.S,
 			Curve: curve,
@@ -323,7 +319,7 @@ type HWM struct {
 	Test    uint32
 }
 
-func (t *App) SetupBaking(hwm *HWM, derivation DerivationType, path BIP32) (pub crypto.PublicKey, err error) {
+func (t *App) SetupBaking(hwm *HWM, derivation DerivationType, path BIP32) (pub crypt.PublicKey, err error) {
 	if hwm == nil {
 		hwm = &HWM{}
 	}

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -26,20 +25,14 @@ var pubCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		pk, err := conf.GetPrivateKey()
+		priv, err := conf.GetPrivateKey()
 		if err != nil {
 			return err
 		}
-		if pk == nil {
+		if priv == nil {
 			return errors.New("private key is not specified")
 		}
-
-		pub, err := tezos.EncodePublicKey(pk.Public())
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("Public key: %s\n", pub)
+		fmt.Printf("Public key: %v\n", priv.Public())
 		return nil
 	},
 }
