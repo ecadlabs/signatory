@@ -1,12 +1,13 @@
 package ledger
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonic"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
@@ -48,12 +49,15 @@ func (s *scanner) openPath(path string) (app *tezosapp.App, dev *deviceInfo, err
 		return nil, nil, err
 	}
 
-	hash, err := tezos.EncodeBinaryPublicKeyHashFromKeyData(rootPK)
-	if err != nil {
+	var buf bytes.Buffer
+	pkh := rootPK.Hash()
+	// pass pointer to interface to preserve type information to encode correctly
+	if err := encoding.Encode(&buf, &pkh); err != nil {
 		return nil, nil, err
 	}
-	id := mnemonic.New(hash)
+	id := mnemonic.New(buf.Bytes())
 
+	hash := pkh.PublicKeyHash()
 	dev = &deviceInfo{
 		Path:    path,
 		Version: ver,

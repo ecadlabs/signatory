@@ -1,9 +1,8 @@
 package ledger
 
 import (
-	"encoding/hex"
-
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
 
@@ -12,14 +11,15 @@ import (
 func SetupBaking(transport string, id, keyID, chainID string, mainHWM, testHWM uint32) (pkh string, err error) {
 	var hwm tezosapp.HWM
 	if chainID != "" {
-		hwm.ChainID, err = tezos.DecodeChainID(chainID)
+		cid, err := b58.ParseChainID([]byte(chainID))
 		if err != nil {
-			return
+			return "", err
 		}
+		hwm.ChainID = *cid
 	}
 	key, err := parseKeyID(keyID)
 	if err != nil {
-		return
+		return "", err
 	}
 	s, err := getScanner(transport)
 	if err != nil {
@@ -27,20 +27,15 @@ func SetupBaking(transport string, id, keyID, chainID string, mainHWM, testHWM u
 	}
 	dev, err := s.open(id)
 	if err != nil {
-		return
+		return "", err
 	}
 	defer dev.Close()
 
 	pub, err := dev.SetupBaking(&hwm, key.dt, key.path)
 	if err != nil {
-		return
+		return "", err
 	}
-	pkh, err = tezos.EncodePublicKeyHash(pub)
-	if err != nil {
-		return
-	}
-
-	return pkh, nil
+	return pub.Hash().String(), nil
 }
 
 func DeauthorizeBaking(transport string, id string) error {
@@ -100,5 +95,5 @@ func GetHighWatermarks(transport string, id string) (mainHWM, testHWM uint32, ch
 	if err != nil {
 		return
 	}
-	return hwm.Main, hwm.Test, hex.EncodeToString(hwm.ChainID[:]), nil
+	return hwm.Main, hwm.Test, gotez.ChainID(hwm.ChainID).String(), nil
 }

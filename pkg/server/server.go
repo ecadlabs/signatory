@@ -5,16 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	stderr "errors"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/auth"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
-	"github.com/ecadlabs/signatory/pkg/tezos/utils"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,8 +22,8 @@ const defaultAddr = ":6732"
 
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
-	Sign(ctx context.Context, req *signatory.SignRequest) (string, error)
-	GetPublicKey(ctx context.Context, keyHash string) (*signatory.PublicKey, error)
+	Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error)
+	GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error)
 }
 
 // Server struct containing the information necessary to run a tezos remote signers
@@ -48,17 +47,15 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 		return errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized)
 	}
 
-	signed, err := signatory.SignRequestAuthenticatedBytes(req)
-	if err != nil {
-		return errors.Wrap(err, http.StatusBadRequest)
-	}
-	digest := utils.DigestFunc(signed)
-
-	sig, err := tezos.ParseSignature(v, nil)
+	authBytes, err := signatory.AuthenticatedBytesToSign(req)
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}
 
+	sig, err := crypt.ParseSignature([]byte(v))
+	if err != nil {
+		return errors.Wrap(err, http.StatusBadRequest)
+	}
 	hashes, err := s.Auth.ListPublicKeys(r.Context())
 	if err != nil {
 		return err
@@ -70,12 +67,9 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 			return err
 		}
 
-		err = cryptoutils.Verify(pub, digest[:], sig)
-		if err == nil {
+		if sig.Verify(pub, authBytes) {
 			req.ClientPublicKeyHash = pkh
 			return nil
-		} else if err != cryptoutils.ErrSignature {
-			return err
 		}
 	}
 
@@ -83,8 +77,13 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 }
 
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
+	if err != nil {
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+		return
+	}
 	signRequest := signatory.SignRequest{
-		PublicKeyHash: mux.Vars(r)["key"],
+		PublicKeyHash: pkh,
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -93,7 +92,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	signRequest.Source = net.ParseIP(source)
 
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.logger().Errorf("Error reading POST content: %v", err)
 		tezosJSONError(w, err)
@@ -128,7 +127,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := struct {
-		Signature string `json:"signature"`
+		Signature crypt.Signature `json:"signature"`
 	}{
 		Signature: signature,
 	}
@@ -137,15 +136,19 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 	keyHash := mux.Vars(r)["key"]
-
-	key, err := s.Signer.GetPublicKey(r.Context(), keyHash)
+	pkh, err := b58.ParsePublicKeyHash([]byte(keyHash))
+	if err != nil {
+		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+		return
+	}
+	key, err := s.Signer.GetPublicKey(r.Context(), pkh)
 	if err != nil {
 		tezosJSONError(w, err)
 		return
 	}
 
 	resp := struct {
-		PublicKey string `json:"public_key"`
+		PublicKey crypt.PublicKey `json:"public_key"`
 	}{
 		PublicKey: key.PublicKey,
 	}
@@ -154,7 +157,7 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
-		AuthorizedKeys []string `json:"authorized_keys,omitempty"`
+		AuthorizedKeys []crypt.PublicKeyHash `json:"authorized_keys,omitempty"`
 	}{}
 
 	if s.Auth != nil {

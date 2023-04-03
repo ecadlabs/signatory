@@ -1,15 +1,14 @@
 package main
 
 import (
-	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -39,11 +38,11 @@ func (conf *Config) Addresses() ([]net.IP, []*net.IPNet, error) {
 	return ips, nets, nil
 }
 
-func (conf *Config) GetPrivateKey() (cryptoutils.PrivateKey, error) {
+func (conf *Config) GetPrivateKey() (crypt.PrivateKey, error) {
 	var keyData []byte
 	if conf.PrivateKey != "" {
-		if pk, err := tezos.ParsePrivateKey(conf.PrivateKey, nil); err == nil {
-			return pk, nil
+		if priv, err := crypt.ParsePrivateKey([]byte(conf.PrivateKey)); err == nil {
+			return priv, nil
 		} else {
 			keyData = []byte(conf.PrivateKey)
 		}
@@ -61,16 +60,7 @@ func (conf *Config) GetPrivateKey() (cryptoutils.PrivateKey, error) {
 	if b == nil {
 		return nil, errors.New("can't parse private key PEM block")
 	}
-
-	key, err := x509.ParsePKCS8PrivateKey(b.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	pk, ok := key.(cryptoutils.PrivateKey)
-	if !ok {
-		return nil, errors.New("unexpected private key type")
-	}
-	return pk, nil
+	return cryptoutils.ParsePKCS8PrivateKey(b.Bytes)
 }
 
 func ReadConfig(file string) (*Config, error) {
