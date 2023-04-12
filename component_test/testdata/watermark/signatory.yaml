@@ -1,0 +1,68 @@
+server:
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+
+vaults:
+
+  local_secret:
+    driver: file
+    config:
+      file: /etc/secret.json
+
+# List enabled public keys hashes here
+tezos:
+
+  #alice
+  tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:
+    log_payloads: true
+    allow:
+      generic:
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
+      block:
+      endorsement:
+      preendorsement:
+
+  #bob
+  tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6:
+    log_payloads: true
+    allow:
+      generic:
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
+      block:
+
+  #speculos
+  tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
+    log_payloads: true
+    allow:
+      generic:
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
+      block:
+      endorsement:
+
+  #flextesa baker
+  tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
+    log_payloads: true
+    allow:
+      generic:
+        - double_baking_evidence
+        - double_endorsement_evidence
+        - double_preendorsement_evidence
+        - endorsement
+        - preendorsement
+        - reveal
+        - delegation
+        - transaction
+      block:
+      endorsement:
+      preendorsement:
