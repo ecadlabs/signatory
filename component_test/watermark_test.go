@@ -51,7 +51,6 @@ type functionalTestCase struct {
 	chainID             string
 }
 
-// see testdata/watermark/readme.md for more details on how to generate these test cases
 var functionalTestCases = []functionalTestCase{
 	{title: "double sign block level 2 round 0 no existing watermark",
 		signRequestBodies: []string{
