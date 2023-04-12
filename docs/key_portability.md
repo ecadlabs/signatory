@@ -1,3 +1,7 @@
+---
+id: key_portability
+title: key_portability
+---
 # Trade-offs around Key Portability and Key Security
 
 This page discusses the trade-offs between key portability and key security. Key import is a feature that supports key portability.
