@@ -20,4 +20,4 @@ ENV ENV_NODE_ADDR=https://ghostnet.ecadinfra.com
 ENV TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
 
 ENTRYPOINT [ "/bin/sh", "-c" ]
-CMD [ "/usr/local/go/bin/go test -v -tags integration ./..." ]
+CMD [ "/usr/local/go/bin/go test -v  $(go list ./... | grep  integration_test)" ]

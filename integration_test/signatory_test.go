@@ -1,5 +1,3 @@
-//go:build integration
-
 package integrationtest
 
 import (
@@ -187,7 +185,7 @@ func TestSignatory(t *testing.T) {
 		// import key
 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
 		// create transaction
-		require.Error(t, logExec(t, "octez-client",  "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
+		require.Error(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
 
 	srv.Shutdown(context.Background())

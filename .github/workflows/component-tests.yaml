@@ -20,4 +20,4 @@ jobs:
       - name: pull signatory:main
         run: docker pull ecadlabs/signatory:main-amd64
       - name: Run tests
-        run: go test -v $(go list ./... | grep  component_test)" 
+        run: go test -v $(go list ./... | grep  component_test)

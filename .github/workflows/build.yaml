@@ -30,7 +30,7 @@ jobs:
         run: |
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
           chmod +x ./cc-test-reporter
-      - name: Run tests
+      - name: Run unit tests
         run: |
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
@@ -38,8 +38,8 @@ jobs:
 
           ./cc-test-reporter before-build
 
-          echo "Running tests..."
-          go test -coverprofile c.out ./...
+          echo "Running unit tests..."
+          go test $(go list ./... | grep  -v component_test | grep -v integration_test) -coverprofile c.out ./...
 
           mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
