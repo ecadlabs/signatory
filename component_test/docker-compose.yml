@@ -5,7 +5,7 @@ services:
     
   signatory:
     container_name: signatory
-    image: ecadlabs/signatory:v1.0.0-beta3-amd64
+    image: ecadlabs/signatory:${IMAGE_TAG}
     ports:
       - "6732:6732"
       - "9583:9583"
