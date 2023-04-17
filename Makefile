@@ -53,4 +53,5 @@ release:
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release \
 		--rm-dist \
-		--skip-validate
+		--skip-validate \
+		--skip-announce
