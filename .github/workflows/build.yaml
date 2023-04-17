@@ -1,7 +1,9 @@
 on:
   push:
     branches:
-      - "sg-component-test"
+      - "main"
+    tags:
+      - "v*"
   pull_request:
 
 name: Test and publish
@@ -16,8 +18,8 @@ env:
   CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
 
 jobs:
-  unittest:
-    name: UnitTest
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v2
@@ -33,23 +35,18 @@ jobs:
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
           export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
-
           ./cc-test-reporter before-build
-
           echo "Running unit tests..."
           go test $(go list ./... | grep  -v component_test | grep -v integration_test) -coverprofile c.out ./...
-
           mod="$(cat go.mod | awk '/^module/ {print $2}')"
-
           if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
             echo "Generating coverage report..."
             ./cc-test-reporter after-build -p "${mod}/" -t gocov
           fi
-
   publish:
     name: Goreleaser
     runs-on: ubuntu-latest
-    needs: unittest
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -73,23 +70,20 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
-
       # - name: Write docker-creds file
       #   uses: DamianReeves/write-file-action@v1.0
       #   with:
       #     path: ${{ github.workspace }}/.docker-creds
       #     contents: |
       #       ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
+      - name: goreleaser release-dry-run
+        run: make release-dry-run
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: goreleaser release main branch
+        run: make release-main-branch
+        if: github.ref == 'refs/heads/main'
+
       - name: goreleaser release
         run: make release
-
-  componenttest:
-    name: Component Tests
-    runs-on: ubuntu-latest
-    needs: publish
-    steps:
-      - uses: actions/checkout@v2
-      - name: pull signatory
-        run: docker pull ecadlabs/signatory:${{ github.ref }}
-      - name: Run tests
-        run: IMAGE_TAG=${{ github.ref }} go test -v $(go list ./... | grep  component_test)
+        if: startsWith(github.ref, 'refs/tags/v')

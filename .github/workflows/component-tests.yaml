@@ -1,0 +1,23 @@
+on:
+  push:
+    branches:
+      - "sg-component-test"
+
+name: Run component tests
+
+permissions:
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+
+jobs:
+  test:
+    name: component test signatory:main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: pull signatory:main
+        run: docker pull ecadlabs/signatory:v1.0.0-beta3-amd64
+      - name: Run tests
+        run: go test -v $(go list ./... | grep  component_test)
