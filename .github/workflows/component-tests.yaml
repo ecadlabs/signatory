@@ -13,11 +13,11 @@ permissions:
 
 jobs:
   test:
-    name: component test signatory:main
+    name: component test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: pull signatory:main
+      - name: pull signatory:v1.0.0-beta3-amd64
         run: docker pull ecadlabs/signatory:v1.0.0-beta3-amd64
       - name: Run tests
-        run: go test -v $(go list ./... | grep  component_test)
+        run: IMAGE_TAG=${{ github.ref }} go test -v $(go list ./... | grep  component_test)
