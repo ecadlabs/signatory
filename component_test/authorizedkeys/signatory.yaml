@@ -17,8 +17,6 @@ tezos:
 
   #baker
   tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
-    authorized_keys:
-      - edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE
     log_payloads: true
     allow:
       generic:
