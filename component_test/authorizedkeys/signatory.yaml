@@ -1,0 +1,29 @@
+server:
+  # Address for the main HTTP server to listen on
+  address: :6732
+  # Address for the utility HTTP server to listen on
+  utility_address: :9583
+  authorized_keys:
+    - edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE
+
+vaults:
+
+  local_secret:
+    driver: file
+    config:
+      file: /etc/secret.json
+
+tezos:
+
+  #baker
+  tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
+    authorized_keys:
+      - edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE
+    log_payloads: true
+    allow:
+      generic:
+        - endorsement
+        - preendorsement
+      block:
+      endorsement:
+      preendorsement:

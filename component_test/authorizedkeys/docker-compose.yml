@@ -1,0 +1,46 @@
+version: "3.9"
+networks:
+  componenttest: {}
+services:
+    
+  signatory:
+    container_name: signatory
+    image: ecadlabs/signatory:v1.0.0-beta3-arm64
+    ports:
+      - "6732:6732"
+      - "9583:9583"
+    networks:
+      - componenttest
+    configs:
+      - source: sigy-config
+        target: /etc/signatory.yaml
+      - source: sigy-secret
+        target: /etc/secret.json
+    volumes:
+      - ./files:/var/opt/signatory/testfiles
+    command: serve
+    healthcheck:
+      test: "curl --fail http://localhost:6732/authorized_keys || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
+
+#  policy:
+#    container_name: policy
+#    image: ecadlabs/signatory:v1.0.0-beta3
+#    ports:
+#      - "6733:6733"
+#    networks:
+#      - componenttest
+#    configs:
+#      - source: policy-config
+#        target: /etc/policy.yaml
+#    command: serve
+
+
+configs:
+  sigy-config:
+    file: ./signatory.yaml
+  sigy-secret:
+    file: ./signatory-local-secret.json
