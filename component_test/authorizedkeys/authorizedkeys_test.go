@@ -11,10 +11,12 @@ import (
 	"testing"
 
 	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	url = "http://localhost:6732/keys/tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf"
+	url = "http://localhost:6732/keys/tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp"
 )
 
 func request_sign(body string, signature string) (int, []byte) {
@@ -38,24 +40,42 @@ func request_sign(body string, signature string) (int, []byte) {
 }
 
 func sign(message []byte) string {
+
 	seed := []byte("this is a seed phrase for a test of Signatory")
-	private := crypt.Ed25519PrivateKey(ed25519.NewKeyFromSeed(seed[:32]))
-	fmt.Println("public key is " + private.Public().String())
-	fmt.Println("pkh is " + private.Public().Hash().String())
-	signature, err := private.Sign(message)
+	client_private := crypt.Ed25519PrivateKey(ed25519.NewKeyFromSeed(seed[:32]))
+	//fmt.Println("public key is " + client_private.Public().String())
+	//fmt.Println("pkh is " + client_private.Public().Hash().String())
+
+	seed1 := []byte("yet another phrase used for seed in a test of Signatory")
+	vaulted_private := crypt.Ed25519PrivateKey(ed25519.NewKeyFromSeed(seed1[:32]))
+	//fmt.Println("test setup:")
+	//fmt.Println("public key is " + vaulted_private.Public().String())
+	//fmt.Println("pkh is " + vaulted_private.Public().Hash().String())
+	//fmt.Println("private key is " + vaulted_private.String())
+
+	sr := signatory.SignRequest{
+		Message:       message,
+		PublicKeyHash: vaulted_private.Public().Hash(),
+	}
+	bytes2sign, err := signatory.AuthenticatedBytesToSign(&sr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("signature is " + string(signature.ToProtocol().ToBase58()))
+
+	signature, err := client_private.Sign(bytes2sign)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return string(signature.ToProtocol().ToBase58())
 }
+
 func TestIt(t *testing.T) {
-	request := "\"11b3d79f99000000020130c1cb51f36daebee85fe99c04800a38e8133ffd2fa329cd4db35f32fe5bf5e30000000064277aa504683625c2445a4e9564bf710c5528fd99a7d150d2a2a323bc22ff9e2710da4f6d00000021000000010200000004000000020000000000000004ffffffff0000000400000000080966c1f5a955161345bc7d81ac205ebafc89f5977a5bc88e47ab1b6f8d791e5ae8b92d9bc0523b3e07848458e66dc4265e29f3c5d8007447862e2483fdad1200000000a40d1a28000000000002\""
-	unquoted := "11b3d79f99000000020130c1cb51f36daebee85fe99c04800a38e8133ffd2fa329cd4db35f32fe5bf5e30000000064277aa504683625c2445a4e9564bf710c5528fd99a7d150d2a2a323bc22ff9e2710da4f6d00000021000000010200000004000000020000000000000004ffffffff0000000400000000080966c1f5a955161345bc7d81ac205ebafc89f5977a5bc88e47ab1b6f8d791e5ae8b92d9bc0523b3e07848458e66dc4265e29f3c5d8007447862e2483fdad1200000000a40d1a28000000000002"
+	request := "\"039d3cc1568fe7c75d862bdd7af38427461133e5ec0823f14dac66653124b358b96c003745a240e6ed1bec1ef3434069c67ba2acdcc326df0201e90700c0843d00006b82198cb179e8306c1bedd08f12dc863f32888600\""
+	unquoted := "039d3cc1568fe7c75d862bdd7af38427461133e5ec0823f14dac66653124b358b96c003745a240e6ed1bec1ef3434069c67ba2acdcc326df0201e90700c0843d00006b82198cb179e8306c1bedd08f12dc863f32888600"
 	dec, err := hex.DecodeString(unquoted)
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 	signature := sign(dec)
-	request_sign(request, signature)
+	code, bytes := request_sign(request, signature)
+	require.Equal(t, http.StatusOK, code)
+	require.Contains(t, string(bytes), "signature")
 }

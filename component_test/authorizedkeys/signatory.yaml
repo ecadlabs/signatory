@@ -15,13 +15,15 @@ vaults:
 
 tezos:
 
-  #baker
-  tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
+  #user1
+  tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp:
     log_payloads: true
     allow:
       generic:
-        - endorsement
-        - preendorsement
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
       block:
       endorsement:
       preendorsement:
