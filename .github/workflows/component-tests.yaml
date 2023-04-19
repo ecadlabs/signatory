@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - "sg-component-test"
+      - "disabled"
 
 name: Run component tests
 
