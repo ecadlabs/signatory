@@ -4,30 +4,34 @@ title: Authorized_Keys Configuration
 ---
 # Signatory's Authorized Key Authentication Feature
 
-Signatory's remote policy service feature allows custom policy schemes beyond simple request and operation lookup to be implemented externally. This feature is authenticated using a signature, which requires the public key to be added to the authorized_keys list.
+Signatory provides the option to authenticate the octez-client, by specifying an "authorized key" in the Signatory configuration file.  
 
-## Authentication
+## Motivation
 
-Authentication is the process of verifying the identity of a user or system. Client applications can provide signed requests to a service proving their identity through possession of the private key.
+An authorized key can be configured to ensure that Signatory only signs requests from an octez-client instance containing the private key.
 
-The authorized key authentication feature in Signatory allows the server to verify that the response from the policy service is authentic. This is done by checking the signature of the payload against the authorized public keys in the authorized_keys list.
+## Configuration
 
-## When to Use the Feature
+First, a key pair is generated using octez-client:
 
-The authorized key authentication feature should be used when there is a need to protect the system from unauthorized access or tampering. 
+```bash
+octez-client gen keys signatory-auth
+```
 
-## Importance of Naming Keys
+Next, find the public key value:
 
-Naming keys is important as it helps to identify the key and its purpose. This is especially important in large organizations where there may be many keys in use. Giving the key a descriptive name will make it easier to locate and manage in the future. This will also prevent operators from accidentally deleting keys during housekeeping tasks.
+```bash
+cat ~/.tezos-client/public_keys | grep -C 3 signatory-auth
+```
 
-## Testing the Feature
+Finally, add the public key value to the Signatory configuration file.  It belongs within the `server` declaration:
 
-To test the authorized key authentication feature, you can use the reference implementation provided by Signatory. The reference implementation is the approve list service, which verifies a client's identity.
+```yaml
+server:
+  address: :6732
+  utility_address: :9583
+  authorized_keys:
+    - edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE
+```
 
-To test the feature, you can perform the following steps:
-
-1. Send an unauthenticated request.
-2. Watch that the request fails.
-3. Add the authentication, and see it pass.
-
-By following these steps, you can ensure that the authorized key authentication feature is working as intended and that only legitimate keys are being used to access the system.
+Restarting the Signatory service is required to apply the configuration change.  Henceforth, the Signatory service will only accept requests from the octez-client that is using the private key associated with the public key specified in the configuration file.
