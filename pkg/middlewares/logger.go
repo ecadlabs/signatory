@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 // Logging middleware inspired by github.com/urfave/negroni
 
