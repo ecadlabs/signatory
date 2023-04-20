@@ -194,19 +194,19 @@ dockers:
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/amd64"
-  - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-amd64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-darwin-amd64{{ end }}'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=darwin/amd64"
+  # - image_templates:
+  #   - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-amd64'
+  #   - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-darwin-amd64{{ end }}'
+  #   dockerfile: Dockerfile
+  #   use: buildx
+  #   build_flag_templates:
+  #   - "--pull"
+  #   - "--label=org.opencontainers.image.created={{.Date}}"
+  #   - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  #   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #   - "--label=org.opencontainers.image.version={{.Version}}"
+  #   - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #   - "--platform=darwin/amd64"
   - image_templates:
     - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-arm64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
@@ -221,21 +221,21 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/arm64"
     goarch: arm64
-  - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-arm64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-darwin-arm64{{ end }}'
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=darwin/arm64"
-    goos: darwin
-    goarch: arm64
+  # - image_templates:
+  #   - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-arm64'
+  #   - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-darwin-arm64{{ end }}'
+  #   dockerfile: Dockerfile
+  #   use: buildx
+  #   build_flag_templates:
+  #   - "--pull"
+  #   - "--label=org.opencontainers.image.created={{.Date}}"
+  #   - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  #   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #   - "--label=org.opencontainers.image.version={{.Version}}"
+  #   - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #   - "--platform=darwin/arm64"
+  #   goos: darwin
+  #   goarch: arm64
   - image_templates:
     - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-armv7'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-linux-armv7{{ end }}'
@@ -255,16 +255,16 @@ docker_manifests:
   - name_template: 'ecadlabs/signatory:latest'
     image_templates:
       - 'ecadlabs/signatory:latest-linux-amd64'
-      - 'ecadlabs/signatory:latest-darwin-amd64'
+      # - 'ecadlabs/signatory:latest-darwin-amd64'
       - 'ecadlabs/signatory:latest-linux-arm64'
-      - 'ecadlabs/signatory:latest-darwin-arm64'
+      # - 'ecadlabs/signatory:latest-darwin-arm64'
       - 'ecadlabs/signatory:latest-linux-armv7'
   - name_template: 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}'
     image_templates:
       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-amd64'
-      - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-amd64'
+      # - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-amd64'
       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-arm64'
-      - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-arm64'
+      # - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-darwin-arm64'
       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-armv7'
 checksum:
   name_template: checksums.txt
