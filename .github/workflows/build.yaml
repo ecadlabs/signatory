@@ -90,6 +90,9 @@ jobs:
         run: make release-branch
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
+      - run: docker image ls
+
+      - run: docker manifest create ecadlabs/signatory:docker_images_branch_preview docker_images_branch_preview-linux-armv7 ecadlabs/signatory:docker_images_branch_preview-linux-amd64 ecadlabs/signatory:docker_images_branch_preview-linux-arm64
       - run: docker manifest inspect ecadlabs/signatory:docker_images_branch_preview
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
