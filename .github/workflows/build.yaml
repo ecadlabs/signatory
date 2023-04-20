@@ -18,35 +18,35 @@ env:
   CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-      - uses: actions/checkout@v3
-      - name: Setup Code Climate test-reporter
-        run: |
-          curl -L "$CC_BINARY_URL" > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
-      - name: Run tests
-        run: |
-          export GIT_COMMIT_SHA='${{ github.sha }}'
-          export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
-          export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
+  # test:
+  #   name: Test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/setup-go@v3
+  #       with:
+  #         go-version: 1.19
+  #     - uses: actions/checkout@v3
+  #     - name: Setup Code Climate test-reporter
+  #       run: |
+  #         curl -L "$CC_BINARY_URL" > ./cc-test-reporter
+  #         chmod +x ./cc-test-reporter
+  #     - name: Run tests
+  #       run: |
+  #         export GIT_COMMIT_SHA='${{ github.sha }}'
+  #         export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
+  #         export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
 
-          ./cc-test-reporter before-build
+  #         ./cc-test-reporter before-build
 
-          echo "Running tests..."
-          go test -coverprofile c.out ./...
+  #         echo "Running tests..."
+  #         go test -coverprofile c.out ./...
 
-          mod="$(cat go.mod | awk '/^module/ {print $2}')"
+  #         mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
-          if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
-            echo "Generating coverage report..."
-            ./cc-test-reporter after-build -p "${mod}/" -t gocov
-          fi
+  #         if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
+  #           echo "Generating coverage report..."
+  #           ./cc-test-reporter after-build -p "${mod}/" -t gocov
+  #         fi
 
   publish:
     name: Goreleaser

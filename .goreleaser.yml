@@ -121,7 +121,7 @@ dockers:
       - signatory-cli
   - image_templates:
     - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-amd64'
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .ShortCommit }}{{ else }}latest{{ end }}-amd64'
+    - '{{ if .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -134,7 +134,7 @@ dockers:
     - "--platform=linux/amd64"
   - image_templates:
     - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-arm64'
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .ShortCommit }}{{ else }}latest{{ end }}-arm64'
+    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
