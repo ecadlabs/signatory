@@ -36,8 +36,8 @@ release-dry-run:
 		--rm-dist \
 		--snapshot
 
-.PHONY: release-main-branch
-release-main-branch:
+.PHONY: release-branch
+release-branch:
 	@if [ ! -f ".release-env" ]; then \
 		echo "\033[91m.release-env is required for release\033[0m";\
 		exit 1;\
@@ -52,9 +52,8 @@ release-main-branch:
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release \
-		--config .goreleaser-branch.yml \
 		--rm-dist \
-		--skip-validate
+		--snapshot
 
 .PHONY: release
 release:
