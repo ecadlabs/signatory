@@ -29,6 +29,14 @@ type FileWatermark struct {
 	mtx     sync.Mutex
 }
 
+/*
+func (f *FileWatermark) tryLegacy(wm *request.Watermark) (delegateMap, error) {
+	dir := filepath.Join(f.BaseDir, legacyWatermarkDir)
+	filename := filepath.Join(dir, fmt.Sprintf("%s.json", wm.Chain.String()))
+
+}
+*/
+
 func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
@@ -46,10 +54,10 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
-	var chains chainMap
+	var delegates delegateMap
 	fd, err := os.Open(filename)
 	if err == nil {
-		err = json.NewDecoder(fd).Decode(&chains)
+		err = json.NewDecoder(fd).Decode(&delegates)
 		fd.Close()
 		if err != nil {
 			return err
@@ -57,19 +65,13 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return err
 	} else {
-		chains = make(chainMap)
+		delegates = make(delegateMap)
 	}
 
-	delegates, ok := chains[*watermark.Chain]
-	if ok {
-		if wm, ok := delegates.Get(pkh); ok {
-			if !watermark.Validate(wm, digest) {
-				return ErrWatermark
-			}
+	if wm, ok := delegates.Get(pkh); ok {
+		if !watermark.Validate(wm, digest) {
+			return ErrWatermark
 		}
-	} else {
-		delegates = make(delegateMap)
-		chains[*watermark.Chain] = delegates
 	}
 	delegates.Insert(pkh, watermark.Stored(digest))
 
@@ -81,7 +83,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 	w := bufio.NewWriter(fd)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
-	if err := enc.Encode(chains); err != nil {
+	if err := enc.Encode(delegates); err != nil {
 		return err
 	}
 	return w.Flush()
