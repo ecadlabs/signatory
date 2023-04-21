@@ -29,7 +29,7 @@ type FileWatermark struct {
 	mtx     sync.Mutex
 }
 
-func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest) error {
+func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -63,7 +63,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 	delegates, ok := chains[*watermark.Chain]
 	if ok {
 		if wm, ok := delegates.Get(pkh); ok {
-			if !watermark.Validate(wm) {
+			if !watermark.Validate(wm, digest) {
 				return ErrWatermark
 			}
 		}
@@ -71,7 +71,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		delegates = make(delegateMap)
 		chains[*watermark.Chain] = delegates
 	}
-	delegates.Insert(pkh, watermark.Stored())
+	delegates.Insert(pkh, watermark.Stored(digest))
 
 	fd, err = os.Create(filename)
 	if err != nil {
