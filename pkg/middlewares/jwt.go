@@ -31,6 +31,7 @@ func (m *JWTMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 		user := r.Header.Get("user")
+		pass := r.Header.Get("password")
 		if token != "" {
 			token = strings.TrimPrefix(token, "Bearer ")
 			err := m.AuthGen.Authenticate(user, token)
@@ -40,7 +41,12 @@ func (m *JWTMiddleware) Handler(next http.Handler) http.Handler {
 				return
 			}
 		} else {
-			//TBD: Verify the user and password
+			if user == "" || pass == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+			}
+			if m.AuthGen.(*JWT).Users[user].password != pass {
+				w.WriteHeader(http.StatusUnauthorized)
+			}
 			token, err := m.AuthGen.GenerateToken(user)
 			if err == nil {
 				w.Write([]byte(err.Error()))
@@ -59,8 +65,9 @@ type JWT struct {
 }
 
 type UserData struct {
-	Expires time.Duration `yaml:"expires"`
-	secret  string        `yaml:"secret"`
+	password string        `yaml:"password"`
+	Expires  time.Duration `yaml:"expires"`
+	secret   string        `yaml:"secret"`
 }
 
 // GenerateToken generates a new token for the given user
@@ -81,9 +88,13 @@ func (j *JWT) Authenticate(user string, token string) error {
 	if err != nil {
 		return err
 	}
-	if !t.Valid {
-		// return t.Claims.(jwt.MapClaims)["user"].(string), nil
-		return fmt.Errorf("invalid token")
+	if claims, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
+		if claims.VerifyExpiresAt(int64(j.Users[user].Expires.Seconds()), true) {
+			return fmt.Errorf("token expired")
+		}
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("invalid token")
+
 }
