@@ -4,23 +4,15 @@ title: Signatory Architecture
 sidebar_label: Signatory Architecture
 ---
 
-# Signatory C4 Architecture Model 
+# Signatory Architecture  
 
 Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/), to protect cryptographic keys.
 
 Using Signatory, users can securely store their secret keys and control which operations can be signed, reducing the risk of losing or having their keys stolen. Signatory also allows users to sign transactions on hardware not connected to the internet, providing an additional layer of security.
 
-[C4 architecture diagrams](https://c4model.com/) are visual modelling languages used to communicate software system architectures. They are designed to be simple, easy to understand and provide a high-level view of a system's components and how they interact. C4 diagrams are typically organized into a hierarchy of increasing detail, with each view building on the previous one.
-
-[Domain-driven design](https://martinfowler.com/tags/domain%20driven%20design.html) ([DDD](https://learn.microsoft.com/en-us/archive/msdn-magazine/2009/february/best-practice-an-introduction-to-domain-driven-design)) is a software development approach emphasizing the importance of understanding the business domain to create effective software solutions. C4 diagrams can help developers understand the domain of the system they are building and design software that aligns with the domain concepts and principles. By using C4 diagrams to visualize the system's architecture, developers can better understand how the system fits into the larger business context and how the different components of the system interact with one another.
-
-The C4 system architectural model is a set of diagrams used to represent the architecture of a software system. There are four levels in the C4 model, a System Context Diagram, a Container Diagram, a Component Diagram and a Code Diagram. The details are at the [The C4 model for visualising software architecture](https://c4model.com/) website.
-
-There is no requirement to detail every container and component. Often the high-level description is enough to convey the required understanding. It is also unnecessary to detail the code level, as a sufficiently detailed component diagram can suffice.
-
 ### 1. Signatory System Context
 
-For Signatory, a remote signer application for the Tezos blockchain, the C4 system context diagram shows the Signatory software system as the central box. The diagram includes the Signatory user, responsible for setting up the system's configuration, and the client software system, which submits requests to the Tezos API. The diagram also shows various vaults, such as AWS KMS and YubiHSM, which Signatory uses to store cryptographic keys, and the Prometheus service, which pulls and aggregates metrics data.
+The diagram demonstrated the overall high level Signatory system and includes the Signatory user, responsible for setting up the system's configuration, and the client software system, which submits requests to the Tezos API. The diagram also shows various vaults, such as AWS KMS and YubiHSM, which Signatory uses to store cryptographic keys, and the Prometheus service, which pulls and aggregates metrics data.
 ```mermaid
 flowchart TD
 User["Signatory User Setup
@@ -58,7 +50,7 @@ class OC,V,PS supportingSystem
 
 ```
 ### 2. Signatory Container Model
-The Signatory container model is a C4 architecture diagram showing the different elements of the Signatory system. The diagram shows the Signatory software system as the central container, with various supporting software systems surrounding it. These supporting systems include client software for submitting requests to the Tezos API, the Prometheus service for storing metrics data, and various hardware-based and cloud-based HSMs for protecting cryptographic keys. The diagram also shows Signatory's different vaults to store cryptographic keys, such as AWS KMS and YubiHSM. 
+The Signatory container diagram shows the different elements of the Signatory system, including Signatory as the central container, with various supporting software systems surrounding it. These supporting systems include client software for submitting requests to the Tezos API, the Prometheus service for storing metrics data, and various hardware-based and cloud-based HSMs for protecting cryptographic keys. The diagram also shows Signatory's different vaults to store cryptographic keys, such as AWS KMS and YubiHSM. 
 ```mermaid
 flowchart TD
 User["Signatory User
