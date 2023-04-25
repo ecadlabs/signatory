@@ -48,6 +48,10 @@ Under `key management` create a new `key-ring` with any location and create a ke
 
 The key-ring name and location are required in the signatory configuration.
 
+- Key rings can be found in the security section of your GCP project (Security -> Key Management)
+- When creating the key a few things are important:
+  - Purpose should be "asymmetric sign"
+
 ## **Application Access:**
 
 The below steps are for providing signatory with the permissions to access the google cloud account Key Management.
@@ -64,7 +68,7 @@ The below steps are for providing signatory with the permissions to access the g
 export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 ```
 
-## **Getting PKH**
+## **Getting a PKH**
 
 ```sh
 signatory % ./signatory-cli list -c /etc/s.yaml
@@ -75,7 +79,7 @@ Status:             FOUND_NOT_CONFIGURED
 *DISABLED*
 ```
 
-**Update signatory.yaml config with PKH:**
+**Update signatory.yaml config with the PKH:**
 
 ```yaml
 server:
@@ -117,3 +121,4 @@ Enter secret key:
 Enter Password: 
 Enter Password: INFO[0002] Requesting import operation                   pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
 INFO[0008] Successfully imported                         key_id=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring/cryptoKeys/signatory-imported-215FwcXxhLdlr9IYwzA31vwANmy/cryptoKeyVersions/1 pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
+```
