@@ -79,7 +79,6 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 }
 
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
-
 	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
 	if err != nil {
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
@@ -194,6 +193,7 @@ func (s *Server) Handler() (http.Handler, error) {
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
+
 	return r, nil
 }
 

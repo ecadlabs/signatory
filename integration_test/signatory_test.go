@@ -20,6 +20,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
@@ -124,81 +125,81 @@ func logExec(t *testing.T, name string, arg ...string) error {
 	return err
 }
 
-// func TestSignatory(t *testing.T) {
-// 	priv, err := secretKeyFromEnv()
-// 	require.NoError(t, err)
-// 	pub := priv.Public()
+func TestSignatory(t *testing.T) {
+	priv, err := secretKeyFromEnv()
+	require.NoError(t, err)
+	pub := priv.Public()
 
-// 	authPub, authPriv, err := genAuthKey()
-// 	require.NoError(t, err)
+	authPub, authPriv, err := genAuthKey()
+	require.NoError(t, err)
 
-// 	// setup Signatory instance
-// 	conf := signatory.Config{
-// 		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
-// 		Watermark: signatory.IgnoreWatermark{},
-// 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-// 			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
-// 		}),
-// 		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
-// 			{
-// 				Key: pub.Hash(),
-// 				Val: &signatory.PublicKeyPolicy{
-// 					AllowedRequests: []string{"generic", "block", "endorsement"},
-// 					AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
-// 				},
-// 			},
-// 		}),
-// 	}
+	// setup Signatory instance
+	conf := signatory.Config{
+		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
+		Watermark: signatory.IgnoreWatermark{},
+		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
+		}),
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
+			{
+				Key: pub.Hash(),
+				Val: &signatory.PublicKeyPolicy{
+					AllowedRequests: []string{"generic", "block", "endorsement"},
+					AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
+				},
+			},
+		}),
+	}
 
-// 	s, err := signatory.New(context.Background(), &conf)
-// 	require.NoError(t, err)
-// 	signer := signerWrapper{Signatory: s}
+	s, err := signatory.New(context.Background(), &conf)
+	require.NoError(t, err)
+	signer := signerWrapper{Signatory: s}
 
-// 	require.NoError(t, signer.Unlock(context.Background()))
+	require.NoError(t, signer.Unlock(context.Background()))
 
-// 	srvCfg := server.Server{
-// 		Signer:  &signer,
-// 		Address: listenAddr,
-// 		Auth:    auth.Must(auth.StaticAuthorizedKeys(authPub)),
-// 	}
+	srvCfg := server.Server{
+		Signer:  &signer,
+		Address: listenAddr,
+		Auth:    auth.Must(auth.StaticAuthorizedKeys(authPub)),
+	}
 
-// 	srv, err := srvCfg.New()
-// 	require.NoError(t, err)
-// 	log.Printf("HTTP server is listening for connections on %s", srv.Addr)
-// 	go srv.ListenAndServe()
+	srv, err := srvCfg.New()
+	require.NoError(t, err)
+	log.Printf("HTTP server is listening for connections on %s", srv.Addr)
+	go srv.ListenAndServe()
 
-// 	epAddr := os.Getenv(envNodeAddress)
-// 	require.NotEmpty(t, epAddr)
+	epAddr := os.Getenv(envNodeAddress)
+	require.NotEmpty(t, epAddr)
 
-// 	t.Run("Auth", func(t *testing.T) {
-// 		dir := "./authenticated-tezos-client"
-// 		os.Mkdir(dir, 0777)
-// 		// initialize client
-// 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
-// 		// import key
-// 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
-// 		// add authentication key
-// 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv.String()))
-// 		// create transaction
-// 		require.NoError(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
-// 	})
+	t.Run("Auth", func(t *testing.T) {
+		dir := "./authenticated-tezos-client"
+		os.Mkdir(dir, 0777)
+		// initialize client
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
+		// import key
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
+		// add authentication key
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", authKeyName, "unencrypted:"+authPriv.String()))
+		// create transaction
+		require.NoError(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
+	})
 
-// 	t.Run("NoAuth", func(t *testing.T) {
-// 		dir := "./unauthenticated-tezos-client"
-// 		os.Mkdir(dir, 0777)
-// 		// initialize client
-// 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
-// 		// import key
-// 		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
-// 		// create transaction
-// 		require.Error(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
-// 	})
-// 	srv.Shutdown(context.Background())
+	t.Run("NoAuth", func(t *testing.T) {
+		dir := "./unauthenticated-tezos-client"
+		os.Mkdir(dir, 0777)
+		// initialize client
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "--endpoint", epAddr, "config", "init"))
+		// import key
+		require.NoError(t, logExec(t, "octez-client", "--base-dir", dir, "import", "secret", "key", userName, "http://"+srv.Addr+"/"+pub.Hash().String()))
+		// create transaction
+		require.Error(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
+	})
+	srv.Shutdown(context.Background())
 
-// 	calls := signer.signCalls()
-// 	require.Equal(t, 1, len(calls))
-// 	require.Equal(t, authPub.Hash(), calls[0].request.ClientPublicKeyHash)
-// }
+	calls := signer.signCalls()
+	require.Equal(t, 1, len(calls))
+	require.Equal(t, authPub.Hash(), calls[0].request.ClientPublicKeyHash)
+}
 
 func TestJWTSignatory(t *testing.T) {
 	priv, err := secretKeyFromEnv()

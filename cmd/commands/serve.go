@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -29,7 +28,6 @@ func NewServeCommand(c *Context) *cobra.Command {
 			if c.config.Server.JWTConfig != nil {
 				mw := middlewares.NewMiddleware(c.config.Server.JWTConfig)
 				srvConf.MidWare = mw
-				fmt.Println("JWT Enabled")
 			}
 
 			if c.config.Server.AuthorizedKeys != nil {
