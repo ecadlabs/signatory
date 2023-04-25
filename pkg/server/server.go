@@ -194,7 +194,6 @@ func (s *Server) Handler() (http.Handler, error) {
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
-
 	return r, nil
 }
 
