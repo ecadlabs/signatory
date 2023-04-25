@@ -10,44 +10,44 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-// AuthGen is an interface for authenticating users
+// AuthGen is an interface that generates token authenticates the same
 type AuthGen interface {
 	Authenticate(user string, token string) error
 	GenerateToken(user string) (string, error)
 }
 
-// Middleware is a middleware that authenticates users
+// JWTMiddleware is an AuthGen implementation that uses JWT tokens
 type JWTMiddleware struct {
 	AuthGen AuthGen
 }
 
-// NewMiddleware creates a new Middleware
+// NewMiddleware creates a new JWTMiddleware
 func NewMiddleware(a AuthGen) *JWTMiddleware {
 	return &JWTMiddleware{a}
 }
 
 // Handler is a middleware handler
 func (m *JWTMiddleware) Handler(next http.Handler) http.Handler {
-	fmt.Println("Abi-->JWT Middleware Handler")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 		user := r.Header.Get("username")
 		pass := r.Header.Get("password")
-		fmt.Println("Abi-->Token", token)
+
 		if token != "" {
 			token = strings.TrimPrefix(token, "Bearer ")
 			err := m.AuthGen.Authenticate(user, token)
 			if err != nil {
-				fmt.Println("Abi-->Token-Error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 		} else {
 			if user == "" || pass == "" {
 				w.WriteHeader(http.StatusUnauthorized)
+				return
 			}
 			if m.AuthGen.(*JWT).Users[user].Password != pass {
 				w.WriteHeader(http.StatusUnauthorized)
+				return
 			}
 			token, err := m.AuthGen.GenerateToken(user)
 			if err != nil {
@@ -80,27 +80,23 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
-	claims["exp"] = time.Now().Add(time.Second * j.Users[user].Expires).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * j.Users[user].Expires).Unix()
 	token.Claims = claims
+	fmt.Println("Abi-->Gen-user-secret: ", j.Users[user].Secret, " expires: ", claims["exp"])
 	return token.SignedString([]byte(j.Users[user].Secret))
 }
 
 // Authenticate authenticates the given token
 func (j *JWT) Authenticate(user string, token string) error {
+	fmt.Println("Abi-->Authenticating user: ", user, " with token: ", token, "time", time.Now().Unix())
 	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return []byte(j.Users[user].Secret), nil
 	})
 	if err != nil {
-		fmt.Println("Abi-->Authenticate-Error", err)
 		return err
 	}
-	if claims, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
-		if claims.VerifyExpiresAt(int64(j.Users[user].Expires.Seconds()), true) {
-			return fmt.Errorf("token expired")
-		}
+	if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
 		return nil
 	}
-
 	return fmt.Errorf("invalid token")
-
 }
