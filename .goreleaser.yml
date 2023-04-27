@@ -1,4 +1,63 @@
 builds:
+# LINUX
+  - id: signatory-linux-amd
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+      - CXX=g++
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: signatory-cli-linux-amd
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+      - CXX=g++
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+  - id: signatory-linux-arm64
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    main: ./cmd/signatory/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm64
+  - id: signatory-cli-linux-arm64
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    main: ./cmd/signatory-cli/main.go
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+    goos:
+      - linux
+    goarch:
+      - arm64
+
   # - id: signatory-linux-arm
   #   binary: signatory
   #   env:
@@ -33,64 +92,8 @@ builds:
   #   goarm:
   #     - '6'
   #     - '7'
-  - id: signatory-linux-arm64
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - linux
-    goarch:
-      - arm64
-  - id: signatory-cli-linux-arm64
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - linux
-    goarch:
-      - arm64
 
-  - id: signatory-linux-amd
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=gcc
-      - CXX=g++
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - linux
-    goarch:
-      - amd64
-  - id: signatory-cli-linux-amd
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=gcc
-      - CXX=g++
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - linux
-    goarch:
-      - amd64
-
+# MACOS
   # - id: signatory-darwin-amd
   #   binary: signatory
   #   env:
@@ -149,6 +152,7 @@ builds:
   #   goarch:
   #     - arm64
 
+# WINDOWS
   # - id: signatory-windows-amd
   #   binary: signatory
   #   env:
@@ -182,7 +186,7 @@ dockers:
       - signatory
       - signatory-cli
   - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-amd64'
+    - '{{ if .IsSnapshot }}ghcr.io/{{ else }}{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-amd64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -195,7 +199,7 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/amd64"
   - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-arm64'
+    - '{{ if .IsSnapshot }}ghcr.io/{{ else }}{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-arm64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -223,17 +227,19 @@ dockers:
   #   - "--platform=linux/arm/v7"
   #   goarch: arm
   #   goarm: '7'
-# docker_manifests:
-#   - name_template: 'ecadlabs/signatory:latest'
-#     image_templates:
-#       - 'ecadlabs/signatory:latest-linux-amd64'
-#       - 'ecadlabs/signatory:latest-linux-arm64'
-#       - 'ecadlabs/signatory:latest-linux-armv7'
-#   - name_template: 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}'
-#     image_templates:
-#       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-amd64'
-#       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-arm64'
-#       - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-armv7'
+
+docker_manifests:
+  - name_template: 'ecadlabs/signatory:latest'
+    image_templates:
+      - 'ecadlabs/signatory:latest-amd64'
+      - 'ecadlabs/signatory:latest-arm64'
+      - 'ecadlabs/signatory:latest-armv7'
+  - name_template: 'ecadlabs/signatory:{{ .Tag }}'
+    image_templates:
+      - 'ecadlabs/signatory:{{ .Tag }}-amd64'
+      - 'ecadlabs/signatory:{{ .Tag }}-arm64'
+      - 'ecadlabs/signatory:{{ .Tag }}-armv7'
+
 checksum:
   name_template: checksums.txt
 snapshot:
