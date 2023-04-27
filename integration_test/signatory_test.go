@@ -258,53 +258,47 @@ func TestJWTSignatory(t *testing.T) {
 
 	t.Run("JWT User Auth", func(t *testing.T) {
 		url := "http://localhost:6732/keys/" + pub.Hash().String()
-
 		client := &http.Client{}
+
 		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		require.NoError(t, err)
+
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("username", "user1")
 		req.Header.Add("password", "pass123")
 		time.Sleep(2 * time.Second)
+
 		res, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		require.NoError(t, err)
+		require.Equal(t, 201, res.StatusCode)
 
 		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Println("Token: ", string(body))
+		require.NoError(t, err)
+		require.NotEmpty(t, body)
+
 		res.Body.Close()
+
 		// Send request using received token
 
 		client = &http.Client{}
+
 		req, err = http.NewRequest("GET", url, nil)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		require.NoError(t, err)
+
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("Authorization", "Bearer "+string(body))
 		req.Header.Add("username", "user1")
 		time.Sleep(2 * time.Second)
+
 		res, err = client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		require.NoError(t, err)
+		require.Equal(t, 200, res.StatusCode)
+
 		defer res.Body.Close()
 		body, err = ioutil.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		require.NoError(t, err)
+		require.NotEmpty(t, body)
+
 		fmt.Println("Response-GET-PKH: ", string(body))
 	})
 	srv.Shutdown(context.Background())
