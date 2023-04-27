@@ -182,7 +182,7 @@ dockers:
       - signatory
       - signatory-cli
   - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-amd64'
+    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-amd64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -194,23 +194,23 @@ dockers:
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/amd64"
+  - image_templates:
+    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-arm64'
+    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--platform=linux/arm64"
+    goarch: arm64
   # - image_templates:
-  #   - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-arm64'
-  #   - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
-  #   dockerfile: Dockerfile
-  #   use: buildx
-  #   build_flag_templates:
-  #   - "--pull"
-  #   - "--label=org.opencontainers.image.created={{.Date}}"
-  #   - "--label=org.opencontainers.image.name={{.ProjectName}}"
-  #   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-  #   - "--label=org.opencontainers.image.version={{.Version}}"
-  #   - "--label=org.opencontainers.image.source={{.GitURL}}"
-  #   - "--platform=linux/arm64"
-  #   goarch: arm64
-  # - image_templates:
-  #   - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-linux-armv7'
-  #   - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-linux-armv7{{ end }}'
+  #   - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-armv7'
+  #   - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-armv7{{ end }}'
   #   dockerfile: Dockerfile
   #   use: buildx
   #   build_flag_templates:
@@ -237,7 +237,7 @@ dockers:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: '{{ .Tag }}-next'
+  name_template: '{{ .Version }}-SNAPSHOT-{{.ShortCommit}}'
 changelog:
   sort: asc
   filters:
