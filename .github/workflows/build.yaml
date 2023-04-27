@@ -22,7 +22,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - run: echo "The head ref is ${{ github.head_ref || github.ref_name }}
+      - run: echo "The head ref is ${{ github.head_ref || github.ref_name }}"
       
 
       - uses: actions/setup-go@v2
