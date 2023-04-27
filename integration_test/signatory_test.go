@@ -194,6 +194,7 @@ func TestSignatory(t *testing.T) {
 		// create transaction
 		require.Error(t, logExec(t, "octez-client", "-w", "1", "--base-dir", dir, "transfer", "0.01", "from", userName, "to", "tz1burnburnburnburnburnburnburjAYjjX", "--burn-cap", "0.06425"))
 	})
+
 	srv.Shutdown(context.Background())
 
 	calls := signer.signCalls()

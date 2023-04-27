@@ -82,13 +82,11 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	claims["user"] = user
 	claims["exp"] = time.Now().Add(time.Minute * j.Users[user].Expires).Unix()
 	token.Claims = claims
-	fmt.Println("Abi-->Gen-user-secret: ", j.Users[user].Secret, " expires: ", claims["exp"])
 	return token.SignedString([]byte(j.Users[user].Secret))
 }
 
 // Authenticate authenticates the given token
 func (j *JWT) Authenticate(user string, token string) error {
-	fmt.Println("Abi-->Authenticating user: ", user, " with token: ", token, "time", time.Now().Unix())
 	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return []byte(j.Users[user].Secret), nil
 	})
