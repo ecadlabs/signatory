@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - "*"
+      - "main"
     tags:
       - "v*"
   pull_request:
@@ -82,12 +82,12 @@ jobs:
         run: make release-preview
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
-      - run: docker image ls
 
       - name: Push Signatory preview images to GH Container Registry
         run: >
           docker push ghcr.io/ecadlabs/signatory:${{ github.ref_name }}-amd64;
           docker push ghcr.io/ecadlabs/signatory:${{ github.ref_name }}-arm64;
+          docker push ghcr.io/ecadlabs/signatory:${{ github.ref_name }}-armv7;
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
