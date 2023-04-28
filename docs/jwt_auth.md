@@ -91,4 +91,4 @@ sequenceDiagram
 
 TSL should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
 
-The configuration file also contains sensitive information when usin gJWT with Signatory, so that file must also be secure.
+The configuration file also contains sensitive information when using JWT with Signatory, so that file must also be secure.
