@@ -7,15 +7,6 @@ title: JWT
 
 The diagram represents a sequence of interactions between a client and a Signatory service, which appears to be a service that handles cryptographic signing operations. Here is a breakdown of the sequence of interactions:
 
-1. The client provides its credentials to the Signatory service.
-2. The Signatory service verifies the credentials provided by the client.
-3. If the credentials are valid, the Signatory service creates a JSON Web Token (JWT) and sends it to the client.
-4. The client stores the JWT for later use.
-5. The client requests a signing operation from the Signatory service, and includes the JWT in the request.
-6. The Signatory service validates the JWT signature and checks the claims in the JWT (such as the public key, roles, and permissions).
-7. If the JWT is valid and the client is authorized, the Signatory service signs the operation with its private key and sends the signed operation back to the client.
-8. If the JWT is invalid or the client is unauthorized, the Signatory service sends an access denied error message to the client.
-
 ```mermaid
 sequenceDiagram
     participant Client
@@ -36,9 +27,20 @@ sequenceDiagram
     end
 ```
 
-Sample client code which used in the integration test.
+1. The client provides its credentials to the Signatory service.
+2. The Signatory service verifies the credentials provided by the client.
+3. If the credentials are valid, the Signatory service creates a JSON Web Token (JWT) and sends it to the client.
+4. The client stores the JWT for later use.
+5. The client requests a signing operation from the Signatory service, and includes the JWT in the request.
+6. The Signatory service validates the JWT signature and checks the claims in the JWT (such as the public key, roles, and permissions).
+7. If the JWT is valid and the client is authorized, the Signatory service signs the operation with its private key and sends the signed operation back to the client.
+8. If the JWT is invalid or the client is unauthorized, the Signatory service sends an access denied error message to the client.
+9. When the token expires or any other token authentication failures happen, the client can start again from 1. 
+
+## Sample client code which used in the integration test.
 
 ```go
+        //Send user credentials to receive a new token
         url := "http://localhost:6732/keys/" + pub.Hash().String()
 		client := &http.Client{}
 
@@ -88,3 +90,5 @@ Sample client code which used in the integration test.
 ## Importnat security note:
 
 TSL should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
+
+The configuration file also contains sensitive information when usin gJWT with Signatory, so that file must also be secure.
