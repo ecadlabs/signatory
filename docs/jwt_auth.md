@@ -87,4 +87,4 @@ Sample client code which used in the integration test.
 
 ## Importnat security note:
 
-TSL should be taken care by the user who configures JWT as the suthentication mechanism in Signatory for the clients.
+TSL should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
