@@ -83,20 +83,29 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - run: docker image ls
+
+      - run: >
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.event.pull_request.head.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.event.pull_request.head.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.event.pull_request.head.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
       
+      - run: docker image ls
+
+      - run: docker manifest
+
       - name: Docker Manifest GitHub Action
         uses: Noelware/docker-manifest-action@0.3.1
         with:
           inputs: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}
-          images: ${{ format('ghcr.io/ecadlabs/signatory:{0}-amd64,ghcr.io/ecadlabs/signatory:{0}-arm64,ghcr.io/ecadlabs/signatory:{0}-armv7', github.event.pull_request.head.sha) }}
+          images: ${{ format('ghcr.io/ecadlabs/signatory:{0}-amd64,ghcr.io/ecadlabs/signatory:{0}-arm64,ghcr.io/ecadlabs/signatory:{0}-armv7', github.event.pull_request.head.sha ) }}
           push: true
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       #- name: Push Signatory preview images to GH Container Registry
       #  run: >
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref }}-amd64;
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref }}-arm64;
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref }}-armv7;
+      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
+      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
+      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
       #  if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
