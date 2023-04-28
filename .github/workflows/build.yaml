@@ -22,10 +22,14 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - run: echo "github.sha=${{ github.sha}} | ${{ github.event.pull_request.head.sha }}"
+
+      - run: echo "${{ toJson(github)}}"
+
       - uses: actions/setup-go@v2
         with:
           go-version: 1.19
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Code Climate test-reporter
         run: |
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
@@ -89,7 +93,7 @@ jobs:
         uses: Noelware/docker-manifest-action@0.3.1
         with:
           inputs: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}
-          images: ${{ format('ghcr.io/ecadlabs/signatory:{0}-amd64,ghcr.io/ecadlabs/signatory:{0}-arm64,ghcr.io/ecadlabs/signatory:{0}-armv7', (github.head_ref || github.ref_name) ) }}
+          images: ${{ format('ghcr.io/ecadlabs/signatory:{0}-amd64,ghcr.io/ecadlabs/signatory:{0}-arm64,ghcr.io/ecadlabs/signatory:{0}-armv7', github.sha ) }}
           push: true
         if: "!startsWith(github.ref, 'refs/tags/v')"
 

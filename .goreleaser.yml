@@ -186,7 +186,7 @@ dockers:
       - signatory
       - signatory-cli
   - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ else }}{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-amd64'
+    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-amd64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -199,7 +199,7 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
     - "--platform=linux/amd64"
   - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ else }}{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-arm64'
+    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-arm64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -213,7 +213,7 @@ dockers:
     - "--platform=linux/arm64"
     goarch: arm64
   - image_templates:
-    - 'ecadlabs/signatory:{{ if .IsSnapshot }}{{ .Branch }}{{ else }}{{ .Tag }}{{ end }}-armv7'
+    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-armv7'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-armv7{{ end }}'
     dockerfile: Dockerfile
     use: buildx
@@ -243,7 +243,7 @@ docker_manifests:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: '{{ .Version }}-SNAPSHOT-{{.ShortCommit}}'
+  name_template: '{{ .Version }}-SNAPSHOT-{{.FullCommit}}'
 changelog:
   sort: asc
   filters:
