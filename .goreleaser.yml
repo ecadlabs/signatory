@@ -94,93 +94,93 @@ builds:
       - '7'
 
 # MACOS
-  - id: signatory-darwin-amd
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=o64-clang
-      - CXX=o64-clang++
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - darwin
-    goarch:
-      - amd64
-  - id: signatory-cli-darwing-amd
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=o64-clang
-      - CXX=o64-clang++
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - darwin
-    goarch:
-      - amd64
+  # - id: signatory-darwin-amd
+  #   binary: signatory
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=o64-clang
+  #     - CXX=o64-clang++
+  #   main: ./cmd/signatory/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - amd64
+  # - id: signatory-cli-darwing-amd
+  #   binary: signatory-cli
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=o64-clang
+  #     - CXX=o64-clang++
+  #   main: ./cmd/signatory-cli/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - amd64
 
-  - id: signatory-darwin-arm
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=oa64-clang
-      - CXX=oa64-clang++
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - darwin
-    goarch:
-      - arm64
-  - id: signatory-cli-darwing-arm
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=oa64-clang
-      - CXX=oa64-clang++
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - darwin
-    goarch:
-      - arm64
+  # - id: signatory-darwin-arm
+  #   binary: signatory
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=oa64-clang
+  #     - CXX=oa64-clang++
+  #   main: ./cmd/signatory/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - arm64
+  # - id: signatory-cli-darwing-arm
+  #   binary: signatory-cli
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=oa64-clang
+  #     - CXX=oa64-clang++
+  #   main: ./cmd/signatory-cli/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - arm64
 
 # WINDOWS
-  - id: signatory-windows-amd
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - windows
-    goarch:
-      - amd64
-  - id: signatory-cli-windows-amd
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - windows
-    goarch:
-      - amd64
+  # - id: signatory-windows-amd
+  #   binary: signatory
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=x86_64-w64-mingw32-gcc
+  #     - CXX=x86_64-w64-mingw32-g++
+  #   main: ./cmd/signatory/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  # - id: signatory-cli-windows-amd
+  #   binary: signatory-cli
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=x86_64-w64-mingw32-gcc
+  #     - CXX=x86_64-w64-mingw32-g++
+  #   main: ./cmd/signatory-cli/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
 dockers:
   - ids:
       - signatory
@@ -243,7 +243,7 @@ docker_manifests:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: '{{ .Version }}-SNAPSHOT-{{.FullCommit}}'
+  name_template: 'SNAPSHOT-{{.ShortCommit}}'
 changelog:
   sort: asc
   filters:
