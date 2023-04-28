@@ -78,37 +78,23 @@ jobs:
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
 
-      - run: echo github.sha=${{ github.sha }} github.event.pull_request.head.sha=${{ github.event.pull_request.head.sha }}
-
       - name: goreleaser release preview
         run: make release-preview
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
-      - run: docker image ls
-
-      - run: >
+      - name: Tag Docker images appropriately
+        run: >
           docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
           docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
           docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
-      
-      - run: docker image ls
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
-      - run: docker manifest create ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }} ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64
-
-      # - name: Docker Manifest GitHub Action
-      #   uses: Noelware/docker-manifest-action@master
-      #   with:
-      #     inputs: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}
-      #     images: ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64,ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64
-      #     push: true
-      #   if: "!startsWith(github.ref, 'refs/tags/v')"
-
-      #- name: Push Signatory preview images to GH Container Registry
-      #  run: >
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
-      #    docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
-      #  if: "!startsWith(github.ref, 'refs/tags/v')"
+      - name: Push Signatory preview images to GH Container Registry
+        run: >
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
         run: make release
