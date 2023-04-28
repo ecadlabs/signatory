@@ -93,13 +93,15 @@ jobs:
       
       - run: docker image ls
 
-      - name: Docker Manifest GitHub Action
-        uses: Noelware/docker-manifest-action@master
-        with:
-          inputs: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}
-          images: ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64,ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64
-          push: true
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+      - run: docker manifest create ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }} ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64
+
+      # - name: Docker Manifest GitHub Action
+      #   uses: Noelware/docker-manifest-action@master
+      #   with:
+      #     inputs: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}
+      #     images: ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64,ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64
+      #     push: true
+      #   if: "!startsWith(github.ref, 'refs/tags/v')"
 
       #- name: Push Signatory preview images to GH Container Registry
       #  run: >
