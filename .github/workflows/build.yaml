@@ -39,7 +39,7 @@ jobs:
           ./cc-test-reporter before-build
 
           echo "Running tests..."
-          go test -coverprofile c.out ./...
+          go test $(go list ./... | grep -v integration_test) -coverprofile c.out ./...
 
           mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
