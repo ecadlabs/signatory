@@ -231,13 +231,16 @@ func TestJWTSignatory(t *testing.T) {
 
 	require.NoError(t, signer.Unlock(context.Background()))
 
+	d, err := time.ParseDuration("2h26m50s")
+	require.NoError(t, err)
+
 	jwt := middlewares.JWT{
 		Users: map[string]middlewares.UserData{
 			"user1": {Password: "pass123",
-				Expires: 10000000,
+				Expires: d,
 				Secret:  "secret1"},
 			"user2": {Password: "pass123",
-				Expires: 10000000,
+				Expires: d,
 				Secret:  "secre2"},
 		},
 	}

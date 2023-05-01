@@ -71,7 +71,7 @@ type JWT struct {
 
 type UserData struct {
 	Password string        `yaml:"password"`
-	Expires  time.Duration `yaml:"expires"`
+	Expires  time.Duration `yaml:"tok_expiry"`
 	Secret   string        `yaml:"secret"`
 }
 
