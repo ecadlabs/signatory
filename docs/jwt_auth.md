@@ -89,6 +89,6 @@ sequenceDiagram
 
 ## Importnat security note:
 
-TSL should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
+TLS should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
 
 The configuration file also contains sensitive information when using JWT with Signatory, so that file must also be secure.
