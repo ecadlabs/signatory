@@ -37,6 +37,25 @@ sequenceDiagram
 8. If the JWT is invalid or the client is unauthorized, the Signatory service sends an access denied error message to the client.
 9. When the token expires or any other token authentication failures happen, the client can start again from 1. 
 
+## Sample Signatory JWT configuration
+
+```yaml
+server:
+  address: :6732
+  utility_address: :9583
+  jwt:
+    # Secret used to sign JWT tokens
+    users:
+      user_name1:
+        password: password1
+        secret: secret1
+        tok_expiry: 2h10m40s
+      user_name2:
+        password: password2
+        secret: secret2
+        tok_expiry: 2h10m40s
+```
+
 ## Sample client code which used in the integration test.
 
 ```go
