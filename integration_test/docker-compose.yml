@@ -1,0 +1,72 @@
+version: "3.9"
+networks:
+  ecadnet: {}
+services:
+
+  flextesa:
+    container_name: flextesa
+    image: oxheadalpha/flextesa:latest
+    ports:
+      - "20000:20000"
+      - "20001:20001"
+    networks:
+      - ecadnet
+    volumes:
+      - ./flextesa.sh:/usr/bin/sigybox
+    environment:
+      - block_time=3
+    command: sigybox
+    healthcheck:
+      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+
+  octez:
+    container_name: octez
+    image: tezos/tezos:$OCTEZ_VERSION
+    networks:
+      - ecadnet
+    entrypoint: tail -f /dev/null
+    volumes:
+      - ./.tezos-client:/home/tezos/.tezos-client
+      - ./contract.event.tz:/home/tezos/contract.event.tz
+    depends_on:
+      flextesa:
+        condition: service_healthy
+      signatory:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "octez-client", "list", "known", "addresses"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+    
+  signatory:
+    container_name: signatory
+    image: ecadlabs/signatory:$IMAGE_TAG
+    ports:
+      - "6732:6732"
+      - "9583:9583"
+    networks:
+      - ecadnet
+    configs:
+      - source: sigy-config
+        target: /etc/signatory.yaml
+      - source: sigy-secret
+        target: /etc/secret.json
+    command: serve
+    healthcheck:
+      test: "curl --fail http://localhost:6732/authorized_keys || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+
+configs:
+  sigy-config:
+    file: ./signatory.yaml
+  sigy-secret:
+    file: ./signatory-local-secret.json

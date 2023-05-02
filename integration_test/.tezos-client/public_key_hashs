@@ -1,0 +1,4 @@
+[ { "name": "alice", "value": "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" },
+  { "name": "bob", "value": "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" },
+  { "name": "opstest", "value": "tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B" },
+  { "name": "opstest1", "value": "tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi" } ]
