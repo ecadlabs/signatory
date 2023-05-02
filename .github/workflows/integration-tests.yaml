@@ -3,8 +3,7 @@ name: Integration Tests
 on:
   workflow_run:
     workflows: [Test and publish]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   integration-tests:
