@@ -23,11 +23,11 @@ const sidebars = {
 			collapsed: false,
 			collapsible: false,
 			items: ['start', 'file_based', 'yubihsm', 'azure_kms', 'gcp_kms', 'aws_kms', 'ledger', `cli`, 'remote_policy', 'architecture', 'bakers',
-			{
-						type: 'category',
-						label: 'Client Authorization',
-						items: [`authorized_keys`, `jwt`]
-					}],
+				{
+					type: 'category',
+					label: 'Client Authorization',
+					items: [`authorized_keys`, `jwt`]
+				}],
 		},
 	],
 };
