@@ -106,7 +106,7 @@ server:
 ```
 
 
-## Importnat security note:
+## Important security note:
 
 TLS should be taken care by the user who configures JWT as the authentication mechanism in Signatory for the clients.
 
