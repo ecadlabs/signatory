@@ -44,10 +44,10 @@ server:
   address: :6732
   utility_address: :9583
   jwt:
-    # Secret used to sign JWT tokens
     users:
       user_name1:
         password: password1
+		 # Secret used to sign JWT tokens
         secret: secret1
         tok_expiry: 2h10m40s
       user_name2:
