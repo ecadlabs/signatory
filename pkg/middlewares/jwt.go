@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -80,7 +81,11 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
-	claims["exp"] = time.Now().Add(time.Minute * j.Users[user].Expires).Unix()
+	if j.Users[user].Expires == 0 {
+		claims["exp"] = time.Now().Add(math.MaxInt64).Unix()
+	} else {
+		claims["exp"] = time.Now().Add(time.Hour * j.Users[user].Expires).Unix()
+	}
 	token.Claims = claims
 	return token.SignedString([]byte(j.Users[user].Secret))
 }
