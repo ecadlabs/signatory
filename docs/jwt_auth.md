@@ -39,6 +39,9 @@ sequenceDiagram
 
 ## Sample Signatory JWT configuration
 
+`tok_expiry` is the time duration for which the token is valid.  
+`secret` is the secret used to sign the JWT token.
+
 ```yaml
 server:
   address: :6732
