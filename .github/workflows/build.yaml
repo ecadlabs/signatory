@@ -22,10 +22,10 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.19
-      - uses: actions/checkout@v2
+          go-version: '1.20.3'
+      - uses: actions/checkout@v3
       - name: Setup Code Climate test-reporter
         run: |
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
@@ -55,19 +55,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        if: "!startsWith(github.ref, 'refs/tags/v')"
         with:
-          go-version: 1.17
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Write release-env file
         uses: DamianReeves/write-file-action@v1.0
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           path: ${{ github.workspace }}/.release-env
           contents: |
@@ -76,19 +78,23 @@ jobs:
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
 
-      # - name: Write docker-creds file
-      #   uses: DamianReeves/write-file-action@v1.0
-      #   with:
-      #     path: ${{ github.workspace }}/.docker-creds
-      #     contents: |
-      #       ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}:docker.io
-      - name: goreleaser release-dry-run
-        run: make release-dry-run
+      - name: goreleaser release preview
+        run: make release-preview
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
-      - name: goreleaser release main branch
-        run: make release-main-branch
-        if: github.ref == 'refs/heads/main'
+      - name: Tag Docker images appropriately
+        run: >
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Push Signatory preview images to GH Container Registry
+        run: >
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
+         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
         run: make release
