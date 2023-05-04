@@ -1,6 +1,7 @@
 package integrationtest
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,6 +124,9 @@ func TestOperationAllowPolicy(t *testing.T) {
 			c.Write(config)
 			restart_signatory()
 			out, err = OctezClient(test.testOp...)
+			if err != nil {
+				log.Println("error received: " + err.Error() + " " + string(out))
+			}
 			assert.NoError(t, err)
 			require.Contains(t, string(out), "Operation successfully injected in the node")
 		})
