@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go/kms v1.9.0
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ecadlabs/goblst v1.0.0
 	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.11.2
@@ -64,5 +63,5 @@ require (
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/grpc v1.53.0 // indirect
-	google.golang.org/protobuf v1.29.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 )
