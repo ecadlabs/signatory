@@ -99,3 +99,25 @@ jobs:
       - name: goreleaser release
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
+
+  integration-tests:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        octez-versions:
+          - v16.0-rc3
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pull images
+        run: >
+         docker pull oxheadalpha/flextesa:latest;
+         docker pull tezos/tezos:${{ matrix.octez-versions }};
+         docker pull ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;        
+      - name: Start containers
+        run: IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64 OCTEZ_VERSION=${{ matrix.octez-versions }} docker compose -f integration-tests/docker-compose.yml up -d --wait
+      - name: Run tests
+        run: IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64 OCTEZ_VERSION=${{ matrix.octez-versions }} go test $(go list ./... | grep integration_test)
+      - name: Kill containers
+        run: docker compose -f integration-tests/docker-compose.yml kill
