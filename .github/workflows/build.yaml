@@ -129,4 +129,4 @@ jobs:
       - name: Run tests
         run: IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64 OCTEZ_VERSION=${{ matrix.octez-versions }} go test $(go list ./... | grep integration_test)
       - name: Kill containers
-        run: docker compose -f integration_test/docker-compose.yml kill
+        run: IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64 OCTEZ_VERSION=${{ matrix.octez-versions }} docker compose -f integration_test/docker-compose.yml kill
