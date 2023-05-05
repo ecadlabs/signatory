@@ -1,5 +1,3 @@
-//go:build !integration
-
 package crypt
 
 import (
