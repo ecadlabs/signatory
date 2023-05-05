@@ -118,7 +118,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 			assert.Error(t, err)
 			require.Contains(t, string(out), "operation `"+test.opName+"' is not allowed")
 
-			//finally, configure the operation being tested is the only one allowed and test it is successful
+			//finally, configure the operation being tested as the only one allowed and test it is successful
 			c.Read(config)
 			c.Tezos[test.account].Allow = test.allowPolicy
 			c.Write(config)
