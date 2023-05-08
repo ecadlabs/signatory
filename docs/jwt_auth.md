@@ -50,7 +50,6 @@ server:
     users:
       user_name1:
         password: password1
-		 # Secret used to sign JWT tokens
         secret: secret1
         jwt_tok_expiry: 2h10m40s
       user_name2:
