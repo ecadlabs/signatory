@@ -39,7 +39,7 @@ sequenceDiagram
 
 ## Sample Signatory JWT configuration
 
-`jwt_tok_expiry` is the time duration for which the token is valid and it is optional. When not provided the token expiry is `current time + maximum Golang int64 ≈ 280 years`, otherwise it is `current time + given time`.   
+`jwt_tok_expiry` is the time duration (in minutes) for which the token is valid and it is optional. When not provided the token expiry is `current time + maximum Golang int64 ≈ 280 years`, otherwise it is `current time + given time`.   
 `secret` is the secret used to sign the JWT token.
 
 ```yaml
@@ -51,11 +51,11 @@ server:
       user_name1:
         password: password1
         secret: secret1
-        jwt_tok_expiry: 2h10m40s
+        jwt_tok_exp: 234
       user_name2:
         password: password2
         secret: secret2
-        jwt_tok_expiry: 2h10m40s
+        jwt_tok_exp: 73
 ```
 
 ## Sample client code which used in the integration test.
