@@ -9,11 +9,11 @@ server:
       user_name1:
         password: password1
         secret: secret1
-        tok_expiry: 2h10m40s
+        jwt_tok_expiry: 2h10m40s
       user_name2:
         password: password2
         secret: secret2
-        tok_expiry: 2h10m40s
+        jwt_tok_expiry: 2h10m40s
 
 vaults:
   # Name is used to identify backend during import process
