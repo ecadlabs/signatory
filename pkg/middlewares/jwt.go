@@ -72,7 +72,7 @@ type JWT struct {
 
 type UserData struct {
 	Password string `yaml:"password"`
-	Expires  uint64 `yaml:"jwt_exp"`
+	Exp      uint64 `yaml:"jwt_exp"`
 	Secret   string `yaml:"secret"`
 }
 
@@ -81,11 +81,11 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
-	if j.Users[user].Expires == 0 {
+	if j.Users[user].Exp == 0 {
 		var mt = uint64(math.MaxUint64)
 		claims["exp"] = time.Now().Add(time.Hour * time.Duration(mt)).Unix()
 	} else {
-		claims["exp"] = time.Now().Add(time.Minute * time.Duration(j.Users[user].Expires)).Unix()
+		claims["exp"] = time.Now().Add(time.Minute * time.Duration(j.Users[user].Exp)).Unix()
 	}
 	token.Claims = claims
 	return token.SignedString([]byte(j.Users[user].Secret))
