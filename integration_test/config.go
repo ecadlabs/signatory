@@ -7,16 +7,41 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+/*
+  jwt:
+    users:
+      user_name1:
+        password: password1
+		 # Secret used to sign JWT tokens
+        secret: secret1
+        tok_expiry: 2h10m40s
+      user_name2:
+        password: password2
+        secret: secret2
+        tok_expiry: 2h10m40s
+*/
+
 type Config struct {
 	Server ServerConfig            `yaml:"server"`
 	Vaults map[string]*VaultConfig `yaml:"vaults"`
 	Tezos  TezosConfig             `yaml:"tezos"`
 }
 
+type JwtConfig struct {
+	Users map[string]*JwtUserData `yaml:"users"`
+}
+
+type JwtUserData struct {
+	Password string `yaml:"password"`
+	Secret   string `yaml:"secret"`
+	Exp      uint64 `yaml:"jwt_exp"`
+}
+
 type ServerConfig struct {
-	Address        string   `yaml:"address"`
-	UtilityAddress string   `yaml:"utility_address"`
-	Keys           []string `yaml:"authorized_keys,omitempty"`
+	Address        string    `yaml:"address"`
+	UtilityAddress string    `yaml:"utility_address"`
+	Keys           []string  `yaml:"authorized_keys,omitempty"`
+	Jwt            JwtConfig `yaml:"jwt,omitempty"`
 }
 
 type TezosConfig = map[string]*TezosPolicy
