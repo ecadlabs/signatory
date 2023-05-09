@@ -187,9 +187,10 @@ func (s *Server) Handler() (http.Handler, error) {
 	r := mux.NewRouter()
 	r.Use((&middlewares.Logging{}).Handler)
 	if s.MidWare != nil {
-		r.Use(s.MidWare.Handler)
+		r.Use(s.MidWare.AuthHandler)
 	}
 
+	r.Methods("POST").Path("/login").HandlerFunc(s.MidWare.LoginHandler)
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)

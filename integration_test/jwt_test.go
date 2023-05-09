@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	endpoint = "http://localhost:6732/keys/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
-	message  = "\"03c8e312c61a5fd8e9d6ff1d5dccf900e10b5769e55738eb365e99636e3c3fd1d76c006b82198cb179e8306c1bedd08f12dc863f328886df0202e90700c0843d0000a26828841890d3f3a2a1d4083839c7a882fe050100\""
+	loginEndpoint = "http://localhost:6732/login"
+	endpoint      = "http://localhost:6732/keys/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
+	message       = "\"03c8e312c61a5fd8e9d6ff1d5dccf900e10b5769e55738eb365e99636e3c3fd1d76c006b82198cb179e8306c1bedd08f12dc863f328886df0202e90700c0843d0000a26828841890d3f3a2a1d4083839c7a882fe050100\""
 )
 
 func TestJWT(t *testing.T) {
@@ -35,7 +36,7 @@ func TestJWT(t *testing.T) {
 
 	//provide credentials in the header of the same request to fetch a bearer token
 	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
-	code, bytes = request(endpoint, message, h)
+	code, bytes = request(loginEndpoint, message, h)
 	require.Equal(t, 201, code)
 	token := string(bytes)
 	require.Greater(t, len(token), 1)

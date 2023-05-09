@@ -63,10 +63,10 @@ server:
 
 ```go
         //Send user credentials to receive a new token
-        url := "http://localhost:6732/keys/" + pub.Hash().String()
+        url := "http://localhost:6732/login" + pub.Hash().String()
 		client := &http.Client{}
 
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("POST", url, nil)
 		require.NoError(t, err)
 
 		req.Header.Add("Content-Type", "application/json")
