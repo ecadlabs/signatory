@@ -1,25 +1,41 @@
 # Integration test
 
-The test ensures that Signatory can perform an authenticated sign operations
-while assisting `octez-client`.
+The tests in this folder use a docker compose file to orchestrate the starting of `Signatory`, `flextesa` and `tezos` containers.
 
-From the project tree root
+The version of Signatory that is run is defined by an environment variable named `IMAGE`. 
 
+The `octez-client` that is run by the tests is provided by the `tezos` container, not the `octez-client` that is onboard the `flextesa` image, so that official `tezos` image releases can be used.  The version of `tezos` container is defined by an environment variable named `OCTEZ_VERSION`. 
+
+Currently, it is always the `latest` version of the `flextesa` image that is run by the tests, which protocol the testnet runs is defined in the script `flextesa.sh`
+
+# Running the tests
+
+Pull the images for the version and architecture that suit your needs. Example:
 ```sh
-docker build --no-cache -t signatory-test -f ./integration_test/Dockerfile .
-docker run --rm  -e 'ENV_NODE_ADDR={...}' -e 'ENV_SECRET_KEY={...}' signatory-test
+export SIGY_IMAGE=ghcr.io/ecadlabs/signatory:v1.0.0-beta3-arm64
+export OCTEZ_VERSION=arm64_v16.0-rc3
+docker pull oxheadalpha/flextesa:latest
+docker pull tezos/tezos:$OCTEZ_VERSION
+docker pull $SIGY_IMAGE
 ```
 
-where `ENV_NODE_ADDR` is the name of a testnet node example: https://ghostnet.ecadinfra.com
-and `ENV_SECRET_KEY` is an unencrypted private key of an implicit, funded account on the testnet
-the private key of alice can be used: edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq
+Next, start the stack:
+```sh
+cd integration_test
+IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION docker compose up -d --wait
+```
 
-## Environment variables
+Run all the tests:
+```sh
+IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test ./...
+```
 
-| Name               | Default value                   | Description                                                         |
-| ------------------ | ------------------------------- | ------------------------------------------------------------------- |
-| ENV_SECRET_KEY     |                                 | Private key in Tezos Base58 format.                                 |
-| ENV_NODE_ADDR      | https://ghostnet.ecadinfra.com  | Testnet node                                                        |
+Or, just run a single test:
+```sh
+IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test -run ^TestJWTHappyPath
+```
 
-## Add new testnet endpoint in Github CI
-To add a new testnet to the `testnet_endpoints` list in `.github/workflows/integration-tests.yaml` we also need to make sure to fund the wallet `tz3NxnbanoQ9hyn3wcxZ3q9XGCaNSvmARv3Z` with some XTZ on the new testnet
+Stop the stack when you are done:
+```sh
+IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION docker compose down
+```
