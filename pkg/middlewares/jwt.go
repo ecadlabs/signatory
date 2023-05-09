@@ -28,43 +28,57 @@ func NewMiddleware(a AuthGen) *JWTMiddleware {
 }
 
 // Handler is a middleware handler
-func (m *JWTMiddleware) Handler(next http.Handler) http.Handler {
+func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	user := r.Header.Get("username")
+	pass := r.Header.Get("password")
+	if user == "" || pass == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("username and password required"))
+		return
+	}
+
+	cpass, ok := m.AuthGen.(*JWT).Users[user]
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Access denied"))
+		return
+	}
+	if cpass.Password != pass {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	token, err := m.AuthGen.GenerateToken(user)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(token))
+}
+
+// Handler is a middleware handler
+func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/login" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		token := r.Header.Get("Authorization")
 		user := r.Header.Get("username")
-		pass := r.Header.Get("password")
 
 		if token != "" {
 			token = strings.TrimPrefix(token, "Bearer ")
 			err := m.AuthGen.Authenticate(user, token)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-		} else {
-			if user == "" || pass == "" {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("username and password required"))
-				return
-			}
-			cpass, ok := m.AuthGen.(*JWT).Users[user]
-			if !ok {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(fmt.Sprintf("user %s not found", user)))
-				return
-			}
-			if cpass.Password != pass {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			token, err := m.AuthGen.GenerateToken(user)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
 				return
 			}
-			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte(token))
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("token required"))
 			return
 		}
 		ctx := context.WithValue(r.Context(), "user", &user)
