@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	log "github.com/sirupsen/logrus"
 )
 
 // chain -> delegate(pkh)
@@ -40,11 +41,7 @@ type legacyWatermarkMap = hashmap.PublicKeyHashMap[*legacyWatermarkData]
 
 const legacyWatermarkDir = "watermark"
 
-func (f *FileWatermark) tryLegacy(wm *request.Watermark) (delegateMap, error) {
-	out := make(delegateMap)
-	dir := filepath.Join(f.BaseDir, legacyWatermarkDir)
-	filename := filepath.Join(dir, fmt.Sprintf("%s.json", wm.Chain.String()))
-
+func (f *FileWatermark) tryLegacy(filename string) (delegateMap, error) {
 	var kinds legacyKindMap
 	fd, err := os.Open(filename)
 	if err == nil {
@@ -69,6 +66,7 @@ func (f *FileWatermark) tryLegacy(wm *request.Watermark) (delegateMap, error) {
 		{"generic", request.WmOrderDefault},
 	}
 
+	out := make(delegateMap)
 	for _, o := range orders {
 		if wm, ok := kinds[o.kind]; ok {
 			wm.ForEach(func(pkh tz.PublicKeyHash, data *legacyWatermarkData) bool {
@@ -91,6 +89,21 @@ func (f *FileWatermark) tryLegacy(wm *request.Watermark) (delegateMap, error) {
 	return out, nil
 }
 
+func writeWatermarkData(data delegateMap, filename string) error {
+	fd, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	w := bufio.NewWriter(fd)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err = enc.Encode(data); err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
 func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
@@ -104,6 +117,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		return err
 	}
 	filename := filepath.Join(dir, fmt.Sprintf("%s.json", watermark.Chain.String()))
+	legacyFilename := filepath.Join(f.BaseDir, legacyWatermarkDir, fmt.Sprintf("%s.json", watermark.Chain.String()))
 
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
@@ -116,24 +130,21 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		if err != nil {
 			return err
 		}
+		if legacy, err := f.tryLegacy(legacyFilename); err != nil {
+			return err
+		} else if legacy != nil {
+			log.Warn("Watermark storage directory %s is deprecated and must me removed manually", legacyWatermarkDir, watermarkDir)
+		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return err
-	} else if delegates, err = f.tryLegacy(watermark); err != nil {
+	} else if delegates, err = f.tryLegacy(legacyFilename); err != nil {
 		return err
 	} else if delegates != nil {
 		// successful migration
-		fd, err = os.Create(filename)
-		if err != nil {
+		if err := writeWatermarkData(delegates, filename); err != nil {
 			return err
 		}
-		enc := json.NewEncoder(fd)
-		enc.SetIndent("", "    ")
-		if err := enc.Encode(delegates); err != nil {
-			return err
-		}
-		if err := fd.Close(); err != nil {
-			return err
-		}
+		log.Info("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, legacyWatermarkDir)
 	} else {
 		delegates = make(delegateMap)
 	}
@@ -144,19 +155,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		}
 	}
 	delegates.Insert(pkh, watermark.Stored(digest))
-
-	fd, err = os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-	w := bufio.NewWriter(fd)
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	if err := enc.Encode(delegates); err != nil {
-		return err
-	}
-	return w.Flush()
+	return writeWatermarkData(delegates, filename)
 }
 
 var _ Watermark = (*FileWatermark)(nil)
