@@ -13,6 +13,7 @@ import (
 
 // AuthGen is an interface that generates token authenticates the same
 type AuthGen interface {
+	GetUserData(user string) (UserData, bool)
 	Authenticate(user string, token string) error
 	GenerateToken(user string) (string, error)
 }
@@ -37,13 +38,13 @@ func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cpass, ok := m.AuthGen.(*JWT).Users[user]
+	ud, ok := m.AuthGen.GetUserData(user)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Access denied"))
 		return
 	}
-	if cpass.Password != pass {
+	if ud.Password != pass {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Access denied"))
 		return
@@ -96,6 +97,11 @@ type UserData struct {
 	Password string `yaml:"password"`
 	Exp      uint64 `yaml:"jwt_exp"`
 	Secret   string `yaml:"secret"`
+}
+
+func (m *JWT) GetUserData(user string) (UserData, bool) {
+	ud, ok := m.Users[user]
+	return ud, ok
 }
 
 // GenerateToken generates a new token for the given user
