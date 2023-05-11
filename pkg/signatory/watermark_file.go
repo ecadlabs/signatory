@@ -56,7 +56,7 @@ func (f *FileWatermark) tryLegacy(wm *request.Watermark) (delegateMap, error) {
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	} else {
-		return out, nil
+		return nil, nil
 	}
 
 	orders := []struct {
@@ -120,6 +120,22 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		return err
 	} else if delegates, err = f.tryLegacy(watermark); err != nil {
 		return err
+	} else if delegates != nil {
+		// successful migration
+		fd, err = os.Create(filename)
+		if err != nil {
+			return err
+		}
+		enc := json.NewEncoder(fd)
+		enc.SetIndent("", "    ")
+		if err := enc.Encode(delegates); err != nil {
+			return err
+		}
+		if err := fd.Close(); err != nil {
+			return err
+		}
+	} else {
+		delegates = make(delegateMap)
 	}
 
 	if wm, ok := delegates.Get(pkh); ok {
