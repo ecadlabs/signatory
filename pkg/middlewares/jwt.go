@@ -45,6 +45,7 @@ func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if cpass.Password != pass {
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Access denied"))
 		return
 	}
 
