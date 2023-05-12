@@ -103,7 +103,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 			//first, do any setup steps that have to happen before the operation to be tested
 			for _, setupOp := range test.testSetupOps {
 				out, err := OctezClient(setupOp...)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				require.Contains(t, string(out), "Operation successfully injected in the node")
 			}
 

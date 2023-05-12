@@ -1,6 +1,6 @@
 #! /bin/sh
 
-protocol=Mumbai
+protocol=Nairobi
 time_bb=${block_time:-1}
 
 

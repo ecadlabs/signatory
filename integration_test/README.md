@@ -15,7 +15,8 @@ Official image releases are available in [dockerhub](https://hub.docker.com/r/ec
 
 ### Github container registry authentication setup
 
-If this is your first time pulling an image from github packages, then you'll need to configure a [Personal Access Token PAT (classic)](https://github.com/settings/tokens). The only access you should grant the PAT is `read:packages`.  With that token as the value of env var $PAT, you can now login:
+If this is your first time pulling an image from github packages, then you'll need to configure a [Personal Access Token PAT (classic)](https://github.com/settings/tokens). The only access you should grant the PAT is `read:packages`.  With that token as the value of env var `$PAT`, you can now login:
+
 ```sh
 echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 ```
@@ -25,6 +26,7 @@ echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 Pull the images for the version and architecture that suit your needs from [flextesa](https://hub.docker.com/r/oxheadalpha/flextesa/tags), [tezos](https://hub.docker.com/r/tezos/tezos/tags), [signatory (pre-release)](https://github.com/ecadlabs/signatory/pkgs/container/signatory/versions), or [signatory (release)](https://hub.docker.com/r/ecadlabs/signatory/tags)
 
 Example:
+
 ```sh
 export SIGY_IMAGE=ghcr.io/ecadlabs/signatory:main-arm64
 export OCTEZ_VERSION=arm64_v17.0-beta1
@@ -34,22 +36,26 @@ docker pull $SIGY_IMAGE
 ```
 
 Next, start the stack:
+
 ```sh
 cd integration_test
 IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION docker compose up -d --wait
 ```
 
 Run all the tests:
+
 ```sh
 IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test ./...
 ```
 
 Or, just run a single test:
+
 ```sh
-IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test -run ^TestJWTHappyPath
+IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test -run ^TestOperationAllowPolicy
 ```
 
 Stop the stack when you are done:
+
 ```sh
 IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION docker compose down
 ```
