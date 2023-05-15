@@ -1,6 +1,6 @@
 #! /bin/sh
 
-protocol=Mumbai
+protocol=$1
 time_bb=${block_time:-1}
 
 
@@ -13,7 +13,7 @@ export user1="user1,edpkvNSVE2pL4eaCYrew1NEuLi4nnYmwQfe4tdM4NoVgNMEoVCNGoW,tz1Qg
 root_path=/tmp/mini-box
 
 flextesa mini-net \
-         --root "$root_path" --size 1 "$@" \
+         --root "$root_path" --size 1 \
          --set-history-mode N000:archive \
          --number-of-b 1 \
          --balance-of-bootstrap-accounts tez:100_000_000 \

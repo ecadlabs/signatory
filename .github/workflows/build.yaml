@@ -107,10 +107,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        octez-versions:
-          - v16.0-rc3
-    env:
-      IMAGE: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64
+        testenvs:
+          - env.current.amd64
+          - env.next.amd64
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
@@ -120,16 +119,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set env
+        run: export $(xargs <${{ matrix.testenvs }}); export IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64
       - name: Pull images
         run: >
          docker pull oxheadalpha/flextesa:latest;
          docker pull tezos/tezos:${{ matrix.octez-versions }};
          docker pull $IMAGE;        
       - name: Start containers
-        run: IMAGE=$IMAGE OCTEZ_VERSION=${{ matrix.octez-versions }} docker compose -f integration_test/docker-compose.yml up -d --wait
+        run: docker compose --env-file ${{ matrix.testenvs }} -f integration_test/docker-compose.yml up -d --wait
       - name: Modify octez
         run: docker exec octez sudo chown -R tezos /home/tezos/.tezos-client
       - name: Run tests
-        run: IMAGE=$IMAGE OCTEZ_VERSION=${{ matrix.octez-versions }} go test $(go list ./... | grep integration_test)
+        run: go test $(go list ./... | grep integration_test)
       - name: Kill containers
-        run: IMAGE=$IMAGE OCTEZ_VERSION=${{ matrix.octez-versions }} docker compose -f integration_test/docker-compose.yml kill
+        run: docker compose -f integration_test/docker-compose.yml kill

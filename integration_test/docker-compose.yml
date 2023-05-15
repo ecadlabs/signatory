@@ -15,7 +15,7 @@ services:
       - ./flextesa.sh:/usr/bin/sigybox
     environment:
       - block_time=3
-    command: sigybox
+    command: sigybox $PROTOCOL
     healthcheck:
       test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
       interval: 1s
