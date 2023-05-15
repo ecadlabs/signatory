@@ -124,7 +124,7 @@ jobs:
       - name: Pull images
         run: >
          docker pull oxheadalpha/flextesa:latest;
-         docker pull tezos/tezos:${{ matrix.octez-versions }};
+         docker pull tezos/tezos:$OCTEZ_VERSION;
          docker pull $IMAGE;        
       - name: Start containers
         run: docker compose --env-file ${{ matrix.testenvs }} -f integration_test/docker-compose.yml up -d --wait
