@@ -119,18 +119,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set env
-        run: export $(xargs <integration_test/${{ matrix.testenvs }}); export IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64
       - name: Pull images
         run: >
+         export $(xargs <integration_test/${{ matrix.testenvs }}); 
+         export IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;        
          docker pull oxheadalpha/flextesa:latest;
          docker pull tezos/tezos:$OCTEZ_VERSION;
          docker pull $IMAGE;        
       - name: Start containers
-        run: docker compose --env-file ${{ matrix.testenvs }} -f integration_test/docker-compose.yml up -d --wait
+        run: docker compose --env-file integration_test/${{ matrix.testenvs }} -f integration_test/docker-compose.yml up -d --wait
       - name: Modify octez
         run: docker exec octez sudo chown -R tezos /home/tezos/.tezos-client
       - name: Run tests
         run: go test $(go list ./... | grep integration_test)
       - name: Kill containers
-        run: docker compose -f integration_test/docker-compose.yml kill
+        run: docker compose --env-file integration_test/${{ matrix.testenvs }} -f integration_test/docker-compose.yml kill
