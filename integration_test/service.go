@@ -40,7 +40,7 @@ func restart_stack() {
 	if err != nil {
 		panic("failed to kill stack")
 	}
-	_, err = exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait").CombinedOutput()
+	_, err = exec.Command("docker", "compose", "--env-file", "env."+os.Getenv("TESTENV"), "-f", "./docker-compose.yml", "up", "-d", "--wait").CombinedOutput()
 	if err != nil {
 		panic("failed to up stack")
 	}
