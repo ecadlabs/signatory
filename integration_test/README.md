@@ -12,6 +12,7 @@ Currently, it is always the `latest` version of the `flextesa` image that is run
 
 Pre-release Signatory images are available in [github container registry](https://github.com/ecadlabs/signatory/pkgs/container/signatory)
 Official image releases are available in [dockerhub](https://hub.docker.com/r/ecadlabs/signatory/tags)
+If you get a 404 from the github container registry, you can request access from an admin.
 
 ### Github container registry authentication setup
 
