@@ -46,13 +46,13 @@ IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION docker compose up -d --wait
 Run all the tests:
 
 ```sh
-IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test ./...
+go clean -testcache && IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test ./...
 ```
 
 Or, just run a single test:
 
 ```sh
-IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test -run ^TestOperationAllowPolicy
+go clean -testcache && IMAGE=$SIGY_IMAGE OCTEZ_VERSION=$OCTEZ_VERSION go test -run ^TestOperationAllowPolicy
 ```
 
 Stop the stack when you are done:
