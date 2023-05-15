@@ -1,7 +1,6 @@
 package integrationtest
 
 import (
-	"log"
 	"os"
 
 	yaml "gopkg.in/yaml.v3"
@@ -50,10 +49,10 @@ func (c *Config) Read(file string) error {
 func (c *Config) Write(file string) error {
 	yamlFile, err := yaml.Marshal(c)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	if err = os.WriteFile(file, yamlFile, 0644); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	return nil

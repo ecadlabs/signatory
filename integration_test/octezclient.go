@@ -1,7 +1,6 @@
 package integrationtest
 
 import (
-	"log"
 	"os/exec"
 )
 
@@ -17,7 +16,7 @@ func delete_wallet_lock() {
 	var args = []string{"exec", "octez", "rm", "-f", "/home/tezos/.tezos-client/wallet_lock"}
 	out, err := exec.Command(cmd, args...).CombinedOutput()
 	if err != nil {
-		log.Fatal("Failed to delete wallet lock: " + string(out))
+		panic("Failed to delete wallet lock: " + string(out))
 	}
 }
 
@@ -26,6 +25,6 @@ func delete_contracts_aliases() {
 	var args = []string{"exec", "octez", "rm", "-f", "/home/tezos/.tezos-client/contracts"}
 	out, err := exec.Command(cmd, args...).CombinedOutput()
 	if err != nil {
-		log.Fatal("Failed to delete contracts: " + string(out))
+		panic("Failed to delete contracts: " + string(out))
 	}
 }
