@@ -72,6 +72,10 @@ Stop the stack when you are done:
 docker compose down
 ```
 
+## Re-Running Tests
+
+Most tests can be re-run successfully as detailed above.  Some tests (like the `reveal` operation) can only be run once on a chain.  So, when re-running all, stop the stack and bring it up again in between test runs. 
+
 ## Notes to the operator
 
 Some tests in this folder make edits to `signatory.yaml` configuration and restart the Signatory service. By design, tests that do this shall clean up after themselves by restoring the copy of the file that is in the code repository.  If `git status` after a test run shows you have modifications to the `signatory.yaml` file, then that would mean a test is failing to clean up after itself and should be corrected.
