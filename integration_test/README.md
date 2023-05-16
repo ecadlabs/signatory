@@ -28,6 +28,10 @@ echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 
 ## Running the tests
 
+```sh
+cd integration_test
+```
+
 Exporting the Environment Variables used by the test is required. Choose the set of env var to use from the files `env.current.arm64`, `env.next.arm64`, `env.current.amd64`, `env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture. 
 
 So, to set the env to use mainnet protocol, using a build of Signatory's `main` branch, on a macbook m1 host:
@@ -47,7 +51,6 @@ export IMAGE=ghcr.io/ecadlabs/signatory:main-amd64
 Next, start the stack:
 
 ```sh
-cd integration_test
 docker compose up -d --wait --pull always
 ```
 
