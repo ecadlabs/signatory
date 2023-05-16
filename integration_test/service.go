@@ -1,16 +1,15 @@
 package integrationtest
 
 import (
-	"os"
 	"os/exec"
 )
 
 func restart_signatory() {
-	_, err := exec.Command("docker", "compose", "--env-file", "env."+os.Getenv("TESTENV"), "-f", "./docker-compose.yml", "stop", "signatory").CombinedOutput()
+	_, err := exec.Command("docker", "compose", "-f", "./docker-compose.yml", "stop", "signatory").CombinedOutput()
 	if err != nil {
 		panic("failed to stop signatory")
 	}
-	_, err = exec.Command("docker", "compose", "--env-file", "env."+os.Getenv("TESTENV"), "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
+	_, err = exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
 	if err != nil {
 		panic("failed to start signatory during restart")
 	}
@@ -36,11 +35,11 @@ func restore_config() {
 }
 
 func restart_stack() {
-	_, err := exec.Command("docker", "compose", "--env-file", "env."+os.Getenv("TESTENV"), "-f", "./docker-compose.yml", "kill").CombinedOutput()
+	_, err := exec.Command("docker", "compose", "-f", "./docker-compose.yml", "kill").CombinedOutput()
 	if err != nil {
 		panic("failed to kill stack")
 	}
-	_, err = exec.Command("docker", "compose", "--env-file", "env."+os.Getenv("TESTENV"), "-f", "./docker-compose.yml", "up", "-d", "--wait").CombinedOutput()
+	_, err = exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait").CombinedOutput()
 	if err != nil {
 		panic("failed to up stack")
 	}
