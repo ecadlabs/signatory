@@ -133,7 +133,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		if legacy, err := f.tryLegacy(legacyFilename); err != nil {
 			return err
 		} else if legacy != nil {
-			log.Warn("Watermark storage directory %s is deprecated and must me removed manually", legacyWatermarkDir, watermarkDir)
+			log.Warnf("Watermark storage directory %s is deprecated and must me removed manually", legacyWatermarkDir)
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return err
@@ -144,7 +144,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		if err := writeWatermarkData(delegates, filename); err != nil {
 			return err
 		}
-		log.Info("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, legacyWatermarkDir)
+		log.Infof("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, legacyWatermarkDir)
 	} else {
 		delegates = make(delegateMap)
 	}
