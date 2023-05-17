@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -26,6 +27,9 @@ func NewServeCommand(c *Context) *cobra.Command {
 			}
 
 			if c.config.Server.JWTConfig != nil {
+				if c.config.Server.AuthorizedKeys != nil {
+					return fmt.Errorf("cannot use both JWT and static authorized keys")
+				}
 				mw := middlewares.NewMiddleware(c.config.Server.JWTConfig)
 				srvConf.MidWare = mw
 			}
