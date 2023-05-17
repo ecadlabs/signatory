@@ -54,6 +54,16 @@ var testcases = []testCase{
 		validateOctezReturn: false,
 	},
 	{
+		opName:              "block",
+		testSetupOps:        nil,
+		testOp:              []string{"--endpoint", flextesanob, "bake", "for", alias, "--force"},
+		account:             account,
+		allowPolicy:         map[string][]string{"generic": {}, "block": {}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "preendorsement": {}, "endorsement": {}},
+		successMessage:      ".baker.actions:   injected for " + alias + " (" + account + ")",
+		validateOctezReturn: false,
+	},
+	{
 		opName:              "reveal",
 		testSetupOps:        [][]string{{"-w", "1", "transfer", "100", "from", "alice", "to", alias, "--burn-cap", "0.06425"}},
 		testOp:              []string{"reveal", "key", "for", alias},
