@@ -17,87 +17,126 @@ const (
 	alias1        = "opstest1"
 	contract      = "contract.event.tz"
 	contractAlias = "emit_event"
+	flextesanob   = "http://flextesanobaking:20000"
 )
 
 type testCase struct {
-	opName         string
-	testSetupOps   [][]string
-	testOp         []string
-	account        string
-	allowPolicy    map[string][]string
-	notAllowPolicy map[string][]string
+	opName              string
+	testSetupOps        [][]string
+	testOp              []string
+	account             string
+	allowPolicy         map[string][]string
+	notAllowPolicy      map[string][]string
+	successMessage      string
+	validateOctezReturn bool
 }
 
 // these test cases are not atomic -- some tests depend on previous tests (order matters)
 var testcases = []testCase{
 	{
-		opName:         "reveal",
-		testSetupOps:   [][]string{{"-w", "1", "transfer", "100", "from", "alice", "to", alias, "--burn-cap", "0.06425"}},
-		testOp:         []string{"reveal", "key", "for", alias},
-		account:        account,
-		allowPolicy:    map[string][]string{"generic": {"reveal"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"reveal"})},
+		opName:              "preendorsement",
+		testSetupOps:        nil,
+		testOp:              []string{"--endpoint", flextesanob, "preendorse", "for", alias, "--force"},
+		account:             account,
+		allowPolicy:         map[string][]string{"generic": {"preendorsement"}, "preendorsement": {}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
+		successMessage:      "injected preendorsement",
+		validateOctezReturn: false,
 	},
 	{
-		opName:         "register_global_constant",
-		testSetupOps:   nil,
-		testOp:         []string{"register", "global", "constant", "999", "from", alias, "--burn-cap", "0.017"},
-		account:        account,
-		allowPolicy:    map[string][]string{"generic": {"register_global_constant"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"register_global_constant"})},
+		opName:              "endorsement",
+		testSetupOps:        nil,
+		testOp:              []string{"--endpoint", flextesanob, "endorse", "for", alias, "--force"},
+		account:             account,
+		allowPolicy:         map[string][]string{"generic": {"endorsement"}, "endorsement": {}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
+		successMessage:      "injected endorsement",
+		validateOctezReturn: false,
 	},
 	{
-		opName:         "transaction",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"transfer", "1", "from", alias, "to", "alice", "--burn-cap", "0.06425"},
-		allowPolicy:    map[string][]string{"generic": {"transaction"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"transaction"})},
+		opName:              "reveal",
+		testSetupOps:        [][]string{{"-w", "1", "transfer", "100", "from", "alice", "to", alias, "--burn-cap", "0.06425"}},
+		testOp:              []string{"reveal", "key", "for", alias},
+		account:             account,
+		allowPolicy:         map[string][]string{"generic": {"reveal"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"reveal"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 	{
-		opName:         "delegation",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"register", "key", alias, "as", "delegate"},
-		allowPolicy:    map[string][]string{"generic": {"delegation"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"delegation"})},
+		opName:              "register_global_constant",
+		testSetupOps:        nil,
+		testOp:              []string{"register", "global", "constant", "999", "from", alias, "--burn-cap", "0.017"},
+		account:             account,
+		allowPolicy:         map[string][]string{"generic": {"register_global_constant"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"register_global_constant"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 	{
-		opName:         "set_deposits_limit",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"set", "deposits", "limit", "for", alias, "to", "10000"},
-		allowPolicy:    map[string][]string{"generic": {"set_deposits_limit"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"set_deposits_limit"})},
+		opName:              "transaction",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"transfer", "1", "from", alias, "to", "alice", "--burn-cap", "0.06425"},
+		allowPolicy:         map[string][]string{"generic": {"transaction"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"transaction"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 	{
-		opName:         "update_consensus_key",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"set", "consensus", "key", "for", alias, "to", alias1},
-		allowPolicy:    map[string][]string{"generic": {"update_consensus_key"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"update_consensus_key"})},
+		opName:              "delegation",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"register", "key", alias, "as", "delegate"},
+		allowPolicy:         map[string][]string{"generic": {"delegation"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"delegation"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 	{
-		opName:         "origination",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"originate", "contract", contractAlias, "transferring", "1", "from", alias, "running", contract, "--burn-cap", "0.4"},
-		allowPolicy:    map[string][]string{"generic": {"origination", "transaction"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"origination"})},
+		opName:              "set_deposits_limit",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"set", "deposits", "limit", "for", alias, "to", "10000"},
+		allowPolicy:         map[string][]string{"generic": {"set_deposits_limit"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"set_deposits_limit"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 	{
-		opName:         "increase_paid_storage",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", alias},
-		allowPolicy:    map[string][]string{"generic": {"increase_paid_storage"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"increase_paid_storage"})},
+		opName:              "update_consensus_key",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"set", "consensus", "key", "for", alias, "to", alias1},
+		allowPolicy:         map[string][]string{"generic": {"update_consensus_key"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"update_consensus_key"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
+	},
+	{
+		opName:              "origination",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"originate", "contract", contractAlias, "transferring", "1", "from", alias, "running", contract, "--burn-cap", "0.4"},
+		allowPolicy:         map[string][]string{"generic": {"origination", "transaction"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"origination"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
+	},
+	{
+		opName:              "increase_paid_storage",
+		testSetupOps:        nil,
+		account:             account,
+		testOp:              []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", alias},
+		allowPolicy:         map[string][]string{"generic": {"increase_paid_storage"}},
+		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"increase_paid_storage"})},
+		successMessage:      "Operation successfully injected in the node",
+		validateOctezReturn: true,
 	},
 }
 
 func TestOperationAllowPolicy(t *testing.T) {
-	defer delete_contracts_aliases()
+	defer clean_tezos_folder()
 	for _, test := range testcases {
 		t.Run(test.opName, func(t *testing.T) {
 			//first, do any setup steps that have to happen before the operation to be tested
@@ -115,8 +154,12 @@ func TestOperationAllowPolicy(t *testing.T) {
 			defer restore_config()
 			restart_signatory()
 			out, err := OctezClient(test.testOp...)
-			assert.Error(t, err)
-			require.Contains(t, string(out), "operation `"+test.opName+"' is not allowed")
+			if test.validateOctezReturn {
+				//the baking operations in octez-client do not return an error when they fail
+				//so, we do this assert when we can
+				assert.Error(t, err)
+			}
+			assert.Contains(t, string(out), "`"+test.opName+"' is not allowed")
 
 			//finally, configure the operation being tested as the only one allowed and test it is successful
 			c.Read(config)
@@ -128,7 +171,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 				log.Println("error received: " + err.Error() + " " + string(out))
 			}
 			assert.NoError(t, err)
-			require.Contains(t, string(out), "Operation successfully injected in the node")
+			assert.Contains(t, string(out), test.successMessage)
 		})
 	}
 }
