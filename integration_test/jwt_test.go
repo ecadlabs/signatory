@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -107,21 +106,20 @@ func request(url string, body string, headers [][]string) (int, []byte) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, url, reqbody)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	for _, h := range headers {
 		req.Header.Add(h[0], h[1])
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer resp.Body.Close()
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	//fmt.Println(string(bytes))
 	return resp.StatusCode, bytes
 }
 
@@ -135,7 +133,6 @@ func TestAlgNoneAttack(t *testing.T) {
 
 	user := "username1"
 	token := createUnsignedToken(user)
-	fmt.Println(token)
 	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"Authorization", "Bearer " + token}}
 	code, bytes := request(endpoint, message, h)
 	require.Equal(t, 401, code)
@@ -179,7 +176,6 @@ func TestSignatureIsVerified(t *testing.T) {
 	code, bytes := request(login, "", h)
 	require.Equal(t, 201, code)
 	token := string(bytes)
-	fmt.Println(token)
 	parts := strings.Split(token, ".")
 
 	//write a slightly different payload, but, keep the same header and signature
@@ -188,11 +184,68 @@ func TestSignatureIsVerified(t *testing.T) {
 	pe := base64.RawURLEncoding.EncodeToString(pb)
 
 	newtoken := parts[0] + "." + pe + "." + parts[2]
-	fmt.Println(newtoken)
 
 	//request a signature with a token whose signature is not valid
 	h = [][]string{{"Content-Type", "application/json"}, {"username", "username2"}, {"Authorization", "Bearer " + newtoken}}
 	code, bytes = request(endpoint, message, h)
 	assert.Equal(t, 401, code)
 	require.Contains(t, string(bytes), "signature is invalid")
+}
+
+func TestBadInputs(t *testing.T) {
+	//configure JWT and make the same request, and see it fail
+	var c Config
+	c.Read("signatory.yaml")
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
+	backup_then_update_config(c)
+	defer restore_config()
+	restart_signatory()
+	code, bytes := request(endpoint, message, nil)
+	assert.Equal(t, 401, code)
+	assert.Equal(t, "token required", string(bytes))
+
+	//provide credentials in the header of the same request to fetch a bearer token
+	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 201, code)
+	token := string(bytes)
+	assert.Greater(t, len(token), 1)
+	assert.NotContains(t, token, "signature")
+	assert.Equal(t, 2, strings.Count(token, "."))
+
+	//there is no whitespace after "Bearer" in the Authorization header, on purpose
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"Authorization", "Bearer" + token}}
+	code, bytes = request(endpoint, message, h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "looking for beginning of value")
+
+	//missing username header
+	h = [][]string{{"Content-Type", "application/json"}, {"Authorization", "Bearer " + token}}
+	code, bytes = request(endpoint, message, h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "signature is invalid")
+
+	//missing token header
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}}
+	code, bytes = request(endpoint, message, h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "token required")
+
+	//empty string headers
+	h = [][]string{{"Content-Type", ""}, {"username", ""}, {"Authorization", ""}}
+	code, bytes = request(endpoint, message, h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "token required")
+
+	//login no username
+	h = [][]string{{"Content-Type", "application/json"}, {"password", "password1"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "username and password required")
+
+	//login no password
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "username and password required")
 }
