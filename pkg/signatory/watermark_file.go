@@ -133,7 +133,7 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		if legacy, err := f.tryLegacy(legacyFilename); err != nil {
 			return err
 		} else if legacy != nil {
-			log.Warnf("Watermark storage directory %s is deprecated and must me removed manually", legacyWatermarkDir)
+			log.Warnf("Watermark storage directory %s is deprecated and must be removed manually", legacyWatermarkDir)
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return err
