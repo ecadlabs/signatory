@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	config        = "signatory.yaml"
 	account       = "tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B"
 	alias         = "opstest"
 	account1      = "tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi"
@@ -158,7 +157,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 
 			//next, configure every operation allowed except for the one tested, to test it will be denied
 			var c Config
-			c.Read(config)
+			c.Read()
 			c.Tezos[test.account].Allow = test.notAllowPolicy
 			backup_then_update_config(c)
 			defer restore_config()
@@ -172,9 +171,9 @@ func TestOperationAllowPolicy(t *testing.T) {
 			assert.Contains(t, string(out), "`"+test.opName+"' is not allowed")
 
 			//finally, configure the operation being tested as the only one allowed and test it is successful
-			c.Read(config)
+			c.Read()
 			c.Tezos[test.account].Allow = test.allowPolicy
-			c.Write(config)
+			c.Write()
 			restart_signatory()
 			out, err = OctezClient(test.testOp...)
 			if err != nil {

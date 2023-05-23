@@ -6,6 +6,14 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
+  aws:
+    driver: awskms
+    config:
+      user_name: stephen
+      access_key_id: AKIAWXBZ6RID2G4MXWIP
+      secret_access_key: 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
+      region: us-west-2
+    
 tezos:
   #alice
   tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:
