@@ -54,15 +54,15 @@ export IMAGE=ghcr.io/ecadlabs/signatory:main-amd64
 
 ### chain protocol and octez version env var
 
-Choose the set of env var to use from the files `env.current.arm64`, `env.next.arm64`, `env.current.amd64`, `env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture.
+Choose the set of env var to use from the files `.env.current.arm64`, `.env.next.arm64`, `.env.current.amd64`, `.env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture.
 
-So, to set the env to use mainnet protocol on a macbook m1 host:
+So, to set the env to use mainnet protocol on macbook m1 host:
 
 ```sh
 . .env.current.arm64
 ```
 
-Likewise, to set the env to use the next protocol, using a build of Signatory's `main` branch, on an x86_64 host:
+Likewise, to set the env to use the next protocol, using a build of Signatory's `main` branch, on x86_64 host:
 
 ```sh
 . .env.next.amd64
@@ -108,7 +108,7 @@ docker compose down
 
 ## Re-Running Tests
 
-Most tests can be re-run successfully as detailed above.  Some tests (like the `reveal` operation) can only be run once on a chain.  So, when re-running all, stop the stack and bring it up again in between test runs. 
+Most tests can be re-run successfully as detailed above.  Some tests (like the `reveal` operation) can only be run once on a chain.  So, when re-running all, stop the stack and bring it up again in between test runs.
 
 ## Notes to the operator
 
