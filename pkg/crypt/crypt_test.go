@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"sync"
 	"testing"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -133,4 +134,28 @@ func TestSignature(t *testing.T) {
 			}
 		})
 	}
+}
+
+var wg sync.WaitGroup
+
+func MinpkGenkey(t *testing.T) {
+	defer wg.Done()
+	k, err := minpk.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	require.NotNil(t, k)
+}
+
+func TestMinpkGenkey1kSerial(t *testing.T) {
+	wg.Add(1000)
+	for i := 0; i < 1000; i++ {
+		MinpkGenkey(t)
+	}
+}
+
+func TestMinpkGenkey1kParallel(t *testing.T) {
+	wg.Add(1000)
+	for i := 0; i < 1000; i++ {
+		go MinpkGenkey(t)
+	}
+	wg.Wait()
 }
