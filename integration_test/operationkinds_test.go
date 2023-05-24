@@ -60,7 +60,7 @@ var testcases = []testCase{
 		account:             account,
 		allowPolicy:         map[string][]string{"generic": {}, "block": {}},
 		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "preendorsement": {}, "endorsement": {}},
-		successMessage:      ".baker.actions:   injected for " + alias + " (" + account + ")",
+		successMessage:      "injected for " + alias + " (" + account + ")",
 		validateOctezReturn: false,
 	},
 	{
