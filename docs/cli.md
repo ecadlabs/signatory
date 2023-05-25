@@ -33,7 +33,7 @@ The encrypted private key can be obtained from the `.octez-client/` directory
 
 ## Importing the generated key using signatory-cli
 
-A private key can be imported into any of the backend vaults (except: AWS & ledger) using the below command.
+A private key can be imported into any of the backend vaults (except: AWS, file & ledger) using the below command.
 If you import an encrypted key, the `signatory-cli` command will prompt you for the password.
 
 ```bash
@@ -107,4 +107,14 @@ tezos:
     allow:
       generic:
         - transaction
+```
+
+**Note:** after importing the key it is made active by adding it to the config file
+
+## Configuring octez-client to use Signatory for remote signing
+
+Once the key is imported and made active, the value of the secret key in octez-client configuration is replaced with the key's URI in Signatory:
+
+```bash
+% octez-client import secret key <alias> http://<signatory_host>:6732/tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
 ```

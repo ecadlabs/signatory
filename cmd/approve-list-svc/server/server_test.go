@@ -1,5 +1,3 @@
-//go:build !integration
-
 package server_test
 
 import (
@@ -14,21 +12,30 @@ import (
 	"github.com/ecadlabs/signatory/cmd/approve-list-svc/server"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
-	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
+func generateKey() (crypt.PublicKey, crypt.PrivateKey, error) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	return crypt.Ed25519PublicKey(pub), crypt.Ed25519PrivateKey(priv), nil
+}
+
 func testServer(t *testing.T, addr []net.IP) error {
 	// generate hook authentication key
-	_, pk, err := ed25519.GenerateKey(rand.Reader)
+	_, priv, err := generateKey()
 	require.NoError(t, err)
 
 	srv := server.Server{
-		PrivateKey: pk,
+		PrivateKey: priv,
 		Addresses:  addr,
 	}
 
@@ -38,12 +45,14 @@ func testServer(t *testing.T, addr []net.IP) error {
 	testSrv := httptest.NewServer(handler)
 	defer testSrv.Close()
 
-	hookAuth, err := auth.StaticAuthorizedKeys(pk.Public())
+	hookAuth, err := auth.StaticAuthorizedKeys(priv.Public())
 	require.NoError(t, err)
 
-	_, signPk, err := ed25519.GenerateKey(rand.Reader)
+	_, signPriv, err := generateKey()
 	require.NoError(t, err)
-	signKeyHash, err := tezos.EncodePublicKeyHash(signPk.Public())
+	signPub := signPriv.Public()
+
+	signKeyHash := signPub.Hash()
 	require.NoError(t, err)
 
 	conf := signatory.Config{
@@ -52,14 +61,16 @@ func testServer(t *testing.T, addr []net.IP) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPk,
-					KeyID:      signKeyHash,
+					PrivateKey: signPriv,
 				},
 			}, "Mock")
 		}),
-		Policy: map[string]*signatory.Policy{
-			signKeyHash: nil,
-		},
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
+			{
+				Key: signKeyHash,
+				Val: nil,
+			},
+		}),
 		PolicyHook: &signatory.PolicyHook{
 			Address: testSrv.URL,
 			Auth:    hookAuth,

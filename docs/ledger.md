@@ -58,6 +58,30 @@ Example:
 close_after: 3600s
 ```
 
+### Transports
+
+By default Ledger vault uses `usb` transport. Another available transport is `tcp` used primarily for interaction with [Speculos](https://github.com/LedgerHQ/speculos)
+emulator. It can be enabled using `transport` option:
+
+```yaml
+vaults:
+  ledger:
+    driver: ledger
+    config:
+      id: 3944f7a0
+      transport: tcp://127.0.0.1:9999
+      keys:
+        - "bip32-ed25519/0'/0'"
+        - "secp256k1/0'/1'"
+      close_after: 3600s
+```
+
+In addition `signatory-cli ledger` command also accepts `-t` / `--transport` key with the same URL-like syntax:
+
+```sh
+signatory-cli ledger --transport 'tcp://127.0.0.1:9999' list
+```
+
 ## Getting data from ledger for signatory configuration using CLI
 
 Keep tezos-wallet app open for the below commands and for signing any wallet transactions.
@@ -85,6 +109,10 @@ Path:    IOService:/AppleARMPE/arm-io@10F00000/AppleT810xIO/usb-drd1@2280000/App
 ID:      tz1Qrqpz6bVUgZc5o5qARHB7j2v57z6knm55 / 3944f7a0
 Version: TezBake 2.2.11 a6fbd27f
 ```
+
+### Ledger device lock
+
+Signatory acquires a read lock on the ledger device when in operation. Be aware that when the Signatory service is running, and it has a valid configuration for a ledger device, the signatory-cli binary will encounter error "ledger: hidapi: failed to open device" trying to list ledgers. Only 1 process can acquire a read lock on the ledger device.
 
 ## Setup baking with signatory and ledger
 

@@ -2,39 +2,38 @@ package auth
 
 import (
 	"context"
-	"crypto"
 
-	"github.com/ecadlabs/signatory/pkg/tezos"
+	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 )
 
+type authorizedKeys = hashmap.PublicKeyHashMap[crypt.PublicKey]
 type staticAuthorizedKeys struct {
-	idx  map[string]crypto.PublicKey
-	keys []string
+	idx  authorizedKeys
+	keys []crypt.PublicKeyHash
 }
 
-func (s *staticAuthorizedKeys) GetPublicKey(ctx context.Context, keyHash string) (crypto.PublicKey, error) {
-	pk, ok := s.idx[keyHash]
+func (s *staticAuthorizedKeys) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (crypt.PublicKey, error) {
+	pk, ok := s.idx.Get(keyHash)
 	if !ok {
 		return nil, ErrPublicKeyNotFound
 	}
 	return pk, nil
 }
 
-func (s *staticAuthorizedKeys) ListPublicKeys(ctx context.Context) ([]string, error) {
+func (s *staticAuthorizedKeys) ListPublicKeys(ctx context.Context) ([]crypt.PublicKeyHash, error) {
 	return s.keys, nil
 }
 
 // StaticAuthorizedKeys returns an AuthorizedKeysStorage that uses the given public keys
-func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error) {
-	idx := make(map[string]crypto.PublicKey)
-	keys := make([]string, len(pub))
-	for i, k := range pub {
-		pkh, err := tezos.EncodePublicKeyHash(k)
-		if err != nil {
-			return nil, err
-		}
+func StaticAuthorizedKeys(pub ...crypt.PublicKey) (AuthorizedKeysStorage, error) {
+	idx := make(authorizedKeys)
+	keys := make([]crypt.PublicKeyHash, len(pub))
+	for i, pk := range pub {
+		pkh := pk.Hash()
 		keys[i] = pkh
-		idx[pkh] = k
+		idx.Insert(pkh, pk)
 	}
 	return &staticAuthorizedKeys{
 		idx:  idx,
@@ -42,15 +41,21 @@ func StaticAuthorizedKeys(pub ...crypto.PublicKey) (AuthorizedKeysStorage, error
 	}, nil
 }
 
-// StaticAuthorizedKeysFromString returns an AuthorizedKeysStorage that uses the given public keys
-func StaticAuthorizedKeysFromString(pub ...string) (AuthorizedKeysStorage, error) {
-	keys := make([]crypto.PublicKey, len(pub))
-	for i, s := range pub {
-		k, err := tezos.ParsePublicKey(s)
+// StaticAuthorizedKeysFromRaw returns an AuthorizedKeysStorage that uses the given public keys
+func StaticAuthorizedKeysFromRaw(pub ...tz.PublicKey) (AuthorizedKeysStorage, error) {
+	idx := make(authorizedKeys)
+	keys := make([]crypt.PublicKeyHash, len(pub))
+	for i, k := range pub {
+		pk, err := crypt.NewPublicKey(k)
 		if err != nil {
 			return nil, err
 		}
-		keys[i] = k
+		pkh := k.Hash()
+		keys[i] = pkh
+		idx.Insert(pkh, pk)
 	}
-	return StaticAuthorizedKeys(keys...)
+	return &staticAuthorizedKeys{
+		idx:  idx,
+		keys: keys,
+	}, nil
 }

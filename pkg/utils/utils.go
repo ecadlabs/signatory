@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 var (
@@ -157,6 +157,6 @@ func KeyboardInteractivePassphraseFunc(prompt string) func() ([]byte, error) {
 	return func() ([]byte, error) {
 		fmt.Print(prompt)
 		defer fmt.Println()
-		return terminal.ReadPassword(int(syscall.Stdin))
+		return term.ReadPassword(int(syscall.Stdin))
 	}
 }

@@ -2,14 +2,14 @@ package ledger
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
@@ -19,13 +19,6 @@ import (
 )
 
 const defaultCloseAfter = time.Second * 10
-
-var (
-	transport     = ledger.USBHIDTransport{}
-	deviceScanner = scanner{
-		tr: &transport,
-	}
-)
 
 type devRequest interface {
 	devRequest()
@@ -40,11 +33,10 @@ type getKeyReq struct {
 func (g *getKeyReq) devRequest() {}
 
 type signReq struct {
-	key       *keyID
-	data      []byte
-	prehashed bool
+	key  *keyID
+	data []byte
 
-	sig chan<- cryptoutils.Signature
+	sig chan<- crypt.Signature
 	err chan<- error
 }
 
@@ -57,9 +49,10 @@ type keyID struct {
 
 // Vault is a Ledger signer backend
 type Vault struct {
-	config Config
-	keys   []*keyID
-	req    chan devRequest
+	config  Config
+	keys    []*keyID
+	req     chan devRequest
+	scanner *scanner
 }
 
 // Config represents Ledger signer backend configuration
@@ -67,15 +60,16 @@ type Config struct {
 	ID         string        `yaml:"id"`
 	Keys       []string      `yaml:"keys"`
 	CloseAfter time.Duration `yaml:"close_after"`
+	Transport  string        `yaml:"transport"`
 }
 
 type ledgerKey struct {
 	id  *keyID
-	pub crypto.PublicKey
+	pub crypt.PublicKey
 }
 
-func (l *ledgerKey) PublicKey() crypto.PublicKey { return l.pub }
-func (l *ledgerKey) ID() string                  { return l.id.String() }
+func (l *ledgerKey) PublicKey() crypt.PublicKey { return l.pub }
+func (l *ledgerKey) ID() string                 { return l.id.String() }
 
 type ledgerIterator struct {
 	ctx context.Context
@@ -134,21 +128,20 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	}
 }
 
-func (v *Vault) signData(ctx context.Context, digest []byte, key vault.StoredKey, prehashed bool) (cryptoutils.Signature, error) {
+func (v *Vault) SignMessage(ctx context.Context, digest []byte, key vault.StoredKey) (crypt.Signature, error) {
 	pk, ok := key.(*ledgerKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Ledger/%s): not a Ledger key: %T ", v.config.ID, key), http.StatusBadRequest)
 	}
 
-	res := make(chan cryptoutils.Signature, 1)
+	res := make(chan crypt.Signature, 1)
 	errCh := make(chan error, 1)
 
 	v.req <- &signReq{
-		key:       pk.id,
-		data:      digest,
-		prehashed: prehashed,
-		sig:       res,
-		err:       errCh,
+		key:  pk.id,
+		data: digest,
+		sig:  res,
+		err:  errCh,
 	}
 
 	select {
@@ -159,16 +152,6 @@ func (v *Vault) signData(ctx context.Context, digest []byte, key vault.StoredKey
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-}
-
-// Sign returns a signature
-func (v *Vault) Sign(ctx context.Context, digest []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return v.signData(ctx, digest, key, true)
-}
-
-// SignRaw implements RawSigner interface
-func (v *Vault) SignRaw(ctx context.Context, data []byte, key vault.StoredKey) (cryptoutils.Signature, error) {
-	return v.signData(ctx, data, key, false)
 }
 
 // Name returns a backend name i.e. Ledger
@@ -202,7 +185,7 @@ func (v *Vault) worker() {
 				return nil
 			}
 		}
-		dev, err = deviceScanner.open(v.config.ID)
+		dev, err = v.scanner.open(v.config.ID)
 		if err != nil {
 			return err
 		}
@@ -245,7 +228,7 @@ func (v *Vault) worker() {
 						r.err <- err
 						break
 					}
-					sig, err := dev.Sign(r.key.dt, r.key.path, r.data, r.prehashed)
+					sig, err := dev.Sign(r.key.dt, r.key.path, r.data)
 					if err != nil {
 						if attempt == 1 {
 							r.err <- err
@@ -282,10 +265,16 @@ func New(ctx context.Context, conf *Config) (*Vault, error) {
 		keys[i] = kid
 	}
 
+	sc, err := getScanner(conf.Transport)
+	if err != nil {
+		return nil, err
+	}
+
 	v := &Vault{
-		config: *conf,
-		keys:   keys,
-		req:    make(chan devRequest, 10),
+		config:  *conf,
+		keys:    keys,
+		req:     make(chan devRequest, 10),
+		scanner: sc,
 	}
 
 	go v.worker()
@@ -330,6 +319,39 @@ func (k *keyID) String() string {
 	return k.dt.String() + "/" + k.path.String()
 }
 
+var (
+	hidTransport = ledger.USBHIDTransport{}
+	hidScanner   = scanner{
+		tr: &hidTransport,
+	}
+)
+
+func getScanner(transport string) (*scanner, error) {
+	u, err := url.Parse(transport)
+	if err != nil {
+		return nil, err
+	}
+	var tr string
+	if u.Scheme != "" && u.Host != "" {
+		tr = u.Scheme
+	} else {
+		tr = transport
+	}
+
+	switch tr {
+	case "usb", "":
+		return &hidScanner, nil
+	case "tcp":
+		var model string
+		if u.User != nil {
+			model = u.User.Username()
+		}
+		return &scanner{tr: &ledger.TCPTransport{Addr: u.Host, Model: model}}, nil
+	default:
+		return nil, fmt.Errorf("undefined transport: %s", tr)
+	}
+}
+
 func init() {
 	vault.RegisterVault("ledger", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
 		var conf Config
@@ -349,5 +371,3 @@ func init() {
 
 	vault.RegisterCommand(newLedgerCommand())
 }
-
-var _ vault.RawSigner = (*Vault)(nil)

@@ -1,10 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 
+	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -23,7 +24,7 @@ type ServerConfig struct {
 }
 
 // TezosConfig contains the configuration related to tezos network
-type TezosConfig map[string]*TezosPolicy
+type TezosConfig = hashmap.PublicKeyHashMap[*TezosPolicy]
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
@@ -43,7 +44,7 @@ type VaultConfig struct {
 // Config contains all the configuration necessary to run the signatory
 type Config struct {
 	Vaults     map[string]*VaultConfig `yaml:"vaults" validate:"dive,required"`
-	Tezos      TezosConfig             `yaml:"tezos" validate:"dive,keys,startswith=tz1|startswith=tz2|startswith=tz3,len=36,endkeys"`
+	Tezos      TezosConfig             `yaml:"tezos"`
 	Server     ServerConfig            `yaml:"server"`
 	PolicyHook *PolicyHook             `yaml:"policy_hook"`
 	BaseDir    string                  `yaml:"base_dir" validate:"required"`
@@ -59,7 +60,7 @@ var defaultConfig = Config{
 
 // Read read the config from a file
 func (c *Config) Read(file string) error {
-	yamlFile, err := ioutil.ReadFile(file)
+	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
@@ -81,40 +82,35 @@ func Validator() *validator.Validate {
 
 // AuthorizedKeys keeps list of authorized public keys
 type AuthorizedKeys struct {
-	value string
+	value crypt.PublicKey
 	list  []*AuthorizedKeys
 }
 
 // List returns all keys as a string slice
-func (a *AuthorizedKeys) List() []string {
+func (a *AuthorizedKeys) List() []crypt.PublicKey {
 	if a.list != nil {
-		var ret []string
+		var ret []crypt.PublicKey
 		for _, v := range a.list {
 			ret = append(ret, v.List()...)
 		}
 		return ret
 	}
-	return []string{a.value}
+	return []crypt.PublicKey{a.value}
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler
-func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) error {
-	var target interface{}
+func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) (err error) {
 	switch value.Kind {
 	case yaml.ScalarNode:
-		target = &a.value
+		var pub crypt.PublicKey
+		pub, err = crypt.ParsePublicKey([]byte(value.Value))
+		a.value = pub
+
 	case yaml.SequenceNode:
-		target = &a.list
+		err = value.Decode(&a.list)
+
 	default:
 		return errors.New("can't decode YAML node")
 	}
-	if err := value.Decode(target); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (a *AuthorizedKeys) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.List())
+	return err
 }

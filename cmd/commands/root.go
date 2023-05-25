@@ -90,7 +90,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 					Address: conf.PolicyHook.Address,
 				}
 				if conf.PolicyHook.AuthorizedKeys != nil {
-					ak, err := auth.StaticAuthorizedKeysFromString(conf.PolicyHook.AuthorizedKeys.List()...)
+					ak, err := auth.StaticAuthorizedKeys(conf.PolicyHook.AuthorizedKeys.List()...)
 					if err != nil {
 						return err
 					}

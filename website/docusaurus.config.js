@@ -7,6 +7,10 @@ module.exports = {
 	organizationName: 'ecadlabs', // Usually your GitHub org/user name.
 	projectName: 'signatory', // Usually your repo name.
 	onBrokenLinks: 'warn',
+	markdown: {
+		mermaid: true,
+	},
+	themes: ['@docusaurus/theme-mermaid'],
 	themeConfig: {
 		colorMode: {
 			defaultMode: 'light',
@@ -74,11 +78,11 @@ module.exports = {
 					items: [
 						{
 							label: 'Discord',
-							to: 'https://discord.gg/eqZsXajr',
+							to: 'https://discord.gg/7tJ7f9eJHY',
 						},
 						{
 							label: 'Twitter',
-							to: 'https://twitter.com/tezostaqueria',
+							to: 'https://twitter.com/signatoryio',
 						},
 						{
 							label: 'Code of Conduct',
