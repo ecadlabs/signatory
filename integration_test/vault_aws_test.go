@@ -20,25 +20,6 @@ func TestAWSVault(t *testing.T) {
 	tz2alias := "awstz2"
 	tz3alias := "awstz3"
 
-	//setup
-	out, err := OctezClient("transfer", "100", "from", "alice", "to", tz2, "--burn-cap", "0.06425")
-	assert.NoError(t, err)
-	require.Contains(t, string(out), "Operation successfully injected in the node")
-
-	out, err = OctezClient("transfer", "100", "from", "alice", "to", tz3, "--burn-cap", "0.06425")
-	assert.NoError(t, err)
-	require.Contains(t, string(out), "Operation successfully injected in the node")
-
-	out, err = OctezClient("import", "secret", "key", tz2alias, "http://signatory:6732/"+tz2)
-	assert.NoError(t, err)
-	assert.Contains(t, string(out), "Tezos address added: "+tz2)
-	defer OctezClient("forget", "address", tz2alias, "--force")
-
-	out, err = OctezClient("import", "secret", "key", tz3alias, "http://signatory:6732/"+tz3)
-	assert.NoError(t, err)
-	assert.Contains(t, string(out), "Tezos address added: "+tz3)
-	defer OctezClient("forget", "address", tz3alias, "--force")
-
 	//config
 	var c Config
 	c.Read()
@@ -54,6 +35,25 @@ func TestAWSVault(t *testing.T) {
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
+
+	//setup
+	out, err := OctezClient("import", "secret", "key", tz2alias, "http://signatory:6732/"+tz2)
+	assert.NoError(t, err)
+	assert.Contains(t, string(out), "Tezos address added: "+tz2)
+	defer OctezClient("forget", "address", tz2alias, "--force")
+
+	out, err = OctezClient("import", "secret", "key", tz3alias, "http://signatory:6732/"+tz3)
+	assert.NoError(t, err)
+	assert.Contains(t, string(out), "Tezos address added: "+tz3)
+	defer OctezClient("forget", "address", tz3alias, "--force")
+
+	out, err = OctezClient("transfer", "100", "from", "alice", "to", tz2alias, "--burn-cap", "0.06425")
+	assert.NoError(t, err)
+	require.Contains(t, string(out), "Operation successfully injected in the node")
+
+	out, err = OctezClient("transfer", "100", "from", "alice", "to", tz3alias, "--burn-cap", "0.06425")
+	assert.NoError(t, err)
+	require.Contains(t, string(out), "Operation successfully injected in the node")
 
 	//test
 	//TODO: resolve issue #364 and enable the tz2 test
