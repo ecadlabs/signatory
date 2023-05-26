@@ -35,6 +35,7 @@ type TezosPolicy struct {
 	AllowedKinds      []string            `yaml:"allowed_kinds"`
 	LogPayloads       bool                `yaml:"log_payloads"`
 	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
+	JwtUsers          *middlewares.JWT    `yaml:"jw_users"`
 }
 
 // VaultConfig represents single vault instance
@@ -69,7 +70,6 @@ func (c *Config) Read(file string) error {
 	if err = yaml.Unmarshal(yamlFile, c); err != nil {
 		return err
 	}
-
 	return nil
 }
 

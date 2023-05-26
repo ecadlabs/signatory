@@ -15,9 +15,13 @@ type MockAuthGen struct {
 	Users map[string]UserData
 }
 
-func (m *MockAuthGen) GetUserData(user string) (UserData, bool) {
+func (m *MockAuthGen) SetNewCred(user string) error {
+	return nil
+}
+
+func (m *MockAuthGen) GetUserData(user string) (*UserData, bool) {
 	ud, ok := m.Users[user]
-	return ud, ok
+	return &ud, ok
 }
 
 func (m *MockAuthGen) Authenticate(user string, token string) error {
@@ -227,8 +231,7 @@ func TestAuthHandlerValidToken(t *testing.T) {
 	handler := jwtMiddleware.AuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u := r.Context().Value("user")
 		fmt.Println("User: ", u)
-		// TBD
-		// require.Equal(t, user, u.(string))
+		require.Equal(t, user, u.(string))
 	}))
 
 	handler.ServeHTTP(recorder, req)
@@ -260,10 +263,7 @@ func TestAuthHandlerInValidToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	handler := jwtMiddleware.AuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := r.Context().Value("user")
-		fmt.Println("User: ", u)
-		// TBD
-		// require.Equal(t, user, u.(string))
+		require.Fail(t, "should not be called")
 	}))
 
 	handler.ServeHTTP(recorder, req)
@@ -294,10 +294,7 @@ func TestAuthHandlerEmptyToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	handler := jwtMiddleware.AuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := r.Context().Value("user")
-		fmt.Println("User: ", u)
-		// TBD
-		// require.Equal(t, user, u.(string))
+		require.Fail(t, "should not be called")
 	}))
 
 	handler.ServeHTTP(recorder, req)

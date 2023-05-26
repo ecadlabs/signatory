@@ -65,6 +65,7 @@ type PublicKeyPolicy struct {
 	AllowedOps          []string
 	LogPayloads         bool
 	AuthorizedKeyHashes []crypt.PublicKeyHash
+	AuthorizedJwtUsers  []string
 }
 
 // PublicKey contains public key with its hash
@@ -204,6 +205,25 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg request.SignRequ
 	return nil
 }
 
+func jwtVerifyUser(user string, policy *PublicKeyPolicy, req *SignRequest) error {
+	fmt.Println("jwtVerifyUser", user, policy.AuthorizedJwtUsers)
+	authorized := false
+	if policy.AuthorizedJwtUsers != nil {
+		fmt.Println("AuthorizedJwtUsers", policy.AuthorizedJwtUsers)
+		for _, u := range policy.AuthorizedJwtUsers {
+			if u == user {
+				authorized = true
+				break
+			}
+		}
+		if !authorized {
+			return fmt.Errorf("user `%s' is not authorized to access %s", user, req.PublicKeyHash)
+		}
+	}
+	fmt.Println("AuthorizedJwtUsers nil: ", authorized)
+	return nil
+}
+
 func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error {
 	if s.config.PolicyHook == nil {
 		return nil
@@ -307,6 +327,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
 	if policy == nil {
 		err := fmt.Errorf("%s is not listed in config", strings.Replace(string(req.PublicKeyHash.ToBase58()), "\n", "", -1))
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
+		return nil, errors.Wrap(err, http.StatusForbidden)
+	}
+
+	if err := jwtVerifyUser(ctx.Value("user").(string), policy, req); err != nil {
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
 		return nil, errors.Wrap(err, http.StatusForbidden)
 	}
@@ -474,6 +499,7 @@ func (s *Signatory) getPublicKey(ctx context.Context, keyHash crypt.PublicKeyHas
 
 // GetPublicKey retrieve the public key from a vault
 func (s *Signatory) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*PublicKey, error) {
+
 	p, err := s.getPublicKey(ctx, keyHash)
 	if err != nil {
 		return nil, err

@@ -13,7 +13,7 @@ import (
 
 // AuthGen is an interface that generates token authenticates the same
 type AuthGen interface {
-	GetUserData(user string) (UserData, bool)
+	GetUserData(user string) (*UserData, bool)
 	Authenticate(user string, token string) error
 	GenerateToken(user string) (string, error)
 }
@@ -25,7 +25,86 @@ type JWTMiddleware struct {
 
 // NewMiddleware creates a new JWTMiddleware
 func NewMiddleware(a AuthGen) *JWTMiddleware {
+	ud := a.(*JWT)
+	for user, data := range ud.Users {
+		if data.NewData != nil {
+			go func(u string, exp *uint64) {
+				if exp == nil {
+					*exp = 30
+				}
+				timer := time.NewTimer(time.Minute * time.Duration(*exp))
+				<-timer.C
+				ud.SetNewCred(u)
+			}(user, data.OldCredExp)
+			ValidateSecret(user, data.NewData.Secret)
+		}
+		ValidateSecret(user, data.Secret)
+	}
+
 	return &JWTMiddleware{a}
+}
+
+func ValidateSecret(user string, secret string) bool {
+	// Check length
+	if len(secret) < 16 {
+		fmt.Println("JWT-Warning:Secret length is too short. It should be at least 16 characters.")
+		return false
+	}
+
+	// Check if secret contains uppercase characters
+	hasUppercase := false
+	for _, c := range secret {
+		if c >= 'A' && c <= 'Z' {
+			hasUppercase = true
+			break
+		}
+	}
+	if !hasUppercase {
+		fmt.Println("JWT-Warning:Secret should contain at least one uppercase character.")
+		return false
+	}
+
+	// Check if secret contains lowercase characters
+	hasLowercase := false
+	for _, c := range secret {
+		if c >= 'a' && c <= 'z' {
+			hasLowercase = true
+			break
+		}
+	}
+	if !hasLowercase {
+		fmt.Println("JWT-Warning:Secret should contain at least one lowercase character.")
+		return false
+	}
+
+	// Check if secret contains digits
+	hasDigit := false
+	for _, c := range secret {
+		if c >= '0' && c <= '9' {
+			hasDigit = true
+			break
+		}
+	}
+	if !hasDigit {
+		fmt.Println("JWT-Warning:Secret should contain at least one digit.")
+		return false
+	}
+
+	// Check if secret contains special characters
+	hasSpecialChar := false
+	// specialChars := "!@#$%^&*()-=_+[]{}|;:,.<>/?"
+	for _, c := range secret {
+		if c >= 32 && c <= 126 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+			hasSpecialChar = true
+			break
+		}
+	}
+	if !hasSpecialChar {
+		fmt.Println("JWT-Warning:Secret should contain at least one special character.")
+		return false
+	}
+
+	return true
 }
 
 // Handler is a middleware handler
@@ -83,7 +162,7 @@ func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 			w.Write([]byte("token required"))
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user", &user)
+		ctx := context.WithValue(r.Context(), "user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -94,14 +173,30 @@ type JWT struct {
 }
 
 type UserData struct {
-	Password string `yaml:"password"`
-	Exp      uint64 `yaml:"jwt_exp"`
-	Secret   string `yaml:"secret"`
+	Password   string  `yaml:"password"`
+	Exp        uint64  `yaml:"jwt_exp"`
+	Secret     string  `yaml:"secret"`
+	OldCredExp *uint64 `yaml:"old_cred_exp,omitempty"`
+	useNewCred bool
+	NewData    *UserData `yaml:"new_data"`
 }
 
-func (m *JWT) GetUserData(user string) (UserData, bool) {
-	ud, ok := m.Users[user]
-	return ud, ok
+func (m *JWT) SetNewCred(user string) error {
+	if u, ok := m.Users[user]; ok {
+		u.useNewCred = true
+		m.Users[user] = u
+	}
+	return fmt.Errorf("user not found")
+}
+
+func (m *JWT) GetUserData(user string) (*UserData, bool) {
+	if u, ok := m.Users[user]; ok {
+		if u.useNewCred {
+			return u.NewData, true
+		}
+		return &u, true
+	}
+	return nil, false
 }
 
 // GenerateToken generates a new token for the given user
@@ -109,26 +204,36 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
-	if j.Users[user].Exp == 0 {
-		var mt = uint64(math.MaxUint64)
-		claims["exp"] = time.Now().Add(time.Hour * time.Duration(mt)).Unix()
+	ud, ok := j.GetUserData(user)
+	if ok {
+		if ud.Exp == 0 {
+			var mt = uint64(math.MaxUint64)
+			claims["exp"] = time.Now().Add(time.Hour * time.Duration(mt)).Unix()
+		} else {
+			claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
+		}
 	} else {
-		claims["exp"] = time.Now().Add(time.Minute * time.Duration(j.Users[user].Exp)).Unix()
+		return "", fmt.Errorf("user not found")
 	}
 	token.Claims = claims
-	return token.SignedString([]byte(j.Users[user].Secret))
+	return token.SignedString([]byte(ud.Secret))
 }
 
 // Authenticate authenticates the given token
 func (j *JWT) Authenticate(user string, token string) error {
-	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte(j.Users[user].Secret), nil
-	})
-	if err != nil {
-		return err
-	}
-	if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
-		return nil
+	ud, ok := j.GetUserData(user)
+	if !ok {
+		t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+			return []byte(ud.Secret), nil
+		})
+		if err != nil {
+			return err
+		}
+		if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
+			return nil
+		}
+	} else {
+		return fmt.Errorf("user not found")
 	}
 	return fmt.Errorf("invalid token")
 }

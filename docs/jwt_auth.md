@@ -108,6 +108,53 @@ server:
 		fmt.Println("Response-GET-PKH: ", string(body))
 ```
 
+## Credentials rotation
+
+The credentials can be rotated by updating the configuration file and restarting the Signatory service.
+
+Older credentials can be removed from the configuration file after the new credentials are added and signatory is up and serving. The Signatory service will continue to accept the older credentials until the `old_cred_exp` (minutes) time expires. Defaults to 30 minutes if not provided.
+
+### sample configuration file:
+
+```yaml
+server:
+  address: :6732
+  utility_address: :9583
+  jwt:
+    users:
+      user_name1:
+        password: password1
+        secret: secret1
+        jwt_exp: 234
+        old_cred_exp: 10
+        new_data:
+          password: password1
+          secret: secret1
+          jwt_exp: 35
+```
+
+## JWT users for each PKH
+
+The JWT users can be configured for each PKH in the configuration file. Even if the JWT client provides a valid token, the request will be rejected if the user is not configured for that PKH requested for signing.
+If no JWT users are configured for a PKH, then any JWT token will be accepted for that PKH.
+
+### sample configuration file:
+
+```yaml
+tezos:
+  tz3cbDCwrqFqfx1dBhHoXTwZ9FG3MDrtyMs6:
+    jwt_users:
+      - user_name1
+      - user_name2
+    log_payloads: true
+    allow:
+      block:
+      endorsement:
+      preendorsement:
+      generic:
+        - transaction
+        - reveal
+```
 
 ## Important security note:
 
