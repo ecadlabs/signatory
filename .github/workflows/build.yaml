@@ -140,7 +140,7 @@ jobs:
 
         run: >
          . integration_test/.env.${{ matrix.testenvs }};
-         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json
+         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
          docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
          docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
          go test $(go list ./... | grep integration_test);
