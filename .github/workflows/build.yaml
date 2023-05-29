@@ -108,8 +108,8 @@ jobs:
       fail-fast: false
       matrix:
         testenvs:
-          - env.current.amd64
-          - env.next.amd64
+          - current.amd64
+          - next.amd64
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
@@ -120,9 +120,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run tests
+        env:
+          IMAGE: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64
+          VAULT_AWS_USER: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_USER }}
+          VAULT_AWS_KEY: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_KEY }}
+          VAULT_AWS_SECRET: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_SECRET }}
+          VAULT_AWS_REGION: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_REGION }}
+          VAULT_AWS_PKH_TZ2: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ2 }}
+          VAULT_AWS_PKH_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ3 }}
+          VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
+          VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
+          VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
+          VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
+          VAULT_GCP_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTID }}
+          VAULT_GCP_X509_URL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_X509_URL }}
+          VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
+          VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
+          VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
+
         run: >
-         export $(xargs <integration_test/${{ matrix.testenvs }}); 
-         export IMAGE=ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;        
+         . integration_test/.env.${{ matrix.testenvs }};
+         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
          docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
          docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
          go test $(go list ./... | grep integration_test);

@@ -6,6 +6,7 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
+    
 tezos:
   #alice
   tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:
