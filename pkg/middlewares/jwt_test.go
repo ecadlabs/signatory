@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -324,4 +325,123 @@ func getToken(user string, au *JWTMiddleware) (string, error) {
 		return "", fmt.Errorf("error generating token")
 	}
 	return recorder.Body.String(), nil
+}
+
+func TestValidateSecret(t *testing.T) {
+	type args struct {
+		user   string
+		secret string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// Invalid length
+		{
+			name: "Invalid length",
+			args: args{
+				user:   "user",
+				secret: "Sec1",
+			},
+			want: false,
+		},
+		// No uppercase
+		{
+			name: "No uppercase",
+			args: args{
+				user:   "user",
+				secret: "secretsecretsecret1",
+			},
+			want: false,
+		},
+		// No lowercase
+		{
+			name: "No lowercase",
+			args: args{
+				user:   "user",
+				secret: "SECRETSECRETSECRET1",
+			},
+			want: false,
+		},
+		// No number
+		{
+			name: "No number",
+			args: args{
+				user:   "user",
+				secret: "SecretSecretSecret",
+			},
+			want: false,
+		},
+		// No special character
+		{
+			name: "No special character",
+			args: args{
+				user:   "user",
+				secret: "SecretSecretSecret1",
+			},
+			want: false,
+		},
+		// Valid
+		{
+			name: "Valid",
+			args: args{
+				user:   "user",
+				secret: "SecretSecretSecret1!",
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ValidateSecret(tt.args.user, tt.args.secret)
+			require.Equal(t, got, tt.want)
+		})
+	}
+}
+
+func TestNewMiddleware(t *testing.T) {
+	t.Deadline()
+	var e uint64 = 1
+	type args struct {
+		a AuthGen
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "NewMiddleware",
+			args: args{
+				a: &JWT{
+					Users: map[string]UserData{
+						"user": {
+							Password:   "pass",
+							Secret:     "SecretSecretSecret1!",
+							Exp:        23,
+							OldCredExp: &e,
+							NewData: &UserData{
+								Password: "pass1",
+								Secret:   "SecretSecretSecret12!",
+								Exp:      33,
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewMiddleware(tt.args.a)
+			time.Sleep(2 * time.Minute)
+			d, ret := got.AuthGen.GetUserData("user")
+			require.True(t, ret)
+			require.Equal(t, "pass1", d.Password)
+			require.Equal(t, "SecretSecretSecret12!", d.Secret)
+		})
+	}
 }

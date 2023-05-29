@@ -34,7 +34,11 @@ func NewMiddleware(a AuthGen) *JWTMiddleware {
 				}
 				timer := time.NewTimer(time.Minute * time.Duration(*exp))
 				<-timer.C
-				ud.SetNewCred(u)
+				err := ud.SetNewCred(u)
+				if err != nil {
+					fmt.Println("JWT-Error:Failed to set new user config for ", u, ":", err)
+					return
+				}
 			}(user, data.OldCredExp)
 			ValidateSecret(user, data.NewData.Secret)
 		}
