@@ -331,9 +331,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		return nil, errors.Wrap(err, http.StatusForbidden)
 	}
 
-	if err := jwtVerifyUser(ctx.Value("user").(string), policy, req); err != nil {
-		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
-		return nil, errors.Wrap(err, http.StatusForbidden)
+	u := ctx.Value("user")
+	if u != nil {
+		if err := jwtVerifyUser(u.(string), policy, req); err != nil {
+			l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
+			return nil, errors.Wrap(err, http.StatusForbidden)
+		}
 	}
 
 	var msg request.SignRequest
