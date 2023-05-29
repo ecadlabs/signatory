@@ -128,8 +128,19 @@ jobs:
           VAULT_AWS_REGION: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_REGION }}
           VAULT_AWS_PKH_TZ2: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ2 }}
           VAULT_AWS_PKH_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ3 }}
+          VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
+          VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
+          VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
+          VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
+          VAULT_GCP_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTID }}
+          VAULT_GCP_X509_URL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_X509_URL }}
+          VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
+          VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
+          VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
+
         run: >
          . integration_test/.env.${{ matrix.testenvs }};
+         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
          docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
          docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
          go test $(go list ./... | grep integration_test);

@@ -77,6 +77,10 @@ services:
         target: /etc/signatory.yaml
       - source: sigy-secret
         target: /etc/secret.json
+      - source: gcp-token
+        target: /etc/gcp-token.json
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json    
     command: serve
     healthcheck:
       test: "curl --fail http://localhost:9583/healthz || exit 1"
@@ -90,3 +94,5 @@ configs:
     file: ./signatory.yaml
   sigy-secret:
     file: ./signatory-local-secret.json
+  gcp-token:
+    file: ./gcp-token.json
