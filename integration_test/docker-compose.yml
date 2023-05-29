@@ -23,6 +23,26 @@ services:
       retries: 10
       start_period: 1s
 
+  flextesanobaking:
+    container_name: flextesanobaking
+    image: oxheadalpha/flextesa:latest
+    ports:
+      - "30000:20000"
+      - "30001:20001"
+    networks:
+      - ecadnet
+    volumes:
+      - ./flextesanobaking.sh:/usr/bin/sigybox
+    environment:
+      - block_time=3
+    command: sigybox $PROTOCOL
+    healthcheck:
+      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+
   octez:
     container_name: octez
     image: tezos/tezos:$OCTEZ_VERSION
