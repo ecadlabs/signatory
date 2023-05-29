@@ -32,20 +32,48 @@ echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 cd integration_test
 ```
 
-Exporting the Environment Variables used by the test is required. Choose the set of env var to use from the files `env.current.arm64`, `env.next.arm64`, `env.current.amd64`, `env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture. 
+Exporting the Environment Variables used by the test is required. There are 3 groups of environment variables to consider:
 
-So, to set the env to use mainnet protocol, using a build of Signatory's `main` branch, on a macbook m1 host:
+1. Signatory image
+2. chain protocol and octez version
+3. vault specifics
+
+### Signatory image env var
+
+using a build of Signatory's main branch, on a macbook m1 host:
 
 ```sh
-export $(xargs <env.current.arm64)
 export IMAGE=ghcr.io/ecadlabs/signatory:main-arm64
 ```
 
-Likewise, to set the env to use the next protocol, using a build of Signatory's `main` branch, on an x86_64 host:
+or, on a `x86_64` host:
 
 ```sh
-export $(xargs <env.next.amd64)
 export IMAGE=ghcr.io/ecadlabs/signatory:main-amd64
+```
+
+### chain protocol and octez version env var
+
+Choose the set of env var to use from the files `.env.current.arm64`, `.env.next.arm64`, `.env.current.amd64`, `.env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture.
+
+So, to set the env to use mainnet protocol on macbook m1 host:
+
+```sh
+. .env.current.arm64
+```
+
+Likewise, to set the env to use the next protocol, using a build of Signatory's `main` branch, on x86_64 host:
+
+```sh
+. .env.next.amd64
+```
+
+### vault env var
+
+Github secrets are used to define vault env var used in github workflows. To run vault tests localhost, one must configure vaults and provide values in the file `.env.vaults` before sourcing it:
+
+```sh
+. .env.vaults
 ```
 
 Next, start the stack:
@@ -66,6 +94,12 @@ Or, just run a single test:
 go clean -testcache && go test -run ^TestOperationAllowPolicy
 ```
 
+To run all tests but not vault tests:
+
+```sh
+go clean -testcache && go test $(go list |grep -v vault)
+```
+
 Stop the stack when you are done:
 
 ```sh
@@ -74,7 +108,7 @@ docker compose down
 
 ## Re-Running Tests
 
-Most tests can be re-run successfully as detailed above.  Some tests (like the `reveal` operation) can only be run once on a chain.  So, when re-running all, stop the stack and bring it up again in between test runs. 
+Most tests can be re-run successfully as detailed above.  Some tests (like the `reveal` operation) can only be run once on a chain.  So, when re-running all, stop the stack and bring it up again in between test runs.
 
 ## Notes to the operator
 

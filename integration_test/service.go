@@ -20,7 +20,7 @@ func backup_then_update_config(c Config) {
 	if err != nil {
 		panic("failed to backup config")
 	}
-	err = c.Write("signatory.yaml")
+	err = c.Write()
 	if err != nil {
 		panic("failed to write new config")
 	}
