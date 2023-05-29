@@ -76,6 +76,7 @@ Github secrets are used to define vault env var used in github workflows. To run
 . .env.vaults
 ```
 
+<<<<<<< HEAD
 ### optional: using GCP vault
 
 If you want to run GCP vault tests you need to substitute GCP vault env var into the GCP token file that gets mounted to Signatory file system:
@@ -84,6 +85,8 @@ If you want to run GCP vault tests you need to substitute GCP vault env var into
 envsubst < gcp-token-template.json > gcp-token.json
 ```
 
+=======
+>>>>>>> main
 Next, start the stack:
 
 ```sh
