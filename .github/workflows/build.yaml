@@ -63,7 +63,6 @@ jobs:
           VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
           VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
-
         run: >
          cd integration_test;
          . .env.${{ matrix.testenvs }};
@@ -74,7 +73,8 @@ jobs:
          go test -run ^TestAZVault;
          wc -c signatory.yaml;
          docker pull $IMAGE;
+
       - name: Setup tmate session
-          uses: mxschmitt/action-tmate@v3
-          with:
-            limit-access-to-actor: true         
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
