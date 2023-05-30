@@ -73,6 +73,5 @@ jobs:
          wc -c service-principal.key;
          go test -run ^TestAZVault;
          docker pull $IMAGE;
-         docker run --name signatory --rm -v `echo $PWD`/service-principal.key:/etc/service-principal.key $IMAGE wc -c /etc/service-principal.key;
          docker run --name signatory --rm -v `echo $PWD`/service-principal.key:/etc/service-principal.key -v `echo $PWD`/signatory.yaml:/etc/signatory.yaml -v `echo $PWD`/signatory-local-secret.json:/etc/secret.json -p 6732:6732 -p 9583:9583 $IMAGE serve;
          
