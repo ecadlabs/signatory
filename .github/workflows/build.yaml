@@ -74,5 +74,7 @@ jobs:
          go test -run ^TestAZVault;
          wc -c signatory.yaml;
          docker pull $IMAGE;
-         docker run --name signatory --rm -v `echo $PWD`/service-principal.key:/etc/service-principal.key -v `echo $PWD`/signatory.yaml:/etc/signatory.yaml -v `echo $PWD`/signatory-local-secret.json:/etc/secret.json -p 6732:6732 -p 9583:9583 $IMAGE serve;
-         
+      - name: Setup tmate session
+          uses: mxschmitt/action-tmate@v3
+          with:
+            limit-access-to-actor: true         
