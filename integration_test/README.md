@@ -4,7 +4,7 @@ The tests in this folder use a docker compose file to orchestrate the starting o
 
 The version of Signatory that is run is defined by an environment variable named `IMAGE`.
 
-The `octez-client` that is run by the tests is provided by the `tezos` container, not the `octez-client` that is onboard the `flextesa` image, so that official `tezos` image releases can be used.  The version of `tezos` container is defined by an environment variable named `OCTEZ_VERSION`.
+The `octez-client` that is run by the tests is provided by the `tezos` container. The version of `tezos` container is defined by an environment variable named `OCTEZ_VERSION`.
 
 Currently, it is always the `latest` version of the `flextesa` image that is run by the tests.  The economic protocol run by flextesa is defined by an environment variable named `PROTOCOL`
 
@@ -76,13 +76,16 @@ Github secrets are used to define vault env var used in github workflows. To run
 . .env.vaults
 ```
 
-### optional: using GCP vault
-
-If you want to run GCP vault tests you need to substitute GCP vault env var into the GCP token file that gets mounted to Signatory file system:
+### using GCP vault
 
 ```sh
 envsubst < gcp-token-template.json > gcp-token.json
 ```
+
+### using AZ vault
+
+```sh
+echo $VAULT_AZ_SP_KEY >service-principal.key
 
 Next, start the stack:
 
