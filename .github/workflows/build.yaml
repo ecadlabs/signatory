@@ -148,10 +148,11 @@ jobs:
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
 
         run: >
-         . integration_test/.env.${{ matrix.testenvs }};
-         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
-         echo $VAULT_AZ_SP_KEY >integration_test/service-principal.key;
-         docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
-         docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
-         go test $(go list ./... | grep integration_test);
-         docker compose -f integration_test/docker-compose.yml kill;
+         cd integration_test
+         . .env.${{ matrix.testenvs }};
+         envsubst < gcp-token-template.json > gcp-token.json;
+         echo $VAULT_AZ_SP_KEY >service-principal.key;
+         go test -run ^TestAZVault;
+         docker pull $IMAGE
+         docker run --name signatory --rm -v `echo $PWD`/service-principal.key:/etc/service-principal.key -v `echo $PWD`/signatory.yaml:/etc/signatory.yaml -v `echo $PWD`/signatory-local-secret.json:/etc/secret.json -p 6732:6732 -p 9583:9583 $IMAGE serve;
+         
