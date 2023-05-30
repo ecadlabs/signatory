@@ -69,6 +69,7 @@ jobs:
          . .env.${{ matrix.testenvs }};
          envsubst < gcp-token-template.json > gcp-token.json;
          echo $VAULT_AZ_SP_KEY >service-principal.key;
+         chmod 777 service-principal.key;
          wc -c service-principal.key;
          go test -run ^TestAZVault;
          docker pull $IMAGE;
