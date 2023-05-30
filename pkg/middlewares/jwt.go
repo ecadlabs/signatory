@@ -25,26 +25,6 @@ type JWTMiddleware struct {
 
 // NewMiddleware creates a new JWTMiddleware
 func NewMiddleware(a AuthGen) *JWTMiddleware {
-	ud := a.(*JWT)
-	for user, data := range ud.Users {
-		if data.NewData != nil {
-			go func(u string, exp *uint64) {
-				if exp == nil {
-					*exp = 30
-				}
-				timer := time.NewTimer(time.Minute * time.Duration(*exp))
-				<-timer.C
-				err := ud.SetNewCred(u)
-				if err != nil {
-					fmt.Println("JWT-Error:Failed to set new user config for ", u, ":", err)
-					return
-				}
-			}(user, data.OldCredExp)
-			ValidateSecret(user, data.NewData.Secret)
-		}
-		ValidateSecret(user, data.Secret)
-	}
-
 	return &JWTMiddleware{a}
 }
 
@@ -185,16 +165,17 @@ type UserData struct {
 	NewData    *UserData `yaml:"new_data"`
 }
 
-func (m *JWT) SetNewCred(user string) error {
-	if u, ok := m.Users[user]; ok {
+func (j *JWT) SetNewCred(user string) error {
+	if u, ok := j.Users[user]; ok {
 		u.useNewCred = true
-		m.Users[user] = u
+		j.Users[user] = u
+		return nil
 	}
 	return fmt.Errorf("user not found")
 }
 
-func (m *JWT) GetUserData(user string) (*UserData, bool) {
-	if u, ok := m.Users[user]; ok {
+func (j *JWT) GetUserData(user string) (*UserData, bool) {
+	if u, ok := j.Users[user]; ok {
 		if u.useNewCred {
 			return u.NewData, true
 		}
@@ -226,7 +207,7 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 // Authenticate authenticates the given token
 func (j *JWT) Authenticate(user string, token string) error {
 	ud, ok := j.GetUserData(user)
-	if !ok {
+	if ok {
 		t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 			return []byte(ud.Secret), nil
 		})
@@ -240,4 +221,25 @@ func (j *JWT) Authenticate(user string, token string) error {
 		return fmt.Errorf("user not found")
 	}
 	return fmt.Errorf("invalid token")
+}
+
+func (j *JWT) CheckUpdatenewCred() {
+	for user, data := range j.Users {
+		if data.NewData != nil {
+			go func(u string, exp *uint64) {
+				if exp == nil {
+					*exp = 30
+				}
+				timer := time.NewTimer(time.Minute * time.Duration(*exp))
+				<-timer.C
+				err := j.SetNewCred(u)
+				if err != nil {
+					fmt.Println("JWT-Error:Failed to set new user config for ", u, ":", err)
+					return
+				}
+			}(user, data.OldCredExp)
+			ValidateSecret(user, data.NewData.Secret)
+		}
+		ValidateSecret(user, data.Secret)
+	}
 }

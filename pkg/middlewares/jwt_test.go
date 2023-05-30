@@ -231,7 +231,6 @@ func TestAuthHandlerValidToken(t *testing.T) {
 
 	handler := jwtMiddleware.AuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u := r.Context().Value("user")
-		fmt.Println("User: ", u)
 		require.Equal(t, user, u.(string))
 	}))
 
@@ -400,45 +399,42 @@ func TestValidateSecret(t *testing.T) {
 	}
 }
 
-func TestNewMiddleware(t *testing.T) {
-	t.Deadline()
+func TestJWT_CheckUpdatenewCred(t *testing.T) {
 	var e uint64 = 1
-	type args struct {
-		a AuthGen
+	type fields struct {
+		Users map[string]UserData
 	}
 	tests := []struct {
-		name string
-		args args
-		want bool
+		name   string
+		fields fields
 	}{
-		// TODO: Add test cases.
 		{
-			name: "NewMiddleware",
-			args: args{
-				a: &JWT{
-					Users: map[string]UserData{
-						"user": {
-							Password:   "pass",
-							Secret:     "SecretSecretSecret1!",
-							Exp:        23,
-							OldCredExp: &e,
-							NewData: &UserData{
-								Password: "pass1",
-								Secret:   "SecretSecretSecret12!",
-								Exp:      33,
-							},
+			name: "CheckUpdatenewCred",
+			fields: fields{
+				Users: map[string]UserData{
+					"user": {
+						Password:   "pass",
+						Secret:     "SecretSecretSecret1!",
+						Exp:        23,
+						OldCredExp: &e,
+						NewData: &UserData{
+							Password: "pass1",
+							Secret:   "SecretSecretSecret12!",
+							Exp:      33,
 						},
 					},
 				},
 			},
-			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewMiddleware(tt.args.a)
-			time.Sleep(2 * time.Minute)
-			d, ret := got.AuthGen.GetUserData("user")
+			a := &JWT{
+				Users: tt.fields.Users,
+			}
+			a.CheckUpdatenewCred()
+			time.Sleep(1 * time.Minute)
+			d, ret := a.GetUserData("user")
 			require.True(t, ret)
 			require.Equal(t, "pass1", d.Password)
 			require.Equal(t, "SecretSecretSecret12!", d.Secret)
