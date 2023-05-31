@@ -659,6 +659,11 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 				pol.AuthorizedKeyHashes[i] = k.Hash()
 			}
 		}
+
+		if v.JwtUsers != nil {
+			pol.AuthorizedJwtUsers = v.JwtUsers
+		}
+
 		policy.Insert(k, &pol)
 		return true
 	})

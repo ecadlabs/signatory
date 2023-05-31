@@ -35,7 +35,7 @@ type TezosPolicy struct {
 	AllowedKinds      []string            `yaml:"allowed_kinds"`
 	LogPayloads       bool                `yaml:"log_payloads"`
 	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
-	JwtUsers          *middlewares.JWT    `yaml:"jw_users"`
+	JwtUsers          []string            `yaml:"jwt_users"`
 }
 
 // VaultConfig represents single vault instance
