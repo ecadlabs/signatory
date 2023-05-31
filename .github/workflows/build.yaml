@@ -63,17 +63,12 @@ jobs:
           VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
           VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
-        run: >
-         cd integration_test;
-         . .env.${{ matrix.testenvs }};
-         envsubst < gcp-token-template.json > gcp-token.json;
-         echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
-         wc -c service-principal.key;
-         go test -run ^TestAZVault;
-         wc -c signatory.yaml;
-         docker pull $IMAGE;
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+        run: >
+         . integration_test/.env.${{ matrix.testenvs }};
+         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
+         echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
+         docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
+         docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
+         go test $(go list ./... | grep integration_test);
+         docker compose -f integration_test/docker-compose.yml kill;
