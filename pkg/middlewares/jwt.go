@@ -171,7 +171,7 @@ func (j *JWT) SetNewCred(user string) error {
 		j.Users[user] = u
 		return nil
 	}
-	return fmt.Errorf("user not found")
+	return fmt.Errorf("JWT: user not found")
 }
 
 func (j *JWT) GetUserData(user string) (*UserData, bool) {
@@ -198,7 +198,7 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 			claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
 		}
 	} else {
-		return "", fmt.Errorf("user not found")
+		return "", fmt.Errorf("JWT: user not found")
 	}
 	token.Claims = claims
 	return token.SignedString([]byte(ud.Secret))
@@ -218,9 +218,9 @@ func (j *JWT) Authenticate(user string, token string) error {
 			return nil
 		}
 	} else {
-		return fmt.Errorf("user not found")
+		return fmt.Errorf("JWT: user not found")
 	}
-	return fmt.Errorf("invalid token")
+	return fmt.Errorf("JWT: invalid token")
 }
 
 func (j *JWT) CheckUpdatenewCred() {
@@ -234,7 +234,7 @@ func (j *JWT) CheckUpdatenewCred() {
 				<-timer.C
 				err := j.SetNewCred(u)
 				if err != nil {
-					fmt.Println("JWT-Error:Failed to set new user config for ", u, ":", err)
+					fmt.Println("JWT: Failed to set new user config for ", u, ":", err)
 					return
 				}
 			}(user, data.OldCredExp)
