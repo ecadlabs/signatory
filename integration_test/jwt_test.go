@@ -28,7 +28,7 @@ func TestJWTHappyPath(t *testing.T) {
 
 	//configure JWT and make the same request, and see it fail
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
@@ -56,7 +56,7 @@ func TestJWTHappyPath(t *testing.T) {
 
 func TestJWTCredentialFailure(t *testing.T) {
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
@@ -78,7 +78,7 @@ func TestJWTCredentialFailure(t *testing.T) {
 
 func TestJWTExpiry(t *testing.T) {
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	//configure a 1 minute expiry
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 1}}}
 	backup_then_update_config(c)
@@ -125,7 +125,7 @@ func request(url string, body string, headers [][]string) (int, []byte) {
 
 func TestAlgNoneAttack(t *testing.T) {
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
@@ -164,7 +164,7 @@ type jwtPayload struct {
 
 func TestSignatureIsVerified(t *testing.T) {
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60},
 		"username2": {Password: "password2", Secret: "secret1", Exp: 60}}}
 	backup_then_update_config(c)
@@ -195,7 +195,7 @@ func TestSignatureIsVerified(t *testing.T) {
 func TestBadInputs(t *testing.T) {
 	//configure JWT and make the same request, and see it fail
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
@@ -223,7 +223,7 @@ func TestBadInputs(t *testing.T) {
 	h = [][]string{{"Content-Type", "application/json"}, {"Authorization", "Bearer " + token}}
 	code, bytes = request(endpoint, message, h)
 	assert.Equal(t, 401, code)
-	assert.Contains(t, string(bytes), "signature is invalid")
+	assert.Contains(t, string(bytes), "user not found")
 
 	//missing token header
 	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}}
