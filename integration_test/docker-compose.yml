@@ -79,6 +79,8 @@ services:
         target: /etc/secret.json
       - source: gcp-token
         target: /etc/gcp-token.json
+      - source: az-sp-key
+        target: /etc/service-principal.key
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json    
     command: serve
@@ -96,3 +98,5 @@ configs:
     file: ./signatory-local-secret.json
   gcp-token:
     file: ./gcp-token.json
+  az-sp-key:
+    file: ./service-principal.key
