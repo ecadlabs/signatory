@@ -393,7 +393,7 @@ func TestValidateSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ValidateSecret(tt.args.user, tt.args.secret)
+			got := validateSecret(tt.args.user, tt.args.secret)
 			require.Equal(t, got, tt.want)
 		})
 	}
@@ -432,7 +432,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 			a := &JWT{
 				Users: tt.fields.Users,
 			}
-			a.CheckUpdatenewCred()
+			a.CheckUpdateNewCred()
 			time.Sleep(1 * time.Minute)
 			d, ret := a.GetUserData("user")
 			require.True(t, ret)

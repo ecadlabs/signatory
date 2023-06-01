@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"fmt"
-	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -26,69 +25,6 @@ type JWTMiddleware struct {
 // NewMiddleware creates a new JWTMiddleware
 func NewMiddleware(a AuthGen) *JWTMiddleware {
 	return &JWTMiddleware{a}
-}
-
-func ValidateSecret(user string, secret string) bool {
-	// Check length
-	if len(secret) < 16 {
-		fmt.Println("JWT-Warning:Secret length is too short. It should be at least 16 characters.")
-		return false
-	}
-
-	// Check if secret contains uppercase characters
-	hasUppercase := false
-	for _, c := range secret {
-		if c >= 'A' && c <= 'Z' {
-			hasUppercase = true
-			break
-		}
-	}
-	if !hasUppercase {
-		fmt.Println("JWT-Warning:Secret should contain at least one uppercase character.")
-		return false
-	}
-
-	// Check if secret contains lowercase characters
-	hasLowercase := false
-	for _, c := range secret {
-		if c >= 'a' && c <= 'z' {
-			hasLowercase = true
-			break
-		}
-	}
-	if !hasLowercase {
-		fmt.Println("JWT-Warning:Secret should contain at least one lowercase character.")
-		return false
-	}
-
-	// Check if secret contains digits
-	hasDigit := false
-	for _, c := range secret {
-		if c >= '0' && c <= '9' {
-			hasDigit = true
-			break
-		}
-	}
-	if !hasDigit {
-		fmt.Println("JWT-Warning:Secret should contain at least one digit.")
-		return false
-	}
-
-	// Check if secret contains special characters
-	hasSpecialChar := false
-	// specialChars := "!@#$%^&*()-=_+[]{}|;:,.<>/?"
-	for _, c := range secret {
-		if c >= 32 && c <= 126 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-			hasSpecialChar = true
-			break
-		}
-	}
-	if !hasSpecialChar {
-		fmt.Println("JWT-Warning:Secret should contain at least one special character.")
-		return false
-	}
-
-	return true
 }
 
 // Handler is a middleware handler
@@ -192,11 +128,10 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 	ud, ok := j.GetUserData(user)
 	if ok {
 		if ud.Exp == 0 {
-			var mt = uint64(math.MaxUint64)
-			claims["exp"] = time.Now().Add(time.Hour * time.Duration(mt)).Unix()
-		} else {
-			claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
+			ud.Exp = 60
 		}
+		claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
+
 	} else {
 		return "", fmt.Errorf("JWT: user not found")
 	}
@@ -223,10 +158,13 @@ func (j *JWT) Authenticate(user string, token string) error {
 	return fmt.Errorf("JWT: invalid token")
 }
 
-func (j *JWT) CheckUpdatenewCred() {
+func (j *JWT) CheckUpdateNewCred() error {
 	for user, data := range j.Users {
 		if data.NewData != nil {
-			go func(u string, exp *uint64) {
+			if e := validateSecret(user, data.NewData.Secret); e != nil {
+				return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
+			}
+			go func(u string, exp *uint64) error {
 				if exp == nil {
 					*exp = 30
 				}
@@ -234,12 +172,71 @@ func (j *JWT) CheckUpdatenewCred() {
 				<-timer.C
 				err := j.SetNewCred(u)
 				if err != nil {
-					fmt.Println("JWT: Failed to set new user config for ", u, ":", err)
-					return
+					return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
 				}
+				return nil
 			}(user, data.OldCredExp)
-			ValidateSecret(user, data.NewData.Secret)
 		}
-		ValidateSecret(user, data.Secret)
+		if e := validateSecret(user, data.Secret); e != nil {
+			return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
+		}
 	}
+	return nil
+}
+
+func validateSecret(user string, secret string) error {
+	// Check length
+	if len(secret) < 32 {
+		return fmt.Errorf("secret should be at least 32 characters")
+	}
+
+	// Check if secret contains uppercase characters
+	hasUppercase := false
+	for _, c := range secret {
+		if c >= 'A' && c <= 'Z' {
+			hasUppercase = true
+			break
+		}
+	}
+	if !hasUppercase {
+		return fmt.Errorf("secret should contain at least one uppercase character")
+	}
+
+	// Check if secret contains lowercase characters
+	hasLowercase := false
+	for _, c := range secret {
+		if c >= 'a' && c <= 'z' {
+			hasLowercase = true
+			break
+		}
+	}
+	if !hasLowercase {
+		return fmt.Errorf("secret should contain at least one lowercase character")
+	}
+
+	// Check if secret contains digits
+	hasDigit := false
+	for _, c := range secret {
+		if c >= '0' && c <= '9' {
+			hasDigit = true
+			break
+		}
+	}
+	if !hasDigit {
+		return fmt.Errorf("secret should contain at least one digit")
+	}
+
+	// Check if secret contains special characters
+	hasSpecialChar := false
+	for _, c := range secret {
+		if c >= 32 && c <= 126 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+			hasSpecialChar = true
+			break
+		}
+	}
+	if !hasSpecialChar {
+		return fmt.Errorf("secret should contain at least one special character")
+	}
+
+	return nil
 }

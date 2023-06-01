@@ -39,7 +39,7 @@ sequenceDiagram
 
 ## Sample Signatory JWT configuration
 
-`jwt_exp` is the time duration (in minutes) for which the token is valid and it is optional. When not provided the token expiry is `current time + maximum Golang int64 ≈ 280 years`, otherwise it is `current time + given time`.   
+`jwt_exp` is the time duration (in minutes) for which the token is valid and it is optional. When not provided the token expiry is 60 minutes, otherwise it is `current time + jwt_exp`.   
 
 `secret` is the secret used to sign the JWT token.
 

@@ -31,7 +31,9 @@ func NewServeCommand(c *Context) *cobra.Command {
 					return fmt.Errorf("cannot use both JWT and static authorized keys")
 				}
 				mw := middlewares.NewMiddleware(c.config.Server.JWTConfig)
-				c.config.Server.JWTConfig.CheckUpdatenewCred()
+				if err := c.config.Server.JWTConfig.CheckUpdateNewCred(); err != nil {
+					return err
+				}
 				srvConf.MidWare = mw
 			}
 
