@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	secret   = "!sEtcU5RwLQYsA5qQ1c6zpo3FljQxfAKP"
 	endpoint = "http://localhost:6732/keys/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
 	login    = "http://localhost:6732/login"
 	message  = "\"03c8e312c61a5fd8e9d6ff1d5dccf900e10b5769e55738eb365e99636e3c3fd1d76c006b82198cb179e8306c1bedd08f12dc863f328886df0202e90700c0843d0000a26828841890d3f3a2a1d4083839c7a882fe050100\""
@@ -29,7 +30,7 @@ func TestJWTHappyPath(t *testing.T) {
 	//configure JWT and make the same request, and see it fail
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
@@ -57,7 +58,7 @@ func TestJWTHappyPath(t *testing.T) {
 func TestJWTCredentialFailure(t *testing.T) {
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
@@ -80,7 +81,7 @@ func TestJWTExpiry(t *testing.T) {
 	var c Config
 	c.Read()
 	//configure a 1 minute expiry
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 1}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 1}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
@@ -126,7 +127,7 @@ func request(url string, body string, headers [][]string) (int, []byte) {
 func TestAlgNoneAttack(t *testing.T) {
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
@@ -165,8 +166,8 @@ type jwtPayload struct {
 func TestSignatureIsVerified(t *testing.T) {
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60},
-		"username2": {Password: "password2", Secret: "secret1", Exp: 60}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60},
+		"username2": {Password: "password2", Secret: secret, Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
@@ -196,7 +197,7 @@ func TestBadInputs(t *testing.T) {
 	//configure JWT and make the same request, and see it fail
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: "secret1", Exp: 60}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
