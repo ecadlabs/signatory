@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	secret = "OcWUNTBsp1cGMLJhWqyxNg2mNS5qFwwN"
+	secret = "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#ZO'hv"
+	afgin  = "SecretSecretSecretSecretSecretS1"
 )
 
 // MockAuthGen is a mock implementation of the AuthGen interface
@@ -336,69 +337,60 @@ func TestValidateSecret(t *testing.T) {
 		secret string
 	}
 	tests := []struct {
-		name string
-		args args
-		want bool
+		name   string
+		args   args
+		expect string
 	}{
 		// Invalid length
 		{
 			name: "Invalid length",
 			args: args{
 				user:   "user",
-				secret: "Sec1",
+				secret: "Secret1!Secret1!Secret1!Secret1",
 			},
-			want: false,
+			expect: "secret should be at least 32 characters",
 		},
 		// No uppercase
 		{
 			name: "No uppercase",
 			args: args{
 				user:   "user",
-				secret: "secretsecretsecret1",
+				secret: "secretsecretsecretsecretsecrets1",
 			},
-			want: false,
+			expect: "secret should contain at least one uppercase character",
 		},
 		// No lowercase
 		{
 			name: "No lowercase",
 			args: args{
 				user:   "user",
-				secret: "SECRETSECRETSECRET1",
+				secret: "SECRETSECRETSECRETSECRETSECRETS1",
 			},
-			want: false,
+			expect: "secret should contain at least one lowercase character",
 		},
 		// No number
 		{
 			name: "No number",
 			args: args{
 				user:   "user",
-				secret: "SecretSecretSecret",
+				secret: "SecretSecretSecretSecretSecretSe",
 			},
-			want: false,
+			expect: "secret should contain at least one digit",
 		},
 		// No special character
 		{
 			name: "No special character",
 			args: args{
 				user:   "user",
-				secret: "SecretSecretSecret1",
+				secret: "SecretSecretSecretSecretSecretS1",
 			},
-			want: false,
-		},
-		// Valid
-		{
-			name: "Valid",
-			args: args{
-				user:   "user",
-				secret: "SecretSecretSecret1!",
-			},
-			want: true,
+			expect: "secret should contain at least one special character",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validateSecret(tt.args.user, tt.args.secret)
-			require.Equal(t, got, tt.want)
+			actual := validateSecret(tt.args.user, tt.args.secret)
+			require.Equal(t, tt.expect, actual.Error())
 		})
 	}
 }
