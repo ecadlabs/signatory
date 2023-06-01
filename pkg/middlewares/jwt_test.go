@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	secret = "OcWUNTBsp1cGMLJhWqyxNg2mNS5qFwwN"
+)
+
 // MockAuthGen is a mock implementation of the AuthGen interface
 type MockAuthGen struct {
 	fails bool
@@ -57,7 +61,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -71,7 +75,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -85,7 +89,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -100,7 +104,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -115,7 +119,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -131,7 +135,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -147,7 +151,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 					},
 				},
 			},
@@ -175,7 +179,7 @@ func TestLoginHandler(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password: "pass",
-						Secret:   "secret",
+						Secret:   secret,
 						Exp:      23,
 					},
 				},
@@ -211,7 +215,7 @@ func TestAuthHandlerValidToken(t *testing.T) {
 		Users: map[string]UserData{
 			user: {
 				Password: "pass",
-				Secret:   "secret",
+				Secret:   secret,
 				Exp:      23,
 			},
 		},
@@ -244,7 +248,7 @@ func TestAuthHandlerInValidToken(t *testing.T) {
 		Users: map[string]UserData{
 			user: {
 				Password: "pass",
-				Secret:   "secret",
+				Secret:   secret,
 				Exp:      23,
 			},
 		},
@@ -277,7 +281,7 @@ func TestAuthHandlerEmptyToken(t *testing.T) {
 		Users: map[string]UserData{
 			user: {
 				Password: "pass",
-				Secret:   "secret",
+				Secret:   secret,
 				Exp:      23,
 			},
 		},
