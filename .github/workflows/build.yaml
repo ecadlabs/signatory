@@ -128,6 +128,15 @@ jobs:
           VAULT_AWS_REGION: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_REGION }}
           VAULT_AWS_PKH_TZ2: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ2 }}
           VAULT_AWS_PKH_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_TZ3 }}
+          VAULT_AZ_CLIENTCERTTHUMB: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_CLIENTCERTTHUMB }}
+          VAULT_AZ_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_CLIENTID }}
+          VAULT_AZ_RESGROUP: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_RESGROUP }}
+          VAULT_AZ_SP_KEY: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_SP_KEY }}
+          VAULT_AZ_SUBID: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_SUBID }}
+          VAULT_AZ_TENANTID: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TENANTID }}
+          VAULT_AZ_VAULT: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_VAULT }}
+          VAULT_AZ_TZ2: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ2 }}
+          VAULT_AZ_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3 }}
           VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
           VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
           VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
@@ -141,6 +150,7 @@ jobs:
         run: >
          . integration_test/.env.${{ matrix.testenvs }};
          envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
+         echo $VAULT_AZ_SP_KEY |base64 -d >integration_test/service-principal.key;
          docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
          docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
          go test $(go list ./... | grep integration_test);
