@@ -12,7 +12,6 @@ import (
 
 const (
 	secret = "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#ZO'hv"
-	afgin  = "SecretSecretSecretSecretSecretS1"
 )
 
 // MockAuthGen is a mock implementation of the AuthGen interface
@@ -410,12 +409,12 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 				Users: map[string]UserData{
 					"user": {
 						Password:   "pass",
-						Secret:     "SecretSecretSecret1!",
-						Exp:        23,
+						Secret:     secret,
+						Exp:        1,
 						OldCredExp: &e,
 						NewData: &UserData{
 							Password: "pass1",
-							Secret:   "SecretSecretSecret12!",
+							Secret:   secret + "1",
 							Exp:      33,
 						},
 					},
@@ -429,11 +428,17 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 				Users: tt.fields.Users,
 			}
 			a.CheckUpdateNewCred()
-			time.Sleep(1 * time.Minute)
 			d, ret := a.GetUserData("user")
 			require.True(t, ret)
+			require.Equal(t, "pass", d.Password)
+			require.Equal(t, secret, d.Secret)
+
+			time.Sleep(time.Minute + time.Second)
+
+			d, ret = a.GetUserData("user")
+			require.True(t, ret)
 			require.Equal(t, "pass1", d.Password)
-			require.Equal(t, "SecretSecretSecret12!", d.Secret)
+			require.Equal(t, secret+"1", d.Secret)
 		})
 	}
 }
