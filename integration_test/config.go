@@ -21,6 +21,14 @@ type JwtConfig struct {
 }
 
 type JwtUserData struct {
+	Password string      `yaml:"password"`
+	Secret   string      `yaml:"secret"`
+	Exp      uint64      `yaml:"jwt_exp"`
+	CredExp  uint64      `yaml:"old_cred_exp,omitempty"`
+	NewCred  *JwtNewCred `yaml:"new_data,omitempty"`
+}
+
+type JwtNewCred struct {
 	Password string `yaml:"password"`
 	Secret   string `yaml:"secret"`
 	Exp      uint64 `yaml:"jwt_exp"`
@@ -38,6 +46,7 @@ type TezosConfig = map[string]*TezosPolicy
 type TezosPolicy struct {
 	Allow       map[string][]string `yaml:"allow"`
 	LogPayloads bool                `yaml:"log_payloads"`
+	JwtUsers    []string            `yaml:"jwt_users,omitempty"`
 }
 
 type VaultConfig struct {
