@@ -73,8 +73,7 @@ func TestJWTCredentialFailure(t *testing.T) {
 	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password0"}}
 	code, _ = request(login, "", h)
 	require.Equal(t, 401, code)
-	//TODO: enable this assertion when Issue #354 is closed
-	//assert.Equal(t, "Access denied", string(bytes))
+	require.Equal(t, "Access denied", string(bytes))
 }
 
 func TestJWTExpiry(t *testing.T) {
@@ -249,4 +248,46 @@ func TestBadInputs(t *testing.T) {
 	code, bytes = request(login, "", h)
 	assert.Equal(t, 401, code)
 	assert.Contains(t, string(bytes), "username and password required")
+}
+
+func TestPasswordRotation(t *testing.T) {
+	var c Config
+	c.Read()
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{"username1": {Password: "password1", Secret: secret, Exp: 60, CredExp: 1, NewCred: &JwtNewCred{Password: "password2", Secret: secret, Exp: 60}}}}
+	backup_then_update_config(c)
+	defer restore_config()
+	restart_signatory()
+
+	//use old password
+	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
+	code, bytes := request(login, "", h)
+	require.Equal(t, 201, code)
+	token := string(bytes)
+	assert.NotContains(t, token, "signature")
+	assert.Equal(t, 2, strings.Count(token, "."))
+
+	//use new password
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password2"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 201, code)
+	token = string(bytes)
+	assert.NotContains(t, token, "signature")
+	assert.Equal(t, 2, strings.Count(token, "."))
+
+	//wait for old password to expire
+	time.Sleep(time.Minute + time.Second)
+
+	//old password doesn't work now
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "Access denied")
+
+	//new password still works
+	h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password2"}}
+	code, bytes = request(login, "", h)
+	assert.Equal(t, 201, code)
+	token = string(bytes)
+	assert.NotContains(t, token, "signature")
+	assert.Equal(t, 2, strings.Count(token, "."))
 }
