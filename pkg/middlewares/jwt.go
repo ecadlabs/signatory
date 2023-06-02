@@ -161,7 +161,7 @@ func (j *JWT) Authenticate(user string, token string) error {
 func (j *JWT) CheckUpdateNewCred() error {
 	for user, data := range j.Users {
 		if data.NewData != nil {
-			if e := validateSecret(user, data.NewData.Secret); e != nil {
+			if e := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); e != nil {
 				return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
 			}
 			go func(u string, exp *uint64) error {
@@ -177,66 +177,70 @@ func (j *JWT) CheckUpdateNewCred() error {
 				return nil
 			}(user, data.OldCredExp)
 		}
-		if e := validateSecret(user, data.Secret); e != nil {
+		if e := validateSecretAndPass([]string{data.Password, data.Secret}); e != nil {
 			return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
 		}
 	}
 	return nil
 }
 
-func validateSecret(user string, secret string) error {
-	// Check length
-	if len(secret) < 32 {
-		return fmt.Errorf("secret should be at least 32 characters")
-	}
-
-	// Check if secret contains uppercase characters
-	hasUppercase := false
-	for _, c := range secret {
-		if c >= 'A' && c <= 'Z' {
-			hasUppercase = true
-			break
+func validateSecretAndPass(secret []string) error {
+	var length int = 16
+	var stype string = "password"
+	for _, s := range secret {
+		// Check length
+		if len(s) < length {
+			return fmt.Errorf("%s should be at least %d characters", stype, length)
 		}
-	}
-	if !hasUppercase {
-		return fmt.Errorf("secret should contain at least one uppercase character")
-	}
-
-	// Check if secret contains lowercase characters
-	hasLowercase := false
-	for _, c := range secret {
-		if c >= 'a' && c <= 'z' {
-			hasLowercase = true
-			break
+		// Check if secret contains uppercase characters
+		hasUppercase := false
+		for _, c := range s {
+			if c >= 'A' && c <= 'Z' {
+				hasUppercase = true
+				break
+			}
 		}
-	}
-	if !hasLowercase {
-		return fmt.Errorf("secret should contain at least one lowercase character")
-	}
-
-	// Check if secret contains digits
-	hasDigit := false
-	for _, c := range secret {
-		if c >= '0' && c <= '9' {
-			hasDigit = true
-			break
+		if !hasUppercase {
+			return fmt.Errorf("%s should contain at least one uppercase character", stype)
 		}
-	}
-	if !hasDigit {
-		return fmt.Errorf("secret should contain at least one digit")
-	}
 
-	// Check if secret contains special characters
-	hasSpecialChar := false
-	for _, c := range secret {
-		if c >= 32 && c <= 126 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-			hasSpecialChar = true
-			break
+		// Check if secret contains lowercase characters
+		hasLowercase := false
+		for _, c := range s {
+			if c >= 'a' && c <= 'z' {
+				hasLowercase = true
+				break
+			}
 		}
-	}
-	if !hasSpecialChar {
-		return fmt.Errorf("secret should contain at least one special character")
-	}
+		if !hasLowercase {
+			return fmt.Errorf("%s should contain at least one lowercase character", stype)
+		}
 
+		// Check if secret contains digits
+		hasDigit := false
+		for _, c := range s {
+			if c >= '0' && c <= '9' {
+				hasDigit = true
+				break
+			}
+		}
+		if !hasDigit {
+			return fmt.Errorf("%s should contain at least one digit", stype)
+		}
+
+		// Check if secret contains special characters
+		hasSpecialChar := false
+		for _, c := range s {
+			if c >= 32 && c <= 126 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+				hasSpecialChar = true
+				break
+			}
+		}
+		if !hasSpecialChar {
+			return fmt.Errorf("%s should contain at least one special character", stype)
+		}
+		length = 32
+		stype = "secret"
+	}
 	return nil
 }

@@ -332,7 +332,7 @@ func getToken(user string, au *JWTMiddleware) (string, error) {
 
 func TestValidateSecret(t *testing.T) {
 	type args struct {
-		user   string
+		pass   string
 		secret string
 	}
 	tests := []struct {
@@ -344,7 +344,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			name: "Invalid length",
 			args: args{
-				user:   "user",
+				pass:   "SecretSecretSecretSecretSecretS1#$",
 				secret: "Secret1!Secret1!Secret1!Secret1",
 			},
 			expect: "secret should be at least 32 characters",
@@ -353,7 +353,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			name: "No uppercase",
 			args: args{
-				user:   "user",
+				pass:   "SecretSecretSecretSecretSecretS1#$",
 				secret: "secretsecretsecretsecretsecrets1",
 			},
 			expect: "secret should contain at least one uppercase character",
@@ -362,7 +362,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			name: "No lowercase",
 			args: args{
-				user:   "user",
+				pass:   "SecretSecretSecretSecretSecretS1#$",
 				secret: "SECRETSECRETSECRETSECRETSECRETS1",
 			},
 			expect: "secret should contain at least one lowercase character",
@@ -371,7 +371,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			name: "No number",
 			args: args{
-				user:   "user",
+				pass:   "SecretSecretSecretSecretSecretS1#$",
 				secret: "SecretSecretSecretSecretSecretSe",
 			},
 			expect: "secret should contain at least one digit",
@@ -380,7 +380,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			name: "No special character",
 			args: args{
-				user:   "user",
+				pass:   "SecretSecretSecretSecretSecretS1#$",
 				secret: "SecretSecretSecretSecretSecretS1",
 			},
 			expect: "secret should contain at least one special character",
@@ -388,7 +388,7 @@ func TestValidateSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := validateSecret(tt.args.user, tt.args.secret)
+			actual := validateSecretAndPass([]string{tt.args.pass, tt.args.secret})
 			require.Equal(t, tt.expect, actual.Error())
 		})
 	}
