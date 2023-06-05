@@ -16,6 +16,7 @@ import (
 const (
 	baseUrl   = "http://localhost:6732/"
 	secret    = "!sEtcU5RwLQYsA5qQ1c6zpo3FljQxfAKP"
+	secret2   = "*sEtcU5RwLQYsA5qQ1c6zpo3FljQxfAKP"
 	endpoint  = baseUrl + "keys/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
 	login     = baseUrl + "login"
 	message   = "\"03c8e312c61a5fd8e9d6ff1d5dccf900e10b5769e55738eb365e99636e3c3fd1d76c006b82198cb179e8306c1bedd08f12dc863f328886df0202e90700c0843d0000a26828841890d3f3a2a1d4083839c7a882fe050100\""
@@ -256,7 +257,7 @@ func TestBadInputs(t *testing.T) {
 func TestPasswordRotation(t *testing.T) {
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{username1: {Password: password1, Secret: secret, Exp: 60, CredExp: 1, NewCred: &JwtNewCred{Password: "password2", Secret: secret, Exp: 60}}}}
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{username1: {Password: password1, Secret: secret, Exp: 60, CredExp: 1, NewCred: &JwtNewCred{Password: password2, Secret: secret2, Exp: 60}}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()
