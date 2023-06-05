@@ -34,7 +34,7 @@ func (m *MockAuthGen) Authenticate(user string, token string) error {
 	return nil
 }
 
-func (m *MockAuthGen) GenerateToken(user string) (string, error) {
+func (m *MockAuthGen) GenerateToken(user string, pass string) (string, error) {
 	if m.fails {
 		return "", fmt.Errorf("Generate test error")
 	}
@@ -408,12 +408,12 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 			fields: fields{
 				Users: map[string]UserData{
 					"user": {
-						Password:   "pass",
+						Password:   "SecretSecretSecretSecretSecretS1#$",
 						Secret:     secret,
 						Exp:        1,
 						OldCredExp: &e,
 						NewData: &UserData{
-							Password: "pass1",
+							Password: "SecretSecretSecretSecretSecretS1#$x",
 							Secret:   secret + "1",
 							Exp:      33,
 						},
@@ -427,17 +427,19 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 			a := &JWT{
 				Users: tt.fields.Users,
 			}
-			a.CheckUpdateNewCred()
+			err := a.CheckUpdateNewCred()
+			require.NoError(t, err)
 			d, ret := a.GetUserData("user")
 			require.True(t, ret)
-			require.Equal(t, "pass", d.Password)
+			require.Equal(t, tt.fields.Users["user"].Password, d.Password)
 			require.Equal(t, secret, d.Secret)
 
 			time.Sleep(time.Minute + time.Second)
 
 			d, ret = a.GetUserData("user")
 			require.True(t, ret)
-			require.Equal(t, "pass1", d.Password)
+			require.True(t, ret)
+			require.Equal(t, "SecretSecretSecretSecretSecretS1#$x", d.Password)
 			require.Equal(t, secret+"1", d.Secret)
 		})
 	}

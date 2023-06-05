@@ -14,7 +14,7 @@ import (
 type AuthGen interface {
 	GetUserData(user string) (*UserData, bool)
 	Authenticate(user string, token string) error
-	GenerateToken(user string) (string, error)
+	GenerateToken(user string, pass string) (string, error)
 }
 
 // JWTMiddleware is an AuthGen implementation that uses JWT tokens
@@ -44,12 +44,20 @@ func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ud.Password != pass {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Access denied"))
-		return
+		if ud.NewData != nil {
+			if ud.NewData.Password != pass {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Access denied"))
+				return
+			}
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Access denied"))
+			return
+		}
 	}
 
-	token, err := m.AuthGen.GenerateToken(user)
+	token, err := m.AuthGen.GenerateToken(user, pass)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -93,17 +101,19 @@ type JWT struct {
 }
 
 type UserData struct {
-	Password   string  `yaml:"password"`
-	Exp        uint64  `yaml:"jwt_exp"`
-	Secret     string  `yaml:"secret"`
-	OldCredExp *uint64 `yaml:"old_cred_exp,omitempty"`
-	useNewCred bool
+	Password   string    `yaml:"password"`
+	Exp        uint64    `yaml:"jwt_exp"`
+	Secret     string    `yaml:"secret"`
+	OldCredExp *uint64   `yaml:"old_cred_exp,omitempty"`
 	NewData    *UserData `yaml:"new_data"`
 }
 
 func (j *JWT) SetNewCred(user string) error {
 	if u, ok := j.Users[user]; ok {
-		u.useNewCred = true
+		u.Password = u.NewData.Password
+		u.Secret = u.NewData.Secret
+		u.Exp = u.NewData.Exp
+		u.NewData = nil
 		j.Users[user] = u
 		return nil
 	}
@@ -112,20 +122,20 @@ func (j *JWT) SetNewCred(user string) error {
 
 func (j *JWT) GetUserData(user string) (*UserData, bool) {
 	if u, ok := j.Users[user]; ok {
-		if u.useNewCred {
-			return u.NewData, true
-		}
 		return &u, true
 	}
 	return nil, false
 }
 
 // GenerateToken generates a new token for the given user
-func (j *JWT) GenerateToken(user string) (string, error) {
+func (j *JWT) GenerateToken(user string, pass string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
 	ud, ok := j.GetUserData(user)
+	if pass != ud.Password {
+		ud = ud.NewData
+	}
 	if ok {
 		if ud.Exp == 0 {
 			ud.Exp = 60
@@ -141,12 +151,25 @@ func (j *JWT) GenerateToken(user string) (string, error) {
 
 // Authenticate authenticates the given token
 func (j *JWT) Authenticate(user string, token string) error {
+	var t *jwt.Token
+	var err error
 	ud, ok := j.GetUserData(user)
 	if ok {
-		t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		t, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 			return []byte(ud.Secret), nil
 		})
 		if err != nil {
+			if ud.NewData != nil {
+				t, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+					return []byte(ud.NewData.Secret), nil
+				})
+				if err != nil {
+					return err
+				}
+				if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
+					return nil
+				}
+			}
 			return err
 		}
 		if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
@@ -161,6 +184,9 @@ func (j *JWT) Authenticate(user string, token string) error {
 func (j *JWT) CheckUpdateNewCred() error {
 	for user, data := range j.Users {
 		if data.NewData != nil {
+			if data.NewData.Password == data.Password || data.NewData.Secret == data.Secret {
+				return fmt.Errorf("JWT: new credentials are same as old for user %s", user)
+			}
 			if e := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); e != nil {
 				return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
 			}
