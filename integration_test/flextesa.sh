@@ -1,8 +1,6 @@
 #! /bin/sh
 
 protocol=$1
-time_bb=${block_time:-1}
-
 
 export alice="$(flextesa key alice)"
 export bob="$(flextesa key bob)"
@@ -15,9 +13,9 @@ root_path=/tmp/mini-box
 flextesa mini-net \
          --root "$root_path" --size 1 \
          --set-history-mode N000:archive \
-         --number-of-b 1 \
+         --number-of-bootstrap-accounts 1 \
          --balance-of-bootstrap-accounts tez:100_000_000 \
-         --time-b "$time_bb" \
+         --time-between-blocks='2,3,2' \
          --add-bootstrap-account="$alice@2_000_000_000_000" \
          --add-bootstrap-account="$speculos@2_000_000_000_000" \
          --add-bootstrap-account="$bob@2_000_000_000_000" \

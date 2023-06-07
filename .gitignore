@@ -21,3 +21,10 @@ vendor/
 dist
 .release-env
 .docker-creds
+signatory
+signatory-cli
+
+# some integration_tests write secret env var to files
+integration_test/gcp-token.json
+integration_test/.env.vaults.cicd
+integration_test/service-principal.key

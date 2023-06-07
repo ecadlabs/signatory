@@ -23,6 +23,26 @@ services:
       retries: 10
       start_period: 1s
 
+  flextesanobaking:
+    container_name: flextesanobaking
+    image: oxheadalpha/flextesa:latest
+    ports:
+      - "30000:20000"
+      - "30001:20001"
+    networks:
+      - ecadnet
+    volumes:
+      - ./flextesanobaking.sh:/usr/bin/sigybox
+    environment:
+      - block_time=3
+    command: sigybox $PROTOCOL
+    healthcheck:
+      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+
   octez:
     container_name: octez
     image: tezos/tezos:$OCTEZ_VERSION
@@ -57,9 +77,15 @@ services:
         target: /etc/signatory.yaml
       - source: sigy-secret
         target: /etc/secret.json
+      - source: gcp-token
+        target: /etc/gcp-token.json
+      - source: az-sp-key
+        target: /etc/service-principal.key
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json    
     command: serve
     healthcheck:
-      test: "curl --fail http://localhost:6732/authorized_keys || exit 1"
+      test: "curl --fail http://localhost:9583/healthz || exit 1"
       interval: 1s
       timeout: 1s
       retries: 10
@@ -70,3 +96,7 @@ configs:
     file: ./signatory.yaml
   sigy-secret:
     file: ./signatory-local-secret.json
+  gcp-token:
+    file: ./gcp-token.json
+  az-sp-key:
+    file: ./service-principal.key

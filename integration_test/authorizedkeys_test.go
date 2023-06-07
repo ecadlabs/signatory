@@ -9,7 +9,7 @@ import (
 
 func TestAuthorizedKeys(t *testing.T) {
 	var c Config
-	c.Read("signatory.yaml")
+	c.Read()
 	c.Server.Keys = []string{"edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE"}
 	backup_then_update_config(c)
 	defer restore_config()

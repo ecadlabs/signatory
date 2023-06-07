@@ -1,6 +1,7 @@
 package integrationtest
 
 import (
+	"fmt"
 	"os/exec"
 )
 
@@ -9,8 +10,9 @@ func restart_signatory() {
 	if err != nil {
 		panic("failed to stop signatory")
 	}
-	_, err = exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
+	out, err := exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
 	if err != nil {
+		fmt.Println("restart signatory: failed to start: " + string(out))
 		panic("failed to start signatory during restart")
 	}
 }
@@ -20,7 +22,7 @@ func backup_then_update_config(c Config) {
 	if err != nil {
 		panic("failed to backup config")
 	}
-	err = c.Write("signatory.yaml")
+	err = c.Write()
 	if err != nil {
 		panic("failed to write new config")
 	}
