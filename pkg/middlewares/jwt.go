@@ -13,7 +13,7 @@ import (
 // AuthGen is an interface that generates token authenticates the same
 type AuthGen interface {
 	GetUserData(user string) (*UserData, bool)
-	Authenticate(user string, token string) error
+	Authenticate(user string, token string) (string, error)
 	GenerateToken(user string, pass string) (string, error)
 }
 
@@ -70,6 +70,8 @@ func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 // Handler is a middleware handler
 func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var u string
+		var err error
 		if r.URL.Path == "/login" {
 			next.ServeHTTP(w, r)
 			return
@@ -79,7 +81,7 @@ func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 
 		if token != "" {
 			token = strings.TrimPrefix(token, "Bearer ")
-			err := m.AuthGen.Authenticate(user, token)
+			u, err = m.AuthGen.Authenticate(user, token)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte(err.Error()))
@@ -90,7 +92,7 @@ func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 			w.Write([]byte("token required"))
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := context.WithValue(r.Context(), "user", u)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -141,7 +143,6 @@ func (j *JWT) GenerateToken(user string, pass string) (string, error) {
 			ud.Exp = 60
 		}
 		claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
-
 	} else {
 		return "", fmt.Errorf("JWT: user not found")
 	}
@@ -150,35 +151,36 @@ func (j *JWT) GenerateToken(user string, pass string) (string, error) {
 }
 
 // Authenticate authenticates the given token
-func (j *JWT) Authenticate(user string, token string) error {
-	var t *jwt.Token
+func (j *JWT) Authenticate(user string, token string) (string, error) {
+	var tok *jwt.Token
 	var err error
 	ud, ok := j.GetUserData(user)
 	if ok {
-		t, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		tok, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 			return []byte(ud.Secret), nil
 		})
 		if err != nil {
 			if ud.NewData != nil {
-				t, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+				tok, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 					return []byte(ud.NewData.Secret), nil
 				})
-				if err != nil {
-					return err
-				}
-				if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
-					return nil
-				}
 			}
-			return err
+			return "", err
 		}
-		if _, ok := t.Claims.(jwt.MapClaims); ok && t.Valid {
-			return nil
+		if tu := tok.Claims.(jwt.MapClaims)["user"]; tu != nil {
+			if tu.(string) != user {
+				return "", fmt.Errorf("JWT: invalid token")
+			}
+		} else {
+			return "", fmt.Errorf("JWT: invalid token")
+		}
+		if _, ok := tok.Claims.(jwt.MapClaims); ok && tok.Valid {
+			return tok.Claims.(jwt.MapClaims)["user"].(string), nil
 		}
 	} else {
-		return fmt.Errorf("JWT: user not found")
+		return "", fmt.Errorf("JWT: user not found")
 	}
-	return fmt.Errorf("JWT: invalid token")
+	return "", fmt.Errorf("JWT: invalid token")
 }
 
 func (j *JWT) CheckUpdateNewCred() error {

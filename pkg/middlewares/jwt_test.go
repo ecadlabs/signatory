@@ -29,9 +29,9 @@ func (m *MockAuthGen) GetUserData(user string) (*UserData, bool) {
 	return &ud, ok
 }
 
-func (m *MockAuthGen) Authenticate(user string, token string) error {
+func (m *MockAuthGen) Authenticate(user string, token string) (string, error) {
 
-	return nil
+	return "", nil
 }
 
 func (m *MockAuthGen) GenerateToken(user string, pass string) (string, error) {
