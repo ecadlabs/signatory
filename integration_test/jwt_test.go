@@ -209,7 +209,7 @@ func TestBadInputs(t *testing.T) {
 	assert.Equal(t, "token required", string(bytes))
 
 	//provide credentials in the header of the same request to fetch a bearer token
-	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
+	var h = [][]string{{"Content-Type", "application/json"}, {"username", username1}, {"password", password1}}
 	code, bytes = request(login, "", h)
 	assert.Equal(t, 201, code)
 	token := string(bytes)
