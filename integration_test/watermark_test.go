@@ -187,6 +187,7 @@ var functionalTestCases = []functionalTestCase{
 }
 
 func TestWatermark(t *testing.T) {
+	remove_watermark_files()
 	for _, test := range functionalTestCases {
 		t.Run(test.title, func(t *testing.T) {
 			if test.watermarkBefore != nil {
