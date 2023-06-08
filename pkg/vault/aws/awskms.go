@@ -129,7 +129,7 @@ func (v *Vault) Name() string {
 }
 
 func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	digest := crypt.Digest(message)
+	digest := crypt.DigestFunc(message)
 	kid := key.ID()
 	sout, err := v.kmsapi.Sign(&kms.SignInput{
 		KeyId:            &kid,

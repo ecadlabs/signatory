@@ -298,7 +298,7 @@ func (v *Vault) VaultName() string {
 
 // Sign performs signing operation
 func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	digest := crypt.Digest(message)
+	digest := crypt.DigestFunc(message)
 	azureKey, ok := key.(*azureKey)
 	if !ok {
 		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
