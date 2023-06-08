@@ -82,7 +82,10 @@ services:
       - source: az-sp-key
         target: /etc/service-principal.key
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json    
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
+    depends_on:
+      speculos:
+        condition: service_healthy
     command: serve
     healthcheck:
       test: "curl --fail http://localhost:9583/healthz || exit 1"
@@ -90,6 +93,23 @@ services:
       timeout: 1s
       retries: 10
       start_period: 1s
+
+  speculos:
+    container_name: speculos
+    image: stephengaudet/tezoswalletemu:$ARCH
+    ports:
+      - "9999:9999"
+      - "41000:41000"
+      - "5001:5001"
+    networks:
+      - ecadnet
+    command: --display headless --vnc-port 41000 --api-port 5001 apps/app_s.elf
+    healthcheck:
+      test: ["CMD","stat","/etc/passwd"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
 
 configs:
   sigy-config:

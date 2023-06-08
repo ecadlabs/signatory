@@ -6,7 +6,16 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
-    
+  ledger:
+    driver: ledger
+    config:
+      transport: tcp://speculos:9999
+      keys:
+        - "bip25519/0'/0'"
+        - "ed25519/0'/0'"
+        - "secp256k1/0'/0'"
+        - "P-256/0'/0'"
+      close_after: 3600s
 tezos:
   #alice
   tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:
@@ -59,3 +68,10 @@ tezos:
       block:
       endorsement:
       preendorsement:
+
+  #speculos
+  tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction

@@ -32,40 +32,36 @@ echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 cd integration_test
 ```
 
-Exporting the Environment Variables used by the test is required. There are 3 groups of environment variables to consider:
-
-1. Signatory image
-2. chain protocol and octez version
-3. vault specifics
-
-### Signatory image env var
-
-using a build of Signatory's main branch, on a macbook m1 host:
+Exporting the Environment Variables used by the test is required.
+Firstly, set `ARCH` to match your docker host. On a `x86_64` host:
 
 ```sh
-export IMAGE=ghcr.io/ecadlabs/signatory:main-arm64
+export ARCH=amd64
 ```
 
-or, on a `x86_64` host:
+use `arm64` on a macbook m1 host
+
+Next, decide the version of Signatory you want to test.
+using main branch:
 
 ```sh
-export IMAGE=ghcr.io/ecadlabs/signatory:main-amd64
+export IMAGE=ghcr.io/ecadlabs/signatory:main-${ARCH}
 ```
 
-### chain protocol and octez version env var
+Next, choose the economic protocol version run by flextesa, and the version of octez-octez client.
 
-Choose the set of env var to use from the files `.env.current.arm64`, `.env.next.arm64`, `.env.current.amd64`, `.env.next.amd64`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.  Use `arm64` or `amd64` depending on your host architecture.
+Choose the set of env var to use from the files `.env.current`, `.env.next`.  Use `current` if you'd like the economic protocol run by flextesa to match mainnet, use `next` if you'd like the next protocol instead.
 
-So, to set the env to use mainnet protocol on macbook m1 host:
+So, to set the env to use mainnet protocol:
 
 ```sh
-. .env.current.arm64
+. ./.env.current
 ```
 
-Likewise, to set the env to use the next protocol, using a build of Signatory's `main` branch, on x86_64 host:
+Likewise, to set the env to use the next protocol:
 
 ```sh
-. .env.next.amd64
+. ./.env.next
 ```
 
 ### vault env var

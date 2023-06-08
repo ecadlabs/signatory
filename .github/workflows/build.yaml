@@ -108,8 +108,8 @@ jobs:
       fail-fast: false
       matrix:
         testenvs:
-          - current.amd64
-          - next.amd64
+          - current
+          - next
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
@@ -148,10 +148,14 @@ jobs:
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
 
         run: >
-         . integration_test/.env.${{ matrix.testenvs }};
-         envsubst < integration_test/gcp-token-template.json > integration_test/gcp-token.json;
-         echo $VAULT_AZ_SP_KEY |base64 -d >integration_test/service-principal.key;
-         docker compose -f integration_test/docker-compose.yml up -d --wait --pull always;
+         cd integration_test;
+         export ARCH=amd64;
+         . ./.env.${{ matrix.testenvs }};
+         envsubst < gcp-token-template.json > gcp-token.json;
+         echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
+         docker compose up -d --wait --pull always;
          docker exec octez sudo chown -R tezos /home/tezos/.tezos-client;
-         go test $(go list ./... | grep integration_test);
-         docker compose -f integration_test/docker-compose.yml kill;
+         go test ./...;
+         docker compose kill;
+         rm -f gcp-token.json;
+         rm -f service-principal.key;
