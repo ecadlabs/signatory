@@ -6,12 +6,14 @@ import (
 	"testing"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWatermark(t *testing.T) {
 	type expect struct {
 		wm     Watermark
+		digest *crypt.Digest
 		expect bool
 	}
 
@@ -39,7 +41,20 @@ func TestWatermark(t *testing.T) {
 						},
 						Order: WmOrderDefault,
 					},
+					digest: &crypt.Digest{0},
 					expect: true, // level above
+				},
+				{
+					wm: Watermark{
+						Chain: &tz.ChainID{},
+						Level: Level{
+							Level: 2,
+							Round: tz.Some(int32(0)),
+						},
+						Order: WmOrderDefault,
+					},
+					digest: &crypt.Digest{0},
+					expect: true, // repeat
 				},
 				{
 					wm: Watermark{
@@ -278,7 +293,7 @@ func TestWatermark(t *testing.T) {
 
 	for _, c := range testCases {
 		for _, ex := range c.expect {
-			require.Equal(t, ex.expect, ex.wm.Validate(&c.stored))
+			require.Equal(t, ex.expect, ex.wm.Validate(&c.stored, ex.digest))
 		}
 	}
 }

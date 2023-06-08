@@ -14,7 +14,7 @@ type InMemoryWatermark struct {
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest) error {
+func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -32,7 +32,7 @@ func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.Si
 	delegates, ok := w.chains[*watermark.Chain]
 	if ok {
 		if wm, ok := delegates.Get(pkh); ok {
-			if !watermark.Validate(wm) {
+			if !watermark.Validate(wm, digest) {
 				return ErrWatermark
 			}
 		}
@@ -40,7 +40,7 @@ func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.Si
 		delegates = make(delegateMap)
 		w.chains[*watermark.Chain] = delegates
 	}
-	delegates.Insert(pkh, watermark.Stored())
+	delegates.Insert(pkh, watermark.Stored(digest))
 
 	return nil
 }

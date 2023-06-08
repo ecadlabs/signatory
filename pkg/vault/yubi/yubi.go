@@ -271,7 +271,7 @@ func (h *HSM) signED25519(digest []byte, id uint16) (crypt.Ed25519Signature, err
 
 // Sign performs signing operation
 func (h *HSM) SignMessage(ctx context.Context, message []byte, k vault.StoredKey) (sig crypt.Signature, err error) {
-	digest := crypt.Digest(message)
+	digest := crypt.DigestFunc(message)
 	key, ok := k.(*hsmKey)
 	if !ok {
 		return nil, fmt.Errorf("(YubiHSM/%s): not a YubiHSM key: %T", h.conf.id(), k)

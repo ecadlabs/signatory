@@ -27,7 +27,7 @@ func (priv *ECDSAPrivateKey) Public() PublicKey {
 }
 
 func (priv *ECDSAPrivateKey) Sign(message []byte) (signature Signature, err error) {
-	digest := Digest(message)
+	digest := DigestFunc(message)
 	r, s, err := ecdsa.Sign(rand.Reader, (*ecdsa.PrivateKey)(priv), digest[:])
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (pub *ECDSAPublicKey) String() string {
 }
 
 func (pub *ECDSAPublicKey) VerifySignature(sig Signature, message []byte) bool {
-	digest := Digest(message)
+	digest := DigestFunc(message)
 	switch sig := sig.(type) {
 	case *ECDSASignature:
 		return ecdsa.Verify((*ecdsa.PublicKey)(pub), digest[:], sig.R, sig.S)
