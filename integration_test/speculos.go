@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-var protocol string = "http://"
-var host string = "localhost"
-var port string = "5001"
-var url string = protocol + host + ":" + port + "/"
+var speculosBaseUrl string = "http://localhost:5001/"
 
 // this is not a test of the tezos wallet app
 func SpeculosApprove() {
@@ -51,7 +48,7 @@ func approve() {
 
 func getScreenText() string {
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodGet, url+"events?currentscreenonly=true", nil)
+	req, err := http.NewRequest(http.MethodGet, speculosBaseUrl+"events?currentscreenonly=true", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +74,7 @@ func click(button string) {
 	if err != nil {
 		panic(err)
 	}
-	req, err := http.NewRequest(http.MethodPost, url+"button/"+button, bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPost, speculosBaseUrl+"button/"+button, bytes.NewReader(b))
 	if err != nil {
 		panic(err)
 	}
