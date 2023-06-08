@@ -4,6 +4,7 @@ import (
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/gotez/protocol"
+	"github.com/ecadlabs/signatory/pkg/crypt"
 )
 
 type SignRequest interface {
@@ -111,17 +112,27 @@ type Watermark struct {
 
 type StoredWatermark struct {
 	Level
-	Order int `json:"order"`
+	Order int                            `json:"order"`
+	Hash  tz.Option[tz.BlockPayloadHash] `json:"hash"`
 }
 
-func (w *Watermark) Stored() *StoredWatermark {
-	return &StoredWatermark{
+func (w *Watermark) Stored(hash *crypt.Digest) *StoredWatermark {
+	wm := StoredWatermark{
 		Level: w.Level,
 		Order: w.Order,
 	}
+	if hash != nil {
+		var h tz.BlockPayloadHash
+		copy(h[:], hash[:])
+		wm.Hash = tz.Some(h)
+	}
+	return &wm
 }
 
-func (w *Watermark) Validate(stored *StoredWatermark) bool {
+func (w *Watermark) Validate(stored *StoredWatermark, hash *crypt.Digest) bool {
+	if hash != nil && stored.Hash.IsSome() && *(*tz.BlockPayloadHash)(hash) == stored.Hash.Unwrap() {
+		return true
+	}
 	c := w.Level.Cmp(&stored.Level)
 	return c.IsSome() && (c.Unwrap() > 0 || c.Unwrap() == 0 && w.Order > stored.Order)
 }

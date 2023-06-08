@@ -18,7 +18,11 @@ import (
 	"golang.org/x/crypto/cryptobyte/asn1"
 )
 
-var Digest = blake2b.Sum256
+func DigestFunc(data []byte) Digest {
+	return Digest(blake2b.Sum256(data))
+}
+
+type Digest [32]byte
 
 var (
 	ErrUnsupportedKeyType = errors.New("crypt: unsupported key type")
