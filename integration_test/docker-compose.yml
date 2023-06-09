@@ -103,7 +103,7 @@ services:
       - "5001:5001"
     networks:
       - ecadnet
-    command: --display headless --vnc-port 41000 --api-port 5001 apps/app_s.elf
+    command: --display headless --vnc-port 41000 --api-port 5001 -m nanos apps/app_s.elf
     healthcheck:
       test: ["CMD","stat","/etc/passwd"]
       interval: 1s
