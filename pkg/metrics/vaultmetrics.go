@@ -46,7 +46,7 @@ func Interceptor(opt *signatory.SignInterceptorOptions, sign func() error) error
 	timer := prometheus.NewTimer(
 		prometheus.ObserverFunc(
 			func(seconds float64) {
-				vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.PublicKeyHash()), opt.Req).Observe(seconds * 1000)
+				vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.ToBase58()), opt.Req).Observe(seconds * 1000)
 			}))
 	err := sign()
 	timer.ObserveDuration()
