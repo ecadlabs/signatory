@@ -24,6 +24,7 @@ func (m *msgMock) RequestKind() string { return "dummy" }
 type testCase struct {
 	pkh       crypt.PublicKeyHash
 	req       request.SignRequest
+	reqDigest crypt.Digest
 	expectErr bool
 }
 
@@ -35,6 +36,7 @@ func TestWatermark(t *testing.T) {
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
 			}),
+			reqDigest: crypt.Digest{0},
 			expectErr: false,
 		},
 		{
@@ -43,15 +45,18 @@ func TestWatermark(t *testing.T) {
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 123},
 			}),
+			reqDigest: crypt.Digest{1},
 			expectErr: true,
 		},
 		{
+			// repeated request
 			pkh: &tz.Ed25519PublicKeyHash{0},
 			req: (*msgMock)(&request.Watermark{
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
 			}),
-			expectErr: true,
+			reqDigest: crypt.Digest{0},
+			expectErr: false,
 		},
 		{
 			pkh: &tz.Ed25519PublicKeyHash{1},
@@ -59,6 +64,7 @@ func TestWatermark(t *testing.T) {
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 124},
 			}),
+			reqDigest: crypt.Digest{3},
 			expectErr: false,
 		},
 		{
@@ -67,6 +73,7 @@ func TestWatermark(t *testing.T) {
 				Chain: &tz.ChainID{},
 				Level: request.Level{Level: 125},
 			}),
+			reqDigest: crypt.Digest{4},
 			expectErr: false,
 		},
 	}
@@ -74,7 +81,7 @@ func TestWatermark(t *testing.T) {
 	t.Run("memory", func(t *testing.T) {
 		var wm InMemoryWatermark
 		for _, c := range cases {
-			err := wm.IsSafeToSign(c.pkh, c.req)
+			err := wm.IsSafeToSign(c.pkh, c.req, &c.reqDigest)
 			if c.expectErr {
 				assert.Error(t, err)
 			} else {
@@ -88,7 +95,7 @@ func TestWatermark(t *testing.T) {
 		require.NoError(t, err)
 		wm := FileWatermark{BaseDir: dir}
 		for _, c := range cases {
-			err := wm.IsSafeToSign(c.pkh, c.req)
+			err := wm.IsSafeToSign(c.pkh, c.req, &c.reqDigest)
 			if c.expectErr {
 				assert.Error(t, err)
 			} else {

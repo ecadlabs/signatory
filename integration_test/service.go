@@ -1,6 +1,7 @@
 package integrationtest
 
 import (
+	"fmt"
 	"os/exec"
 )
 
@@ -9,8 +10,9 @@ func restart_signatory() {
 	if err != nil {
 		panic("failed to stop signatory")
 	}
-	_, err = exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
+	out, err := exec.Command("docker", "compose", "-f", "./docker-compose.yml", "up", "-d", "--wait", "signatory").CombinedOutput()
 	if err != nil {
+		fmt.Println("restart signatory: failed to start: " + string(out))
 		panic("failed to start signatory during restart")
 	}
 }
