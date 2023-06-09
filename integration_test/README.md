@@ -1,6 +1,6 @@
 ## Integration test
 
-The tests in this folder use a docker compose file to orchestrate the starting of `Signatory`, `flextesa` and `tezos` containers.  
+The tests in this folder use a docker compose file to orchestrate the starting of `Signatory`, `flextesa`, `tezos`, and `speculos` containers.  
 
 The version of Signatory that is run is defined by an environment variable named `IMAGE`.
 
@@ -17,6 +17,8 @@ If you get a 404 from the github container registry web console, you can request
 [flextesa](https://hub.docker.com/r/oxheadalpha/flextesa/tags) image is used.
 
 [tezos](https://hub.docker.com/r/tezos/tezos/tags) image is used
+
+A custom [speculos](https://hub.docker.com/r/stephengaudet/tezoswalletemu) image is used, this image has the tezos wallet installed.
 
 ## Github container registry authentication setup
 
