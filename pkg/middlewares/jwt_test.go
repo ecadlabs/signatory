@@ -395,7 +395,10 @@ func TestValidateSecret(t *testing.T) {
 }
 
 func TestJWT_CheckUpdatenewCred(t *testing.T) {
-	var e uint64 = 1
+	now := time.Now().UTC()
+	desiredTime := now.Add(time.Minute * 1)
+	desiredTimeStr := desiredTime.Format("2006-01-02 15:04:05")
+	fmt.Println(desiredTimeStr)
 	type fields struct {
 		Users map[string]UserData
 	}
@@ -411,7 +414,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 						Password:   "SecretSecretSecretSecretSecretS1#$",
 						Secret:     secret,
 						Exp:        1,
-						OldCredExp: &e,
+						OldCredExp: desiredTimeStr,
 						NewData: &UserData{
 							Password: "SecretSecretSecretSecretSecretS1#$x",
 							Secret:   secret + "1",

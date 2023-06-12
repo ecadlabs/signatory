@@ -106,17 +106,19 @@ type UserData struct {
 	Password   string    `yaml:"password"`
 	Exp        uint64    `yaml:"jwt_exp"`
 	Secret     string    `yaml:"secret"`
-	OldCredExp *uint64   `yaml:"old_cred_exp,omitempty"`
+	OldCredExp string    `yaml:"old_cred_exp,omitempty"`
 	NewData    *UserData `yaml:"new_data"`
 }
 
 func (j *JWT) SetNewCred(user string) error {
 	if u, ok := j.Users[user]; ok {
-		u.Password = u.NewData.Password
-		u.Secret = u.NewData.Secret
-		u.Exp = u.NewData.Exp
-		u.NewData = nil
-		j.Users[user] = u
+		if u.NewData != nil {
+			u.Password = u.NewData.Password
+			u.Secret = u.NewData.Secret
+			u.Exp = u.NewData.Exp
+			u.NewData = nil
+			j.Users[user] = u
+		}
 		return nil
 	}
 	return fmt.Errorf("JWT: user not found")
@@ -193,13 +195,35 @@ func (j *JWT) CheckUpdateNewCred() error {
 			if e := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); e != nil {
 				return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
 			}
-			go func(u string, exp *uint64) error {
-				if exp == nil {
-					*exp = 30
+			go func(u string, exp string) error {
+				if exp == "" {
+					err := j.SetNewCred(u)
+					if err != nil {
+						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
+					}
+					return nil
 				}
-				timer := time.NewTimer(time.Minute * time.Duration(*exp))
-				<-timer.C
-				err := j.SetNewCred(u)
+
+				layout := "2006-01-02 15:04:05"
+				t, err := time.Parse(layout, exp)
+				if err != nil {
+					e := j.SetNewCred(u)
+					if e != nil {
+						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, e)
+					}
+					return fmt.Errorf("JWT: Failed to parse time for user %s: %e", u, err)
+				}
+
+				duration := t.UTC().Unix() - time.Now().Unix()
+				if duration < 0 {
+					err := j.SetNewCred(u)
+					if err != nil {
+						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
+					}
+					return nil
+				}
+				time.Sleep(1 * time.Second * time.Duration(duration))
+				err = j.SetNewCred(u)
 				if err != nil {
 					return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
 				}
