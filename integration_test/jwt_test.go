@@ -3,7 +3,6 @@ package integrationtest
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -253,11 +252,6 @@ func TestBadInputs(t *testing.T) {
 	code, bytes = request(login, "", h)
 	assert.Equal(t, 401, code)
 	assert.Contains(t, string(bytes), "username and password required")
-}
-
-func TestDatetime(t *testing.T) {
-	before, _, _ := strings.Cut(time.Now().Add(time.Minute).UTC().String(), ".")
-	fmt.Println(before)
 }
 
 func TestPasswordRotation(t *testing.T) {
