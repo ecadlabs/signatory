@@ -112,7 +112,7 @@ server:
 
 The credentials can be rotated by updating the configuration file and restarting the Signatory service.
 
-Older credentials can be removed from the configuration file after the new credentials are added and signatory is up and serving. The Signatory service will continue to accept the older credentials until the `old_cred_exp` time expires. If any error occurs with expiry time, the Signatory service stop accepting the older credentials immediately. The `old_cred_exp` field is `GMT` expressed in `YYYY-MM-DD hh:mm:ss` format.
+Older credentials can be removed from the configuration file after the new credentials are added and signatory is up and serving. The Signatory service will continue to accept the older credentials until the `old_cred_exp` time expires. If any error occurs with expiry time, the Signatory service will stop accepting the older credentials immediately. The `old_cred_exp` field is `GMT` expressed in `YYYY-MM-DD hh:mm:ss` format.
 
 ### sample configuration file:
 
