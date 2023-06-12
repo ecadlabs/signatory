@@ -22,7 +22,7 @@ func (priv Ed25519PrivateKey) Public() PublicKey {
 }
 
 func (priv Ed25519PrivateKey) Sign(message []byte) (signature Signature, err error) {
-	digest := Digest(message)
+	digest := DigestFunc(message)
 	return Ed25519Signature(ed25519.Sign(ed25519.PrivateKey(priv), digest[:])), nil
 }
 
@@ -75,7 +75,7 @@ func (pub Ed25519PublicKey) MarshalText() (text []byte, err error) {
 }
 
 func (pub Ed25519PublicKey) VerifySignature(sig Signature, message []byte) bool {
-	digest := Digest(message)
+	digest := DigestFunc(message)
 	switch sig := sig.(type) {
 	case Ed25519Signature:
 		return ed25519.Verify(ed25519.PublicKey(pub), digest[:], sig)

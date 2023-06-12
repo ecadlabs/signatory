@@ -209,7 +209,7 @@ func TestBadInputs(t *testing.T) {
 	assert.Equal(t, "token required", string(bytes))
 
 	//provide credentials in the header of the same request to fetch a bearer token
-	var h = [][]string{{"Content-Type", "application/json"}, {"username", "username1"}, {"password", "password1"}}
+	var h = [][]string{{"Content-Type", "application/json"}, {"username", username1}, {"password", password1}}
 	code, bytes = request(login, "", h)
 	assert.Equal(t, 201, code)
 	token := string(bytes)
@@ -346,11 +346,11 @@ func TestPerPkh(t *testing.T) {
 	assert.Equal(t, 403, code)
 	assert.Contains(t, string(bytes), "user `username2' is not authorized to access "+pkh1)
 
-	//ISSUE #372 pkh1 does not sign for malicious user2 who tries to be user1
+	//pkh1 does not sign for malicious user2 who tries to be user1
 	h = [][]string{{"Content-Type", "application/json"}, {"username", username1}, {"Authorization", "Bearer " + token2}}
 	code, bytes = request(url1, message, h)
-	assert.Equal(t, 403, code)
-	assert.Contains(t, string(bytes), "user `username2' is not authorized to access "+pkh1)
+	assert.Equal(t, 401, code)
+	assert.Contains(t, string(bytes), "JWT: invalid token")
 
 	//pkh2 signs for user2
 	h = [][]string{{"Content-Type", "application/json"}, {"username", username2}, {"Authorization", "Bearer " + token2}}
