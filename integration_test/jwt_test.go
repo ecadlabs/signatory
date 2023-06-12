@@ -3,6 +3,7 @@ package integrationtest
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -254,10 +255,16 @@ func TestBadInputs(t *testing.T) {
 	assert.Contains(t, string(bytes), "username and password required")
 }
 
+func TestDatetime(t *testing.T) {
+	before, _, _ := strings.Cut(time.Now().Add(time.Minute).UTC().String(), ".")
+	fmt.Println(before)
+}
+
 func TestPasswordRotation(t *testing.T) {
 	var c Config
 	c.Read()
-	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{username1: {Password: password1, Secret: secret, Exp: 60, CredExp: 1, NewCred: &JwtNewCred{Password: password2, Secret: secret2, Exp: 60}}}}
+	expiry, _, _ := strings.Cut(time.Now().Add(time.Minute).UTC().String(), ".")
+	c.Server.Jwt = JwtConfig{Users: map[string]*JwtUserData{username1: {Password: password1, Secret: secret, Exp: 60, CredExp: expiry, NewCred: &JwtNewCred{Password: password2, Secret: secret2, Exp: 60}}}}
 	backup_then_update_config(c)
 	defer restore_config()
 	restart_signatory()

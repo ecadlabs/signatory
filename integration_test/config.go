@@ -24,7 +24,7 @@ type JwtUserData struct {
 	Password string      `yaml:"password"`
 	Secret   string      `yaml:"secret"`
 	Exp      uint64      `yaml:"jwt_exp"`
-	CredExp  uint64      `yaml:"old_cred_exp,omitempty"`
+	CredExp  string      `yaml:"old_cred_exp,omitempty"`
 	NewCred  *JwtNewCred `yaml:"new_data,omitempty"`
 }
 
