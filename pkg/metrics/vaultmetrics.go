@@ -32,7 +32,7 @@ var (
 		Name:    "vault_sign_request_duration_milliseconds",
 		Help:    "Vaults signing requests latencies in milliseconds",
 		Buckets: prometheus.ExponentialBuckets(10, 10, 5),
-	}, []string{"vault"})
+	}, []string{"vault", "address", "op"})
 
 	vaultErrorCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -41,12 +41,14 @@ var (
 		}, []string{"vault", "code"})
 )
 
-// Interceptor function collects sing operation metrics
-func Interceptor(opt *signatory.SignInterceptorOptions, sing func() error) error {
-	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(seconds float64) {
-		vaultSigningHist.WithLabelValues(opt.Vault).Observe(seconds * 1000)
-	}))
-	err := sing()
+// Interceptor function collects sign operation metrics
+func Interceptor(opt *signatory.SignInterceptorOptions, sign func() error) error {
+	timer := prometheus.NewTimer(
+		prometheus.ObserverFunc(
+			func(seconds float64) {
+				vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.ToBase58()), opt.Req).Observe(seconds * 1000)
+			}))
+	err := sign()
 	timer.ObserveDuration()
 
 	if err != nil {
