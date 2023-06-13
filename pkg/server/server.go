@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -29,6 +30,7 @@ type Signer interface {
 // Server struct containing the information necessary to run a tezos remote signers
 type Server struct {
 	Auth    auth.AuthorizedKeysStorage
+	MidWare *middlewares.JWTMiddleware
 	Signer  Signer
 	Address string
 	Logger  log.FieldLogger
@@ -183,8 +185,12 @@ func (s *Server) Handler() (http.Handler, error) {
 	}
 
 	r := mux.NewRouter()
-	r.Use((&Logging{}).Handler)
+	r.Use((&middlewares.Logging{}).Handler)
+	if s.MidWare != nil {
+		r.Use(s.MidWare.AuthHandler)
+	}
 
+	r.Methods("POST").Path("/login").HandlerFunc(s.MidWare.LoginHandler)
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)

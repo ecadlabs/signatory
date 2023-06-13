@@ -2,10 +2,12 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/ecadlabs/signatory/pkg/auth"
+	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,6 +24,17 @@ func NewServeCommand(c *Context) *cobra.Command {
 			srvConf := server.Server{
 				Address: c.config.Server.Address,
 				Signer:  c.signatory,
+			}
+
+			if c.config.Server.JWTConfig != nil {
+				if c.config.Server.AuthorizedKeys != nil {
+					return fmt.Errorf("cannot use both JWT and static authorized keys")
+				}
+				mw := middlewares.NewMiddleware(c.config.Server.JWTConfig)
+				if err := c.config.Server.JWTConfig.CheckUpdateNewCred(); err != nil {
+					return err
+				}
+				srvConf.MidWare = mw
 			}
 
 			if c.config.Server.AuthorizedKeys != nil {

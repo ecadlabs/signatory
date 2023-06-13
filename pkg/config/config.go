@@ -6,6 +6,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
+	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -18,9 +19,10 @@ type PolicyHook struct {
 
 // ServerConfig contains the information necessary to the tezos signing server
 type ServerConfig struct {
-	Address        string          `yaml:"address" validate:"hostname_port"`
-	UtilityAddress string          `yaml:"utility_address" validate:"hostname_port"`
-	AuthorizedKeys *AuthorizedKeys `yaml:"authorized_keys"`
+	Address        string           `yaml:"address" validate:"hostname_port"`
+	UtilityAddress string           `yaml:"utility_address" validate:"hostname_port"`
+	AuthorizedKeys *AuthorizedKeys  `yaml:"authorized_keys"`
+	JWTConfig      *middlewares.JWT `yaml:"jwt"`
 }
 
 // TezosConfig contains the configuration related to tezos network
@@ -33,6 +35,7 @@ type TezosPolicy struct {
 	AllowedKinds      []string            `yaml:"allowed_kinds"`
 	LogPayloads       bool                `yaml:"log_payloads"`
 	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
+	JwtUsers          []string            `yaml:"jwt_users"`
 }
 
 // VaultConfig represents single vault instance
@@ -67,7 +70,6 @@ func (c *Config) Read(file string) error {
 	if err = yaml.Unmarshal(yamlFile, c); err != nil {
 		return err
 	}
-
 	return nil
 }
 
