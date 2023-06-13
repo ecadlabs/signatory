@@ -17,4 +17,9 @@
     "value":
       { "locator":
           "http://signatory:6732/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi",
-        "key": "edpktfLxRbpLeFjL49Rz2xtBwPaSfdZ7ZL6W3idm2JaMTP93RwmCdo" } } ]
+        "key": "edpktfLxRbpLeFjL49Rz2xtBwPaSfdZ7ZL6W3idm2JaMTP93RwmCdo" } },
+  { "name": "speculos",
+    "value":
+      { "locator":
+          "http://signatory:6732/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA",
+        "key": "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp" } } ]
