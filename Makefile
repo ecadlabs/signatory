@@ -52,10 +52,15 @@ release-preview:
 
 .PHONY: release
 release:
+	@if [ ! -f ".env" ]; then \
+		echo ".env file is required for release";\
+		exit 1;\
+	fi
 	docker run \
 		--rm \
 		--privileged \
 		-e CGO_ENABLED=1 \
+		--env-file .env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
