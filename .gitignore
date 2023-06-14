@@ -20,6 +20,7 @@ vendor/
 
 dist
 .release-env
+.env
 .docker-creds
 signatory
 signatory-cli
