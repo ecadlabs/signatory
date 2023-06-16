@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -321,33 +320,33 @@ func request_sign_concurrent(request string) {
 func mkdir() {
 	_, err := exec.Command("docker", "exec", container, "mkdir", "-p", dir).CombinedOutput()
 	if err != nil {
-		log.Fatal("failed to make watermark directory")
+		panic("failed to make watermark directory")
 	}
 }
 
 func remove_watermark_files() {
 	out, err := exec.Command("docker", "exec", container, "rm", "-rf", dir).CombinedOutput()
 	if err != nil {
-		log.Fatal("failed to remove watermark files: " + err.Error() + " " + string(out))
+		panic("failed to remove watermark files: " + err.Error() + " " + string(out))
 	}
 }
 
 func write_watermark_file(ktw keyToWatermark, filename string) {
 	json, err := json.Marshal(ktw)
 	if err != nil {
-		log.Fatal("json marshal failed")
+		panic("json marshal failed")
 	}
 	shell := "echo '" + string(json) + "' >" + dir + filename
 	_, err = exec.Command("docker", "exec", container, "bash", "-c", shell).CombinedOutput()
 	if err != nil {
-		log.Fatal("failed to write watermark file")
+		panic("failed to write watermark file")
 	}
 }
 
 func read_watermark_file(chainId string) (out []byte) {
 	out, err := exec.Command("docker", "exec", container, "cat", dir+chainId+".json").CombinedOutput()
 	if err != nil {
-		log.Fatal("failed to read watermark file")
+		panic("failed to read watermark file")
 	}
 	return
 }
@@ -357,16 +356,16 @@ func request_sign(body string) (int, []byte) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, url, reqbody)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer resp.Body.Close()
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	//fmt.Println(string(bytes))
 	return resp.StatusCode, bytes
