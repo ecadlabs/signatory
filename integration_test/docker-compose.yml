@@ -81,8 +81,11 @@ services:
         target: /etc/gcp-token.json
       - source: az-sp-key
         target: /etc/service-principal.key
+    volumes:
+      - ./coverage:/opt/coverage     
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
+      - GOCOVERDIR=/opt/coverage
     depends_on:
       speculos:
         condition: service_healthy
