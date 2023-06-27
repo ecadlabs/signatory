@@ -83,7 +83,6 @@ services:
         target: /etc/service-principal.key
     volumes:
       - ./coverage:/opt/coverage
-      - ./coverage.sh:/usr/bin/coverage
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
       - GOCOVERDIR=/opt/coverage
