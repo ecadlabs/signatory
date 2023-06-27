@@ -168,4 +168,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: integrationtest-coverage-env${{ matrix.testenvs }}
-          path: ./coverage/integrationtestcoverage.html
+          path: ./integration_test/coverage/integrationtestcoverage.html
