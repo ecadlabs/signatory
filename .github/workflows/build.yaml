@@ -163,7 +163,7 @@ jobs:
          rm -f gcp-token.json;
          rm -f service-principal.key;
          go tool covdata textfmt -i=./coverage -o=./coverage/cov.txt;
-         sed -i '' 's/\/go\/src\/github.com/github.com/g' ./coverage/cov.txt;
+         sed -i 's/\/go\/src\/github.com/github.com/g' ./coverage/cov.txt;
          go tool cover -html=./coverage/cov.txt -o=./coverage/integrationtestcoverage.html;
       - uses: actions/upload-artifact@v3
         with:
