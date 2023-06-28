@@ -74,7 +74,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "block not allowed",
-			msg:   mustHex("019caecab9000753d3029bc7d9a36b60cce68ade985a0a16929587166e0d3de61efff2fa31b7116bf670000000005ee3c23b04519d71c4e54089c56773c44979b3ba3d61078ade40332ad81577ae074f653e0e0000001100000001010000000800000000000753d2da051ba81185783e4cbc633cf2ba809139ef07c3e5f6c5867f930e7667b224430000cde7fbbb948e030000"),
+			msg:   mustHex("11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
@@ -84,7 +84,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "endorsement ok",
-			msg:   mustHex("029caecab9e3c579180719b76b585cbdf7e440914b8e09fc0e8c64a26b7a4eacd545ad653100000753c3"),
+			msg:   mustHex("13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
@@ -93,7 +93,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "endorsement not allowed",
-			msg:   mustHex("029caecab9e3c579180719b76b585cbdf7e440914b8e09fc0e8c64a26b7a4eacd545ad653100000753c3"),
+			msg:   mustHex("13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
@@ -103,7 +103,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "generic ok",
-			msg:   mustHex("019caecab900061de402e27da655a04eaa5dad0647e6ff56d11a5da8efb48c2e90570e27853839e76b68000000005eb576f5047ab08836902391c075dc92640f9d7496faa8cff5b2b24450786d86349b9a528d000000110000000101000000080000000000061de3ad348c90c42bc5b90e89837fdbeb6c1360be7181c9116ef2eb8cb63ebbb1380e00000675d7e0ffa2030000"),
+			msg:   mustHex("03a60703a9567bf69ec66b368c3d8562eba4cbf29278c2c10447a684e3aa1436856c00a0c7a9b0bcd6a48ee0c13094327f215ba2adeaa7d40dabc1af25e36fde02c096b10201f525eabd8b0eeace1494233ea0230d2c9ad6619b00ffff0b66756c66696c6c5f61736b0000000907070088f0f6010306"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},

@@ -78,11 +78,16 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
+			watermark, err := signatory.NewFileWatermark(baseDir)
+			if err != nil {
+				return err
+			}
+
 			sigConf := signatory.Config{
 				Policy:      pol,
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
-				Watermark:   &signatory.FileWatermark{BaseDir: baseDir},
+				Watermark:   watermark,
 			}
 
 			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {

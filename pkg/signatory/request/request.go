@@ -11,27 +11,15 @@ type SignRequest interface {
 	RequestKind() string
 }
 
-type EmmyBlockRequest struct {
-	Chain       *tz.ChainID
-	BlockHeader protocol.ShellHeader
-}
-
-func (*EmmyBlockRequest) RequestKind() string { return "block" }
-
-type TenderbakeBlockRequest struct {
+type BlockRequest struct {
 	Chain       *tz.ChainID
 	BlockHeader protocol.TenderbakeBlockHeader
 }
 
-func (*TenderbakeBlockRequest) RequestKind() string { return "block" }
-
-type EmmyEndorsementRequest struct {
-	Chain     *tz.ChainID
-	Branch    *tz.BlockHash
-	Operation protocol.InlinedEmmyEndorsementContents
-}
-
-func (*EmmyEndorsementRequest) RequestKind() string { return "endorsement" }
+func (*BlockRequest) RequestKind() string       { return "block" }
+func (r *BlockRequest) GetChainID() *tz.ChainID { return r.Chain }
+func (r *BlockRequest) GetLevel() int32         { return r.BlockHeader.Level }
+func (r *BlockRequest) GetRound() int32         { return r.BlockHeader.PayloadRound }
 
 type PreendorsementRequest struct {
 	Chain     *tz.ChainID
@@ -39,7 +27,10 @@ type PreendorsementRequest struct {
 	Operation protocol.InlinedPreendorsementContents
 }
 
-func (*PreendorsementRequest) RequestKind() string { return "preendorsement" }
+func (*PreendorsementRequest) RequestKind() string       { return "preendorsement" }
+func (r *PreendorsementRequest) GetChainID() *tz.ChainID { return r.Chain }
+func (r *PreendorsementRequest) GetLevel() int32         { return r.Operation.(*protocol.Preendorsement).Level }
+func (r *PreendorsementRequest) GetRound() int32         { return r.Operation.(*protocol.Preendorsement).Round }
 
 type EndorsementRequest struct {
 	Chain     *tz.ChainID
@@ -47,7 +38,10 @@ type EndorsementRequest struct {
 	Operation protocol.InlinedEndorsementContents
 }
 
-func (*EndorsementRequest) RequestKind() string { return "endorsement" }
+func (*EndorsementRequest) RequestKind() string       { return "endorsement" }
+func (r *EndorsementRequest) GetChainID() *tz.ChainID { return r.Chain }
+func (r *EndorsementRequest) GetLevel() int32         { return r.Operation.(*protocol.Endorsement).Level }
+func (r *EndorsementRequest) GetRound() int32         { return r.Operation.(*protocol.Endorsement).Round }
 
 type GenericOperationRequest struct {
 	Branch     *tz.BlockHash
@@ -59,10 +53,8 @@ func (*GenericOperationRequest) RequestKind() string { return "generic" }
 func init() {
 	encoding.RegisterEnum(&encoding.Enum[SignRequest]{
 		Variants: encoding.Variants[SignRequest]{
-			0x01: (*EmmyBlockRequest)(nil),
-			0x02: (*EmmyEndorsementRequest)(nil),
 			0x03: (*GenericOperationRequest)(nil),
-			0x11: (*TenderbakeBlockRequest)(nil),
+			0x11: (*BlockRequest)(nil),
 			0x12: (*PreendorsementRequest)(nil),
 			0x13: (*EndorsementRequest)(nil),
 		},
@@ -71,131 +63,40 @@ func init() {
 
 type WithWatermark interface {
 	SignRequest
-	Watermark() *Watermark
-}
-
-const (
-	WmOrderDefault = iota
-	WmOrderPreendorsement
-	WmOrderEndorsement
-)
-
-type Level struct {
-	Level int32            `json:"level"`
-	Round tz.Option[int32] `json:"round"`
-}
-
-func (l *Level) Cmp(other *Level) tz.Option[int] {
-	if l.Round.IsNone() && other.Round.IsSome() {
-		return tz.None[int]()
-	}
-
-	if d := l.Level - other.Level; d == 0 {
-		switch {
-		case l.Round.IsSome() && other.Round.IsSome():
-			return tz.Some(int(l.Round.Unwrap() - other.Round.Unwrap()))
-		case l.Round.IsSome() && other.Round.IsNone():
-			return tz.Some(1)
-		default:
-			return tz.Some(0)
-		}
-	} else {
-		return tz.Some(int(d))
-	}
+	GetChainID() *tz.ChainID
+	GetLevel() int32
+	GetRound() int32
 }
 
 type Watermark struct {
-	Level
-	Chain *tz.ChainID
-	Order int
-}
-
-type StoredWatermark struct {
-	Level
-	Order int                            `json:"order"`
+	Level int32                          `json:"level"`
+	Round int32                          `json:"round"`
 	Hash  tz.Option[tz.BlockPayloadHash] `json:"hash"`
 }
 
-func (w *Watermark) Stored(hash *crypt.Digest) *StoredWatermark {
-	wm := StoredWatermark{
-		Level: w.Level,
-		Order: w.Order,
+func NewWatermark(req WithWatermark, hash *crypt.Digest) *Watermark {
+	return &Watermark{
+		Level: req.GetLevel(),
+		Round: req.GetRound(),
+		Hash:  tz.Some((tz.BlockPayloadHash)(*hash)),
 	}
-	if hash != nil {
-		var h tz.BlockPayloadHash
-		copy(h[:], hash[:])
-		wm.Hash = tz.Some(h)
-	}
-	return &wm
 }
 
-func (w *Watermark) Validate(stored *StoredWatermark, hash *crypt.Digest) bool {
-	if hash != nil && stored.Hash.IsSome() && *(*tz.BlockPayloadHash)(hash) == stored.Hash.Unwrap() {
+func (l *Watermark) Validate(stored *Watermark) bool {
+	if l.Hash.IsSome() && stored.Hash.IsSome() && l.Hash.Unwrap() == stored.Hash.Unwrap() {
 		return true
 	}
-	c := w.Level.Cmp(&stored.Level)
-	return c.IsSome() && (c.Unwrap() > 0 || c.Unwrap() == 0 && w.Order > stored.Order)
-}
-
-func (r *EmmyBlockRequest) Watermark() *Watermark {
-	return &Watermark{
-		Chain: r.Chain,
-		Level: Level{
-			Level: r.BlockHeader.Level,
-			Round: tz.None[int32](),
-		},
-		Order: WmOrderDefault,
+	var diff int32
+	if d := l.Level - stored.Level; d == 0 {
+		diff = l.Round - stored.Round
+	} else {
+		diff = d
 	}
-}
-
-func (r *TenderbakeBlockRequest) Watermark() *Watermark {
-	return &Watermark{
-		Chain: r.Chain,
-		Level: Level{
-			Level: r.BlockHeader.Level,
-			Round: tz.Some(r.BlockHeader.PayloadRound),
-		},
-		Order: WmOrderDefault,
-	}
-}
-
-func (r *EmmyEndorsementRequest) Watermark() *Watermark {
-	return &Watermark{
-		Chain: r.Chain,
-		Level: Level{
-			Level: r.Operation.(*protocol.EmmyEndorsement).Level,
-			Round: tz.None[int32](),
-		},
-		Order: WmOrderEndorsement,
-	}
-}
-
-func (r *PreendorsementRequest) Watermark() *Watermark {
-	return &Watermark{
-		Chain: r.Chain,
-		Level: Level{
-			Level: r.Operation.(*protocol.Preendorsement).Level,
-			Round: tz.Some(r.Operation.(*protocol.Preendorsement).Round),
-		},
-		Order: WmOrderPreendorsement,
-	}
-}
-
-func (r *EndorsementRequest) Watermark() *Watermark {
-	return &Watermark{
-		Chain: r.Chain,
-		Level: Level{
-			Level: r.Operation.(*protocol.Endorsement).Level,
-			Round: tz.Some(r.Operation.(*protocol.Endorsement).Round),
-		},
-		Order: WmOrderEndorsement,
-	}
+	return diff > 0
 }
 
 var (
-	_ WithWatermark = (*EmmyBlockRequest)(nil)
-	_ WithWatermark = (*EmmyEndorsementRequest)(nil)
-	_ WithWatermark = (*TenderbakeBlockRequest)(nil)
+	_ WithWatermark = (*BlockRequest)(nil)
 	_ WithWatermark = (*PreendorsementRequest)(nil)
 	_ WithWatermark = (*EndorsementRequest)(nil)
 )

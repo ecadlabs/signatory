@@ -8,89 +8,131 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
+	"strings"
 
 	tz "github.com/ecadlabs/gotez"
+	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	log "github.com/sirupsen/logrus"
 )
 
-// chain -> delegate(pkh)
-type delegateMap = hashmap.PublicKeyHashMap[*request.StoredWatermark]
-type chainMap map[tz.ChainID]delegateMap
+type FileWatermark struct {
+	baseDir string
+	mem     InMemoryWatermark
+}
+
+// chain -> delegate(pkh) -> request type -> watermark
+type delegateMap = hashmap.PublicKeyHashMap[requestMap]
+type requestMap = map[string]*request.Watermark
 
 var ErrWatermark = errors.New("watermark validation failed")
 
-const watermarkDir = "watermark_v1"
+const watermarkDir = "watermark_v2"
 
-type FileWatermark struct {
-	BaseDir string
-	mtx     sync.Mutex
-}
-
-type legacyWatermarkData struct {
-	Round int32                          `json:"round,omitempty"`
-	Level int32                          `json:"level"`
-	Hash  tz.Option[tz.BlockPayloadHash] `json:"hash"`
-}
-
-type legacyKindMap map[string]legacyWatermarkMap
-type legacyWatermarkMap = hashmap.PublicKeyHashMap[*legacyWatermarkData]
-
-const legacyWatermarkDir = "watermark"
-
-func (f *FileWatermark) tryLegacy(filename string) (delegateMap, error) {
-	var kinds legacyKindMap
-	fd, err := os.Open(filename)
-	if err == nil {
-		err = json.NewDecoder(fd).Decode(&kinds)
-		fd.Close()
-		if err != nil {
+func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
+	dir := filepath.Join(baseDir, watermarkDir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return nil, err
 		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	} else {
 		return nil, nil
 	}
 
-	orders := []struct {
-		kind  string
-		order int
-	}{
-		{"endorsement", request.WmOrderEndorsement},
-		{"preendorsement", request.WmOrderPreendorsement},
-		{"block", request.WmOrderDefault},
-		{"generic", request.WmOrderDefault},
-	}
-
-	out := make(delegateMap)
-	for _, o := range orders {
-		if wm, ok := kinds[o.kind]; ok {
-			wm.ForEach(func(pkh tz.PublicKeyHash, data *legacyWatermarkData) bool {
-				stored := request.StoredWatermark{
-					Level: request.Level{
-						Level: data.Level,
-						Round: tz.Some(data.Round),
-					},
-					Order: o.order,
-					Hash:  data.Hash,
-				}
-				if s, ok := out.Get(pkh); !ok || ok && s.Order <= o.order {
-					out.Insert(pkh, &stored)
-				}
-				return true
-			})
+	out := make(map[tz.ChainID]delegateMap)
+	for _, ent := range entries {
+		if !ent.Type().IsRegular() || !strings.HasSuffix(ent.Name(), ".json") {
+			continue
 		}
+		name := ent.Name()
+		chainID, err := b58.ParseChainID([]byte(name[:len(name)-5]))
+		if err != nil {
+			return nil, err
+		}
+
+		filename := filepath.Join(dir, name)
+		fd, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer fd.Close()
+		var delegates delegateMap
+		if err = json.NewDecoder(fd).Decode(&delegates); err != nil {
+			return nil, err
+		}
+		out[*chainID] = delegates
 	}
 
 	return out, nil
 }
 
-func writeWatermarkData(data delegateMap, filename string) error {
-	fd, err := os.Create(filename)
+func NewFileWatermark(baseDir string) (*FileWatermark, error) {
+	wm := FileWatermark{
+		baseDir: baseDir,
+	}
+	var err error
+	if wm.mem.chains, err = tryLoad(baseDir); err != nil {
+		return nil, err
+	}
+	if wm.mem.chains != nil {
+		// load ok, give a warning if legasy data still exist
+		if ok, err := checkV0exist(baseDir); err == nil {
+			if ok {
+				log.Warnf("Watermark storage directory %s is deprecated and must be removed manually", v0WatermarkDir)
+			}
+		} else {
+			return nil, err
+		}
+		if ok, err := checkV1exist(baseDir); err == nil {
+			if ok {
+				log.Warnf("Watermark storage directory %s is deprecated and must be removed manually", v1WatermarkDir)
+			}
+		} else {
+			return nil, err
+		}
+	} else {
+		// do migration
+		if wm.mem.chains, err = tryV1(baseDir); err != nil {
+			return nil, err
+		}
+		if wm.mem.chains != nil {
+			if err = writeAll(baseDir, wm.mem.chains); err != nil {
+				return nil, err
+			}
+			log.Infof("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, v1WatermarkDir)
+		} else {
+			if wm.mem.chains, err = tryV0(baseDir); err != nil {
+				return nil, err
+			}
+			if wm.mem.chains != nil {
+				if err = writeAll(baseDir, wm.mem.chains); err != nil {
+					return nil, err
+				}
+				log.Infof("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, v0WatermarkDir)
+			}
+		}
+	}
+	return &wm, nil
+}
+
+func writeAll(baseDir string, chains map[tz.ChainID]delegateMap) error {
+	for chain, data := range chains {
+		if err := writeWatermarkData(baseDir, data, &chain); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) error {
+	dir := filepath.Join(baseDir, watermarkDir)
+	if err := os.MkdirAll(dir, 0770); err != nil {
+		return err
+	}
+
+	fd, err := os.Create(filepath.Join(dir, fmt.Sprintf("%s.json", chain.String())))
 	if err != nil {
 		return err
 	}
@@ -110,52 +152,14 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRe
 		// watermark is not required
 		return nil
 	}
-	watermark := m.Watermark()
+	f.mem.mtx.Lock()
+	defer f.mem.mtx.Unlock()
 
-	dir := filepath.Join(f.BaseDir, watermarkDir)
-	if err := os.MkdirAll(dir, 0770); err != nil {
+	if err := f.mem.isSafeToSignUnlocked(pkh, m, digest); err != nil {
 		return err
 	}
-	filename := filepath.Join(dir, fmt.Sprintf("%s.json", watermark.Chain.String()))
-	legacyFilename := filepath.Join(f.BaseDir, legacyWatermarkDir, fmt.Sprintf("%s.json", watermark.Chain.String()))
-
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-
-	var delegates delegateMap
-	fd, err := os.Open(filename)
-	if err == nil {
-		err = json.NewDecoder(fd).Decode(&delegates)
-		fd.Close()
-		if err != nil {
-			return err
-		}
-		if legacy, err := f.tryLegacy(legacyFilename); err != nil {
-			return err
-		} else if legacy != nil {
-			log.Warnf("Watermark storage directory %s is deprecated and must be removed manually", legacyWatermarkDir)
-		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return err
-	} else if delegates, err = f.tryLegacy(legacyFilename); err != nil {
-		return err
-	} else if delegates != nil {
-		// successful migration
-		if err := writeWatermarkData(delegates, filename); err != nil {
-			return err
-		}
-		log.Infof("Watermark data migrated successfully to %s. Old watermark storage directory %s can now be safely removed", watermarkDir, legacyWatermarkDir)
-	} else {
-		delegates = make(delegateMap)
-	}
-
-	if wm, ok := delegates.Get(pkh); ok {
-		if !watermark.Validate(wm, digest) {
-			return ErrWatermark
-		}
-	}
-	delegates.Insert(pkh, watermark.Stored(digest))
-	return writeWatermarkData(delegates, filename)
+	chain := m.GetChainID()
+	return writeWatermarkData(f.baseDir, f.mem.chains[*chain], chain)
 }
 
 var _ Watermark = (*FileWatermark)(nil)

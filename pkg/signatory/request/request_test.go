@@ -68,7 +68,7 @@ func TestSignRequest(t *testing.T) {
 		{
 			title: "block",
 			src:   "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000",
-			expect: &TenderbakeBlockRequest{
+			expect: &BlockRequest{
 				Chain: &tz.ChainID{0xed, 0x9d, 0x21, 0x7c},
 				BlockHeader: proto.TenderbakeBlockHeader{
 					ShellHeader: proto.ShellHeader{
