@@ -135,11 +135,6 @@ func (c *cloudKMSIterator) Next() (vault.StoredKey, error) {
 				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
 				if err != nil {
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
-				}
-				if err != nil {
-					if err != crypt.ErrUnsupportedKeyType {
-						return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
-					}
 				} else {
 					return &cloudKMSKey{
 						key: ver,
