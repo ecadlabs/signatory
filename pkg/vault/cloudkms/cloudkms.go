@@ -131,19 +131,16 @@ func (c *cloudKMSIterator) Next() (vault.StoredKey, error) {
 			// get key versions
 			c.verIter = c.vault.client.ListCryptoKeyVersions(c.ctx, &kmspb.ListCryptoKeyVersionsRequest{Parent: key.Name})
 		} else {
-			pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
-			if err != nil {
-				return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
-			}
-			if err != nil {
-				if err != crypt.ErrUnsupportedKeyType {
+			if ver.State == kmspb.CryptoKeyVersion_ENABLED {
+				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
+				if err != nil {
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
+				} else {
+					return &cloudKMSKey{
+						key: ver,
+						pub: pub,
+					}, nil
 				}
-			} else {
-				return &cloudKMSKey{
-					key: ver,
-					pub: pub,
-				}, nil
 			}
 		}
 	}
