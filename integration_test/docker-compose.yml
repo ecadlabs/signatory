@@ -72,6 +72,8 @@ services:
       - "9583:9583"
     networks:
       - ecadnet
+    volumes:
+      - ./.watermarks:/var/lib/signatory
     configs:
       - source: sigy-config
         target: /etc/signatory.yaml
