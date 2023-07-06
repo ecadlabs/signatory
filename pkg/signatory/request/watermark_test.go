@@ -10,282 +10,131 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type dummyMsg struct {
+	level int32
+	round int32
+}
+
+func (r *dummyMsg) RequestKind() string     { return "dummy" }
+func (r *dummyMsg) GetChainID() *tz.ChainID { return &tz.ChainID{} }
+func (r *dummyMsg) GetLevel() int32         { return r.level }
+func (r *dummyMsg) GetRound() int32         { return r.round }
+
 func TestWatermark(t *testing.T) {
 	type expect struct {
-		wm     Watermark
+		req    WithWatermark
 		digest *crypt.Digest
 		expect bool
 	}
 
 	type testCase struct {
-		stored StoredWatermark
+		stored Watermark
 		expect []expect
 	}
 
 	testCases := []testCase{
 		{
-			stored: StoredWatermark{
-				Level: Level{
-					Level: 1,
-					Round: tz.Some(int32(1)),
-				},
-				Order: WmOrderDefault,
+			stored: Watermark{
+				Level: 1,
+				Round: 1,
 			},
 			expect: []expect{
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(0)),
-						},
-						Order: WmOrderDefault,
+					req: &dummyMsg{
+						level: 2,
+						round: 0,
 					},
 					digest: &crypt.Digest{0},
 					expect: true, // level above
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(0)),
-						},
-						Order: WmOrderDefault,
+					req: &dummyMsg{
+						level: 1,
+						round: 2,
 					},
 					digest: &crypt.Digest{0},
-					expect: true, // repeat
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.None[int32](),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: false, // round is set above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: true, // level and round above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
-					},
 					expect: true, // round above
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 0,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
+					req: &dummyMsg{
+						level: 1,
+						round: 1,
 					},
+					digest: &crypt.Digest{0},
+					expect: false, // repeated
+				},
+				{
+					req: &dummyMsg{
+						level: 1,
+						round: 0,
+					},
+					digest: &crypt.Digest{0},
+					expect: false, // round below
+				},
+				{
+					req: &dummyMsg{
+						level: 0,
+						round: 2,
+					},
+					digest: &crypt.Digest{0},
 					expect: false, // level below
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(1)),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: false, // level and round below
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(1)),
-						},
-						Order: WmOrderEndorsement,
-					},
-					expect: true, // don't have endorsement
 				},
 			},
 		},
 		{
-			stored: StoredWatermark{
-				Level: Level{
-					Level: 1,
-					Round: tz.Some(int32(1)),
-				},
-				Order: WmOrderEndorsement,
+			stored: Watermark{
+				Level: 1,
+				Round: 1,
+				Hash:  tz.Some(tz.BlockPayloadHash{0}),
 			},
 			expect: []expect{
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(0)),
-						},
-						Order: WmOrderDefault,
+					req: &dummyMsg{
+						level: 2,
+						round: 0,
 					},
+					digest: &crypt.Digest{1},
 					expect: true, // level above
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(0)),
-						},
-						Order: WmOrderEndorsement,
+					req: &dummyMsg{
+						level: 1,
+						round: 2,
 					},
-					expect: true, // level above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: true, // level and round above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderEndorsement,
-					},
-					expect: true, // level and round above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
-					},
+					digest: &crypt.Digest{1},
 					expect: true, // round above
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderEndorsement,
+					req: &dummyMsg{
+						level: 1,
+						round: 1,
 					},
-					expect: true, // order above
+					digest: &crypt.Digest{0},
+					expect: true, // hash match
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 0,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
+					req: &dummyMsg{
+						level: 1,
+						round: 0,
 					},
+					digest: &crypt.Digest{1},
+					expect: false, // round below
+				},
+				{
+					req: &dummyMsg{
+						level: 0,
+						round: 2,
+					},
+					digest: &crypt.Digest{1},
 					expect: false, // level below
 				},
 				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 0,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderEndorsement,
+					req: &dummyMsg{
+						level: 1,
+						round: 1,
 					},
-					expect: false, // level below
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(1)),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: false, // level and round below
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 1,
-							Round: tz.Some(int32(1)),
-						},
-						Order: WmOrderEndorsement,
-					},
-					expect: false, // have endorsement
-				},
-			},
-		},
-		{
-			stored: StoredWatermark{
-				Level: Level{
-					Level: 1,
-					Round: tz.None[int32](),
-				},
-				Order: WmOrderDefault,
-			},
-			expect: []expect{
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.None[int32](),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: true, // level above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 2,
-							Round: tz.Some(int32(2)),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: true, // level above
-				},
-				{
-					wm: Watermark{
-						Chain: &tz.ChainID{},
-						Level: Level{
-							Level: 0,
-							Round: tz.None[int32](),
-						},
-						Order: WmOrderDefault,
-					},
-					expect: false, // level below
+					digest: &crypt.Digest{1},
+					expect: false, // repeated
 				},
 			},
 		},
@@ -293,7 +142,8 @@ func TestWatermark(t *testing.T) {
 
 	for _, c := range testCases {
 		for _, ex := range c.expect {
-			require.Equal(t, ex.expect, ex.wm.Validate(&c.stored, ex.digest))
+			wm := NewWatermark(ex.req, ex.digest)
+			require.Equal(t, ex.expect, wm.Validate(&c.stored))
 		}
 	}
 }

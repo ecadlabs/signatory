@@ -349,8 +349,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l = l.WithField(logReq, msg.RequestKind())
 
 	if m, ok := msg.(request.WithWatermark); ok {
-		wm := m.Watermark()
-		l = l.WithFields(log.Fields{logChainID: string(wm.Chain.ToBase58()), logLevel: wm.Level.Level})
+		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel()})
 	}
 
 	var opStat operationsStat

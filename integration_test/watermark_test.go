@@ -14,12 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// type keyToWatermark map[string]keyToWatermark
-type keyToWatermark map[string]*watermarkData
+type watermarkFile map[string]map[string]*watermarkData
 type watermarkData struct {
 	Round int32  `json:"round,omitempty"`
 	Level int32  `json:"level"`
-	Order int32  `json:"order,omitempty"`
 	Hash  string `json:"hash"`
 }
 
@@ -29,7 +27,7 @@ const (
 	port      = "6732"
 	pkh       = "tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf"
 	url       = protocol + host + ":" + port + "/keys/" + pkh
-	dir       = "/var/lib/signatory/watermark_v1/"
+	dir       = "/var/lib/signatory/watermark_v2/"
 	container = "signatory"
 )
 
@@ -38,13 +36,12 @@ type functionalTestCase struct {
 	signRequestBodies   []string
 	expectedStatusCodes []int
 	expectedResponses   []any
-	watermarkBefore     keyToWatermark
-	watermarkAfter      keyToWatermark
+	watermarkBefore     watermarkFile
+	watermarkAfter      watermarkFile
 	chainID             string
 }
 
 var functionalTestCases = []functionalTestCase{
-
 	{title: "watermark file is created if it does not exist",
 		signRequestBodies: []string{
 			"\"11b3d79f99000000020130c1cb51f36daebee85fe99c04800a38e8133ffd2fa329cd4db35f32fe5bf5e30000000064277aa504683625c2445a4e9564bf710c5528fd99a7d150d2a2a323bc22ff9e2710da4f6d00000021000000010200000004000000020000000000000004ffffffff0000000400000000080966c1f5a955161345bc7d81ac205ebafc89f5977a5bc88e47ab1b6f8d791e5ae8b92d9bc0523b3e07848458e66dc4265e29f3c5d8007447862e2483fdad1200000000a40d1a28000000000002\"",
@@ -54,7 +51,7 @@ var functionalTestCases = []functionalTestCase{
 		expectedResponses: []any{SuccessResponse{Signature: "edsigu6FPqZdPhLNo5AGCkdscaiMdZXsiV5djxy1v2r89J1ZWfVfZ2UXJEcURSsx38JSHXtccr9o5yzJ46NL6mGEZbZ86fiJjuv"},
 			[]FailureResponse{{Id: "failure", Kind: "temporary", Msg: "watermark validation failed"}}},
 		watermarkBefore: nil,
-		watermarkAfter:  keyToWatermark{pkh: {Level: 2, Round: 0, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
+		watermarkAfter:  watermarkFile{pkh: {"block": {Level: 2, Round: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
 		chainID:         "NetXo5iVw1vBoxM",
 	},
 	{title: "existing watermark file is honoured and updated",
@@ -66,8 +63,8 @@ var functionalTestCases = []functionalTestCase{
 		expectedStatusCodes: []int{200, 409},
 		expectedResponses: []any{SuccessResponse{Signature: "edsigtbYeDN9n2VjpoCmPVt5tQBe6Y95wTPPpgtVTx3g2S4hQSwypcdBWm5s6gfTi567MFFpDqXPRmdUBo4VqseLZdZc8LWnvK9"},
 			[]FailureResponse{{Id: "failure", Kind: "temporary", Msg: "watermark validation failed"}}},
-		watermarkBefore: keyToWatermark{pkh: {Level: 6, Round: 0, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:  keyToWatermark{pkh: {Level: 7, Round: 2, Order: 0, Hash: "vh2x7GpWVr8wSUE7HuAr5antYqgqzXFTDA4Wy6UUAMTzvNU1cnd4"}},
+		watermarkBefore: watermarkFile{pkh: {"block": {Level: 6, Round: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter:  watermarkFile{pkh: {"block": {Level: 7, Round: 2, Hash: "vh2x7GpWVr8wSUE7HuAr5antYqgqzXFTDA4Wy6UUAMTzvNU1cnd4"}}},
 		chainID:         "NetXo5iVw1vBoxM",
 	},
 	{title: "signing duplicate request is ok",
@@ -80,7 +77,7 @@ var functionalTestCases = []functionalTestCase{
 		expectedResponses: []any{SuccessResponse{Signature: "edsigu6FPqZdPhLNo5AGCkdscaiMdZXsiV5djxy1v2r89J1ZWfVfZ2UXJEcURSsx38JSHXtccr9o5yzJ46NL6mGEZbZ86fiJjuv"},
 			SuccessResponse{Signature: "edsigu6FPqZdPhLNo5AGCkdscaiMdZXsiV5djxy1v2r89J1ZWfVfZ2UXJEcURSsx38JSHXtccr9o5yzJ46NL6mGEZbZ86fiJjuv"}},
 		watermarkBefore: nil,
-		watermarkAfter:  keyToWatermark{pkh: {Level: 2, Round: 0, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
+		watermarkAfter:  watermarkFile{pkh: {"block": {Level: 2, Round: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
 		chainID:         "NetXo5iVw1vBoxM",
 	},
 	{title: "level is more significant than round for successful signing",
@@ -90,8 +87,8 @@ var functionalTestCases = []functionalTestCase{
 		},
 		expectedStatusCodes: []int{200},
 		expectedResponses:   []any{SuccessResponse{Signature: "edsigtbYeDN9n2VjpoCmPVt5tQBe6Y95wTPPpgtVTx3g2S4hQSwypcdBWm5s6gfTi567MFFpDqXPRmdUBo4VqseLZdZc8LWnvK9"}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 6, Round: 3, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 7, Round: 2, Order: 0, Hash: "vh2x7GpWVr8wSUE7HuAr5antYqgqzXFTDA4Wy6UUAMTzvNU1cnd4"}},
+		watermarkBefore:     watermarkFile{pkh: {"block": {Level: 6, Round: 3, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter:      watermarkFile{pkh: {"block": {Level: 7, Round: 2, Hash: "vh2x7GpWVr8wSUE7HuAr5antYqgqzXFTDA4Wy6UUAMTzvNU1cnd4"}}},
 		chainID:             "NetXo5iVw1vBoxM",
 	},
 	{title: "level is more significant than round for identifying watermark",
@@ -101,8 +98,8 @@ var functionalTestCases = []functionalTestCase{
 		},
 		expectedStatusCodes: []int{409},
 		expectedResponses:   []any{[]FailureResponse{{Id: "failure", Kind: "temporary", Msg: "watermark validation failed"}}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 8, Round: 1, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 8, Round: 1, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
+		watermarkBefore:     watermarkFile{pkh: {"block": {Level: 8, Round: 1, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter:      watermarkFile{pkh: {"block": {Level: 8, Round: 1, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
 		chainID:             "NetXo5iVw1vBoxM",
 	},
 	{title: "round is used for watermark if level is the same",
@@ -112,8 +109,8 @@ var functionalTestCases = []functionalTestCase{
 		},
 		expectedStatusCodes: []int{409},
 		expectedResponses:   []any{[]FailureResponse{{Id: "failure", Kind: "temporary", Msg: "watermark validation failed"}}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 7, Round: 3, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 7, Round: 3, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
+		watermarkBefore:     watermarkFile{pkh: {"block": {Level: 7, Round: 3, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter:      watermarkFile{pkh: {"block": {Level: 7, Round: 3, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
 		chainID:             "NetXo5iVw1vBoxM",
 	},
 	{title: "baking happy path scenario - first sign block, then preendorsement, finally endorsement",
@@ -127,76 +124,44 @@ var functionalTestCases = []functionalTestCase{
 		expectedResponses: []any{SuccessResponse{Signature: "edsigtfHHgiTKBhZ4wzfZwCtLpWsS1q4pHR47YbhWHLzxmx95LpSQQXXC4nWhoHCp7ppEeC2eHw2Be7zjQrKwHvsmb8KyJcGf1b"},
 			SuccessResponse{Signature: "edsigtjpdXbicHctbhx82tQKMYNFrwSimTkFj16iWo38jMSFB9gzxbyyAuKmX8detwLGp8CWDvHyFs5pcivpCSHrJVD4ZUWSb5r"},
 			SuccessResponse{Signature: "edsigtfoBKBjfYYASaf194oQknF3r5eag81ihkErSSi1WPiV6qfrQjCFWomAbjG63PKaLoUvoNxqK4TCD4MLoJAFC6JtHwtBYYn"}},
-		watermarkBefore: keyToWatermark{pkh: {Level: 33, Round: 2, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:  keyToWatermark{pkh: {Level: 34, Round: 4, Order: 2, Hash: "vh216VxjGyVK2XWEQ5gyFcAMLEqPzRKJijB6ZUybZjnwetdZp8Lm"}},
-		chainID:         "NetXo5iVw1vBoxM",
+		watermarkBefore: watermarkFile{pkh: {"block": {Level: 33, Round: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter: watermarkFile{pkh: {"block": {Level: 34, Round: 4, Hash: "vh2E3QPN8R55XtdeZXsPtbgXErMeLcE5YbjDMcUzXsFByL97u5Qc"},
+			"endorsement":    {Level: 34, Round: 4, Hash: "vh216VxjGyVK2XWEQ5gyFcAMLEqPzRKJijB6ZUybZjnwetdZp8Lm"},
+			"preendorsement": {Level: 34, Round: 4, Hash: "vh2KHE9afrJBSzLQcnP21cCtHfc9yPsjCVzsbBfLTpzRTenXtp1s"}}},
+		chainID: "NetXo5iVw1vBoxM",
 	},
-	{title: "baking operation block is order 0",
-
-		signRequestBodies: []string{
-			"\"11b3d79f99000000220181ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a000000006427822b0480a2ea07609835343e53282a2e0d8ef20f54d6a7c1603d3874c2a2a7fceb3d3d00000021000000010200000004000000220000000000000004fffffffd000000040000000415b3aa8c735353cf4cde8aec00319d8922538fef77d44ee6780c8872bf63408bfd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c0600000004a40d1a28000000000002\""},
-		expectedStatusCodes: []int{200},
-		expectedResponses:   []any{SuccessResponse{Signature: "edsigtfHHgiTKBhZ4wzfZwCtLpWsS1q4pHR47YbhWHLzxmx95LpSQQXXC4nWhoHCp7ppEeC2eHw2Be7zjQrKwHvsmb8KyJcGf1b"}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 33, Round: 2, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 34, Round: 4, Order: 0, Hash: "vh2E3QPN8R55XtdeZXsPtbgXErMeLcE5YbjDMcUzXsFByL97u5Qc"}},
-		chainID:             "NetXo5iVw1vBoxM",
-	},
-	{title: "baking operation preendorsement is order 1",
-
-		signRequestBodies: []string{
-			"\"12b3d79f9981ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a1400040000002200000004fd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c06\""},
-		expectedStatusCodes: []int{200},
-		expectedResponses:   []any{SuccessResponse{Signature: "edsigtjpdXbicHctbhx82tQKMYNFrwSimTkFj16iWo38jMSFB9gzxbyyAuKmX8detwLGp8CWDvHyFs5pcivpCSHrJVD4ZUWSb5r"}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 34, Round: 4, Order: 0, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 34, Round: 4, Order: 1, Hash: "vh2KHE9afrJBSzLQcnP21cCtHfc9yPsjCVzsbBfLTpzRTenXtp1s"}},
-		chainID:             "NetXo5iVw1vBoxM",
-	},
-	{title: "baking operation endorsement is order 2",
-
-		signRequestBodies: []string{
-			"\"13b3d79f9981ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a1500040000002200000004fd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c06\""},
-		expectedStatusCodes: []int{200},
-		expectedResponses:   []any{SuccessResponse{Signature: "edsigtfoBKBjfYYASaf194oQknF3r5eag81ihkErSSi1WPiV6qfrQjCFWomAbjG63PKaLoUvoNxqK4TCD4MLoJAFC6JtHwtBYYn"}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 34, Round: 4, Order: 1, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 34, Round: 4, Order: 2, Hash: "vh216VxjGyVK2XWEQ5gyFcAMLEqPzRKJijB6ZUybZjnwetdZp8Lm"}},
-		chainID:             "NetXo5iVw1vBoxM",
-	},
-	{title: "order is used to determine watermark",
+	{title: "baking scenario - block request can arrive last",
 
 		signRequestBodies: []string{
 			"\"12b3d79f9981ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a1400040000002200000004fd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c06\"",
+			"\"13b3d79f9981ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a1500040000002200000004fd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c06\"",
+			"\"11b3d79f99000000220181ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a000000006427822b0480a2ea07609835343e53282a2e0d8ef20f54d6a7c1603d3874c2a2a7fceb3d3d00000021000000010200000004000000220000000000000004fffffffd000000040000000415b3aa8c735353cf4cde8aec00319d8922538fef77d44ee6780c8872bf63408bfd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c0600000004a40d1a28000000000002\"",
 		},
-		expectedStatusCodes: []int{409},
-		expectedResponses:   []any{[]FailureResponse{{Id: "failure", Kind: "temporary", Msg: "watermark validation failed"}}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 34, Round: 4, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 34, Round: 4, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		chainID:             "NetXo5iVw1vBoxM",
-	},
-	{title: "round trumps order",
-
-		signRequestBodies: []string{
-			"\"12b3d79f9981ff3a903959741b102d579148d3b1ea56ad7bc77e102def5cc73c49c062217a1400040000002200000004fd5a576ce08fa0e87e7b41d373d04a2df8798b234c7a4f8483a1d839e0066c06\"",
-		},
-		expectedStatusCodes: []int{200},
-		expectedResponses:   []any{SuccessResponse{Signature: "edsigtjpdXbicHctbhx82tQKMYNFrwSimTkFj16iWo38jMSFB9gzxbyyAuKmX8detwLGp8CWDvHyFs5pcivpCSHrJVD4ZUWSb5r"}},
-		watermarkBefore:     keyToWatermark{pkh: {Level: 34, Round: 3, Order: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}},
-		watermarkAfter:      keyToWatermark{pkh: {Level: 34, Round: 4, Order: 1, Hash: "vh2KHE9afrJBSzLQcnP21cCtHfc9yPsjCVzsbBfLTpzRTenXtp1s"}},
-		chainID:             "NetXo5iVw1vBoxM",
+		expectedStatusCodes: []int{200, 200, 200},
+		expectedResponses: []any{SuccessResponse{Signature: "edsigtjpdXbicHctbhx82tQKMYNFrwSimTkFj16iWo38jMSFB9gzxbyyAuKmX8detwLGp8CWDvHyFs5pcivpCSHrJVD4ZUWSb5r"},
+			SuccessResponse{Signature: "edsigtfoBKBjfYYASaf194oQknF3r5eag81ihkErSSi1WPiV6qfrQjCFWomAbjG63PKaLoUvoNxqK4TCD4MLoJAFC6JtHwtBYYn"},
+			SuccessResponse{Signature: "edsigtfHHgiTKBhZ4wzfZwCtLpWsS1q4pHR47YbhWHLzxmx95LpSQQXXC4nWhoHCp7ppEeC2eHw2Be7zjQrKwHvsmb8KyJcGf1b"}},
+		watermarkBefore: watermarkFile{pkh: {"block": {Level: 33, Round: 2, Hash: "vh2i6wpkn9bGpw47r3RhnfHiCrLvzTvQT36AmEZNPPsKqcN7yecT"}}},
+		watermarkAfter: watermarkFile{pkh: {"block": {Level: 34, Round: 4, Hash: "vh2E3QPN8R55XtdeZXsPtbgXErMeLcE5YbjDMcUzXsFByL97u5Qc"},
+			"endorsement":    {Level: 34, Round: 4, Hash: "vh216VxjGyVK2XWEQ5gyFcAMLEqPzRKJijB6ZUybZjnwetdZp8Lm"},
+			"preendorsement": {Level: 34, Round: 4, Hash: "vh2KHE9afrJBSzLQcnP21cCtHfc9yPsjCVzsbBfLTpzRTenXtp1s"}}},
+		chainID: "NetXo5iVw1vBoxM",
 	},
 }
 
 func TestWatermark(t *testing.T) {
-	remove_watermark_files()
 	for _, test := range functionalTestCases {
+		remove_watermark_files()
+		restart_signatory()
 		t.Run(test.title, func(t *testing.T) {
 			if test.watermarkBefore != nil {
 				mkdir()
 				write_watermark_file(test.watermarkBefore, test.chainID+".json")
+				restart_signatory()
 			}
-			defer remove_watermark_files()
 			for i, request := range test.signRequestBodies {
 				code, message := request_sign(request)
-				assert.Equal(t, test.expectedStatusCodes[i], code)
+				require.Equal(t, test.expectedStatusCodes[i], code)
 				if code == 200 {
 					var sr SuccessResponse
 					dec := json.NewDecoder(bytes.NewReader(message))
@@ -212,13 +177,15 @@ func TestWatermark(t *testing.T) {
 				}
 			}
 			b := read_watermark_file(test.chainID)
-			var ktw keyToWatermark
+			var wf watermarkFile
 			dec := json.NewDecoder(bytes.NewReader(b))
-			err := dec.Decode(&ktw)
+			err := dec.Decode(&wf)
 			require.Nil(t, err)
-			assert.Equal(t, test.watermarkAfter, ktw)
+			assert.Equal(t, test.watermarkAfter, wf)
 		})
 	}
+	remove_watermark_files()
+	restart_signatory()
 }
 
 type concurrencyTestCase struct {
@@ -229,8 +196,8 @@ type concurrencyTestCase struct {
 	expectedFailureCount   int
 	expectedFailureCode    int
 	expectedFailureMessage string
-	watermarkBefore        keyToWatermark
-	watermarkAfter         keyToWatermark
+	watermarkBefore        watermarkFile
+	watermarkAfter         watermarkFile
 	chainID                string
 }
 
@@ -254,7 +221,7 @@ var concurrencyTestCases = []concurrencyTestCase{
 		expectedFailureMessage: "watermark validation failed",
 		expectedFailureCode:    409,
 		watermarkBefore:        nil,
-		watermarkAfter:         keyToWatermark{pkh: {Level: 2, Round: 0, Order: 0, Hash: "unknown_not_verfied"}},
+		watermarkAfter:         watermarkFile{pkh: {"block": {Level: 2, Round: 0, Hash: "unknown_not_verfied"}}},
 		chainID:                "NetXo5iVw1vBoxM",
 	},
 }
@@ -266,13 +233,15 @@ var (
 	codes []int
 )
 
-func TestConcurrency(t *testing.T) {
+func TestWatermarkConcurrency(t *testing.T) {
 	for _, test := range concurrencyTestCases {
 		remove_watermark_files()
+		restart_signatory()
 		t.Run(test.title, func(t *testing.T) {
 			mkdir()
 			if test.watermarkBefore != nil {
 				write_watermark_file(test.watermarkBefore, test.chainID+".json")
+				restart_signatory()
 			}
 			n := len(test.signRequestBodies)
 			wg.Add(n)
@@ -295,15 +264,16 @@ func TestConcurrency(t *testing.T) {
 			require.Equal(t, test.expectedSuccessCount, success)
 			require.Equal(t, test.expectedFailureCount, fail)
 			b := read_watermark_file(test.chainID)
-			var ktw keyToWatermark
+			var wf watermarkFile
 			dec := json.NewDecoder(bytes.NewReader(b))
-			err := dec.Decode(&ktw)
+			err := dec.Decode(&wf)
 			require.Nil(t, err)
-			require.Equal(t, test.watermarkAfter[pkh].Level, ktw[pkh].Level)
-			require.Equal(t, test.watermarkAfter[pkh].Round, ktw[pkh].Round)
-			require.Equal(t, test.watermarkAfter[pkh].Order, ktw[pkh].Order)
+			require.Equal(t, test.watermarkAfter[pkh]["block"].Level, wf[pkh]["block"].Level)
+			require.Equal(t, test.watermarkAfter[pkh]["block"].Round, wf[pkh]["block"].Round)
 		})
 	}
+	remove_watermark_files()
+	restart_signatory()
 }
 
 func request_sign_concurrent(request string) {
@@ -331,8 +301,8 @@ func remove_watermark_files() {
 	}
 }
 
-func write_watermark_file(ktw keyToWatermark, filename string) {
-	json, err := json.Marshal(ktw)
+func write_watermark_file(wf watermarkFile, filename string) {
+	json, err := json.Marshal(wf)
 	if err != nil {
 		panic("json marshal failed")
 	}
@@ -367,6 +337,5 @@ func request_sign(body string) (int, []byte) {
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Println(string(bytes))
 	return resp.StatusCode, bytes
 }
