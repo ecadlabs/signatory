@@ -62,7 +62,7 @@ jobs:
       - uses: mad9000/actions-find-and-replace-string@2
         id: validtag
         with:
-          source: $${{ github.head_ref }}
+          source: ${{ github.head_ref }}
           find: '/'
           replace: '-'
 
@@ -132,7 +132,7 @@ jobs:
       - uses: mad9000/actions-find-and-replace-string@2
         id: validtag
         with:
-          source: $${{ github.head_ref }}
+          source: ${{ github.head_ref }}
           find: '/'
           replace: '-'
       - name: Run tests
