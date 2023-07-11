@@ -59,6 +59,12 @@ jobs:
         uses: docker/setup-buildx-action@v2
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
+      - uses: mad9000/actions-find-and-replace-string@2
+        id: validtag
+        with:
+          source: $${{ github.head_ref }}
+          find: '/'
+          replace: '-'
 
       - name: Write .env file
         env:
@@ -88,16 +94,16 @@ jobs:
 
       - name: Tag Docker images appropriately
         run: >
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-amd64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-arm64;
+          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-armv7;
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: Push Signatory preview images to GH Container Registry
         run: >
-         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64;
-         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-arm64;
-         docker push ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-armv7;
+         docker push ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-amd64;
+         docker push ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-arm64;
+         docker push ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-armv7;
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
@@ -123,9 +129,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: mad9000/actions-find-and-replace-string@2
+        id: validtag
+        with:
+          source: $${{ github.head_ref }}
+          find: '/'
+          replace: '-'
       - name: Run tests
         env:
-          IMAGE: ghcr.io/ecadlabs/signatory:${{ github.head_ref || github.ref_name }}-amd64
+          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.validtag.outputs.value }}-amd64
           VAULT_AWS_USER: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_USER }}
           VAULT_AWS_KEY: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_KEY }}
           VAULT_AWS_SECRET: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_SECRET }}
