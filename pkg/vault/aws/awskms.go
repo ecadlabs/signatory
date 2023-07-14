@@ -108,7 +108,11 @@ func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 
 		if err == nil {
 			return key, nil
-		} else if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() != "AccessDeniedException" || err != crypt.ErrUnsupportedKeyType {
+		} else if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() != "AccessDeniedException" {
+				return nil, err
+			}
+		} else if err != crypt.ErrUnsupportedKeyType {
 			return nil, err
 		}
 	}
