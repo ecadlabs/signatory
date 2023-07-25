@@ -26,27 +26,24 @@ jobs:
         with:
           go-version: '1.20.3'
       - uses: actions/checkout@v3
-      - name: Setup Code Climate test-reporter
-        run: |
-          curl -L "$CC_BINARY_URL" > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
       - name: Run tests
         run: |
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
-          export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
 
-          ./cc-test-reporter before-build
 
           echo "Running tests..."
-          go test $(go list ./... | grep -v integration_test) -coverprofile c.out ./...
+          covdir="unittestcoverage"
+          mkdir $covdir
+          export GOCOVERDIR=`pwd`/$covdir
+          export GOEXPERIMENT=coverageredesign
+          go test $(go list ./... | grep -v integration_test) -cover ./...
 
-          mod="$(cat go.mod | awk '/^module/ {print $2}')"
 
-          if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
-            echo "Generating coverage report..."
-            ./cc-test-reporter after-build -p "${mod}/" -t gocov
-          fi
+      - uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-coverage
+          path: ./unittestcoverage/
 
   publish:
     name: Goreleaser
@@ -167,5 +164,41 @@ jobs:
          go tool cover -html=./coverage/cov.txt -o=./coverage/integrationtestcoverage.html;
       - uses: actions/upload-artifact@v3
         with:
-          name: integrationtest-coverage-env${{ matrix.testenvs }}
-          path: ./integration_test/coverage/integrationtestcoverage.html
+          name: integration-test-coverage-env${{ matrix.testenvs }}
+          path: ./integration_test/coverage/
+
+  report-coverage:
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Code Climate test-reporter
+        run: |
+          curl -L "$CC_BINARY_URL" > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+      - uses: actions/download-artifact@v3
+        with:
+          name: unit-test-coverage
+      - uses: actions/download-artifact@v3
+        with:
+          name: integration-test-coverage-envcurrent
+      - uses: actions/download-artifact@v3
+        with:
+          name: integration-test-coverage-envnext
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+      - name: Report Coverage
+        run: |
+         export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
+         ./cc-test-reporter before-build
+         go tool covdata textfmt -i=./unit-test-coverage,./integration-test-coverage-envcurrent,./integration-test-coverage-envnext -o ./combinedcov.txt
+         sed -i 's/\/go\/src\/github.com/github.com/g' ./combinedcov.txt
+         mod="$(cat go.mod | awk '/^module/ {print $2}')"
+         if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
+          echo "Generating coverage report..."
+          ./cc-test-reporter after-build -p "${mod}/" -t gocov
+         fi
