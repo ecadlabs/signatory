@@ -30,16 +30,10 @@ jobs:
         run: |
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
-
-
           echo "Running tests..."
-          covdir="unittestcoverage"
+          covdir="unitcoverage"
           mkdir $covdir
-          export GOCOVERDIR=`pwd`/$covdir
-          export GOEXPERIMENT=coverageredesign
-          go test $(go list ./... | grep -v integration_test) -cover ./...
-
-
+          go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="$PWD/$covdir"
       - uses: actions/upload-artifact@v3
         with:
           name: unit-test-coverage
