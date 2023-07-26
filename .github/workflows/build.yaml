@@ -177,6 +177,10 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: integration-test-coverage-envnext
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
       - name: Report Coverage
         run: |
          export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
