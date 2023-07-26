@@ -31,13 +31,12 @@ jobs:
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
           echo "Running tests..."
-          covdir="unitcoverage"
-          mkdir $covdir
-          go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="$PWD/$covdir"
+          mkdir unitcoverage
+          go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="./unitcoverage"
       - uses: actions/upload-artifact@v3
         with:
           name: unit-test-coverage
-          path: ./unittestcoverage/
+          path: ./unitcoverage/
 
   publish:
     name: Goreleaser
@@ -153,9 +152,6 @@ jobs:
          docker compose kill;
          rm -f gcp-token.json;
          rm -f service-principal.key;
-         go tool covdata textfmt -i=./coverage -o=./coverage/cov.txt;
-         sed -i 's/\/go\/src\/github.com/github.com/g' ./coverage/cov.txt;
-         go tool cover -html=./coverage/cov.txt -o=./coverage/integrationtestcoverage.html;
       - uses: actions/upload-artifact@v3
         with:
           name: integration-test-coverage-env${{ matrix.testenvs }}
@@ -181,18 +177,19 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: integration-test-coverage-envnext
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
       - name: Report Coverage
         run: |
          export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
-         ./cc-test-reporter before-build
-         go tool covdata textfmt -i=./unit-test-coverage,./integration-test-coverage-envcurrent,./integration-test-coverage-envnext -o ./combinedcov.txt
-         sed -i 's/\/go\/src\/github.com/github.com/g' ./combinedcov.txt
-         mod="$(cat go.mod | awk '/^module/ {print $2}')"
          if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
           echo "Generating coverage report..."
+          export GIT_COMMIT_SHA='${{ github.sha }}'
+          export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"          
+          ./cc-test-reporter before-build
+          go tool covdata textfmt -i=./unit-test-coverage,./integration-test-coverage-envcurrent,./integration-test-coverage-envnext -o ./c.out
+          rm -rf ./unit-test-coverage
+          rm -rf ./integration-test-coverage-envcurrent
+          rm -rf ./integration-test-coverage-envnext
+          sed -i 's/\/go\/src\/github.com/github.com/g' ./c.out
+          mod="$(cat go.mod | awk '/^module/ {print $2}')"
           ./cc-test-reporter after-build -p "${mod}/" -t gocov
          fi
