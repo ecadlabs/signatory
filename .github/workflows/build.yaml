@@ -32,7 +32,7 @@ jobs:
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
           echo "Running tests..."
           mkdir unitcoverage
-          go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="./unitcoverage"
+          go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="$PWD/unitcoverage"
       - uses: actions/upload-artifact@v3
         with:
           name: unit-test-coverage
