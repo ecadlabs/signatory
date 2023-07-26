@@ -171,12 +171,15 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: unit-test-coverage
+          path: unit-test-coverage
       - uses: actions/download-artifact@v3
         with:
           name: integration-test-coverage-envcurrent
+          path: integration-test-coverage-envcurrent
       - uses: actions/download-artifact@v3
         with:
           name: integration-test-coverage-envnext
+          path: integration-test-coverage-envnext
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         with:
