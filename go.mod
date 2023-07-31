@@ -5,7 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/kms v1.15.0
 	github.com/certusone/yubihsm-go v0.3.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ecadlabs/goblst v1.0.0
 	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.14.1
