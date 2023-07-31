@@ -4,6 +4,7 @@ on:
       - "main"
     tags:
       - "v*"
+      - "rc*"
   pull_request:
 
 name: Test and publish
