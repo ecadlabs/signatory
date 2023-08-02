@@ -4,10 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "19:00"
     pull-request-branch-name:
       separator: "-"
   - package-ecosystem: "npm"
-    directory: "/website"
+    #we'd like to disable dependabot opening PR for npm. it is noisy, and, npm is only used for the static website, not signatory itself
+    #currently, dependabot does not support ignoring a subdir https://github.com/dependabot/dependabot-core/issues/4364
+    #so, we'll point it at a subdir that contains no package-lock.json, to disable it's scanning of npm packages
+    directory: "/integration_test"
     schedule:
       interval: "weekly"
     pull-request-branch-name:
