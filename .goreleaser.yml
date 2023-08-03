@@ -104,6 +104,8 @@ builds:
       - CGO_ENABLED=1
       - CC=arm-linux-gnueabihf-gcc
       - CXX=arm-linux-gnueabihf-g++
+      - >-
+        {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -135,6 +137,8 @@ builds:
       - darwin
     goarch:
       - amd64
+    flags:
+      - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
   - id: signatory-cli-darwing-amd
     binary: signatory-cli
@@ -142,6 +146,8 @@ builds:
       - CGO_ENABLED=1
       - CC=o64-clang
       - CXX=o64-clang++
+      - >-
+        {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -150,6 +156,8 @@ builds:
       - darwin
     goarch:
       - amd64
+    flags:
+      - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
   - id: signatory-darwin-arm
     binary: signatory
@@ -225,6 +233,8 @@ builds:
       - windows
     goarch:
       - amd64
+    flags:
+      - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
 dockers:
   - ids:
