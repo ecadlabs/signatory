@@ -45,4 +45,7 @@ func TestGCPVault(t *testing.T) {
 	out, err = OctezClient("transfer", "1", "from", tz3alias, "to", "alice", "--burn-cap", "0.06425")
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
+
+	//TODO: the PK belongs in the .env that is, another github secret in both actions and dependabot sections
+	GetPublicKey(t, tz3, "p2pk67dAL3pTy1vgBKzFHQNxV5cvzVR5ynnojBtPegAGAPhS59B2CSV")
 }

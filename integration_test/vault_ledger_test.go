@@ -18,3 +18,7 @@ func TestLedgerVault(t *testing.T) {
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
 }
+
+func TestLedgerVaultGetPublicKey(t *testing.T) {
+	GetPublicKey(t, "tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA", "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp")
+}
