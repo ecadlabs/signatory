@@ -10,9 +10,9 @@ import (
 
 func TestAWSVault(t *testing.T) {
 
-	tz2 := os.Getenv("VAULT_AWS_PKH_TZ2")
-	tz3 := os.Getenv("VAULT_AWS_PKH_TZ3")
-	tz3pk := os.Getenv("VAULT_AWS_PKH_TZ3_PK")
+	tz2 := os.Getenv("VAULT_AWS_TZ2")
+	tz3 := os.Getenv("VAULT_AWS_TZ3")
+	tz3pk := os.Getenv("VAULT_AWS_TZ3_PK")
 	user := os.Getenv("VAULT_AWS_USER")
 	key := os.Getenv("VAULT_AWS_KEY")
 	secret := os.Getenv("VAULT_AWS_SECRET")
