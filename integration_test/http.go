@@ -3,12 +3,10 @@ package integrationtest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 type SignSuccessResponse struct {
@@ -64,12 +62,16 @@ func getPublicKey(pkh string) (int, []byte) {
 	return resp.StatusCode, bytes
 }
 
-func GetPublicKey(t *testing.T, pkh string, expect string) {
+func GetPublicKey(pkh string) string {
 	code, message := getPublicKey(pkh)
-	require.Equal(t, code, 200)
+	if code != 200 {
+		panic("GetPublicKey: http return code " + fmt.Sprint(code))
+	}
 	var r GetKeySuccessResponse
 	dec := json.NewDecoder(bytes.NewReader(message))
 	err := dec.Decode(&r)
-	require.Nil(t, err)
-	require.Equal(t, expect, r.PublicKey)
+	if err != nil {
+		panic("GetPublicKey: error decoding json response: " + err.Error())
+	}
+	return r.PublicKey
 }

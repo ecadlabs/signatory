@@ -14,6 +14,7 @@ func TestGCPVault(t *testing.T) {
 	location := os.Getenv("VAULT_GCP_LOCATION")
 	keyring := os.Getenv("VAULT_GCP_KEYRING")
 	tz3 := os.Getenv("VAULT_GCP_TZ3")
+	tz3pk := os.Getenv("VAULT_GCP_TZ3_PK")
 	tz3alias := "gcptz3"
 
 	//config
@@ -46,6 +47,5 @@ func TestGCPVault(t *testing.T) {
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
 
-	//TODO: the PK belongs in the .env that is, another github secret in both actions and dependabot sections
-	GetPublicKey(t, tz3, "p2pk67dAL3pTy1vgBKzFHQNxV5cvzVR5ynnojBtPegAGAPhS59B2CSV")
+	require.Equal(t, tz3pk, GetPublicKey(tz3))
 }

@@ -20,5 +20,5 @@ func TestLedgerVault(t *testing.T) {
 }
 
 func TestLedgerVaultGetPublicKey(t *testing.T) {
-	GetPublicKey(t, "tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA", "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp")
+	require.Equal(t, "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp", GetPublicKey("tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA"))
 }
