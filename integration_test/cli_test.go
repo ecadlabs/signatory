@@ -14,6 +14,9 @@ func TestCliList(t *testing.T) {
 	out, err := SignatoryCli("list")
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb")
+	require.Contains(t, string(out), "tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN")
+	require.Contains(t, string(out), "tz3Y2TkhTYG6MfPsijGfHFqBYrLCfwYb6HRB")
+	require.Contains(t, string(out), "tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME")
 }
 
 func TestCliUsage(t *testing.T) {

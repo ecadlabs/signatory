@@ -75,3 +75,18 @@ tezos:
     allow:
       generic:
         - transaction
+
+  #tz2
+  tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+
+  #tz4
+  tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal

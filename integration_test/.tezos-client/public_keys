@@ -22,4 +22,14 @@
     "value":
       { "locator":
           "http://signatory:6732/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA",
-        "key": "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp" } } ]
+        "key": "edpktsKqhvR7kXbRWD7yDgLSD7PZUXvjLqf9SFscXhL52pUStF5nQp" } },
+  { "name": "tz2alias",
+    "value":
+      { "locator":
+          "http://signatory:6732/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN",
+        "key": "sppk7cvVVMRRtYTdriTB6KQqpXZt9TUwSTcpMWq4FwpvG2eVZ56UuHP" } },
+  { "name": "tz4alias",
+    "value":
+      { "locator":
+          "http://signatory:6732/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME",
+        "key": "BLpk1nRV5SBB2QCxsiem5Neoywcizr3mkdp167HL1iKFgFvzPhKo4RSy7J8JBh2BgGgVYjNsRGwU" } } ]
