@@ -14,6 +14,7 @@ func TestGCPVault(t *testing.T) {
 	location := os.Getenv("VAULT_GCP_LOCATION")
 	keyring := os.Getenv("VAULT_GCP_KEYRING")
 	tz3 := os.Getenv("VAULT_GCP_TZ3")
+	tz3pk := os.Getenv("VAULT_GCP_TZ3_PK")
 	tz3alias := "gcptz3"
 
 	//config
@@ -45,4 +46,6 @@ func TestGCPVault(t *testing.T) {
 	out, err = OctezClient("transfer", "1", "from", tz3alias, "to", "alice", "--burn-cap", "0.06425")
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
+
+	require.Equal(t, tz3pk, GetPublicKey(tz3))
 }
