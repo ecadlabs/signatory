@@ -21,6 +21,7 @@ func TestAZVault(t *testing.T) {
 
 	tz2 := os.Getenv("VAULT_AZ_TZ2")
 	tz3 := os.Getenv("VAULT_AZ_TZ3")
+	tz3pk := os.Getenv("VAULT_AZ_TZ3_PK")
 
 	tz2alias := "aztz2"
 	tz3alias := "aztz3"
@@ -67,4 +68,6 @@ func TestAZVault(t *testing.T) {
 	out, err = OctezClient("transfer", "1", "from", tz3alias, "to", "alice", "--burn-cap", "0.06425")
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
+
+	require.Equal(t, tz3pk, GetPublicKey(tz3))
 }

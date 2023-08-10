@@ -2,4 +2,6 @@
   { "name": "bob", "value": "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" },
   { "name": "opstest", "value": "tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B" },
   { "name": "opstest1", "value": "tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi" },
-  { "name": "speculos", "value": "tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA" } ]
+  { "name": "speculos", "value": "tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA" },
+  { "name": "tz2alias", "value": "tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN" },
+  { "name": "tz4alias", "value": "tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME" } ]

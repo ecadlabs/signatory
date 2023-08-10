@@ -30,6 +30,8 @@ echo $PAT |docker login ghcr.io -u <your_github_name> --password-stdin
 
 ## Running the tests
 
+The tests are run in a [github workflow](/.github/workflows/build.yaml) and so the workflow should be consulted to learn how to run the tests locally.  A more verbose explanation:
+
 ```sh
 cd integration_test
 ```
