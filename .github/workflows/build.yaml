@@ -17,15 +17,16 @@ permissions:
 
 env:
   CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+  GO_VERSION: '1.21'
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: "${{ env.GO_VERSION }}"
       - uses: actions/checkout@v3
       - name: Run tests
         run: |
@@ -170,6 +171,9 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "${{ env.GO_VERSION }}"
       - name: Setup Code Climate test-reporter
         run: |
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
