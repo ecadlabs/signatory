@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.305
+	github.com/aws/aws-sdk-go v1.44.318
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
