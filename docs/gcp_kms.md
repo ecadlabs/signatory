@@ -70,11 +70,11 @@ export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 
 ### **Authenticating with the Service Account from GCP VM:**
 
-No need to download the service account credentials and place them on Signatory's file system, and no use of `GOOGLE_APPLICATION_CREDENTIALS` env var. Instead, edit the VM specifications for `Identity and API access` such that it selects the IAM Service Account.
+Do not download the service account credentials and place them on Signatory's file system, and do not use `GOOGLE_APPLICATION_CREDENTIALS` env var. Instead, edit the VM specifications for `Identity and API access` such that it selects the IAM Service Account.
 
 ### **Authenticating with the Service Account from GKE pod:**
 
-No need to download the service account credentials and place them on Signatory's file system, and no use of `GOOGLE_APPLICATION_CREDENTIALS` env var. Best practice is to [use Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)  In short:
+Do not download the service account credentials and place them on Signatory's file system, and do not use `GOOGLE_APPLICATION_CREDENTIALS` env var. Best practice is to [use Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)  In short:
 
 * enable Workload Identity on the cluster
 * create a kubernetes Service Account and bind it to the IAM Service Account
