@@ -79,7 +79,7 @@ No need to download the service account credentials and place them on Signatory'
 * enable Workload Identity on the cluster
 * create a kubernetes Service Account and bind it to the IAM Service Account
 * annotate the kubernetes Service Account with the email address of the IAM Service Account
-* update the pod spec to include the `serviceAccountName` field, this is the name of the kubernetes Service Account and redeploy the pod
+* update the pod spec to include the `serviceAccountName` field, this is the name of the kubernetes Service Account
 
 ## **Getting a PKH**
 
