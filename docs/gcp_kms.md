@@ -67,18 +67,19 @@ One thing that each method has in common is the creation of a Service Account:
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS="signatory-testing-a7sdfew625aecb.json"
 ```
-### **Authenticating with the Service Account from a GCP VM:**
 
-With Signatory running within GCP, there is no need to download the service account credentials and place them on Signatory's file system. Instead, simply edit the VM specification's for `Identity and API access` such that it has selected the aforementioned Service Account. 
+### **Authenticating with the Service Account from GCP VM:**
 
-### **Authenticating with the Service Account from a GKE pod:**
+No need to download the service account credentials and place them on Signatory's file system, and no use of `GOOGLE_APPLICATION_CREDENTIALS` env var. Instead, edit the VM specifications for `Identity and API access` such that it selects the IAM Service Account.
 
-Again, with Signatory running within GCP, there is no need to download the service account credentials and place them on Signatory's file system. Best practice in this scenario is to [use Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)  In short:
+### **Authenticating with the Service Account from GKE pod:**
 
-- enable Workload Identity on the cluster
-- create a kubernetes Service Account and bind it to the aforementioned IAM Service Account
-- annotate the kubernetes Service Account with the email address of the IAM Service Account
-- update the pod spec to include the `serviceAccountName` field, this is the name of the kubernetes Service Account and redeploy the pod
+No need to download the service account credentials and place them on Signatory's file system, and no use of `GOOGLE_APPLICATION_CREDENTIALS` env var. Best practice is to [use Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)  In short:
+
+* enable Workload Identity on the cluster
+* create a kubernetes Service Account and bind it to the IAM Service Account
+* annotate the kubernetes Service Account with the email address of the IAM Service Account
+* update the pod spec to include the `serviceAccountName` field, this is the name of the kubernetes Service Account and redeploy the pod
 
 ## **Getting a PKH**
 
