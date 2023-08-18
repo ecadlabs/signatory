@@ -54,8 +54,8 @@ The key-ring name and location are required in the signatory configuration.
 
 ## **Application Access:**
 
-Providing Signatory with the permissions to access GCP KMS will differ depending on whether or not Signatory is running inside or outside of GCP. 
-One thing that each method has in common is the creation of a Service Account:
+Providing Signatory with the permissions to access GCP KMS will differ depending on whether or not Signatory is running inside or outside of GCP.
+One thing that each method has in common is creation of the IAM Service Account:
 
 * Select `IAM & ADMIN` from the menu and select `Service accounts`. Create a new service account or use an existing one with all the above permissions (Get, Sign & Import) granted.
 
