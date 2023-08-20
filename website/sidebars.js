@@ -28,6 +28,7 @@ const sidebars = {
 				'azure_kms',
 				'gcp_kms',
 				'aws_kms',
+				'hashicorp_vault',
 				'ledger',
 				'cli',
 				'remote_policy',
