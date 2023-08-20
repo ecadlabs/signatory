@@ -40,6 +40,14 @@ vaults:
       address: localhost:12345
       password: password
       auth_key_id: 1
+  hashicorp:
+    driver: hashicorpvault
+    config:
+      address: "http://127.0.0.1:8200"
+      roleID: "5970e31e-132b-d624-f3eb-10d1fcdd3fab"
+      secretID: "aa9c4a24-c7f1-a278-a9db-bac58273fe7c"
+      transitConfig:
+        mountPoint: "transit/"
 
 # List enabled public keys hashes here
 tezos:
