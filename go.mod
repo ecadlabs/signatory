@@ -10,7 +10,7 @@ require (
 	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.15.0
 	github.com/google/tink/go v1.7.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
 	github.com/karalabe/hid v1.0.0
 	github.com/prometheus/client_golang v1.16.0
