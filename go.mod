@@ -21,7 +21,7 @@ require (
 	golang.org/x/crypto v0.12.0
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
 	golang.org/x/oauth2 v0.11.0
-	google.golang.org/api v0.136.0
+	google.golang.org/api v0.138.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -31,7 +31,7 @@ require (
 	cloud.google.com/go/iam v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/google/s2a-go v0.1.4 // indirect
+	github.com/google/s2a-go v0.1.5 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
