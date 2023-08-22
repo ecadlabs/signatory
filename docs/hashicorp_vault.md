@@ -43,7 +43,7 @@ vault secrets enable transit
 Create a new encryption key in the transit secrets engine.
 
 ```sh
-vault write -f transit/keys/{{my-key}}
+vault write -f transit/keys/{{my-key}} type="ed25519"
 ```
 
 ### **Create Policy for Transit**
@@ -53,7 +53,7 @@ Create a policy that allows reading and writing keys in the transit engine.
 ```hcl
 # transit-policy.hcl
 path "transit/*" {
-  capabilities = ["read", "create", "update", "delete"]
+  capabilities = ["read", "create", "update", "list"]
 }
 ```
 
