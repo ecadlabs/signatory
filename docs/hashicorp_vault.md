@@ -71,7 +71,7 @@ Create a role for the AppRole authentication method. This role associates a set 
 
 ```sh
 vault write auth/approle/role/my-approle \
-  secret_id_ttl=10m \
+  secret_id_ttl=0m \
   token_ttl=20m \
   token_max_ttl=30m \
   token_policies="transit-policy"
