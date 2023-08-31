@@ -10,6 +10,9 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHashiVault(t *testing.T) {
@@ -28,30 +31,28 @@ func TestHashiVault(t *testing.T) {
 	backup_then_update_config(c)
 	defer restore_config()
 
-	//currently, signatory-cli does not work with this vault. when it does, enable everything commented out in this function
-	/*
-		pkh := hashiGetTz1()
-		var p TezosPolicy
-		p.LogPayloads = true
-		p.Allow = map[string][]string{"generic": {"reveal", "transaction"}}
-		c.Tezos[pkh] = &p
-		c.Write()
-		restart_signatory()
+	pkh := hashiGetTz1()
+	var p TezosPolicy
+	p.LogPayloads = true
+	p.Allow = map[string][]string{"generic": {"reveal", "transaction"}}
+	c.Tezos[pkh] = &p
+	c.Write()
+	restart_signatory()
 
-		out, err := OctezClient("import", "secret", "key", "hashitz1", "http://signatory:6732/"+pkh)
-		assert.NoError(t, err)
-		assert.Contains(t, string(out), "Tezos address added: "+pkh)
-		defer OctezClient("forget", "address", "hashitz1", "--force")
+	out, err := OctezClient("import", "secret", "key", "hashitz1", "http://signatory:6732/"+pkh)
+	assert.NoError(t, err)
+	assert.Contains(t, string(out), "Tezos address added: "+pkh)
+	defer OctezClient("forget", "address", "hashitz1", "--force")
 
-		out, err = OctezClient("transfer", "100", "from", "alice", "to", "hashitz1", "--burn-cap", "0.06425")
-		assert.NoError(t, err)
-		require.Contains(t, string(out), "Operation successfully injected in the node")
+	out, err = OctezClient("transfer", "100", "from", "alice", "to", "hashitz1", "--burn-cap", "0.06425")
+	assert.NoError(t, err)
+	require.Contains(t, string(out), "Operation successfully injected in the node")
 
-		out, err = OctezClient("transfer", "1", "from", "hashitz1", "to", "alice", "--burn-cap", "0.06425")
-		assert.NoError(t, err)
-		require.Contains(t, string(out), "Operation successfully injected in the node")
-		require.Equal(t, ed25519.PublicKeySize, len(GetPublicKey(pkh)))
-	*/
+	out, err = OctezClient("transfer", "1", "from", "hashitz1", "to", "alice", "--burn-cap", "0.06425")
+	assert.NoError(t, err)
+	require.Contains(t, string(out), "Operation successfully injected in the node")
+
+	require.Contains(t, GetPublicKey(pkh), "edpk")
 }
 
 func hashiBootstrap() (roleId string, secretId string) {
@@ -131,8 +132,22 @@ func hashiGetTz1() string {
 	if err != nil {
 		panic("hashiGetTz1: signatory-cli returned an error: " + string(out))
 	}
-	//TODO: parse the hashicorp vaulted tz1 pkh here and return it
-	return "tz1foo"
+	var tz1 string
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "tz1") {
+			fields := strings.Fields(line)
+			for _, field := range fields {
+				if strings.Contains(field, "tz1") {
+					tz1 = field
+				}
+			}
+		}
+		if strings.Contains(line, "HASHICORP_VAULT") {
+			return tz1
+		}
+	}
+	return "KEY_NOT_FOUND"
 }
 
 // the vault hostname in Signatory config file needs to match a CN in the SSL Cert
