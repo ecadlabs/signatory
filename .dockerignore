@@ -14,10 +14,6 @@
 # Environment variables
 .env
 
-# App exec
-signatory
-signatory-cli
-
 # Other
 website
 grafana

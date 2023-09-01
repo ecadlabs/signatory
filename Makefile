@@ -16,7 +16,7 @@ signatory-cli:
 
 .PHONY: container
 container: signatory signatory-cli
-	docker build -t ecadlabs/signatory:$(CONTAINER_TAG) .
+	docker build -t ecadlabs/signatory:$(CONTAINER_TAG) -f goreleaser.dockerfile .
 
 clean:
 	rm signatory signatory-cli
