@@ -57,15 +57,7 @@ func (t *Transit) ListKeys() ([]string, error) {
 	return res, nil
 }
 
-func (t *Transit) GetKey(keyID string) (string, error) {
-	return t.getKey(context.Background(), keyID)
-}
-
 func (t *Transit) GetKeyWithContext(ctx context.Context, keyID string) (string, error) {
-	return t.getKey(ctx, keyID)
-}
-
-func (t *Transit) getKey(ctx context.Context, keyID string) (string, error) {
 	s, err := t.c.Logical().ReadWithContext(ctx, fmt.Sprintf("%s/keys/%s", t.cfg.MountPoint, keyID))
 	if err != nil {
 		return "", err
@@ -115,20 +107,4 @@ func (t *Transit) Sign(keyName string, input []byte, opts *SignOpts) ([]byte, er
 	}
 
 	return signature, nil
-}
-
-func (t *Transit) Verify(keyName string, input []byte, signature []byte, opts *SignOpts) (bool, error) {
-	s, err := t.c.Logical().Write(fmt.Sprintf("%s/verify/%s", t.cfg.MountPoint, keyName), map[string]interface{}{
-		"input":          base64.StdEncoding.EncodeToString(input),
-		"signature":      fmt.Sprintf("vault:v1:%s", base64.StdEncoding.EncodeToString(signature)),
-		"prehashed":      opts.Preshashed,
-		"hash_algorithm": opts.Hash,
-	})
-	if err != nil {
-		return false, err
-	}
-	if s == nil {
-		return false, fmt.Errorf("no signature was returned")
-	}
-	return s.Data["valid"].(bool), nil
 }
