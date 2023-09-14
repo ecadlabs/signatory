@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,7 @@ var testcases = []testCase{
 		account:        account,
 		allowPolicy:    map[string][]string{"generic": {"preendorsement"}, "preendorsement": {}},
 		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
-		successMessage: "injected preendorsement",
+		successMessage: "injected ",
 	},
 	{
 		kind:           "endorsement",
@@ -52,7 +53,7 @@ var testcases = []testCase{
 		account:        account,
 		allowPolicy:    map[string][]string{"generic": {"endorsement"}, "endorsement": {}},
 		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
-		successMessage: "injected endorsement",
+		successMessage: "injected ",
 	},
 	{
 		kind:           "block",
@@ -151,6 +152,20 @@ func TestOperationAllowPolicy(t *testing.T) {
 	defer clean_tezos_folder()
 	for _, test := range testcases {
 		t.Run(test.kind, func(t *testing.T) {
+			//while we are testing Nairobi and Oxford at the same time we have conditional for set_deposits_limit
+			//when we are testing O and P at the same time, we can remove this conditional and the env var
+			//set_deposits_limit is not a valid operation in O
+			if os.Getenv("SET_DEPOSITS_LIMIT") == "false" && test.kind == "set_deposits_limit" {
+				return
+			}
+			//likewise, when we stop testing N, we can get rid of the next 2 conditionals
+			if test.kind == "endorsement" {
+				test.successMessage = test.successMessage + os.Getenv("ATTESTATION")
+			}
+			if test.kind == "preendorsement" {
+				test.successMessage = test.successMessage + os.Getenv("PREATTESTATION")
+			}
+
 			//first, do any setup steps that have to happen before the operation to be tested
 			for _, setupOp := range test.testSetupOps {
 				out, err := OctezClient(setupOp...)
@@ -189,7 +204,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 				log.Println("error received: " + err.Error() + " " + string(out))
 			}
 			assert.NoError(t, err)
-			assert.Contains(t, string(out), test.successMessage)
+			require.Contains(t, string(out), test.successMessage)
 			metrics2 := GetMetrics(test.account, test.kind, test.op, vault)
 			AssertMetricsSuccessIncremented(t, metrics1, metrics2, test.op)
 		})
