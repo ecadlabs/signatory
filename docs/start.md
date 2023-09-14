@@ -8,13 +8,14 @@ sidebar_label: Getting Started
 [azure]: https://docs.microsoft.com/en-us/azure/key-vault/
 [gcp]: https://cloud.google.com/security-key-management
 [yubi]: https://www.yubico.com/products/hardware-security-module/
+[hashicorp]: https://developer.hashicorp.com/vault/docs/secrets/transit
 
 
 ## What is Signatory
 
 Signatory is a remote signing daemon that allows Tezos bakers to sign endorsement and baking operations with various key-management systems.
 
-Signatory currently supports [AWS KMS][aws], [Azure Key Vault][azure], [GCP Key Management][gcp], [YubiHSM][yubi], and for development/prototyping purposes, Signatory can sign with a [local private key](localsecret.md).
+Signatory currently supports [AWS KMS][aws], [Azure Key Vault][azure], [GCP Key Management][gcp], [YubiHSM][yubi], [Hashicorp Vault][hashicorp], and for development/prototyping purposes, Signatory can sign with a [local private key](localsecret.md).
 
 The goal of the Signatory service is to make key management as secure as possible in a Cloud and on-premise HSM context.
 
@@ -149,6 +150,7 @@ tezos:
 * [Azure Key Vault](azure_kms.md)
 * [GCP Key Management](gcp_kms.md)
 * [YubiHSM2](yubihsm.md)
+* [Hashicorp Vault](hashicorp_vault.md)
 
 ---
 
