@@ -32,7 +32,7 @@ Signatory receives requests to sign Tezos operations. These operations may be co
 
 Signatory will inspect the operations and assert that the operation request is in line with Signatory's policy. If the operation passes the policy rules, Signatory will then have a signature produced using the appropriate backend system. 
 
-Signatory operators can choose from AWS, Azure or Google Cloud KMS systems, or self-hosted wallets such as the YubiHSM2 or a Ledger Hardware wallet.
+Signatory operators can choose from AWS, Azure or Google Cloud KMS systems, or self-hosted solutions such as the YubiHSM2, Hashicorp Vault or Ledger Hardware wallet.
 
 ### Observability
 
@@ -70,6 +70,7 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | Google Cloud KMS               | ✅     |
 | AWS KMS                        | ✅     |
 | Ledger Nano S/S+ (Baking only) | ✅     |
+| Hashicorp Vault                | ✅     |
 
 ### Tezos Address Types
 
@@ -84,6 +85,7 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 
 |                  | tz1 | tz2 | tz3 |
 | ---------------- | --- | --- | --- |
+| Hashicorp Vault  | ✅   | ❌   | ❌   |
 | Google Cloud KMS | ❌   | ❌   | ✅   |
 | AWS KMS          | ❌   | ✅   | ✅   |
 | Azure KMS        | ❌   | ✅   | ✅   |
