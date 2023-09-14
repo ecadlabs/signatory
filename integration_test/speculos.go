@@ -3,7 +3,6 @@ package integrationtest
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -61,7 +60,6 @@ func getScreenText() string {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(bytes))
 	return string(bytes)
 }
 
