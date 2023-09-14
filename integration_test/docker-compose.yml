@@ -18,10 +18,10 @@ services:
     command: sigybox $PROTOCOL
     healthcheck:
       test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
-      interval: 1s
-      timeout: 1s
-      retries: 10
-      start_period: 1s
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
 
   flextesanobaking:
     container_name: flextesanobaking
@@ -38,10 +38,10 @@ services:
     command: sigybox $PROTOCOL
     healthcheck:
       test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
-      interval: 1s
-      timeout: 1s
-      retries: 10
-      start_period: 1s
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
 
   octez:
     container_name: octez
