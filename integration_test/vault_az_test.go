@@ -31,7 +31,7 @@ func TestAZVault(t *testing.T) {
 	c.Read()
 	var v VaultConfig
 	v.Driver = "azure"
-	v.Conf = map[string]*string{"vault": &vault, "tenant_id": &tenantid, "client_id": &clientid, "client_private_key": &spkey, "client_certificate_thumbprint": &thumb, "subscription_id": &subid, "resource_group": &resgroup}
+	v.Conf = map[string]interface{}{"vault": &vault, "tenant_id": &tenantid, "client_id": &clientid, "client_private_key": &spkey, "client_certificate_thumbprint": &thumb, "subscription_id": &subid, "resource_group": &resgroup}
 	c.Vaults["azure"] = &v
 	var p TezosPolicy
 	p.LogPayloads = true

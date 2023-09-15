@@ -1,6 +1,7 @@
 version: "3.9"
 networks:
   ecadnet: {}
+
 services:
 
   flextesa:
@@ -75,6 +76,7 @@ services:
     volumes:
       - ./.watermarks:/var/lib/signatory
       - ./coverage:/opt/coverage
+      - ./hashicerts:/opt/hashicerts
     configs:
       - source: sigy-config
         target: /etc/signatory.yaml
@@ -114,6 +116,24 @@ services:
       timeout: 1s
       retries: 10
       start_period: 10s
+
+  hashi:
+    container_name: hashi
+    image: hashicorp/vault:1.14
+    ports:
+      - "8200:8200"
+    networks:
+      - ecadnet
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=root
+      - VAULT_TOKEN=root
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - VAULT_CACERT=/opt/signatory/certs/vault-ca.pem
+    command: server -dev-tls -dev-tls-cert-dir=/opt/signatory/certs
+    volumes:
+      - ./hashicerts:/opt/signatory/certs
+    cap_add:
+      - IPC_LOCK      
 
 configs:
   sigy-config:

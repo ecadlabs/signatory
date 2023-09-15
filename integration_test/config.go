@@ -50,8 +50,8 @@ type TezosPolicy struct {
 }
 
 type VaultConfig struct {
-	Driver string             `yaml:"driver"`
-	Conf   map[string]*string `yaml:"config"`
+	Driver string                 `yaml:"driver"`
+	Conf   map[string]interface{} `yaml:"config"`
 }
 
 type FileVault struct {
