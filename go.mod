@@ -12,8 +12,8 @@ require (
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
-	github.com/hashicorp/vault/api v1.9.2
-	github.com/hashicorp/vault/api/auth/approle v0.4.1
+	github.com/hashicorp/vault/api v1.10.0
+	github.com/hashicorp/vault/api/auth/approle v0.5.0
 	github.com/karalabe/hid v1.0.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/segmentio/ksuid v1.0.4
