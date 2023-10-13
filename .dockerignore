@@ -1,0 +1,21 @@
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Repo config
+.git
+
+# IDE configs
+.vscode
+.idea
+
+# Environment variables
+.env
+
+# Other
+website
+grafana
+integration_test
+prometheus

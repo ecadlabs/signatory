@@ -243,7 +243,7 @@ dockers:
   - image_templates:
     - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-amd64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
-    dockerfile: Dockerfile
+    dockerfile: goreleaser.dockerfile
     use: buildx
     build_flag_templates:
     - "--pull"
@@ -256,7 +256,7 @@ dockers:
   - image_templates:
     - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-arm64'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
-    dockerfile: Dockerfile
+    dockerfile: goreleaser.dockerfile
     use: buildx
     build_flag_templates:
     - "--pull"
@@ -270,7 +270,7 @@ dockers:
   - image_templates:
     - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-armv7'
     - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-armv7{{ end }}'
-    dockerfile: Dockerfile
+    dockerfile: goreleaser.dockerfile
     use: buildx
     build_flag_templates:
     - "--pull"
