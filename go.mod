@@ -3,7 +3,7 @@ module github.com/ecadlabs/signatory
 go 1.21
 
 require (
-	cloud.google.com/go/kms v1.15.3
+	cloud.google.com/go/kms v1.15.4
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ecadlabs/goblst v1.0.0
@@ -70,11 +70,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
