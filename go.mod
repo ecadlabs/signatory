@@ -10,7 +10,7 @@ require (
 	github.com/ecadlabs/gotez v1.0.0
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/google/tink/go v1.7.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/vault/api v1.10.0
 	github.com/hashicorp/vault/api/auth/approle v0.5.0
@@ -23,7 +23,7 @@ require (
 	golang.org/x/crypto v0.14.0
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
 	golang.org/x/oauth2 v0.13.0
-	google.golang.org/api v0.148.0
+	google.golang.org/api v0.149.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -36,7 +36,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.1 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -70,11 +70,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
