@@ -12,22 +12,22 @@ import (
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/stretchr/testify/require"
 )
 
 type signerMock struct {
 	SignResponse      crypt.Signature
 	SignError         error
-	PublicKeyResponse *signatory.PublicKey
+	PublicKeyResponse *tezos.PublicKey
 	PublicKeyError    error
 }
 
-func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error) {
+func (c *signerMock) Sign(ctx context.Context, req *tezos.SignRequest) (crypt.Signature, error) {
 	return c.SignResponse, c.SignError
 }
 
-func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error) {
+func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*tezos.PublicKey, error) {
 	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
 		return nil, errors.New("key not found")
 	}
@@ -134,7 +134,7 @@ func TestGetPublicKey(t *testing.T) {
 	type testCase struct {
 		Name       string
 		StatusCode int
-		Response   *signatory.PublicKey
+		Response   *tezos.PublicKey
 		Error      error
 		Expected   string
 	}
@@ -157,7 +157,7 @@ func TestGetPublicKey(t *testing.T) {
 		{
 			Name:       "Normal",
 			StatusCode: http.StatusOK,
-			Response:   &signatory.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})},
+			Response:   &tezos.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})},
 			Expected:   "{\"public_key\":\"edpktefgU4dfKqN1rZVBwBP8ZueBoJZfhDS3kHPSbo8c3aGPrMrunt\"}\n",
 		},
 	}

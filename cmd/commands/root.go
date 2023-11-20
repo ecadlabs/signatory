@@ -8,7 +8,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,7 @@ type Context struct {
 	Context context.Context
 
 	config    *config.Config
-	signatory *signatory.Signatory
+	signatory *tezos.Signatory
 }
 
 // NewRootCommand returns new root command
@@ -73,17 +73,17 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 
 			log.SetLevel(lv)
 
-			pol, err := signatory.PreparePolicy(conf.Tezos)
+			pol, err := tezos.PreparePolicy(conf.Tezos)
 			if err != nil {
 				return err
 			}
 
-			watermark, err := signatory.NewFileWatermark(baseDir)
+			watermark, err := tezos.NewFileWatermark(baseDir)
 			if err != nil {
 				return err
 			}
 
-			sigConf := signatory.Config{
+			sigConf := tezos.Config{
 				Policy:      pol,
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
@@ -91,7 +91,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			}
 
 			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {
-				sigConf.PolicyHook = &signatory.PolicyHook{
+				sigConf.PolicyHook = &tezos.PolicyHook{
 					Address: conf.PolicyHook.Address,
 				}
 				if conf.PolicyHook.AuthorizedKeys != nil {
@@ -103,7 +103,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				}
 			}
 
-			sig, err := signatory.New(c.Context, &sigConf)
+			sig, err := tezos.New(c.Context, &sigConf)
 			if err != nil {
 				return err
 			}

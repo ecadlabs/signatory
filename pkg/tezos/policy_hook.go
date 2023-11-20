@@ -1,4 +1,4 @@
-package signatory
+package tezos
 
 import (
 	"encoding/json"

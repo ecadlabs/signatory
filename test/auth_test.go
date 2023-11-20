@@ -16,7 +16,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/server"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -71,16 +71,16 @@ func TestAuthenticatedRequest(t *testing.T) {
 
 	message := "03a11f5f176e553a11cf184bb2b15f09f55dfc5dcb2d26d79bf5dd099d074d5f5d6c0079cae4c9a1885f17d3995619bf28636c4394458b820af19172c35000904e0000712c4c4270d9e7f512115310d8ec6acfcd878bef00"
 
-	conf := signatory.Config{
+	conf := tezos.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: tezos.IgnoreWatermark{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: signPriv}}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{
 			{
 				Key: signPub.Hash(),
-				Val: &signatory.PublicKeyPolicy{
+				Val: &tezos.PublicKeyPolicy{
 					AllowedRequests:     []string{"generic", "block", "endorsement"},
 					AllowedOps:          []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 					AuthorizedKeyHashes: []crypt.PublicKeyHash{authPub1.Hash()},
@@ -89,7 +89,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 		}),
 	}
 
-	signer, err := signatory.New(context.Background(), &conf)
+	signer, err := tezos.New(context.Background(), &conf)
 	require.NoError(t, err)
 	require.NoError(t, signer.Unlock(context.Background()))
 
@@ -110,7 +110,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 			if c.signWith != nil {
 				msgBytes, err := hex.DecodeString(message)
 				require.NoError(t, err)
-				authBytes, err := signatory.AuthenticatedBytesToSign(&signatory.SignRequest{
+				authBytes, err := tezos.AuthenticatedBytesToSign(&tezos.SignRequest{
 					PublicKeyHash: signPub.Hash(),
 					Message:       msgBytes,
 				})

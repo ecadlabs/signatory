@@ -1,6 +1,6 @@
 //go:build !integration
 
-package signatory_test
+package tezos_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -34,7 +34,7 @@ func generateKey() (crypt.PrivateKey, error) {
 func serveHookAuth(status int, priv crypt.PrivateKey) (func(w http.ResponseWriter, r *http.Request), error) {
 	pub := priv.Public()
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req signatory.PolicyHookRequest
+		var req tezos.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			log.Println(err)
@@ -42,7 +42,7 @@ func serveHookAuth(status int, priv crypt.PrivateKey) (func(w http.ResponseWrite
 			return
 		}
 
-		replyPl := signatory.PolicyHookReplyPayload{
+		replyPl := tezos.PolicyHookReplyPayload{
 			Status:        status,
 			PublicKeyHash: pub.Hash().String(),
 			Nonce:         req.Nonce,
@@ -60,7 +60,7 @@ func serveHookAuth(status int, priv crypt.PrivateKey) (func(w http.ResponseWrite
 			panic(err)
 		}
 
-		reply := signatory.PolicyHookReply{
+		reply := tezos.PolicyHookReply{
 			Payload:   buf,
 			Signature: sig.String(),
 		}
@@ -97,9 +97,9 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	signPub := signPriv.Public()
 	signKeyHash := signPub.Hash()
 
-	conf := signatory.Config{
+	conf := tezos.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: tezos.IgnoreWatermark{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
@@ -108,19 +108,19 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 
-		PolicyHook: &signatory.PolicyHook{
+		PolicyHook: &tezos.PolicyHook{
 			Address: testSrv.URL,
 			Auth:    hookAuth,
 		},
 	}
 
-	s, err := signatory.New(context.Background(), &conf)
+	s, err := tezos.New(context.Background(), &conf)
 	require.NoError(t, err)
 
 	msg := mustHex("11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000")
-	_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: signKeyHash, Message: msg})
+	_, err = s.Sign(context.Background(), &tezos.SignRequest{PublicKeyHash: signKeyHash, Message: msg})
 	return err
 }
 
@@ -136,9 +136,9 @@ func testPolicyHook(t *testing.T, status int) error {
 	require.NoError(t, err)
 	signKeyHash := signPriv.Public().Hash()
 
-	conf := signatory.Config{
+	conf := tezos.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: tezos.IgnoreWatermark{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
@@ -147,17 +147,17 @@ func testPolicyHook(t *testing.T, status int) error {
 				},
 			}, "Mock")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
-		PolicyHook: &signatory.PolicyHook{
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		PolicyHook: &tezos.PolicyHook{
 			Address: testSrv.URL,
 		},
 	}
 
-	s, err := signatory.New(context.Background(), &conf)
+	s, err := tezos.New(context.Background(), &conf)
 	require.NoError(t, err)
 
 	msg := mustHex("11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000")
-	_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: signKeyHash, Message: msg})
+	_, err = s.Sign(context.Background(), &tezos.SignRequest{PublicKeyHash: signKeyHash, Message: msg})
 	return err
 }
 

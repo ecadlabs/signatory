@@ -1,4 +1,4 @@
-package signatory
+package tezos
 
 import (
 	"bufio"
@@ -14,7 +14,7 @@ import (
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,4 +1,4 @@
-package signatory
+package tezos
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"

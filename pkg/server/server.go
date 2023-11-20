@@ -14,7 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,8 +23,8 @@ const defaultAddr = ":6732"
 
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
-	Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error)
-	GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error)
+	Sign(ctx context.Context, req *tezos.SignRequest) (crypt.Signature, error)
+	GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*tezos.PublicKey, error)
 }
 
 // Server struct containing the information necessary to run a tezos remote signers
@@ -43,13 +43,13 @@ func (s *Server) logger() log.FieldLogger {
 	return log.StandardLogger()
 }
 
-func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Request) error {
+func (s *Server) authenticateSignRequest(req *tezos.SignRequest, r *http.Request) error {
 	v := r.FormValue("authentication")
 	if v == "" {
 		return errors.Wrap(stderr.New("missing authentication signature field"), http.StatusUnauthorized)
 	}
 
-	authBytes, err := signatory.AuthenticatedBytesToSign(req)
+	authBytes, err := tezos.AuthenticatedBytesToSign(req)
 	if err != nil {
 		return errors.Wrap(err, http.StatusBadRequest)
 	}
@@ -84,7 +84,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
-	signRequest := signatory.SignRequest{
+	signRequest := tezos.SignRequest{
 		PublicKeyHash: pkh,
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)

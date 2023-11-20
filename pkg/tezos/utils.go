@@ -1,10 +1,10 @@
-package signatory
+package tezos
 
 import (
 	"bytes"
 
 	"github.com/ecadlabs/gotez/encoding"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 )
 
 func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {

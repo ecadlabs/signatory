@@ -1,11 +1,11 @@
-package signatory
+package tezos
 
 import (
 	"sync"
 
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 )
 
 // InMemoryWatermark keep previous operation in memory

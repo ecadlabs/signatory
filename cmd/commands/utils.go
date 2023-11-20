@@ -5,7 +5,7 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 )
 
 const listTemplateSrc = `{{range . -}}
@@ -24,7 +24,7 @@ var (
 	listTpl = template.Must(template.New("list").Parse(listTemplateSrc))
 )
 
-func listKeys(s *signatory.Signatory, w io.Writer, ctx context.Context) error {
+func listKeys(s *tezos.Signatory, w io.Writer, ctx context.Context) error {
 	keys, err := s.ListPublicKeys(ctx)
 	if err != nil {
 		return err

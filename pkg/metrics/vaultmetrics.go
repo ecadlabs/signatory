@@ -3,7 +3,7 @@ package metrics
 import (
 	"strconv"
 
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -42,7 +42,7 @@ var (
 )
 
 // Interceptor function collects sign operation metrics
-func Interceptor(opt *signatory.SignInterceptorOptions, sign func() error) error {
+func Interceptor(opt *tezos.SignInterceptorOptions, sign func() error) error {
 	timer := prometheus.NewTimer(
 		prometheus.ObserverFunc(
 			func(seconds float64) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/ecadlabs/gotez/encoding"
 	"github.com/ecadlabs/gotez/protocol"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 	"github.com/spf13/cobra"
 )
 

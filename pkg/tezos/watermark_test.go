@@ -1,6 +1,6 @@
 //go:build !integration
 
-package signatory
+package tezos
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

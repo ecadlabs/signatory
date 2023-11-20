@@ -6,7 +6,7 @@ import (
 
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/spf13/cobra"
 )
 
@@ -31,12 +31,12 @@ func NewAuthRequestCommand() *cobra.Command {
 				return err
 			}
 
-			req := signatory.SignRequest{
+			req := tezos.SignRequest{
 				Message:       msg,
 				PublicKeyHash: pkh,
 			}
 
-			data, err := signatory.AuthenticatedBytesToSign(&req)
+			data, err := tezos.AuthenticatedBytesToSign(&req)
 			if err != nil {
 				return err
 			}

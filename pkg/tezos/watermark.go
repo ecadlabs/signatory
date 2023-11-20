@@ -1,8 +1,8 @@
-package signatory
+package tezos
 
 import (
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 )
 
 // Watermark tests level against stored high watermark

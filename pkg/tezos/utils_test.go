@@ -1,6 +1,6 @@
 //go:build !integration
 
-package signatory_test
+package tezos_test
 
 import (
 	"context"

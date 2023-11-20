@@ -1,4 +1,4 @@
-package signatory
+package tezos
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/tezos/request"
 )
 
 type v0KindMap map[string]v0WatermarkMap

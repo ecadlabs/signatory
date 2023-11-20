@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/tezos"
 )
 
 type Server struct {
@@ -20,7 +20,7 @@ type Server struct {
 func (s *Server) Handler() (http.Handler, error) {
 	pub := s.PrivateKey.Public()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req signatory.PolicyHookRequest
+		var req tezos.PolicyHookRequest
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -51,7 +51,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				status = http.StatusForbidden
 			}
 
-			replyPl := signatory.PolicyHookReplyPayload{
+			replyPl := tezos.PolicyHookReplyPayload{
 				Status:        status,
 				PublicKeyHash: pub.Hash().String(),
 				Nonce:         req.Nonce,
@@ -73,7 +73,7 @@ func (s *Server) Handler() (http.Handler, error) {
 				return
 			}
 
-			reply := signatory.PolicyHookReply{
+			reply := tezos.PolicyHookReply{
 				Payload:   buf,
 				Signature: sig.String(),
 			}
