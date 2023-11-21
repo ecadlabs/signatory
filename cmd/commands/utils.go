@@ -24,7 +24,7 @@ var (
 	listTpl = template.Must(template.New("list").Parse(listTemplateSrc))
 )
 
-func listKeys(s *tezos.Signatory, w io.Writer, ctx context.Context) error {
+func listKeys(s *tezos.Signer, w io.Writer, ctx context.Context) error {
 	keys, err := s.ListPublicKeys(ctx)
 	if err != nil {
 		return err

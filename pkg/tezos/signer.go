@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/ecadlabs/gotez/b58"
 	"github.com/ecadlabs/gotez/encoding"
@@ -22,7 +21,8 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/tezos/request"
-	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -70,19 +70,15 @@ type PublicKeyPolicy struct {
 
 // PublicKey contains public key with its hash
 type PublicKey struct {
-	PublicKey     crypt.PublicKey
-	PublicKeyHash crypt.PublicKeyHash
-	VaultName     string
-	ID            string
-	Policy        *PublicKeyPolicy
-	Active        bool
+	*manager.PublicKey
+	Policy *PublicKeyPolicy
+	Active bool
 }
 
-// Signatory is a struct coordinate signatory action and select vault according to the key being used
-type Signatory struct {
+// Signer is a struct coordinate signatory action and select vault according to the key being used
+type Signer struct {
+	*manager.Manager
 	config Config
-	vaults map[string]vault.Vault
-	cache  keyCache
 }
 
 // SignRequest represents a sign request which may be authenticated with the client key
@@ -93,46 +89,7 @@ type SignRequest struct {
 	Message             []byte
 }
 
-type keyVaultPair struct {
-	pkh   crypt.PublicKeyHash
-	key   vault.StoredKey
-	vault vault.Vault
-	name  string
-}
-
-type keyCache struct {
-	cache hashmap.PublicKeyHashMap[*keyVaultPair]
-	mtx   sync.Mutex
-}
-
-func (k *keyCache) push(pair *keyVaultPair) {
-	k.mtx.Lock()
-	defer k.mtx.Unlock()
-
-	if k.cache == nil {
-		k.cache = make(hashmap.PublicKeyHashMap[*keyVaultPair])
-	}
-	k.cache.Insert(pair.pkh, pair)
-}
-
-func (k *keyCache) get(pkh crypt.PublicKeyHash) *keyVaultPair {
-	k.mtx.Lock()
-	defer k.mtx.Unlock()
-
-	if pair, ok := k.cache.Get(pkh); ok {
-		return pair
-	}
-
-	return nil
-}
-
-func (k *keyCache) drop() {
-	k.mtx.Lock()
-	defer k.mtx.Unlock()
-	k.cache = nil
-}
-
-func (s *Signatory) logger() log.FieldLogger {
+func (s *Signer) logger() log.FieldLogger {
 	if s.config.Logger != nil {
 		return s.config.Logger
 	}
@@ -143,7 +100,7 @@ var defaultPolicy = PublicKeyPolicy{
 	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
 }
 
-func (s *Signatory) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKeyPolicy {
+func (s *Signer) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKeyPolicy {
 	val, ok := s.config.Policy.Get(keyHash)
 	if !ok {
 		return nil
@@ -205,6 +162,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg request.SignRequ
 	return nil
 }
 
+/*
 func jwtVerifyUser(user string, policy *PublicKeyPolicy, req *SignRequest) error {
 	fmt.Println("jwtVerifyUser", user, policy.AuthorizedJwtUsers)
 	authorized := false
@@ -223,8 +181,9 @@ func jwtVerifyUser(user string, policy *PublicKeyPolicy, req *SignRequest) error
 	fmt.Println("AuthorizedJwtUsers nil: ", authorized)
 	return nil
 }
+*/
 
-func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error {
+func (s *Signer) callPolicyHook(ctx context.Context, req *SignRequest) error {
 	if s.config.PolicyHook == nil {
 		return nil
 	}
@@ -317,7 +276,7 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 }
 
 // Sign ask the vault to sign a message with the private key associated to keyHash
-func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
+func (s *Signer) Sign(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
 	l := s.logger().WithField(logPKH, req.PublicKeyHash)
 
 	if req.ClientPublicKeyHash != nil {
@@ -331,13 +290,16 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		return nil, errors.Wrap(err, http.StatusForbidden)
 	}
 
-	u := ctx.Value("user")
-	if u != nil {
-		if err := jwtVerifyUser(u.(string), policy, req); err != nil {
-			l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
-			return nil, errors.Wrap(err, http.StatusForbidden)
+	/*
+		// TODO: Must be a part of HTTP server
+		u := ctx.Value("user")
+		if u != nil {
+			if err := jwtVerifyUser(u.(string), policy, req); err != nil {
+				l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
+				return nil, errors.Wrap(err, http.StatusForbidden)
+			}
 		}
-	}
+	*/
 
 	var msg request.SignRequest
 	_, err := encoding.Decode(req.Message, &msg)
@@ -358,18 +320,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Operations)})
 	}
 
-	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
+	p, err := s.Manager.GetPublicKey(ctx, req.PublicKeyHash)
 	if err != nil {
 		l.Error(err)
 		return nil, err
 	}
-
-	l = l.WithField(logVault, p.vault.Name())
-	if n, ok := p.vault.(vault.VaultNamer); ok {
-		l = l.WithField(logVaultName, n.VaultName())
-	} else {
-		l = l.WithField(logVaultName, p.name)
-	}
+	l = l.WithFields(log.Fields{logVault: p.VaultName, logVaultName: p.VaultInstanceName})
 
 	if err = matchFilter(policy, req, msg); err != nil {
 		l.Error(err)
@@ -381,152 +337,71 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		return nil, err
 	}
 
-	l.Info("Requesting signing operation")
-
 	level := log.DebugLevel
 	if policy.LogPayloads {
 		level = log.InfoLevel
 	}
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
+
 	digest := crypt.DigestFunc(req.Message)
-	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
+	signFunc := func() (crypt.Signature, error) {
 		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
 		}
-		return p.vault.SignMessage(ctx, message, p.key)
+		return s.Manager.SignBytes(ctx, req.PublicKeyHash, req.Message)
 	}
 
 	var sig crypt.Signature
 	if s.config.Interceptor != nil {
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
-			Vault:   p.vault.Name(),
+			Vault:   p.VaultName,
 			Req:     msg.RequestKind(),
 			Stat:    opStat,
 		}, func() (err error) {
-			sig, err = signFunc(ctx, req.Message, p.key)
+			sig, err = signFunc()
 			return err
 		})
 	} else {
-		sig, err = signFunc(ctx, req.Message, p.key)
+		sig, err = signFunc()
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	l.WithField("raw", sig).Debug("Signed bytes")
-	l.Debugf("Encoded signature: %v", sig)
 	l.Infof("Signed %s successfully", msg.RequestKind())
-
 	return sig, nil
 }
 
-type publicKeys = hashmap.PublicKeyHashMap[*keyVaultPair]
-
-func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []*keyVaultPair, err error) {
-	ret = make(publicKeys)
-	for name, v := range s.vaults {
-		var vaultKeys []*keyVaultPair
-		iter := v.ListPublicKeys(ctx)
-	keys:
-		for {
-			key, err := iter.Next()
-			if err != nil {
-				switch {
-				case stderr.Is(err, vault.ErrDone):
-					break keys
-				case stderr.Is(err, vault.ErrKey):
-					continue keys
-				default:
-					return nil, nil, err
-				}
-			}
-			pkh := key.PublicKey().Hash()
-			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
-			s.cache.push(p)
-
-			ret.Insert(pkh, p)
-			vaultKeys = append(vaultKeys, p)
-		}
-		if len(vaultKeys) == 0 {
-			s.logger().Error("No valid keys found in the vault ", name)
-		}
-		list = append(list, vaultKeys...)
-	}
-	return ret, list, nil
-}
-
 // ListPublicKeys retrieve the list of all public keys supported by the current configuration
-func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
-	_, list, err := s.listPublicKeys(ctx)
+func (s *Signer) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
+	list, err := s.Manager.ListPublicKeys(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		pk := p.key.PublicKey()
 		ret[i] = &PublicKey{
-			PublicKey:     pk,
-			PublicKeyHash: p.pkh,
-			VaultName:     p.vault.Name(),
-			ID:            p.key.ID(),
-			Policy:        s.fetchPolicyOrDefault(p.pkh),
+			PublicKey: p,
+			Policy:    s.fetchPolicyOrDefault(p.Hash()),
 		}
 		ret[i].Active = ret[i].Policy != nil
 	}
 	return ret, nil
 }
 
-func (s *Signatory) getPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*keyVaultPair, error) {
-	cached := s.cache.get(keyHash)
-	if cached != nil {
-		return cached, nil
-	}
-
-	s.logger().WithField(logPKH, keyHash).Debugf("Fetching public key for: %s", keyHash)
-
-	keys, _, err := s.listPublicKeys(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if p, ok := keys.Get(keyHash); ok {
-		return p, nil
-	}
-	return nil, ErrVaultNotFound
-}
-
 // GetPublicKey retrieve the public key from a vault
-func (s *Signatory) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*PublicKey, error) {
-
-	p, err := s.getPublicKey(ctx, keyHash)
+func (s *Signer) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*PublicKey, error) {
+	p, err := s.Manager.GetPublicKey(ctx, keyHash)
 	if err != nil {
 		return nil, err
 	}
-
 	return &PublicKey{
-		PublicKey:     p.key.PublicKey(),
-		PublicKeyHash: keyHash,
-		VaultName:     p.vault.Name(),
-		ID:            p.key.ID(),
-		Policy:        s.fetchPolicyOrDefault(keyHash),
+		PublicKey: p,
+		Policy:    s.fetchPolicyOrDefault(keyHash),
 	}, nil
-}
-
-// Unlock unlock all the vaults
-func (s *Signatory) Unlock(ctx context.Context) error {
-	for _, v := range s.vaults {
-		if unlocker, ok := v.(vault.Unlocker); ok {
-			if err := unlocker.Unlock(ctx); err != nil {
-				return err
-			}
-		}
-	}
-	s.cache.drop()
-	return nil
 }
 
 type PolicyHook struct {
@@ -538,59 +413,11 @@ type Policy = hashmap.PublicKeyHashMap[*PublicKeyPolicy]
 
 // Config represents Signatory configuration
 type Config struct {
-	Policy       Policy
-	Vaults       map[string]*config.VaultConfig
-	Interceptor  SignInterceptor
-	Watermark    Watermark
-	Logger       log.FieldLogger
-	VaultFactory vault.Factory
-	PolicyHook   *PolicyHook
-}
-
-// New returns Signatory instance
-func New(ctx context.Context, c *Config) (*Signatory, error) {
-	s := &Signatory{
-		config: *c,
-		vaults: make(map[string]vault.Vault, len(c.Vaults)),
-	}
-
-	// Initialize vaults
-	for name, vc := range c.Vaults {
-		if vc == nil {
-			continue
-		}
-
-		l := s.logger().WithFields(log.Fields{
-			logVault:     vc.Driver,
-			logVaultName: name,
-		})
-
-		l.Info("Initializing vault")
-
-		factory := c.VaultFactory
-		if factory == nil {
-			factory = vault.Registry()
-		}
-		v, err := factory.New(ctx, vc.Driver, &vc.Config)
-		if err != nil {
-			return nil, err
-		}
-		s.vaults[name] = v
-	}
-
-	return s, nil
-}
-
-// Ready returns true if all backends are ready
-func (s *Signatory) Ready(ctx context.Context) (bool, error) {
-	for _, v := range s.vaults {
-		if rc, ok := v.(vault.ReadinessChecker); ok {
-			if ok, err := rc.Ready(ctx); !ok || err != nil {
-				return ok, err
-			}
-		}
-	}
-	return true, nil
+	manager.ManagerConfig
+	Policy      Policy
+	Interceptor SignInterceptor
+	Watermark   Watermark
+	PolicyHook  *PolicyHook
 }
 
 // PreparePolicy prepares policy data by hashing keys etc
@@ -667,4 +494,28 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 		return true
 	})
 	return policy, err
+}
+
+func (s *Signer) Import(ctx context.Context, importerName string, secretKey string, passCB func() ([]byte, error), opt utils.Options) (*PublicKey, error) {
+	pub, err := s.Manager.Import(ctx, importerName, secretKey, passCB, opt)
+	if err != nil {
+		return nil, err
+	}
+	ret := PublicKey{
+		PublicKey: pub,
+		Policy:    s.fetchPolicyOrDefault(pub.Hash()),
+	}
+	ret.Active = ret.Policy != nil
+	return &ret, nil
+}
+
+func New(ctx context.Context, cfg *Config) (*Signer, error) {
+	manager, err := manager.New(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Signer{
+		Manager: manager,
+		config:  *cfg,
+	}, nil
 }

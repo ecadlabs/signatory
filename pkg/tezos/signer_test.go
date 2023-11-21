@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
@@ -22,15 +23,17 @@ const privateKey = "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
 
 func TestImport(t *testing.T) {
 	conf := tezos.Config{
-		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+		ManagerConfig: manager.ManagerConfig{
+			Vaults: map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				v, err := memory.New(nil, "Mock")
+				if err != nil {
+					return nil, err
+				}
+				return &memory.Importer{Vault: v}, nil
+			}),
+		},
 		Watermark: tezos.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			v, err := memory.New(nil, "Mock")
-			if err != nil {
-				return nil, err
-			}
-			return &memory.Importer{Vault: v}, nil
-		}),
 	}
 
 	s, err := tezos.New(context.Background(), &conf)
@@ -39,7 +42,7 @@ func TestImport(t *testing.T) {
 	imported, err := s.Import(context.Background(), "mock", privateKey, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey.String())
-	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.PublicKeyHash.String())
+	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.Hash().String())
 
 	list, err := s.ListPublicKeys(context.Background())
 	require.NoError(t, err)
@@ -309,12 +312,14 @@ func TestPolicy(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
 			conf := tezos.Config{
-				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+				ManagerConfig: manager.ManagerConfig{
+					Vaults: map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+					VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+						return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+					}),
+				},
 				Watermark: tezos.IgnoreWatermark{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
-				}),
-				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy:    hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 
 			s, err := tezos.New(context.Background(), &conf)
@@ -399,12 +404,14 @@ func TestListPublicKeys(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
 			conf := tezos.Config{
-				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
+				ManagerConfig: manager.ManagerConfig{
+					Vaults: map[string]*config.VaultConfig{"test": {Driver: "test"}},
+					VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+						return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
+					}),
+				},
 				Watermark: tezos.IgnoreWatermark{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
-				}),
-				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
+				Policy:    hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
 			s, err := tezos.New(context.Background(), &conf)
 			require.NoError(t, err)

@@ -27,13 +27,25 @@ const (
 )
 
 // ErrVaultNotFound error return when a vault is not found
-var ErrVaultNotFound = errors.Wrap(stderr.New("this key not found in any vault"), http.StatusNotFound)
+var ErrVaultNotFound = errors.Wrap(stderr.New("the key is not found in any vault"), http.StatusNotFound)
+
+type Signer interface {
+	GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*PublicKey, error)
+	SignBytes(ctx context.Context, pkh crypt.PublicKeyHash, message []byte) (crypt.Signature, error)
+}
 
 type keyVaultPair struct {
-	pkh   crypt.PublicKeyHash
-	key   vault.StoredKey
-	vault vault.Vault
-	name  string
+	pkh      crypt.PublicKeyHash
+	key      vault.StoredKey
+	vault    vault.Vault
+	instName string
+}
+
+func (k *keyVaultPair) instanceName() string {
+	if n, ok := k.vault.(vault.VaultNamer); ok {
+		return n.VaultName()
+	}
+	return k.instName
 }
 
 type keyCache struct {
@@ -70,17 +82,26 @@ func (k *keyCache) drop() {
 
 // PublicKey contains public key with its hash
 type PublicKey struct {
-	PublicKey     crypt.PublicKey
-	PublicKeyHash crypt.PublicKeyHash
-	VaultName     string
-	ID            string
+	crypt.PublicKey
+	VaultName         string
+	VaultInstanceName string
+	ID                string
 }
 
-// Config represents Signatory configuration
-type Config struct {
+type ManagerConfig struct {
 	Vaults       map[string]*config.VaultConfig
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
+}
+
+func (c *ManagerConfig) GetVaults() map[string]*config.VaultConfig { return c.Vaults }
+func (c *ManagerConfig) GetLogger() log.FieldLogger                { return c.Logger }
+func (c *ManagerConfig) GetVaultFactory() vault.Factory            { return c.VaultFactory }
+
+type Config interface {
+	GetVaults() map[string]*config.VaultConfig
+	GetLogger() log.FieldLogger
+	GetVaultFactory() vault.Factory
 }
 
 type Manager struct {
@@ -90,8 +111,8 @@ type Manager struct {
 }
 
 func (m *Manager) logger() log.FieldLogger {
-	if m.config.Logger != nil {
-		return m.config.Logger
+	if l := m.config.GetLogger(); l != nil {
+		return l
 	}
 	return log.StandardLogger()
 }
@@ -117,7 +138,7 @@ func (m *Manager) listPublicKeys(ctx context.Context) (ret publicKeys, list []*k
 				}
 			}
 			pkh := key.PublicKey().Hash()
-			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
+			p := &keyVaultPair{pkh: pkh, key: key, vault: v, instName: name}
 			m.cache.push(p)
 
 			ret.Insert(pkh, p)
@@ -142,10 +163,10 @@ func (m *Manager) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 	for i, p := range list {
 		pk := p.key.PublicKey()
 		ret[i] = &PublicKey{
-			PublicKey:     pk,
-			PublicKeyHash: p.pkh,
-			VaultName:     p.vault.Name(),
-			ID:            p.key.ID(),
+			PublicKey:         pk,
+			VaultName:         p.vault.Name(),
+			VaultInstanceName: p.instanceName(),
+			ID:                p.key.ID(),
 		}
 	}
 	return ret, nil
@@ -178,10 +199,10 @@ func (m *Manager) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash)
 	}
 
 	return &PublicKey{
-		PublicKey:     p.key.PublicKey(),
-		PublicKeyHash: keyHash,
-		VaultName:     p.vault.Name(),
-		ID:            p.key.ID(),
+		PublicKey:         p.key.PublicKey(),
+		VaultName:         p.vault.Name(),
+		VaultInstanceName: p.instanceName(),
+		ID:                p.key.ID(),
 	}, nil
 }
 
@@ -228,11 +249,14 @@ func (m *Manager) Import(ctx context.Context, importerName string, secretKey str
 		logPKH:   hash,
 		logVault: importer.Name(),
 	})
+
+	var instanceName string
 	if n, ok := importer.(vault.VaultNamer); ok {
-		l = l.WithField(logVaultName, n.VaultName())
+		instanceName = n.VaultName()
 	} else {
-		l = l.WithField(logVaultName, importerName)
+		instanceName = importerName
 	}
+	l = l.WithField(logVaultName, instanceName)
 
 	l.Info("Requesting import operation")
 
@@ -245,35 +269,25 @@ func (m *Manager) Import(ctx context.Context, importerName string, secretKey str
 
 	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
 	return &PublicKey{
-		PublicKey:     pub,
-		PublicKeyHash: hash,
-		VaultName:     importer.Name(),
-		ID:            stored.ID(),
+		PublicKey:         pub,
+		VaultName:         importer.Name(),
+		VaultInstanceName: instanceName,
+		ID:                stored.ID(),
 	}, nil
 }
 
-type SignRequest struct {
-	PublicKeyHash crypt.PublicKeyHash
-	Message       []byte
-}
-
-func (m *Manager) SignData(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
-	l := m.logger().WithField(logPKH, req.PublicKeyHash)
-	p, err := m.getPublicKey(ctx, req.PublicKeyHash)
+func (m *Manager) SignBytes(ctx context.Context, pkh crypt.PublicKeyHash, message []byte) (crypt.Signature, error) {
+	l := m.logger().WithField(logPKH, pkh)
+	p, err := m.getPublicKey(ctx, pkh)
 	if err != nil {
 		l.Error(err)
 		return nil, err
 	}
 
-	l = l.WithField(logVault, p.vault.Name())
-	if n, ok := p.vault.(vault.VaultNamer); ok {
-		l = l.WithField(logVaultName, n.VaultName())
-	} else {
-		l = l.WithField(logVaultName, p.name)
-	}
+	l = l.WithFields(log.Fields{logVault: p.vault.Name(), logVaultName: p.instanceName()})
 
 	l.Info("Requesting signing operation")
-	sig, err := p.vault.SignMessage(ctx, req.Message, p.key)
+	sig, err := p.vault.SignMessage(ctx, message, p.key)
 	if err != nil {
 		return nil, err
 	}
@@ -282,3 +296,49 @@ func (m *Manager) SignData(ctx context.Context, req *SignRequest) (crypt.Signatu
 
 	return sig, nil
 }
+
+// New returns Manager instance
+func New(ctx context.Context, c Config) (*Manager, error) {
+	m := &Manager{
+		config: c,
+		vaults: make(map[string]vault.Vault, len(c.GetVaults())),
+	}
+
+	factory := c.GetVaultFactory()
+	if factory == nil {
+		factory = vault.Registry()
+	}
+
+	// Initialize vaults
+	for name, vc := range c.GetVaults() {
+		if vc == nil {
+			continue
+		}
+		l := m.logger().WithFields(log.Fields{
+			logVault:     vc.Driver,
+			logVaultName: name,
+		})
+		l.Infof("Initializing vault %s", vc.Driver)
+		v, err := factory.New(ctx, vc.Driver, &vc.Config)
+		if err != nil {
+			return nil, err
+		}
+		m.vaults[name] = v
+	}
+
+	return m, nil
+}
+
+// Ready returns true if all backends are ready
+func (m *Manager) Ready(ctx context.Context) (bool, error) {
+	for _, v := range m.vaults {
+		if rc, ok := v.(vault.ReadinessChecker); ok {
+			if ok, err := rc.Ready(ctx); !ok || err != nil {
+				return ok, err
+			}
+		}
+	}
+	return true, nil
+}
+
+var _ Signer = (*Manager)(nil)

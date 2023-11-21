@@ -18,7 +18,7 @@ type Context struct {
 	Context context.Context
 
 	config    *config.Config
-	signatory *tezos.Signatory
+	signatory *tezos.Signer
 }
 
 // NewRootCommand returns new root command

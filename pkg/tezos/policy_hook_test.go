@@ -18,6 +18,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
@@ -98,17 +99,19 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	signKeyHash := signPub.Hash()
 
 	conf := tezos.Config{
-		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+		ManagerConfig: manager.ManagerConfig{
+			Vaults: map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				return memory.New([]*memory.PrivateKey{
+					{
+						PrivateKey: signPriv,
+						KeyID:      signKeyHash.String(),
+					},
+				}, "Mock")
+			}),
+		},
 		Watermark: tezos.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.New([]*memory.PrivateKey{
-				{
-					PrivateKey: signPriv,
-					KeyID:      signKeyHash.String(),
-				},
-			}, "Mock")
-		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		Policy:    hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 
 		PolicyHook: &tezos.PolicyHook{
 			Address: testSrv.URL,
@@ -137,17 +140,19 @@ func testPolicyHook(t *testing.T, status int) error {
 	signKeyHash := signPriv.Public().Hash()
 
 	conf := tezos.Config{
-		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+		ManagerConfig: manager.ManagerConfig{
+			Vaults: map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				return memory.New([]*memory.PrivateKey{
+					{
+						PrivateKey: signPriv,
+						KeyID:      signKeyHash.String(),
+					},
+				}, "Mock")
+			}),
+		},
 		Watermark: tezos.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.New([]*memory.PrivateKey{
-				{
-					PrivateKey: signPriv,
-					KeyID:      signKeyHash.String(),
-				},
-			}, "Mock")
-		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
+		Policy:    hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{{Key: signKeyHash, Val: nil}}),
 		PolicyHook: &tezos.PolicyHook{
 			Address: testSrv.URL,
 		},
