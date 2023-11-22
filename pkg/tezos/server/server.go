@@ -152,7 +152,7 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		PublicKey crypt.PublicKey `json:"public_key"`
 	}{
-		PublicKey: key.PublicKey,
+		PublicKey: key.PublicKey.PublicKey,
 	}
 	jsonResponse(w, http.StatusOK, &resp)
 }

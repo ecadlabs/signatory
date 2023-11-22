@@ -9,6 +9,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -84,8 +85,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			}
 
 			sigConf := tezos.Config{
-				Policy:      pol,
-				Vaults:      conf.Vaults,
+				Policy: pol,
+				ManagerConfig: manager.ManagerConfig{
+					Vaults: conf.Vaults,
+				},
 				Interceptor: metrics.Interceptor,
 				Watermark:   watermark,
 			}

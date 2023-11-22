@@ -11,8 +11,9 @@ import (
 
 	tz "github.com/ecadlabs/gotez"
 	"github.com/ecadlabs/signatory/pkg/crypt"
-	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/tezos"
+	"github.com/ecadlabs/signatory/pkg/tezos/server"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	"github.com/stretchr/testify/require"
 )
 
@@ -157,7 +158,7 @@ func TestGetPublicKey(t *testing.T) {
 		{
 			Name:       "Normal",
 			StatusCode: http.StatusOK,
-			Response:   &tezos.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})},
+			Response:   &tezos.PublicKey{PublicKey: &manager.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})}},
 			Expected:   "{\"public_key\":\"edpktefgU4dfKqN1rZVBwBP8ZueBoJZfhDS3kHPSbo8c3aGPrMrunt\"}\n",
 		},
 	}

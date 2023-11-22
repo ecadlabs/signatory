@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/tezos"
 	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/vault/manager"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -56,15 +57,17 @@ func testServer(t *testing.T, addr []net.IP) error {
 	require.NoError(t, err)
 
 	conf := tezos.Config{
-		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+		ManagerConfig: manager.ManagerConfig{
+			Vaults: map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				return memory.New([]*memory.PrivateKey{
+					{
+						PrivateKey: signPriv,
+					},
+				}, "Mock")
+			}),
+		},
 		Watermark: tezos.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.New([]*memory.PrivateKey{
-				{
-					PrivateKey: signPriv,
-				},
-			}, "Mock")
-		}),
 		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*tezos.PublicKeyPolicy]{
 			{
 				Key: signKeyHash,

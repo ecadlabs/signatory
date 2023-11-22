@@ -8,7 +8,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
-	"github.com/ecadlabs/signatory/pkg/server"
+	"github.com/ecadlabs/signatory/pkg/tezos/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
