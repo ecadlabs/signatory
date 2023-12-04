@@ -22,7 +22,7 @@ func TestGCPVault(t *testing.T) {
 	c.Read()
 	var v VaultConfig
 	v.Driver = "cloudkms"
-	v.Conf = map[string]*string{"project": &project, "location": &location, "key_ring": &keyring}
+	v.Conf = map[string]interface{}{"project": &project, "location": &location, "key_ring": &keyring}
 	c.Vaults["gcp"] = &v
 	var p TezosPolicy
 	p.LogPayloads = true

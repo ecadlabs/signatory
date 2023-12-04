@@ -26,7 +26,7 @@ func TestAWSVault(t *testing.T) {
 	c.Read()
 	var v VaultConfig
 	v.Driver = "awskms"
-	v.Conf = map[string]*string{"user_name": &user, "access_key_id": &key, "secret_access_key": &secret, "region": &region}
+	v.Conf = map[string]interface{}{"user_name": &user, "access_key_id": &key, "secret_access_key": &secret, "region": &region}
 	c.Vaults["aws"] = &v
 	var p TezosPolicy
 	p.LogPayloads = true
