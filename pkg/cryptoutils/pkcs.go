@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"golang.org/x/crypto/cryptobyte"
 )
 

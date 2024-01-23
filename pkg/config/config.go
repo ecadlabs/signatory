@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/go-playground/validator/v10"

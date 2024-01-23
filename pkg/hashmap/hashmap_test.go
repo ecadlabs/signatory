@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"

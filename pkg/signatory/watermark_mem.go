@@ -3,8 +3,9 @@ package signatory
 import (
 	"sync"
 
-	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
@@ -15,13 +16,13 @@ type InMemoryWatermark struct {
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
+func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
 	return w.isSafeToSignUnlocked(pkh, req, digest)
 }
 
-func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req request.SignRequest, digest *crypt.Digest) error {
+func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -45,12 +46,12 @@ func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req re
 	}
 
 	watermark := request.NewWatermark(m, digest)
-	if stored, ok := requests[req.RequestKind()]; ok {
+	if stored, ok := requests[req.SignRequestKind()]; ok {
 		if !watermark.Validate(stored) {
 			return ErrWatermark
 		}
 	}
-	requests[m.RequestKind()] = watermark
+	requests[m.SignRequestKind()] = watermark
 	return nil
 }
 

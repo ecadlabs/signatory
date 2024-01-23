@@ -3,8 +3,8 @@ package signatory
 import (
 	"bytes"
 
-	"github.com/ecadlabs/gotez/encoding"
-	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/gotez/v2/encoding"
+	"github.com/ecadlabs/gotez/v2/protocol"
 )
 
 func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {
@@ -24,9 +24,9 @@ func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {
 type operationsStat map[string]int
 
 // getOperationsStat returns statistics of operations
-func getOperationsStat(u *request.GenericOperationRequest) operationsStat {
+func getOperationsStat(u *protocol.GenericOperationSignRequest) operationsStat {
 	ops := make(operationsStat)
-	for _, o := range u.Operations {
+	for _, o := range u.Contents {
 		ops[o.OperationKind()]++
 	}
 	return ops

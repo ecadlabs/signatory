@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/b58"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"

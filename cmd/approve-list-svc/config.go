@@ -4,10 +4,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -51,7 +51,7 @@ func (conf *Config) GetPrivateKey() (crypt.PrivateKey, error) {
 			return nil, nil
 		}
 		var err error
-		if keyData, err = ioutil.ReadFile(conf.PrivateKeyFile); err != nil {
+		if keyData, err = os.ReadFile(conf.PrivateKeyFile); err != nil {
 			return nil, err
 		}
 	}
@@ -64,7 +64,7 @@ func (conf *Config) GetPrivateKey() (crypt.PrivateKey, error) {
 }
 
 func ReadConfig(file string) (*Config, error) {
-	yamlFile, err := ioutil.ReadFile(file)
+	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}

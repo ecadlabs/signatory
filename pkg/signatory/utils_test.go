@@ -5,7 +5,7 @@ package signatory_test
 import (
 	"context"
 
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/vault"
 )
 

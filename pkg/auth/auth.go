@@ -5,8 +5,8 @@ import (
 	stderr "errors"
 	"net/http"
 
-	"github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 )
 
