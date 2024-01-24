@@ -656,10 +656,18 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 
 		if core.CompareProtocols(&latest.Protocol, &core.Proto018Proxford) >= 0 {
 			for i, o := range pol.AllowedOps {
-				if o == "endorsement" {
+				switch o {
+				case "endorsement":
 					pol.AllowedOps[i] = "attestation"
+				case "preendorsement":
+					pol.AllowedOps[i] = "preattestation"
+				case "double_endorsement_evidence":
+					pol.AllowedOps[i] = "double_attestation_evidence"
+				case "double_preendorsement_evidence":
+					pol.AllowedOps[i] = "double_preattestation_evidence"
 				}
 			}
+			sort.Strings(pol.AllowedOps)
 		}
 
 		if v.AuthorizedKeys != nil {
