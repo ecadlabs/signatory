@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ecadlabs/gotez/encoding"
+	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/mnemonic"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"

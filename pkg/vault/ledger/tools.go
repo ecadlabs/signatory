@@ -1,8 +1,8 @@
 package ledger
 
 import (
-	"github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/b58"
+	"github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/tezosapp"
 )
 

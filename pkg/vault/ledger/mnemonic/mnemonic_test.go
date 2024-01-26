@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"testing"
 
-	"github.com/ecadlabs/gotez/encoding"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/stretchr/testify/assert"
 )
 

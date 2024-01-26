@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 )
 

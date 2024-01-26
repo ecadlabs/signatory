@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/gotez/encoding"
-	proto "github.com/ecadlabs/gotez/protocol"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/gotez/v2/encoding"
+	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
+	"github.com/ecadlabs/gotez/v2/protocol/core/expression"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,21 +20,21 @@ func TestSignRequest(t *testing.T) {
 	type testCase struct {
 		title  string
 		src    string
-		expect SignRequest
+		expect protocol.SignRequest
 	}
 
 	testCases := []testCase{
 		{
 			title: "preendorsement",
 			src:   "12ed9d217c2f50673bab6b20dfb0a88ca93b4a0c72a34c807af5dffbece2cba3d2b509835f14006000000002000000041f1ebb39759cc957216f88fb4d005abc206fb00a53f8d57ac01be00c084cba97",
-			expect: &PreendorsementRequest{
+			expect: &protocol.PreattestationSignRequest{
 				Chain: &tz.ChainID{0xed, 0x9d, 0x21, 0x7c},
 				Branch: &tz.BlockHash{
 					0x2f, 0x50, 0x67, 0x3b, 0xab, 0x6b, 0x20, 0xdf, 0xb0, 0xa8, 0x8c, 0xa9, 0x3b, 0x4a,
 					0xc, 0x72, 0xa3, 0x4c, 0x80, 0x7a, 0xf5, 0xdf, 0xfb, 0xec, 0xe2, 0xcb, 0xa3, 0xd2,
 					0xb5, 0x9, 0x83, 0x5f,
 				},
-				Operation: &proto.Preendorsement{
+				Operation: &proto.Preattestation{
 					Slot:  96,
 					Level: 2,
 					Round: 4,
@@ -46,14 +49,14 @@ func TestSignRequest(t *testing.T) {
 		{
 			title: "endorsement",
 			src:   "13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d",
-			expect: &EndorsementRequest{
+			expect: &protocol.AttestationSignRequest{
 				Chain: &tz.ChainID{0xed, 0x9d, 0x21, 0x7c},
 				Branch: &tz.BlockHash{
 					0xfc, 0x81, 0xee, 0xe8, 0x10, 0x73, 0x7b, 0x4, 0x1, 0x8a, 0xce, 0xf4, 0xdb, 0x74, 0xd0,
 					0x56, 0xb7, 0x9e, 0xdc, 0x43, 0xe6, 0xbe, 0x46, 0xca, 0xe7, 0xe4, 0xc2, 0x17, 0xc2,
 					0x2a, 0x82, 0xf0,
 				},
-				Operation: &proto.Endorsement{
+				Operation: &proto.Attestation{
 					Slot:  18,
 					Level: 20877,
 					Round: 0,
@@ -68,10 +71,10 @@ func TestSignRequest(t *testing.T) {
 		{
 			title: "block",
 			src:   "11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000",
-			expect: &BlockRequest{
+			expect: &protocol.BlockSignRequest{
 				Chain: &tz.ChainID{0xed, 0x9d, 0x21, 0x7c},
-				BlockHeader: proto.TenderbakeBlockHeader{
-					ShellHeader: proto.ShellHeader{
+				BlockHeader: proto.UnsignedBlockHeader{
+					ShellHeader: core.ShellHeader{
 						Level: 20878,
 						Proto: 1,
 						Predecessor: &tz.BlockHash{
@@ -97,28 +100,29 @@ func TestSignRequest(t *testing.T) {
 							0x5e, 0xb9, 0x27, 0x48, 0xf8, 0xd0,
 						},
 					},
-					PayloadHash: &tz.BlockPayloadHash{
-						0x68, 0xd7, 0x76, 0xe3, 0x56, 0x68, 0x3a, 0x9e, 0x23, 0xc1, 0x86, 0xcc, 0xfb, 0x72,
-						0xdd, 0xc6, 0xc9, 0x85, 0x7b, 0xb1, 0x70, 0x44, 0x87, 0x97, 0x29, 0x22, 0xe7, 0xc8,
-						0x9a, 0x71, 0x21, 0xf8,
+					UnsignedProtocolBlockHeader: proto.UnsignedProtocolBlockHeader{
+						PayloadHash: &tz.BlockPayloadHash{
+							0x68, 0xd7, 0x76, 0xe3, 0x56, 0x68, 0x3a, 0x9e, 0x23, 0xc1, 0x86, 0xcc, 0xfb, 0x72,
+							0xdd, 0xc6, 0xc9, 0x85, 0x7b, 0xb1, 0x70, 0x44, 0x87, 0x97, 0x29, 0x22, 0xe7, 0xc8,
+							0x9a, 0x71, 0x21, 0xf8,
+						},
+						PayloadRound:     0,
+						ProofOfWorkNonce: &tz.Bytes8{0xa8, 0xe1, 0xdd, 0x3c, 0x0, 0x0, 0x0, 0x0},
+						SeedNonceHash:    tz.None[*tz.CycleNonceHash](),
 					},
-					PayloadRound:              0,
-					ProofOfWorkNonce:          &[8]byte{0xa8, 0xe1, 0xdd, 0x3c, 0x0, 0x0, 0x0, 0x0},
-					SeedNonceHash:             tz.None[*tz.CycleNonceHash](),
-					LiquidityBakingToggleVote: 0,
 				},
 			},
 		},
 		{
 			title: "operation",
 			src:   "03a60703a9567bf69ec66b368c3d8562eba4cbf29278c2c10447a684e3aa1436856c00a0c7a9b0bcd6a48ee0c13094327f215ba2adeaa7d40dabc1af25e36fde02c096b10201f525eabd8b0eeace1494233ea0230d2c9ad6619b00ffff0b66756c66696c6c5f61736b0000000907070088f0f6010306",
-			expect: &GenericOperationRequest{
+			expect: &protocol.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{
 					0xa6, 0x7, 0x3, 0xa9, 0x56, 0x7b, 0xf6, 0x9e, 0xc6, 0x6b, 0x36, 0x8c, 0x3d, 0x85, 0x62,
 					0xeb, 0xa4, 0xcb, 0xf2, 0x92, 0x78, 0xc2, 0xc1, 0x4, 0x47, 0xa6, 0x84, 0xe3, 0xaa,
 					0x14, 0x36, 0x85,
 				},
-				Operations: []proto.OperationContents{
+				Contents: []proto.OperationContents{
 					&proto.Transaction{
 						ManagerOperation: proto.ManagerOperation{
 							Source: &tz.Ed25519PublicKeyHash{
@@ -131,16 +135,23 @@ func TestSignRequest(t *testing.T) {
 							StorageLimit: tz.BigUint{0xde, 0x2},
 						},
 						Amount: tz.BigUint{0xc0, 0x96, 0xb1, 0x2},
-						Destination: &tz.OriginatedContract{
+						Destination: core.OriginatedContract{
 							ContractHash: &tz.ContractHash{
 								0xf5, 0x25, 0xea, 0xbd, 0x8b, 0xe, 0xea, 0xce, 0x14, 0x94, 0x23, 0x3e, 0xa0, 0x23, 0xd,
 								0x2c, 0x9a, 0xd6, 0x61, 0x9b,
 							},
-							Padding: 0x0,
 						},
 						Parameters: tz.Some(proto.Parameters{
 							Entrypoint: proto.EpNamed{String: "fulfill_ask"},
-							Value:      []byte{0x7, 0x7, 0x0, 0x88, 0xF0, 0xF6, 0x1, 0x3, 0x6},
+							Value: &expression.Prim20{
+								Prim: expression.Prim(7),
+								Args: [2]expression.Expression{
+									expression.Int{
+										Int: tz.BigInt{0x88, 0xf0, 0xf6, 0x01},
+									},
+									expression.Prim00(6),
+								},
+							},
 						}),
 					},
 				},
@@ -149,13 +160,13 @@ func TestSignRequest(t *testing.T) {
 		{
 			title: "multiple operations",
 			src:   "03a60703a9567bf69ec66b368c3d8562eba4cbf29278c2c10447a684e3aa1436856c00a0c7a9b0bcd6a48ee0c13094327f215ba2adeaa7d40dabc1af25e36fde02c096b10201f525eabd8b0eeace1494233ea0230d2c9ad6619b00ffff0b66756c66696c6c5f61736b0000000907070088f0f60103066e00e1ba5449f2938568ace14b5dd54f31936dc86722ba08e0eaa917f53800ff0002298c03ed7d454a101eb7022bc95f7e5f41ac78",
-			expect: &GenericOperationRequest{
+			expect: &protocol.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{
 					0xa6, 0x7, 0x3, 0xa9, 0x56, 0x7b, 0xf6, 0x9e, 0xc6, 0x6b, 0x36, 0x8c, 0x3d, 0x85, 0x62,
 					0xeb, 0xa4, 0xcb, 0xf2, 0x92, 0x78, 0xc2, 0xc1, 0x4, 0x47, 0xa6, 0x84, 0xe3, 0xaa,
 					0x14, 0x36, 0x85,
 				},
-				Operations: []proto.OperationContents{
+				Contents: []proto.OperationContents{
 					&proto.Transaction{
 						ManagerOperation: proto.ManagerOperation{
 							Source: &tz.Ed25519PublicKeyHash{
@@ -168,16 +179,23 @@ func TestSignRequest(t *testing.T) {
 							StorageLimit: tz.BigUint{0xde, 0x2},
 						},
 						Amount: tz.BigUint{0xc0, 0x96, 0xb1, 0x2},
-						Destination: &tz.OriginatedContract{
+						Destination: core.OriginatedContract{
 							ContractHash: &tz.ContractHash{
 								0xf5, 0x25, 0xea, 0xbd, 0x8b, 0xe, 0xea, 0xce, 0x14, 0x94, 0x23, 0x3e, 0xa0, 0x23, 0xd,
 								0x2c, 0x9a, 0xd6, 0x61, 0x9b,
 							},
-							Padding: 0x0,
 						},
 						Parameters: tz.Some(proto.Parameters{
 							Entrypoint: proto.EpNamed{String: "fulfill_ask"},
-							Value:      []byte{0x7, 0x7, 0x0, 0x88, 0xF0, 0xF6, 0x1, 0x3, 0x6},
+							Value: &expression.Prim20{
+								Prim: expression.Prim(7),
+								Args: [2]expression.Expression{
+									expression.Int{
+										Int: tz.BigInt{0x88, 0xf0, 0xf6, 0x01},
+									},
+									expression.Prim00(6),
+								},
+							},
 						}),
 					},
 					&proto.Delegation{
@@ -200,7 +218,7 @@ func TestSignRequest(t *testing.T) {
 		t.Run(test.title, func(t *testing.T) {
 			buf, err := hex.DecodeString(test.src)
 			require.NoError(t, err)
-			var req SignRequest
+			var req protocol.SignRequest
 			_, err = encoding.Decode(buf, &req)
 			require.NoError(t, err)
 			require.Equal(t, test.expect, req)

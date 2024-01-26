@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 )
 

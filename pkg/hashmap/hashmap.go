@@ -2,7 +2,7 @@
 // interface types like PublicKeyHash to be used as map keys
 package hashmap
 
-import tz "github.com/ecadlabs/gotez"
+import tz "github.com/ecadlabs/gotez/v2"
 
 type KV[K, V any] struct {
 	Key K

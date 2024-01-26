@@ -5,8 +5,8 @@ package request
 import (
 	"testing"
 
-	tz "github.com/ecadlabs/gotez"
-	"github.com/ecadlabs/signatory/pkg/crypt"
+	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ type dummyMsg struct {
 	round int32
 }
 
-func (r *dummyMsg) RequestKind() string     { return "dummy" }
+func (r *dummyMsg) SignRequestKind() string { return "dummy" }
 func (r *dummyMsg) GetChainID() *tz.ChainID { return &tz.ChainID{} }
 func (r *dummyMsg) GetLevel() int32         { return r.level }
 func (r *dummyMsg) GetRound() int32         { return r.round }

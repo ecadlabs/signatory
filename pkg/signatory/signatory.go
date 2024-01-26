@@ -14,11 +14,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ecadlabs/gotez/b58"
-	"github.com/ecadlabs/gotez/encoding"
+	"github.com/ecadlabs/gotez/v2/b58"
+	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/gotez/v2/encoding"
+	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
+	"github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
@@ -154,7 +157,7 @@ func (s *Signatory) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKey
 	return &defaultPolicy
 }
 
-func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg request.SignRequest) error {
+func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignRequest) error {
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == nil {
 			return errors.New("authentication required")
@@ -174,7 +177,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg request.SignRequ
 		}
 	}
 
-	kind := msg.RequestKind()
+	kind := msg.SignRequestKind()
 	var allowed bool
 	for _, k := range policy.AllowedRequests {
 		if kind == k {
@@ -187,8 +190,8 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg request.SignRequ
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*request.GenericOperationRequest); ok {
-		for _, op := range ops.Operations {
+	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
+		for _, op := range ops.Contents {
 			kind := op.OperationKind()
 			allowed = false
 			for _, k := range policy.AllowedOps {
@@ -339,23 +342,23 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		}
 	}
 
-	var msg request.SignRequest
+	var msg protocol.SignRequest
 	_, err := encoding.Decode(req.Message, &msg)
 	if err != nil {
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return nil, errors.Wrap(err, http.StatusBadRequest)
 	}
 
-	l = l.WithField(logReq, msg.RequestKind())
+	l = l.WithField(logReq, msg.SignRequestKind())
 
 	if m, ok := msg.(request.WithWatermark); ok {
 		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel()})
 	}
 
 	var opStat operationsStat
-	if ops, ok := msg.(*request.GenericOperationRequest); ok {
+	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
 		opStat = getOperationsStat(ops)
-		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Operations)})
+		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -403,7 +406,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
 			Vault:   p.vault.Name(),
-			Req:     msg.RequestKind(),
+			Req:     msg.SignRequestKind(),
 			Stat:    opStat,
 		}, func() (err error) {
 			sig, err = signFunc(ctx, req.Message, p.key)
@@ -418,7 +421,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 
 	l.WithField("raw", sig).Debug("Signed bytes")
 	l.Debugf("Encoded signature: %v", sig)
-	l.Infof("Signed %s successfully", msg.RequestKind())
+	l.Infof("Signed %s successfully", msg.SignRequestKind())
 
 	return sig, nil
 }
@@ -649,6 +652,22 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
 			pipe.Write(out)
 			pipe.Close()
+		}
+
+		if core.CompareProtocols(&latest.Protocol, &core.Proto018Proxford) >= 0 {
+			for i, o := range pol.AllowedOps {
+				switch o {
+				case "endorsement":
+					pol.AllowedOps[i] = "attestation"
+				case "preendorsement":
+					pol.AllowedOps[i] = "preattestation"
+				case "double_endorsement_evidence":
+					pol.AllowedOps[i] = "double_attestation_evidence"
+				case "double_preendorsement_evidence":
+					pol.AllowedOps[i] = "double_preattestation_evidence"
+				}
+			}
+			sort.Strings(pol.AllowedOps)
 		}
 
 		if v.AuthorizedKeys != nil {
