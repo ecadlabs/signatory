@@ -51,8 +51,11 @@ func NewListOps(c *Context) *cobra.Command {
 		Short: "Print possible operation types inside the `generic` request",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var ops []string
-			for _, k := range encoding.ListVariants[latest.OperationContents]() {
+			for _, k := range latest.ListOperations() {
 				ops = append(ops, k.OperationKind())
+			}
+			for _, op := range latest.ListPseudoOperations() {
+				ops = append(ops, op.PseudoOperation())
 			}
 			sort.Strings(ops)
 			return listOpsTpl.Execute(os.Stdout, ops)
