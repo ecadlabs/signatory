@@ -12,6 +12,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ const privateKey = "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
 func TestImport(t *testing.T) {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: watermark.Ignore{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			v, err := memory.New(nil, "Mock")
 			if err != nil {
@@ -310,7 +311,7 @@ func TestPolicy(t *testing.T) {
 		t.Run(c.title, func(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-				Watermark: signatory.IgnoreWatermark{},
+				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
@@ -400,7 +401,7 @@ func TestListPublicKeys(t *testing.T) {
 		t.Run(c.title, func(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
-				Watermark: signatory.IgnoreWatermark{},
+				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),

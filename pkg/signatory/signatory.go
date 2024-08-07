@@ -25,6 +25,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -544,7 +545,7 @@ type Config struct {
 	Policy       Policy
 	Vaults       map[string]*config.VaultConfig
 	Interceptor  SignInterceptor
-	Watermark    Watermark
+	Watermark    watermark.Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
 	PolicyHook   *PolicyHook

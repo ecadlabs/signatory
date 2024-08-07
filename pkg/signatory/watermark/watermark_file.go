@@ -1,4 +1,4 @@
-package signatory
+package watermark
 
 import (
 	"bufio"
@@ -19,9 +19,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type FileWatermark struct {
+type File struct {
 	baseDir string
-	mem     InMemoryWatermark
+	mem     InMemory
 }
 
 // chain -> delegate(pkh) -> request type -> watermark
@@ -69,8 +69,8 @@ func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
 	return out, nil
 }
 
-func NewFileWatermark(baseDir string) (*FileWatermark, error) {
-	wm := FileWatermark{
+func NewFileWatermark(baseDir string) (*File, error) {
+	wm := File{
 		baseDir: baseDir,
 	}
 	var err error
@@ -147,7 +147,7 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 	return w.Flush()
 }
 
-func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (f *File) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -163,4 +163,4 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignR
 	return writeWatermarkData(f.baseDir, f.mem.chains[*chain], chain)
 }
 
-var _ Watermark = (*FileWatermark)(nil)
+var _ Watermark = (*File)(nil)

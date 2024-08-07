@@ -1,4 +1,4 @@
-package signatory
+package watermark
 
 import (
 	"sync"
@@ -9,20 +9,20 @@ import (
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 )
 
-// InMemoryWatermark keep previous operation in memory
-type InMemoryWatermark struct {
+// InMemory keep previous operation in memory
+type InMemory struct {
 	chains map[tz.ChainID]delegateMap
 	mtx    sync.Mutex
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
 	return w.isSafeToSignUnlocked(pkh, req, digest)
 }
 
-func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -55,4 +55,4 @@ func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req pr
 	return nil
 }
 
-var _ Watermark = (*InMemoryWatermark)(nil)
+var _ Watermark = (*InMemory)(nil)
