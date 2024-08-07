@@ -9,6 +9,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -78,7 +79,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
-			watermark, err := signatory.NewFileWatermark(baseDir)
+			watermark, err := watermark.NewFileWatermark(baseDir)
 			if err != nil {
 				return err
 			}
