@@ -1,8 +1,9 @@
 //go:build !integration
 
-package signatory
+package watermark
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -100,10 +101,10 @@ func TestWatermark(t *testing.T) {
 	}
 
 	t.Run("memory", func(t *testing.T) {
-		var wm InMemoryWatermark
+		var wm InMemory
 		for i, c := range cases {
 			t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-				err := wm.IsSafeToSign(c.pkh, c.req, &c.reqDigest)
+				err := wm.IsSafeToSign(context.Background(), c.pkh, c.req, &c.reqDigest)
 				if c.expectErr {
 					assert.Error(t, err)
 				} else {
@@ -120,7 +121,7 @@ func TestWatermark(t *testing.T) {
 		require.NoError(t, err)
 		for i, c := range cases {
 			t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-				err := wm.IsSafeToSign(c.pkh, c.req, &c.reqDigest)
+				err := wm.IsSafeToSign(context.Background(), c.pkh, c.req, &c.reqDigest)
 				if c.expectErr {
 					assert.Error(t, err)
 				} else {

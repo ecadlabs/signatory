@@ -9,6 +9,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -49,11 +50,11 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				}
 			}
 
-			if baseDir == "" {
-				baseDir = conf.BaseDir
+			if baseDir != "" {
+				conf.BaseDir = baseDir
 			}
-			baseDir = os.ExpandEnv(baseDir)
-			if err := os.MkdirAll(baseDir, 0770); err != nil {
+			conf.BaseDir = os.ExpandEnv(conf.BaseDir)
+			if err := os.MkdirAll(conf.BaseDir, 0770); err != nil {
 				return err
 			}
 
@@ -78,7 +79,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				return err
 			}
 
-			watermark, err := signatory.NewFileWatermark(baseDir)
+			watermark, err := watermark.Registry().New(cmd.Context(), conf.Watermark.Driver, &conf.Watermark.Config, conf)
 			if err != nil {
 				return err
 			}

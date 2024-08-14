@@ -1,7 +1,8 @@
-package signatory
+package watermark
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,14 +15,16 @@ import (
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
-type FileWatermark struct {
+type File struct {
 	baseDir string
-	mem     InMemoryWatermark
+	mem     InMemory
 }
 
 // chain -> delegate(pkh) -> request type -> watermark
@@ -69,8 +72,9 @@ func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
 	return out, nil
 }
 
-func NewFileWatermark(baseDir string) (*FileWatermark, error) {
-	wm := FileWatermark{
+func NewFileWatermark(baseDir string) (*File, error) {
+
+	wm := File{
 		baseDir: baseDir,
 	}
 	var err error
@@ -147,7 +151,7 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 	return w.Flush()
 }
 
-func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -163,4 +167,8 @@ func (f *FileWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignR
 	return writeWatermarkData(f.baseDir, f.mem.chains[*chain], chain)
 }
 
-var _ Watermark = (*FileWatermark)(nil)
+func init() {
+	RegisterWatermark("file", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
+		return NewFileWatermark(global.BaseDir)
+	})
+}

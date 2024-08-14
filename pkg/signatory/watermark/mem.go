@@ -1,28 +1,31 @@
-package signatory
+package watermark
 
 import (
+	"context"
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"gopkg.in/yaml.v3"
 )
 
-// InMemoryWatermark keep previous operation in memory
-type InMemoryWatermark struct {
+// InMemory keep previous operation in memory
+type InMemory struct {
 	chains map[tz.ChainID]delegateMap
 	mtx    sync.Mutex
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemoryWatermark) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
 	return w.isSafeToSignUnlocked(pkh, req, digest)
 }
 
-func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -55,4 +58,8 @@ func (w *InMemoryWatermark) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req pr
 	return nil
 }
 
-var _ Watermark = (*InMemoryWatermark)(nil)
+func init() {
+	RegisterWatermark("mem", func(context.Context, *yaml.Node, *config.Config) (Watermark, error) {
+		return new(InMemory), nil
+	})
+}

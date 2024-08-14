@@ -15,7 +15,6 @@ server:
         secret: secret2
         jwt_exp: 30
 
-
 vaults:
   # Name is used to identify backend during import process
   kms:
@@ -48,6 +47,10 @@ vaults:
       secretID: "aa9c4a24-c7f1-a278-a9db-bac58273fe7c"
       transitConfig:
         mountPoint: "transit/"
+
+watermark:
+  # Default
+  driver: file
 
 # List enabled public keys hashes here
 tezos:

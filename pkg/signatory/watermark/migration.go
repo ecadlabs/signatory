@@ -1,4 +1,4 @@
-package signatory
+package watermark
 
 import (
 	"encoding/json"
