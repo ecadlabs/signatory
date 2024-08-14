@@ -15,9 +15,11 @@ import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	awskms "github.com/ecadlabs/signatory/pkg/vault/aws"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -26,12 +28,12 @@ const (
 	defaultTable       = "watermark"
 )
 
-type Config struct {
+type AWSConfig struct {
 	awskms.Config
 	Table string `yaml:"table"`
 }
 
-func (c *Config) table() string {
+func (c *AWSConfig) table() string {
 	if c.Table != "" {
 		return c.Table
 	}
@@ -39,11 +41,11 @@ func (c *Config) table() string {
 }
 
 type AWS struct {
-	cfg    Config
+	cfg    AWSConfig
 	client *dynamodb.Client
 }
 
-func NewAWSWatermark(ctx context.Context, config *Config) (*AWS, error) {
+func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
 	cfg, err := awskms.NewConfig(ctx, &config.Config)
 	if err != nil {
 		return nil, err
@@ -187,4 +189,16 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 		}
 		// retry
 	}
+}
+
+func init() {
+	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
+		var conf AWSConfig
+		if node != nil {
+			if err := node.Decode(&conf); err != nil {
+				return nil, err
+			}
+		}
+		return NewAWSWatermark(ctx, &conf)
+	})
 }

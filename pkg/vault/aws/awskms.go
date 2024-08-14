@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/smithy-go"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
@@ -23,7 +22,7 @@ import (
 type Config struct {
 	AccessKeyID string `yaml:"access_key_id"`
 	AccessKey   string `yaml:"secret_access_key"`
-	Region      string `yaml:"region" validate:"required"`
+	Region      string `yaml:"region"`
 }
 
 type Vault struct {
@@ -183,17 +182,11 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 func init() {
 	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
 		var conf Config
-		if node == nil || node.Kind == 0 {
-			return nil, errors.New("(AWSKMS): config is missing")
+		if node != nil {
+			if err := node.Decode(&conf); err != nil {
+				return nil, err
+			}
 		}
-		if err := node.Decode(&conf); err != nil {
-			return nil, err
-		}
-
-		if err := config.Validator().Struct(&conf); err != nil {
-			return nil, err
-		}
-
 		return New(ctx, &conf)
 	})
 }

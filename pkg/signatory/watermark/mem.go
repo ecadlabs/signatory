@@ -7,7 +7,9 @@ import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"gopkg.in/yaml.v3"
 )
 
 // InMemory keep previous operation in memory
@@ -56,4 +58,8 @@ func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.Si
 	return nil
 }
 
-var _ Watermark = (*InMemory)(nil)
+func init() {
+	RegisterWatermark("mem", func(context.Context, *yaml.Node, *config.Config) (Watermark, error) {
+		return new(InMemory), nil
+	})
+}

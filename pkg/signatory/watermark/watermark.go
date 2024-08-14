@@ -6,6 +6,8 @@ import (
 
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/signatory/pkg/config"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,16 +27,17 @@ func (w Ignore) IsSafeToSign(context.Context, crypt.PublicKeyHash, protocol.Sign
 var _ Watermark = (*Ignore)(nil)
 
 type Factory interface {
-	New(ctx context.Context, name string, conf *yaml.Node) (Watermark, error)
+	New(ctx context.Context, name string, conf *yaml.Node, global *config.Config) (Watermark, error)
 }
 
-type newWMBackendFunc func(ctx context.Context, conf *yaml.Node) (Watermark, error)
+type newWMBackendFunc func(ctx context.Context, conf *yaml.Node, global *config.Config) (Watermark, error)
 
 type registry map[string]newWMBackendFunc
 
-func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Watermark, error) {
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node, global *config.Config) (Watermark, error) {
 	if newFunc, ok := r[name]; ok {
-		return newFunc(ctx, conf)
+		log.WithField("backend", name).Info("Initializing watermark backend")
+		return newFunc(ctx, conf, global)
 	}
 	return nil, fmt.Errorf("unknown watermark backend: %s", name)
 }
