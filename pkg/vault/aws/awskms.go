@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
@@ -20,7 +21,6 @@ import (
 
 // Config contains AWS KMS backend configuration
 type Config struct {
-	UserName    string `yaml:"user_name" validate:"required"`
 	AccessKeyID string `yaml:"access_key_id"`
 	AccessKey   string `yaml:"secret_access_key"`
 	Region      string `yaml:"region" validate:"required"`
@@ -155,15 +155,20 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	return sig, nil
 }
 
-// New creates new AWS KMS backend
-func New(ctx context.Context, config *Config) (*Vault, error) {
+func NewConfig(ctx context.Context, config *Config) (aws.Config, error) {
 	if config.AccessKeyID != "" {
 		os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
 		os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
 	}
-	os.Setenv("AWS_REGION", config.Region)
+	if config.Region != "" {
+		os.Setenv("AWS_REGION", config.Region)
+	}
+	return awsconfig.LoadDefaultConfig(ctx)
+}
 
-	cfg, err := awsconfig.LoadDefaultConfig(ctx)
+// New creates new AWS KMS backend
+func New(ctx context.Context, config *Config) (*Vault, error) {
+	cfg, err := NewConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}

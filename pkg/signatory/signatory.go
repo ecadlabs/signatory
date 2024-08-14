@@ -394,7 +394,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 	digest := crypt.DigestFunc(req.Message)
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg, &digest); err != nil {
+		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err

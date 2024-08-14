@@ -1,6 +1,7 @@
 package watermark
 
 import (
+	"context"
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
@@ -16,7 +17,7 @@ type InMemory struct {
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemory) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
 	return w.isSafeToSignUnlocked(pkh, req, digest)

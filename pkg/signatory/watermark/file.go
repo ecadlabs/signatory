@@ -2,6 +2,7 @@ package watermark
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -147,7 +148,7 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 	return w.Flush()
 }
 
-func (f *File) IsSafeToSign(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
