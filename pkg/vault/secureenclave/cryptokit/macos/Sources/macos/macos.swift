@@ -1,4 +1,5 @@
 import CryptoKit
+import CryptoTokenKit
 import Foundation
 
 @available(macOS 10.15, *)
@@ -8,7 +9,18 @@ typealias PublicKey = P256.Signing.PublicKey
 @available(macOS 10.15, *)
 typealias Signature = P256.Signing.ECDSASignature
 
-struct ErrorCode {
+@available(macOS 10.15, *)
+enum Error {
+  case cryptoKit(CryptoKitError)
+  case cryptoTokenKit(TKError)
+}
+
+struct ErrorType {
+  static let cryptoKit = 0
+  static let cryptoTokenKit = 1
+}
+
+struct CryptoKitErrorType {
   static let incorrectKeySize = 0
   static let incorrectParameterSize = 1
   static let authenticationFailure = 2
@@ -16,7 +28,6 @@ struct ErrorCode {
   static let wrapFailure = 4
   static let unwrapFailure = 5
   static let invalidParameter = 6
-  static let unknown = -1
 }
 
 @_cdecl("deallocate")
@@ -31,26 +42,73 @@ public func isAvailable() -> Bool {
 }
 
 @available(macOS 10.15, *)
-@_cdecl("cryptoKitErrorGetCode")
-public func cryptoKitErrorGetCode(ptr: UnsafeRawPointer) -> Int {
+@_cdecl("errorGetType")
+public func errorGetType(ptr: UnsafeRawPointer) -> Int {
+  let err = ptr.bindMemory(to: Error.self, capacity: 1).pointee
+  switch err {
+  case .cryptoKit(_):
+    return ErrorType.cryptoKit
+  case .cryptoTokenKit(_):
+    return ErrorType.cryptoTokenKit
+  }
+}
+
+@available(macOS 10.15, *)
+@_cdecl("errorGetCryptoKit")
+public func errorGetCryptoKit(ptr: UnsafeRawPointer) -> UnsafeMutableRawPointer? {
+  let err = ptr.bindMemory(to: Error.self, capacity: 1).pointee
+  switch err {
+  case .cryptoKit(let err):
+    let out = UnsafeMutablePointer<CryptoKitError>.allocate(capacity: 1)
+    out.initialize(to: err)
+    return UnsafeMutableRawPointer(out)
+  default:
+    return nil
+  }
+}
+
+@available(macOS 10.15, *)
+@_cdecl("errorGetCryptoTokenKit")
+public func errorGetCryptoTokenKit(ptr: UnsafeRawPointer) -> UnsafeMutableRawPointer? {
+  let err = ptr.bindMemory(to: Error.self, capacity: 1).pointee
+  switch err {
+  case .cryptoTokenKit(let err):
+    let out = UnsafeMutablePointer<TKError>.allocate(capacity: 1)
+    out.initialize(to: err)
+    return UnsafeMutableRawPointer(out)
+  default:
+    return nil
+  }
+}
+
+@available(macOS 10.15, *)
+@_cdecl("cryptoTokenKitGetCode")
+public func cryptoTokenKitGetCode(ptr: UnsafeRawPointer) -> Int {
+  let err = ptr.bindMemory(to: TKError.self, capacity: 1).pointee
+  return err.code.rawValue
+}
+
+@available(macOS 10.15, *)
+@_cdecl("cryptoKitErrorGetType")
+public func cryptoKitErrorGetType(ptr: UnsafeRawPointer) -> Int {
   let err = ptr.bindMemory(to: CryptoKitError.self, capacity: 1).pointee
   switch err {
-  case CryptoKitError.incorrectKeySize:
-    return ErrorCode.incorrectKeySize
-  case CryptoKitError.incorrectParameterSize:
-    return ErrorCode.incorrectParameterSize
-  case CryptoKitError.authenticationFailure:
-    return ErrorCode.authenticationFailure
-  case CryptoKitError.underlyingCoreCryptoError(_):
-    return ErrorCode.underlyingCoreCryptoError
-  case CryptoKitError.wrapFailure:
-    return ErrorCode.wrapFailure
-  case CryptoKitError.unwrapFailure:
-    return ErrorCode.unwrapFailure
-  case CryptoKitError.invalidParameter:
-    return ErrorCode.invalidParameter
+  case .incorrectKeySize:
+    return CryptoKitErrorType.incorrectKeySize
+  case .incorrectParameterSize:
+    return CryptoKitErrorType.incorrectParameterSize
+  case .authenticationFailure:
+    return CryptoKitErrorType.authenticationFailure
+  case .underlyingCoreCryptoError(_):
+    return CryptoKitErrorType.underlyingCoreCryptoError
+  case .wrapFailure:
+    return CryptoKitErrorType.wrapFailure
+  case .unwrapFailure:
+    return CryptoKitErrorType.unwrapFailure
+  case .invalidParameter:
+    return CryptoKitErrorType.invalidParameter
   default:
-    return ErrorCode.unknown
+    return -1
   }
 }
 
@@ -62,7 +120,7 @@ public func cryptoKitErrorGetUnderlyingCoreCryptoError(ptr: UnsafeRawPointer) ->
   case CryptoKitError.underlyingCoreCryptoError(let code):
     return Int(code)
   default:
-    return ErrorCode.unknown
+    return -1
   }
 }
 
@@ -75,8 +133,13 @@ public func newPrivateKey(error: UnsafeMutableRawPointer) -> UnsafeMutableRawPoi
     out.initialize(to: key)
     return UnsafeMutableRawPointer(out)
   } catch let err as CryptoKitError {
-    let out = UnsafeMutablePointer<CryptoKitError>.allocate(capacity: 1)
-    out.initialize(to: err)
+    let out = UnsafeMutablePointer<Error>.allocate(capacity: 1)
+    out.initialize(to: Error.cryptoKit(err))
+    error.initializeMemory(as: UnsafeMutableRawPointer.self, to: UnsafeMutableRawPointer(out))
+    return nil
+  } catch let err as TKError {
+    let out = UnsafeMutablePointer<Error>.allocate(capacity: 1)
+    out.initialize(to: Error.cryptoTokenKit(err))
     error.initializeMemory(as: UnsafeMutableRawPointer.self, to: UnsafeMutableRawPointer(out))
     return nil
   } catch {
@@ -98,8 +161,13 @@ public func newPrivateKeyFromData(
     out.initialize(to: key)
     return UnsafeMutableRawPointer(out)
   } catch let err as CryptoKitError {
-    let out = UnsafeMutablePointer<CryptoKitError>.allocate(capacity: 1)
-    out.initialize(to: err)
+    let out = UnsafeMutablePointer<Error>.allocate(capacity: 1)
+    out.initialize(to: Error.cryptoKit(err))
+    error.initializeMemory(as: UnsafeMutableRawPointer.self, to: UnsafeMutableRawPointer(out))
+    return nil
+  } catch let err as TKError {
+    let out = UnsafeMutablePointer<Error>.allocate(capacity: 1)
+    out.initialize(to: Error.cryptoTokenKit(err))
     error.initializeMemory(as: UnsafeMutableRawPointer.self, to: UnsafeMutableRawPointer(out))
     return nil
   } catch {

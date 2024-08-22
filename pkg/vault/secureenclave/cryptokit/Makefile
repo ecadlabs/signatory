@@ -1,4 +1,4 @@
-PKG = cryptokit/macos
+PKG = macos
 LIB = $(PKG)/.build/release/libmacos.a
 SRC = $(PKG)/Sources/macos/macos.swift
 

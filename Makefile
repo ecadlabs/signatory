@@ -2,7 +2,7 @@ GIT_REVISION := $(shell git rev-parse HEAD)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 CONTAINER_TAG ?= $(shell git branch --show-current)
 
-SECURE_ENCLAVE_VAULT_PATH = pkg/vault/secureenclave
+CK_PATH = pkg/vault/secureenclave/cryptokit
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
 PACKAGE_NAME          := github.com/ecadlabs/signatory
@@ -21,7 +21,7 @@ signatory signatory-cli: secure-enclave
 
 .PHONY: secure-enclave
 secure-enclave:
-	$(MAKE) -C $(SECURE_ENCLAVE_VAULT_PATH) lib
+	$(MAKE) -C $(CK_PATH) lib
 endif
 
 .PHONY: container
