@@ -101,6 +101,17 @@ func NewPrivateKey() (*PrivateKey, error) {
 	return key, nil
 }
 
+func NewPrivateKeyFromData(data []byte) (*PrivateKey, error) {
+	var errResult unsafe.Pointer
+	result := C.newPrivateKeyFromData(unsafe.Pointer(&data[0]), C.int(len(data)), unsafe.Pointer(&errResult))
+	if result == nil {
+		return nil, makeError(errResult)
+	}
+	key := &PrivateKey{ptr: result}
+	runtime.SetFinalizer(key, func(x *PrivateKey) { C.deallocate(x.ptr) })
+	return key, nil
+}
+
 func (priv *PrivateKey) Bytes() []byte {
 	data := C.privateKeyGetDataRepresentation(priv.ptr)
 	defer C.deallocate(data)
@@ -152,7 +163,7 @@ type Signature struct {
 	ptr unsafe.Pointer
 }
 
-func (p *PrivateKey) Sign(digest *[32]byte) (*Signature, error) {
+func (p *PrivateKey) Signature(digest *[32]byte) (*Signature, error) {
 	var errResult unsafe.Pointer
 	dptr := &digest[0]
 	result := C.privateKeySignature(p.ptr, unsafe.Pointer(dptr), unsafe.Pointer(&errResult))
@@ -164,7 +175,7 @@ func (p *PrivateKey) Sign(digest *[32]byte) (*Signature, error) {
 	return sig, nil
 }
 
-func (sig *Signature) Bytes() []byte {
+func (sig *Signature) RawBytes() []byte {
 	data := C.signatureGetRawRepresentation(sig.ptr)
 	defer C.deallocate(data)
 	ln := C.dataGetCount(data)

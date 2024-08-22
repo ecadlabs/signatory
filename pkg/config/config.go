@@ -116,3 +116,7 @@ func (a *AuthorizedKeys) UnmarshalYAML(value *yaml.Node) (err error) {
 	}
 	return err
 }
+
+type GlobalContext interface {
+	BaseDir() string
+}

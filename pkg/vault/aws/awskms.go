@@ -170,7 +170,7 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 }
 
 func init() {
-	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(AWSKMS): config is missing")

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -58,23 +59,23 @@ var (
 	ErrKey  = errors.New("unsupported key type")
 )
 
-type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
+type newVaultFunc func(ctx context.Context, conf *yaml.Node, g config.GlobalContext) (Vault, error)
 
 type Factory interface {
-	New(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+	New(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (Vault, error)
 }
 
-type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (Vault, error)
 
-func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
-	return f(ctx, name, conf)
+func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (Vault, error) {
+	return f(ctx, name, conf, g)
 }
 
 type registry map[string]newVaultFunc
 
-func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (Vault, error) {
 	if newFunc, ok := r[name]; ok {
-		return newFunc(ctx, conf)
+		return newFunc(ctx, conf, g)
 	}
 	return nil, fmt.Errorf("unknown vault driver: %s", name)
 }
@@ -89,14 +90,20 @@ func Registry() Factory {
 	return vaultRegistry
 }
 
-var commands []*cobra.Command
+type CommandFunc func(c config.GlobalContext) *cobra.Command
 
-func RegisterCommand(cmd *cobra.Command) {
-	commands = append(commands, cmd)
+var commands []CommandFunc
+
+func RegisterCommand(fn CommandFunc) {
+	commands = append(commands, fn)
 }
 
-func Commands() []*cobra.Command {
-	return commands
+func Commands(ctx config.GlobalContext) []*cobra.Command {
+	cmd := make([]*cobra.Command, len(commands))
+	for i, c := range commands {
+		cmd[i] = c(ctx)
+	}
+	return cmd
 }
 
 var _ Factory = (registry)(nil)

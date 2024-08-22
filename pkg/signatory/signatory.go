@@ -548,6 +548,7 @@ type Config struct {
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
 	PolicyHook   *PolicyHook
+	Global       config.GlobalContext
 }
 
 // New returns Signatory instance
@@ -574,7 +575,7 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		if factory == nil {
 			factory = vault.Registry()
 		}
-		v, err := factory.New(ctx, vc.Driver, &vc.Config)
+		v, err := factory.New(ctx, vc.Driver, &vc.Config, c.Global)
 		if err != nil {
 			return nil, err
 		}

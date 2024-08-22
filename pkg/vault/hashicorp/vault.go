@@ -58,7 +58,7 @@ type iterator struct {
 }
 
 func init() {
-	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(HashicorpVault): config is missing")

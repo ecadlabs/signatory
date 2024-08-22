@@ -22,8 +22,8 @@ dist
 .release-env
 .env
 .docker-creds
-./signatory
-./signatory-cli
+/signatory
+/signatory-cli
 .DS_Store
 
 # some integration_tests write secret env var to files

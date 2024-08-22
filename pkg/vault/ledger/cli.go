@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -137,7 +138,7 @@ type ledgerCommandContext struct {
 	transport string
 }
 
-func newLedgerCommand() *cobra.Command {
+func newLedgerCommand(config.GlobalContext) *cobra.Command {
 	var ctx ledgerCommandContext
 
 	cmd := cobra.Command{

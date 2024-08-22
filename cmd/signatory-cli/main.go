@@ -7,36 +7,29 @@ import (
 	"syscall"
 
 	"github.com/ecadlabs/signatory/cmd/commands"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/ecadlabs/signatory/pkg/vault"
 	// Install backends
-	_ "github.com/ecadlabs/signatory/pkg/vault/aws"
-	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
-	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
-	_ "github.com/ecadlabs/signatory/pkg/vault/file"
-	_ "github.com/ecadlabs/signatory/pkg/vault/hashicorp"
-	_ "github.com/ecadlabs/signatory/pkg/vault/ledger"
-	_ "github.com/ecadlabs/signatory/pkg/vault/mem"
-	_ "github.com/ecadlabs/signatory/pkg/vault/yubi"
+	_ "github.com/ecadlabs/signatory/pkg/vault/vaults"
 )
 
 func newRootCommand(ctx context.Context) *cobra.Command {
-	rootCtx := commands.Context{
+	rootCtx := &commands.Context{
 		Context: ctx,
 	}
-	rootCmd := commands.NewRootCommand(&rootCtx, "signatory-cli")
+	rootCmd := commands.NewRootCommand(rootCtx, "signatory-cli")
 	rootCmd.AddCommand(
-		commands.NewListCommand(&rootCtx),
-		commands.NewImportCommand(&rootCtx),
-		commands.NewVersionCommand(&rootCtx),
-		commands.NewListRequests(&rootCtx),
-		commands.NewListOps(&rootCtx),
+		commands.NewListCommand(rootCtx),
+		commands.NewImportCommand(rootCtx),
+		commands.NewVersionCommand(rootCtx),
+		commands.NewListRequests(rootCtx),
+		commands.NewListOps(rootCtx),
 	)
 
 	// Vault specific
-	rootCmd.AddCommand(vault.Commands()...)
+	rootCmd.AddCommand(vault.Commands(rootCtx)...)
 
 	return rootCmd
 }

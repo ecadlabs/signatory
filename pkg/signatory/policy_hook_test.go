@@ -100,7 +100,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: signatory.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
 					PrivateKey: signPriv,
@@ -139,7 +139,7 @@ func testPolicyHook(t *testing.T, status int) error {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: signatory.IgnoreWatermark{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
 					PrivateKey: signPriv,

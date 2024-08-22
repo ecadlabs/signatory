@@ -2,6 +2,7 @@ GIT_REVISION := $(shell git rev-parse HEAD)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 CONTAINER_TAG ?= $(shell git branch --show-current)
 
+SECURE_ENCLAVE_VAULT_PATH = pkg/vault/secureenclave
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
 PACKAGE_NAME          := github.com/ecadlabs/signatory
@@ -13,6 +14,15 @@ signatory:
 	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory
 signatory-cli:
 	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory-cli
+
+UNAME := $(shell uname)
+ifeq ($(UNAME),Darwin)
+signatory signatory-cli: secure-enclave
+
+.PHONY: secure-enclave
+secure-enclave:
+	$(MAKE) -C $(SECURE_ENCLAVE_VAULT_PATH) lib
+endif
 
 .PHONY: container
 container: signatory signatory-cli

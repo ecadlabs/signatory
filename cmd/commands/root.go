@@ -19,6 +19,11 @@ type Context struct {
 
 	config    *config.Config
 	signatory *signatory.Signatory
+	baseDir   string
+}
+
+func (c *Context) BaseDir() string {
+	return c.baseDir
 }
 
 // NewRootCommand returns new root command
@@ -56,6 +61,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			if err := os.MkdirAll(baseDir, 0770); err != nil {
 				return err
 			}
+			c.baseDir = baseDir
 
 			validate := config.Validator()
 			if err := validate.Struct(conf); err != nil {
@@ -88,6 +94,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
 				Watermark:   watermark,
+				Global:      c,
 			}
 
 			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {

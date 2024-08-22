@@ -22,7 +22,7 @@ func TestNewKey(t *testing.T) {
 	src := []byte("text text text")
 	digest := crypt.DigestFunc(src)
 
-	s, err := priv.Sign((*[32]byte)(&digest))
+	s, err := priv.Signature((*[32]byte)(&digest))
 	require.NoError(t, err)
 	sig, err := crypt.NewSignatureFromBytes(s.DERBytes(), pub)
 	require.NoError(t, err)

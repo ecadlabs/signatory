@@ -464,7 +464,7 @@ func algByCurve(curve elliptic.Curve) string {
 }
 
 func init() {
-	vault.RegisterVault("azure", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("azure", func(ctx context.Context, node *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(Azure): config is missing")

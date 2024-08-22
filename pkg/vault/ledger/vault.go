@@ -353,7 +353,7 @@ func getScanner(transport string) (*scanner, error) {
 }
 
 func init() {
-	vault.RegisterVault("ledger", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("ledger", func(ctx context.Context, node *yaml.Node, g config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(Ledger): config is missing")
@@ -369,5 +369,5 @@ func init() {
 		return New(ctx, &conf)
 	})
 
-	vault.RegisterCommand(newLedgerCommand())
+	vault.RegisterCommand(newLedgerCommand)
 }
