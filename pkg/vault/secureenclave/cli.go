@@ -13,24 +13,22 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/vault/secureenclave/cryptokit"
 	"github.com/spf13/cobra"
-	"golang.org/x/sys/unix"
 )
 
-func writeLocked(name string, buf []byte) error {
-	fd, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0666)
+func writeRename(dir, name string, buf []byte) error {
+	fd, err := os.CreateTemp(dir, name+"_*")
 	if err != nil {
 		return err
 	}
 	defer fd.Close()
-	if err := unix.Flock(int(fd.Fd()), unix.LOCK_EX); err != nil {
+	if _, err := fd.Write(buf); err != nil {
 		return err
 	}
-	defer unix.Flock(int(fd.Fd()), unix.LOCK_UN)
-	if err = fd.Truncate(0); err != nil {
+	if err := fd.Sync(); err != nil {
 		return err
 	}
-	_, err = fd.Write(buf)
-	return err
+	newpath := filepath.Join(dir, name)
+	return os.Rename(fd.Name(), newpath)
 }
 
 func newGenerateCommand(g config.GlobalContext) *cobra.Command {
@@ -41,7 +39,7 @@ func newGenerateCommand(g config.GlobalContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var storage []*storageEntry
 			name := filepath.Join(g.BaseDir(), defaultKeysFile)
-			buf, err := readLocked(name)
+			buf, err := os.ReadFile(name)
 			if err != nil {
 				if !stderr.Is(err, os.ErrNotExist) {
 					return fmt.Errorf("(SecureEnclave): %w", err)
@@ -78,7 +76,7 @@ func newGenerateCommand(g config.GlobalContext) *cobra.Command {
 			if buf, err = json.MarshalIndent(storage, "", "    "); err != nil {
 				return fmt.Errorf("(SecureEnclave): %w", err)
 			}
-			if err = writeLocked(name, buf); err != nil {
+			if err = writeRename(g.BaseDir(), defaultKeysFile, buf); err != nil {
 				return fmt.Errorf("(SecureEnclave): %w", err)
 			}
 

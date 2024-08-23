@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	stderr "errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,7 +17,6 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/secureenclave/cryptokit"
-	"golang.org/x/sys/unix"
 	"gopkg.in/yaml.v3"
 )
 
@@ -53,24 +51,11 @@ type Vault struct {
 // Name returns backend name
 func (v *Vault) Name() string { return "SecureEnclave" }
 
-func readLocked(name string) ([]byte, error) {
-	fd, err := os.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
-	if err := unix.Flock(int(fd.Fd()), unix.LOCK_EX); err != nil {
-		return nil, err
-	}
-	defer unix.Flock(int(fd.Fd()), unix.LOCK_UN)
-	return io.ReadAll(fd)
-}
-
 func loadKeys(file string) (*parsedKeys, error) {
 	keys := &parsedKeys{
 		index: make(map[string]*cryptoKitKey),
 	}
-	buf, err := readLocked(file)
+	buf, err := os.ReadFile(file)
 	if err != nil {
 		if stderr.Is(err, os.ErrNotExist) {
 			return keys, nil
