@@ -19,6 +19,10 @@ type PrivateKey struct {
 	KeyID      string
 }
 
+func (p *PrivateKey) Elem() (key vault.StoredKey, err error) {
+	return p, nil
+}
+
 // PublicKey get the public key associated with this key
 func (f *PrivateKey) PublicKey() crypt.PublicKey {
 	return f.PrivateKey.Public()
@@ -44,18 +48,26 @@ type Vault struct {
 	unlocked bool
 }
 
-type iterator struct {
-	keys []*PrivateKey
+type IteratorElem interface {
+	Elem() (key vault.StoredKey, err error)
+}
+
+type Iterator[T IteratorElem] struct {
+	keys []T
 	idx  int
 }
 
-func (i *iterator) Next() (key vault.StoredKey, err error) {
+func NewIterator[T IteratorElem](keys []T) *Iterator[T] {
+	return &Iterator[T]{keys: keys}
+}
+
+func (i *Iterator[T]) Next() (key vault.StoredKey, err error) {
 	if i.idx == len(i.keys) {
 		return nil, vault.ErrDone
 	}
-	key = i.keys[i.idx]
+	key, err = i.keys[i.idx].Elem()
 	i.idx++
-	return key, nil
+	return key, err
 }
 
 // NewUnparsed create a new in-mempory vault from Tezos encoded data. Call Unlock before use
@@ -108,7 +120,7 @@ func New(src []*PrivateKey, name string) (*Vault, error) {
 func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
-	return &iterator{keys: v.keys}
+	return &Iterator[*PrivateKey]{keys: v.keys}
 }
 
 // GetPublicKey retrieve a public key
