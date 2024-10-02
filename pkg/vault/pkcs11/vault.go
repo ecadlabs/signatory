@@ -14,22 +14,23 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 type PKCS11Vault struct {
 	module *pkcs11.Module
 	slot   *pkcs11.Slot
-	info   pkcs11.Info
+	info   *pkcs11.ModuleInfo
 	conf   Config
 }
 
 type Config struct {
-	LibraryPath string `yaml:"library_path"`
-	Pin         string `yaml:"pin"`
-	Slot        uint   `yaml:"slot"`
-	Label       string `yaml:"label"`
-	ObjectID    string `yaml:"object_id"`
+	LibraryPath string
+	Pin         string
+	Slot        *uint
+	Label       string
+	ObjectID    []byte
 }
 
 type iterElem struct {
@@ -71,7 +72,7 @@ func (p *keyPair) PublicKey() crypt.PublicKey {
 }
 
 func (v *PKCS11Vault) formatError(err error) error {
-	return fmt.Errorf("(PKCS#11/%s %d.%d): %w", v.info.Manufacturer, v.info.Version.Major, v.info.Version.Minor, err)
+	return fmt.Errorf("(PKCS#11/%s %v): %w", v.info.Manufacturer, v.info.Version, err)
 }
 
 const (
@@ -93,20 +94,34 @@ func New(ctx context.Context, config *Config) (*PKCS11Vault, error) {
 	if conf.Label == "" {
 		conf.Label = os.Getenv(envLabel)
 	}
-	if conf.ObjectID == "" {
-		conf.ObjectID = os.Getenv(envObjID)
+	if conf.ObjectID == nil {
+		if v := os.Getenv(envObjID); v != "" {
+			id, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			conf.ObjectID = id
+		}
 	}
 
 	module, err := pkcs11.Open(config.LibraryPath)
 	if err != nil {
 		return nil, fmt.Errorf("(PKCS#11/%s): %w", config.LibraryPath, err)
 	}
+	log.Debug(module.Info())
 	v := PKCS11Vault{
 		module: module,
 		info:   module.Info(),
 		conf:   conf,
 	}
 	return &v, nil
+}
+
+func (v *PKCS11Vault) Close() error {
+	if err := v.slot.Close(); err != nil {
+		return err
+	}
+	return v.module.Close()
 }
 
 type errIterator struct {
@@ -130,12 +145,8 @@ func (v *PKCS11Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterat
 	if v.conf.Label != "" {
 		filter = append(filter, pkcs11.FilterLabel(v.conf.Label))
 	}
-	if v.conf.ObjectID != "" {
-		id, err := hex.DecodeString(v.conf.ObjectID)
-		if err != nil {
-			return errIterator{v.formatError(err)}
-		}
-		filter = append(filter, pkcs11.FilterID(id))
+	if v.conf.ObjectID != nil {
+		filter = append(filter, pkcs11.FilterID(v.conf.ObjectID))
 	}
 
 	objects, err := v.slot.Objects(filter...)
@@ -204,7 +215,28 @@ func (v *PKCS11Vault) SignMessage(ctx context.Context, msg []byte, key vault.Sto
 }
 
 func (v *PKCS11Vault) Unlock(ctx context.Context) error {
-	slot, err := v.module.Slot(v.conf.Slot, pkcs11.OptUserPIN(v.conf.Pin))
+	if v.conf.Slot == nil {
+		// use first slot with a token
+		slots, err := v.module.SlotIDs()
+		if err != nil {
+			return v.formatError(err)
+		}
+		for _, s := range slots {
+			si, err := v.module.SlotInfo(s)
+			if err != nil {
+				return v.formatError(err)
+			}
+			if si.Token != nil {
+				v.conf.Slot = &s
+				break
+			}
+		}
+		if v.conf.Slot == nil {
+			return v.formatError(errors.New("Token not found"))
+		}
+	}
+
+	slot, err := v.module.Slot(*v.conf.Slot, pkcs11.OptUserPIN(v.conf.Pin))
 	if err != nil {
 		return v.formatError(err)
 	}
@@ -216,15 +248,43 @@ func (c *PKCS11Vault) Name() string {
 	return "PKCS#11"
 }
 
+func (c *PKCS11Vault) VaultName() string {
+	return fmt.Sprintf("%s %v", c.info.Manufacturer, c.info.Version)
+}
+
+type yamlConfig struct {
+	LibraryPath string `yaml:"library_path"`
+	Pin         string `yaml:"pin"`
+	Slot        uint   `yaml:"slot"`
+	Label       string `yaml:"label"`
+	ObjectID    string `yaml:"object_id"`
+}
+
 func init() {
 	vault.RegisterVault("pkcs11", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
-		var conf Config
+		var yamlConf yamlConfig
 		if node == nil {
 			return nil, errors.New("(PKCS#11): config is missing")
 		}
-		if err := node.Decode(&conf); err != nil {
+		if err := node.Decode(&yamlConf); err != nil {
 			return nil, err
 		}
+		conf := Config{
+			LibraryPath: yamlConf.LibraryPath,
+			Pin:         yamlConf.Pin,
+			Slot:        &yamlConf.Slot,
+			Label:       yamlConf.Label,
+		}
+		if yamlConf.ObjectID != "" {
+			var err error
+			conf.ObjectID, err = hex.DecodeString(yamlConf.ObjectID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		return New(ctx, &conf)
 	})
 }
+
+var _ vault.VaultNamer = (*PKCS11Vault)(nil)
