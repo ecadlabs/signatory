@@ -42,10 +42,10 @@ The Import command is not available for AWS as there is no support for asymmetri
 
 ## Key generation in AWS
 
-To generate a new private key withing AWS, you must:
+To generate a new private key within AWS, you must:
 
-- Open up the KMS section of the AWS management console and click on "Customer Managed Keys"
-  - Click create key and make sure it contains the following:
+- Open up the KMS section of the AWS management console and click on "Customer Managed Keys."
+  - Click the create key and make sure it contains the following:
     - Asymmetric type
     - Sign and Verify usage
     - ECC_NIST_P256 key spec
@@ -54,7 +54,7 @@ To generate a new private key withing AWS, you must:
 
 ## Example Configuration for the AWS KMS vault in Signatory
 
-This example shows a Signatory vault configuration for AWS KMS. Text in `{}` must be replaced, for example, `{AWS_User_Name}` should be replaced with your AWS username.
+This example shows a Signatory vault configuration for AWS KMS. Text in `{}` must be replaced; for example, `{AWS_User_Name}` should be replaced with your AWS username.
 
 
 ```
@@ -116,4 +116,4 @@ Allowed Kinds:      [delegation endorsement reveal transaction]
 We can finally see that all the pieces are working together by curling the Signatory service and asking for the public key associated with our active public key hash:
 `curl http://localhost:6732/keys/tz3WxgnteyTpM5YzJSTFFtnNYB8Du31gf3bQ`
 
-The output can be verified by checking the public_keys file in the .tezos-client directory
+The output can be verified by checking the public_keys file in the .tezos-client directory.
