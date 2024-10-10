@@ -168,7 +168,7 @@ func (v *PKCS11Vault) GetPublicKey(ctx context.Context, id string) (vault.Stored
 	if v.slot == nil {
 		return nil, v.formatError(errors.New("locked"))
 	}
-	handle, err := strconv.ParseUint(id, 16, 64)
+	handle, err := strconv.ParseUint(id, 16, 32)
 	if err != nil {
 		return nil, v.formatError(err)
 	}
