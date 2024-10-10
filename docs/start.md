@@ -151,6 +151,7 @@ tezos:
 * [GCP Key Management](gcp_kms.md)
 * [YubiHSM2](yubihsm.md)
 * [Hashicorp Vault](hashicorp_vault.md)
+* [PKCS#11](pkcs11.md)
 
 ---
 
