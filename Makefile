@@ -9,6 +9,8 @@ GOLANG_CROSS_VERSION  ?= v1.21.0
 
 all: signatory signatory-cli
 
+# build is controlled by Go build system, so mark phony to ignore file timestamps
+.PHONY: signatory signatory-cli
 signatory:
 	CGO_ENABLED=1 go build -ldflags "-X $(COLLECTOR_PKG).GitRevision=$(GIT_REVISION) -X $(COLLECTOR_PKG).GitBranch=$(GIT_BRANCH)" ./cmd/signatory
 signatory-cli:
