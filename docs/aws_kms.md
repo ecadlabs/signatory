@@ -78,7 +78,6 @@ tezos:
       - block
       - endorsement
     allowed_kinds:
-      # List of [endorsement, ballot, reveal, transaction, origination, delegation, seed_nonce_revelation, activate_account]
       - transaction
       - endorsement
       - reveal
