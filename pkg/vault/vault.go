@@ -99,4 +99,24 @@ func Commands() []*cobra.Command {
 	return commands
 }
 
+func Collect(it StoredKeysIterator) ([]StoredKey, error) {
+	var keys []StoredKey
+keyLoop:
+	for {
+		key, err := it.Next()
+		if err != nil {
+			switch {
+			case errors.Is(err, ErrDone):
+				break keyLoop
+			case errors.Is(err, ErrKey):
+				continue keyLoop
+			default:
+				return nil, err
+			}
+		}
+		keys = append(keys, key)
+	}
+	return keys, nil
+}
+
 var _ Factory = (registry)(nil)

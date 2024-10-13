@@ -71,6 +71,7 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | AWS KMS                        | ✅     |
 | Ledger Nano S/S+ (Baking only) | ✅     |
 | Hashicorp Vault                | ✅     |
+| PKCS#11                        | ✅     |
 
 ### Tezos Address Types
 
@@ -90,6 +91,7 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 | AWS KMS          | ❌   | ✅   | ✅   |
 | Azure KMS        | ❌   | ✅   | ✅   |
 | YubiHSM2         | ✅   | ✅   | ✅   |
+| PKCS#11          | ✅   | ✅   | ✅   |
 
 ---
 
