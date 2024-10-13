@@ -91,7 +91,7 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 | AWS KMS          | ❌   | ✅   | ✅   |
 | Azure KMS        | ❌   | ✅   | ✅   |
 | YubiHSM2         | ✅   | ✅   | ✅   |
-| PKCS#11          | ❌   | ✅   | ✅   |
+| PKCS#11          | ✅   | ✅   | ✅   |
 
 ---
 

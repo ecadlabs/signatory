@@ -19,10 +19,10 @@ import (
 )
 
 type PKCS11Vault struct {
-	module *pkcs11.Module
-	slot   *pkcs11.Slot
-	info   *pkcs11.ModuleInfo
-	conf   Config
+	module  *pkcs11.Module
+	session *pkcs11.Session
+	info    *pkcs11.ModuleInfo
+	conf    Config
 }
 
 type Config struct {
@@ -43,15 +43,21 @@ func (i *iterElem) Elem() (vault.StoredKey, error) {
 	if err != nil {
 		return nil, i.v.formatError(err)
 	}
-	kp, err := pk.KeyPair()
-	if err != nil {
-		return nil, i.v.formatError(err)
+
+	switch pk.(type) {
+	case *pkcs11.ECDSAPrivateKey, *pkcs11.Ed25519PrivateKey:
+		kp, err := pk.KeyPair(pkcs11.MatchLabel | pkcs11.MatchID)
+		if err != nil {
+			return nil, i.v.formatError(err)
+		}
+		key := &keyPair{
+			obj: i.obj,
+			kp:  kp,
+		}
+		return key, nil
+	default:
+		return nil, vault.ErrKey
 	}
-	key := &keyPair{
-		obj: i.obj,
-		kp:  kp,
-	}
-	return key, nil
 }
 
 type keyPair struct {
@@ -118,7 +124,7 @@ func New(ctx context.Context, config *Config) (*PKCS11Vault, error) {
 }
 
 func (v *PKCS11Vault) Close() error {
-	if err := v.slot.Close(); err != nil {
+	if err := v.session.Close(); err != nil {
 		return err
 	}
 	return v.module.Close()
@@ -134,13 +140,12 @@ func (e errIterator) Next() (vault.StoredKey, error) {
 
 // GetPublicKey returns a public key by given ID
 func (v *PKCS11Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
-	if v.slot == nil {
+	if v.session == nil {
 		return errIterator{v.formatError(errors.New("locked"))}
 	}
 
 	filter := []pkcs11.Filter{
 		pkcs11.FilterClass(pkcs11.ClassPrivateKey),
-		pkcs11.FilterKeyType(pkcs11.KeyTypeEC),
 	}
 	if v.conf.Label != "" {
 		filter = append(filter, pkcs11.FilterLabel(v.conf.Label))
@@ -149,7 +154,7 @@ func (v *PKCS11Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterat
 		filter = append(filter, pkcs11.FilterID(v.conf.ObjectID))
 	}
 
-	objects, err := v.slot.Objects(filter...)
+	objects, err := v.session.Objects(filter...)
 	if err != nil {
 		return errIterator{v.formatError(err)}
 	}
@@ -165,14 +170,14 @@ func (v *PKCS11Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterat
 }
 
 func (v *PKCS11Vault) GetPublicKey(ctx context.Context, id string) (vault.StoredKey, error) {
-	if v.slot == nil {
+	if v.session == nil {
 		return nil, v.formatError(errors.New("locked"))
 	}
 	handle, err := strconv.ParseUint(id, 16, 32)
 	if err != nil {
 		return nil, v.formatError(err)
 	}
-	obj, err := v.slot.NewObject(uint(handle))
+	obj, err := v.session.NewObject(uint(handle))
 	if err != nil {
 		if stderr.Is(err, pkcs11.ErrObjectHandleInvalid) {
 			return nil, errors.Wrap(v.formatError(err), http.StatusNotFound)
@@ -183,7 +188,7 @@ func (v *PKCS11Vault) GetPublicKey(ctx context.Context, id string) (vault.Stored
 	if err != nil {
 		return nil, v.formatError(err)
 	}
-	kp, err := pk.KeyPair()
+	kp, err := pk.KeyPair(pkcs11.MatchLabel | pkcs11.MatchID)
 	if err != nil {
 		return nil, v.formatError(err)
 	}
@@ -195,7 +200,7 @@ func (v *PKCS11Vault) GetPublicKey(ctx context.Context, id string) (vault.Stored
 }
 
 func (v *PKCS11Vault) SignMessage(ctx context.Context, msg []byte, key vault.StoredKey) (crypt.Signature, error) {
-	if v.slot == nil {
+	if v.session == nil {
 		return nil, v.formatError(errors.New("locked"))
 	}
 	kp, ok := key.(*keyPair)
@@ -236,11 +241,11 @@ func (v *PKCS11Vault) Unlock(ctx context.Context) error {
 		}
 	}
 
-	slot, err := v.module.Slot(*v.conf.Slot, pkcs11.OptUserPIN(v.conf.Pin))
+	session, err := v.module.NewSession(*v.conf.Slot, pkcs11.OptUserPIN(v.conf.Pin))
 	if err != nil {
 		return v.formatError(err)
 	}
-	v.slot = slot
+	v.session = session
 	return nil
 }
 
