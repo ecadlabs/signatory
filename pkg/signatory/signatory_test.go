@@ -399,10 +399,10 @@ func TestListPublicKeys(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
 			conf := signatory.Config{
-				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
 				Watermark: signatory.IgnoreWatermark{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-					return NewTestVault(nil, c.lpk, nil, nil, "mock"), nil
+					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}
