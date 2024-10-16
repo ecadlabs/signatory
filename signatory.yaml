@@ -71,5 +71,6 @@ tezos:
         # tx_rollup_rejection, tx_rollup_remove_commitment, tx_rollup_return_bond, tx_rollup_submit_batch]
         - transaction
         - endorsement
+        - attestation
       block:
       endorsement:
