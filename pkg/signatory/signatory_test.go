@@ -95,7 +95,7 @@ func TestPolicy(t *testing.T) {
 			title: "endorsement not allowed",
 			msg:   mustHex("13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d"),
 			policy: signatory.PublicKeyPolicy{
-				AllowedRequests: []string{"generic", "block", "attestation"},
+				AllowedRequests: []string{"generic", "block"},
 				AllowedOps:      []string{"seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation", "update_consensus_key"},
 				LogPayloads:     true,
 			},
