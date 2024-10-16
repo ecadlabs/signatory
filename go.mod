@@ -9,7 +9,7 @@ require (
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ecadlabs/goblst v1.0.0
-	github.com/ecadlabs/gotez/v2 v2.1.2
+	github.com/ecadlabs/gotez/v2 v2.1.3
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.4.0
