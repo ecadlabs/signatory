@@ -30,4 +30,4 @@ dist
 integration_test/gcp-token.json
 integration_test/.env.vaults.cicd
 integration_test/service-principal.key
-**ansible-vault**
+**vault**
