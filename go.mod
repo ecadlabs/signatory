@@ -10,7 +10,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ecadlabs/go-pkcs11 v0.2.0
 	github.com/ecadlabs/goblst v1.0.0
-	github.com/ecadlabs/gotez/v2 v2.0.6
+	github.com/ecadlabs/gotez/v2 v2.1.3
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.4.0
@@ -55,7 +55,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
