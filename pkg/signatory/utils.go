@@ -5,6 +5,7 @@ import (
 
 	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
 )
 
 func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {
@@ -27,7 +28,7 @@ type operationsStat map[string]int
 func getOperationsStat(u *protocol.GenericOperationSignRequest) operationsStat {
 	ops := make(operationsStat)
 	for _, o := range u.Contents {
-		ops[o.OperationKind()]++
+		ops[core.GetOperationKind(o)]++
 	}
 	return ops
 }

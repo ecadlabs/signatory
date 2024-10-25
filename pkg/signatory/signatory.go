@@ -193,7 +193,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignReq
 
 	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
 		for _, op := range ops.Contents {
-			kind := op.OperationKind()
+			kind := core.GetOperationKind(op)
 			allowed = false
 			for _, k := range policy.AllowedOps {
 				if kind == k {
@@ -399,7 +399,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 			l.Error(err)
 			return nil, err
 		}
-		return p.vault.SignMessage(ctx, message, p.key)
+		return p.vault.SignMessage(ctx, message, key)
 	}
 
 	var sig crypt.Signature
