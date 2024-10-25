@@ -48,6 +48,10 @@ vaults:
       transitConfig:
         mountPoint: "transit/"
 
+watermark:
+  # Default
+  driver: file
+
 # List enabled public keys hashes here
 tezos:
   # This example does not specifiy a policy, and be default will allow signing of "block" and "endorsement" operations only.

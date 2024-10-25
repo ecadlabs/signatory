@@ -19,7 +19,6 @@ vaults:
   aws:
     driver: awskms
     config:
-      user_name: <iam_username>
       access_key_id: <aws_access_key_id>
       secret_access_key: <aws_secret_access_key>
       region: <aws_region>
@@ -29,7 +28,6 @@ vaults:
 
 Name | Type | Required | Description
 -----|------|:--------:|------------
-user_name | string |✅| IAM user name
 access_key_id | string | OPTIONAL | IAM user detail
 secret_access_key | string | OPTIONAL | IAM user detail
 region | string | ✅ | Region where key is created
@@ -54,7 +52,7 @@ To generate a new private key withing AWS, you must:
 
 ## Example Configuration for the AWS KMS vault in Signatory
 
-This example shows a Signatory vault configuration for AWS KMS. Text in `{}` must be replaced, for example, `{AWS_User_Name}` should be replaced with your AWS username.
+This example shows a Signatory vault configuration for AWS KMS. Text in `{}` must be replaced.
 
 
 ```
@@ -63,7 +61,6 @@ vaults:
   awskms:
     driver: awskms
     config:
-      user_name: {AWS_User_Name}
       access_key_id: {Access_Key_ID_In_AWS_User_Profile}
       secret_access_key: {Secret_access_Key_ID_In_AWS_User_Profile}
       region: {AWS_Region}
