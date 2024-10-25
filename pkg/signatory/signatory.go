@@ -144,7 +144,7 @@ func (s *Signatory) logger() log.FieldLogger {
 }
 
 var defaultPolicy = PublicKeyPolicy{
-	AllowedRequests: []string{"block", "preendorsement", "endorsement"},
+	AllowedRequests: []string{"block", "preattestation", "attestation"},
 }
 
 func (s *Signatory) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKeyPolicy {
@@ -597,6 +597,18 @@ func (s *Signatory) Ready(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+func fixupRequests(req []string) {
+	for i := range req {
+		switch req[i] {
+		case "endorsement":
+			req[i] = "attestation"
+		case "preendorsement":
+			req[i] = "preattestation"
+		}
+	}
+	sort.Strings(req)
+}
+
 // PreparePolicy prepares policy data by hashing keys etc
 func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 	policy := make(Policy, len(src))
@@ -615,7 +627,7 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			for req := range v.Allow {
 				pol.AllowedRequests = append(pol.AllowedRequests, req)
 			}
-			sort.Strings(pol.AllowedRequests)
+			fixupRequests(pol.AllowedRequests)
 
 			if ops, ok := v.Allow["generic"]; ok {
 				pol.AllowedOps = make([]string, len(ops))
@@ -626,7 +638,7 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			if v.AllowedOperations != nil {
 				pol.AllowedRequests = make([]string, len(v.AllowedOperations))
 				copy(pol.AllowedRequests, v.AllowedOperations)
-				sort.Strings(pol.AllowedRequests)
+				fixupRequests(pol.AllowedRequests)
 			}
 			if v.AllowedKinds != nil {
 				pol.AllowedOps = make([]string, len(v.AllowedKinds))
