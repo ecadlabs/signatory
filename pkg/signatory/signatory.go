@@ -25,6 +25,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -393,7 +394,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 	digest := crypt.DigestFunc(req.Message)
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg, &digest); err != nil {
+		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
@@ -544,7 +545,7 @@ type Config struct {
 	Policy       Policy
 	Vaults       map[string]*config.VaultConfig
 	Interceptor  SignInterceptor
-	Watermark    Watermark
+	Watermark    watermark.Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
 	PolicyHook   *PolicyHook

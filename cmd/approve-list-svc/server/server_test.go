@@ -15,6 +15,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: watermark.Ignore{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{

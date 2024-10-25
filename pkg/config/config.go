@@ -51,6 +51,13 @@ type Config struct {
 	Server     ServerConfig            `yaml:"server"`
 	PolicyHook *PolicyHook             `yaml:"policy_hook"`
 	BaseDir    string                  `yaml:"base_dir" validate:"required"`
+	Watermark  *WatermarkConfig        `yaml:"watermark"`
+}
+
+// WatermarkConfig represents watermark backend configuration
+type WatermarkConfig struct {
+	Driver string    `yaml:"driver" validate:"required"`
+	Config yaml.Node `yaml:"config"`
 }
 
 var defaultConfig = Config{
@@ -59,6 +66,9 @@ var defaultConfig = Config{
 		UtilityAddress: ":9583",
 	},
 	BaseDir: "/var/lib/signatory",
+	Watermark: &WatermarkConfig{
+		Driver: "file",
+	},
 }
 
 // Read read the config from a file
