@@ -13,7 +13,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3
 	github.com/aws/smithy-go v1.20.3
 	github.com/certusone/yubihsm-go v0.3.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
+	github.com/ecadlabs/go-pkcs11 v0.2.1
 	github.com/ecadlabs/goblst v1.0.0
 	github.com/ecadlabs/gotez/v2 v2.1.3
 	github.com/go-playground/validator/v10 v10.22.0
@@ -27,7 +28,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.28.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
 	golang.org/x/oauth2 v0.15.0
@@ -110,3 +111,4 @@ require (
 )
 
 // replace github.com/ecadlabs/gotez/v2 => ../gotez
+// replace github.com/ecadlabs/go-pkcs11 => ../go-pkcs11
