@@ -3,15 +3,23 @@
 package signatory_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
 	"testing"
 
+	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/gotez/v2/encoding"
+	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
+	"github.com/ecadlabs/gotez/v2/protocol/core/expression"
+	"github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"github.com/stretchr/testify/require"
@@ -23,7 +31,7 @@ const privateKey = "edsk4FTF78Qf1m2rykGpHqostAiq5gYW4YZEoGUSWBTJr2njsDHSnd"
 func TestImport(t *testing.T) {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: watermark.Ignore{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			v, err := memory.New(nil, "Mock")
 			if err != nil {
@@ -58,6 +66,7 @@ func TestPolicy(t *testing.T) {
 	type testCase struct {
 		title    string
 		msg      []byte
+		req      protocol.SignRequest
 		policy   signatory.PublicKeyPolicy
 		expected string
 	}
@@ -300,6 +309,34 @@ func TestPolicy(t *testing.T) {
 			},
 			expected: "operation `update_consensus_key' is not allowed",
 		},
+		{
+			title: "Stake allowed",
+			req: &protocol.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.OperationContents{
+					&latest.Transaction{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x00},
+							Counter:      tz.BigUint{0x00},
+							GasLimit:     tz.BigUint{0x00},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Amount:      tz.BigUint{0x00},
+						Destination: core.ImplicitContract{PublicKeyHash: &tz.Ed25519PublicKeyHash{1, 2, 3}},
+						Parameters: tz.Some(latest.Parameters{
+							Entrypoint: latest.EpStake{},
+							Value:      expression.Prim00(expression.Prim_Unit),
+						}),
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"stake"},
+				LogPayloads:     true,
+			},
+		},
 	}
 
 	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
@@ -310,7 +347,7 @@ func TestPolicy(t *testing.T) {
 		t.Run(c.title, func(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
-				Watermark: signatory.IgnoreWatermark{},
+				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
@@ -321,7 +358,16 @@ func TestPolicy(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, s.Unlock(context.Background()))
 
-			_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: c.msg})
+			var msg []byte
+			if c.req != nil {
+				var buf bytes.Buffer
+				require.NoError(t, encoding.Encode(&buf, &c.req))
+				msg = buf.Bytes()
+			} else {
+				msg = c.msg
+			}
+
+			_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: msg})
 			if c.expected != "" {
 				require.EqualError(t, err, c.expected)
 			} else {
@@ -400,7 +446,7 @@ func TestListPublicKeys(t *testing.T) {
 		t.Run(c.title, func(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
-				Watermark: signatory.IgnoreWatermark{},
+				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
 				}),

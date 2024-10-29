@@ -25,6 +25,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -192,7 +193,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignReq
 
 	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
 		for _, op := range ops.Contents {
-			kind := op.OperationKind()
+			kind := core.GetOperationKind(op)
 			allowed = false
 			for _, k := range policy.AllowedOps {
 				if kind == k {
@@ -393,12 +394,12 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 	digest := crypt.DigestFunc(req.Message)
 	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-		if err = s.config.Watermark.IsSafeToSign(req.PublicKeyHash, msg, &digest); err != nil {
+		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
 		}
-		return p.vault.SignMessage(ctx, message, p.key)
+		return p.vault.SignMessage(ctx, message, key)
 	}
 
 	var sig crypt.Signature
@@ -544,7 +545,7 @@ type Config struct {
 	Policy       Policy
 	Vaults       map[string]*config.VaultConfig
 	Interceptor  SignInterceptor
-	Watermark    Watermark
+	Watermark    watermark.Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
 	PolicyHook   *PolicyHook
