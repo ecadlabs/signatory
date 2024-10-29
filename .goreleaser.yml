@@ -198,43 +198,43 @@ builds:
       - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
 # WINDOWS
-  - id: signatory-windows-amd
-    binary: signatory
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-      - >-
-        {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
-    main: ./cmd/signatory/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - windows
-    goarch:
-      - amd64
-    flags:
-      - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
+  # - id: signatory-windows-amd
+  #   binary: signatory
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=x86_64-w64-mingw32-gcc
+  #     - CXX=x86_64-w64-mingw32-g++
+  #     - >-
+  #       {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
+  #   main: ./cmd/signatory/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  #   flags:
+  #     - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
-  - id: signatory-cli-windows-amd
-    binary: signatory-cli
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-      - >-
-        {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
-    main: ./cmd/signatory-cli/main.go
-    ldflags:
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
-      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-    goos:
-      - windows
-    goarch:
-      - amd64
-    flags:
-      - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
+  # - id: signatory-cli-windows-amd
+  #   binary: signatory-cli
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=x86_64-w64-mingw32-gcc
+  #     - CXX=x86_64-w64-mingw32-g++
+  #     - >-
+  #       {{- if .IsSnapshot }}GOEXPERIMENT=coverageredesign{{- end }}
+  #   main: ./cmd/signatory-cli/main.go
+  #   ldflags:
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+  #     - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  #   flags:
+  #     - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
 dockers:
   - ids:
