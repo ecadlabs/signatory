@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	log "github.com/sirupsen/logrus"
@@ -122,7 +123,7 @@ func TestOperations(t *testing.T) {
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
-		Watermark: signatory.IgnoreWatermark{},
+		Watermark: watermark.Ignore{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
 		}),
