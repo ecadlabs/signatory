@@ -9,8 +9,6 @@ import (
 	"sort"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/integration_testing/tezbox"
@@ -84,15 +82,6 @@ func startHTTPServer(srv *http.Server) (net.Listener, error) {
 	}
 	go srv.Serve(l)
 	return l, nil
-}
-
-func requestKinds() []string {
-	var kinds []string
-	for _, k := range encoding.ListVariants[protocol.SignRequest]() {
-		kinds = append(kinds, k.SignRequestKind())
-	}
-	sort.Strings(kinds)
-	return kinds
 }
 
 func opKinds() []string {

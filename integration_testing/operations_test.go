@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	signatoryAlias = "signatory"
-	contractAlias  = "emit_event"
+	signatoryAlias      = "signatory"
+	signatoryBakerAlias = "signatory_baker"
+	contractAlias       = "emit_event"
 )
 
 type opTest struct {
@@ -115,26 +116,48 @@ var opTests = []*opTest{
 	},
 }
 
+func genKeys(n int) ([]crypt.PrivateKey, error) {
+	out := make([]crypt.PrivateKey, n)
+	for i := 0; i < n; i++ {
+		_, k, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = crypt.Ed25519PrivateKey(k)
+	}
+	return out, nil
+}
+
 func TestOperations(t *testing.T) {
-	var k ed25519.PrivateKey
-	_, k, err := ed25519.GenerateKey(rand.Reader)
+	priv, err := genKeys(2)
 	require.NoError(t, err)
-	priv := crypt.Ed25519PrivateKey(k)
 
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mem": {Driver: "mem"}},
 		Watermark: watermark.Ignore{},
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-			return memory.New([]*memory.PrivateKey{{PrivateKey: priv}}, "")
+			return memory.New([]*memory.PrivateKey{
+				{PrivateKey: priv[0]},
+				{PrivateKey: priv[1]},
+			}, "")
 		}),
-		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{
-			Key: priv.Public().Hash(),
-			Val: &signatory.PublicKeyPolicy{
-				AllowedRequests: requestKinds(),
-				AllowedOps:      opKinds(),
-				LogPayloads:     true,
+		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{
+			{
+				Key: priv[0].Public().Hash(),
+				Val: &signatory.PublicKeyPolicy{
+					AllowedRequests: []string{"generic"},
+					AllowedOps:      opKinds(),
+					LogPayloads:     true,
+				},
 			},
-		}}),
+			{
+				Key: priv[1].Public().Hash(),
+				Val: &signatory.PublicKeyPolicy{
+					AllowedRequests: []string{"block", "attestation", "preattestation"},
+					LogPayloads:     true,
+				},
+			},
+		}),
 	}
 	signer, err := signatory.New(context.Background(), &conf)
 	require.NoError(t, err)
@@ -154,7 +177,9 @@ func TestOperations(t *testing.T) {
 
 	tezboxConfig, err := genBaseConfig()
 	require.NoError(t, err)
-	tezboxConfig.Accounts.Regular[signatoryAlias] = newRemoteSignerConfig(priv.Public(), l.Addr(), regularBalance)
+
+	tezboxConfig.Accounts.Regular[signatoryAlias] = newRemoteSignerConfig(priv[0].Public(), l.Addr(), regularBalance)
+	tezboxConfig.Accounts.Bakers[signatoryBakerAlias] = newRemoteSignerConfig(priv[1].Public(), l.Addr(), bakerBalance)
 
 	cont, err := tezbox.Start(tezboxConfig)
 	require.NoError(t, err)
