@@ -21,19 +21,95 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const signatoryAlias = "signatory"
+const (
+	signatoryAlias = "signatory"
+	contractAlias  = "emit_event"
+)
 
 type opTest struct {
 	kind        string
-	clientArgs  func(kind, alias string) []string
-	okMessageRe func(kind, alias string) string
+	clientArgs  func(alias string) []string
+	okMessageRe func(alias string) string
+}
+
+const contractBody = `{
+	parameter unit;
+	storage unit;
+	code {
+		DROP;
+		UNIT;
+		PUSH nat 10;
+		LEFT string;
+		EMIT %event;
+		PUSH string "lorem ipsum";
+		RIGHT nat;
+		EMIT %event (or (nat %number) (string %words));
+		NIL operation;
+		SWAP;
+		CONS;
+		SWAP;
+		CONS;
+		PAIR
+	}
+}
+`
+
+func replaceWhiteSpaces(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '\n' || r == '\t' {
+			return ' '
+		}
+		return r
+	}, s)
 }
 
 var opTests = []*opTest{
 	{
+		kind: "reveal",
+		clientArgs: func(alias string) []string {
+			return []string{"reveal", "key", "for", alias}
+		},
+	},
+	{
+		kind: "register_global_constant",
+		clientArgs: func(alias string) []string {
+			return []string{"register", "global", "constant", "999", "from", alias, "--burn-cap", "0.017"}
+		},
+	},
+	{
 		kind: "transaction",
-		clientArgs: func(kind, alias string) []string {
+		clientArgs: func(alias string) []string {
 			return []string{"transfer", "1", "from", alias, "to", "alice", "--burn-cap", "0.06425"}
+		},
+	},
+	{
+		kind: "delegation",
+		clientArgs: func(alias string) []string {
+			return []string{"register", "key", alias, "as", "delegate"}
+		},
+	},
+	{
+		kind: "set_deposits_limit",
+		clientArgs: func(alias string) []string {
+			return []string{"set", "deposits", "limit", "for", alias, "to", "10000"}
+		},
+	},
+	{
+		kind: "update_consensus_key",
+		clientArgs: func(alias string) []string {
+			return []string{"set", "consensus", "key", "for", alias, "to", "bob"}
+		},
+	},
+	{
+		kind: "origination",
+		clientArgs: func(alias string) []string {
+			return []string{"originate", "contract", contractAlias, "transferring", "1", "from", alias, "running", replaceWhiteSpaces(contractBody), "--burn-cap", "0.4"}
+		},
+	},
+	{
+		kind: "increase_paid_storage",
+		clientArgs: func(alias string) []string {
+			return []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", alias}
 		},
 	},
 }
@@ -87,13 +163,13 @@ func TestOperations(t *testing.T) {
 
 	for _, test := range opTests {
 		t.Run(test.kind, func(t *testing.T) {
-			a := test.clientArgs(test.kind, signatoryAlias)
+			a := test.clientArgs(signatoryAlias)
 			log.Infof("octez-client arguments: %s", strings.Join(a, " "))
-			out, err := cont.Exec("octez-client", test.clientArgs(test.kind, signatoryAlias)...)
+			out, err := cont.Exec("octez-client", test.clientArgs(signatoryAlias)...)
 			log.Info(string(out))
 			require.NoError(t, err)
 			if test.okMessageRe != nil {
-				matched, err := regexp.Match(test.okMessageRe(test.kind, signatoryAlias), out)
+				matched, err := regexp.Match(test.okMessageRe(signatoryAlias), out)
 				require.NoError(t, err)
 				require.True(t, matched)
 			}
