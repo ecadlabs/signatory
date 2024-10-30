@@ -15,7 +15,6 @@ server:
         secret: secret2
         jwt_exp: 30
 
-
 vaults:
   # Name is used to identify backend during import process
   kms:
@@ -49,6 +48,10 @@ vaults:
       transitConfig:
         mountPoint: "transit/"
 
+watermark:
+  # Default
+  driver: file
+
 # List enabled public keys hashes here
 tezos:
   # This example does not specifiy a policy, and be default will allow signing of "block" and "endorsement" operations only.
@@ -63,12 +66,14 @@ tezos:
     allow:
       # List of [block, endorsement, failing_noop, generic, preendorsement]
       generic:
-        # List of [activate_account, ballot, delegation, double_baking_evidence, double_endorsement_evidence,
-        # double_preendorsement_evidence, endorsement, failing_noop, origination, preendorsement, proposals,
-        # register_global_constant, reveal, sc_rollup_add_messages, sc_rollup_cement, sc_rollup_originate,
-        # sc_rollup_publish, seed_nonce_revelation, set_deposits_limit, transaction, transfer_ticket,
-        # tx_rollup_commit, tx_rollup_dispatch_tickets, tx_rollup_finalize_commitment, tx_rollup_origination,
-        # tx_rollup_rejection, tx_rollup_remove_commitment, tx_rollup_return_bond, tx_rollup_submit_batch]
+        # List of
+        # [activate_account, attestation, attestation_with_dal, ballot, dal_publish_commitment, delegation, double_attestation_evidence,
+        # double_baking_evidence, double_preattestation_evidence, drain_delegate, failing_noop, finalize_unstake, increase_paid_storage,
+        # origination, preattestation, proposals, register_global_constant, reveal, seed_nonce_revelation, set_delegate_parameters,
+        # set_deposits_limit, signature_prefix, smart_rollup_add_messages, smart_rollup_cement, smart_rollup_execute_outbox_message,
+        # smart_rollup_originate, smart_rollup_publish, smart_rollup_recover_bond, smart_rollup_refute, smart_rollup_timeout, stake,
+        # transaction, transfer_ticket, unstake, update_consensus_key, vdf_revelation, zk_rollup_origination, zk_rollup_publish,
+        # zk_rollup_update]
         - transaction
         - endorsement
       block:

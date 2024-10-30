@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/aws/smithy-go"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
@@ -20,14 +20,13 @@ import (
 
 // Config contains AWS KMS backend configuration
 type Config struct {
-	UserName    string `yaml:"user_name" validate:"required"`
 	AccessKeyID string `yaml:"access_key_id"`
 	AccessKey   string `yaml:"secret_access_key"`
-	Region      string `yaml:"region" validate:"required"`
+	Region      string `yaml:"region"`
 }
 
 type Vault struct {
-	kmsapi *kms.KMS
+	client *kms.Client
 	config Config
 }
 
@@ -40,7 +39,7 @@ type awsKMSKey struct {
 type awsKMSIterator struct {
 	ctx    context.Context
 	v      *Vault
-	kmsapi *kms.KMS
+	client *kms.Client
 	lko    *kms.ListKeysOutput
 	index  int
 }
@@ -56,14 +55,14 @@ func (c *awsKMSKey) ID() string {
 }
 
 func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
-	pkresp, err := v.kmsapi.GetPublicKeyWithContext(ctx, &kms.GetPublicKeyInput{
+	pkresp, err := v.client.GetPublicKey(ctx, &kms.GetPublicKeyInput{
 		KeyId: &keyID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if *pkresp.KeyUsage != kms.KeyUsageTypeSignVerify {
+	if pkresp.KeyUsage != types.KeyUsageTypeSignVerify {
 		return nil, errors.New("key usage must be SIGN_VERIFY")
 	}
 
@@ -97,7 +96,8 @@ func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 					Marker: i.lko.NextMarker,
 				}
 			} // otherwise leave it nil
-			i.lko, err = i.kmsapi.ListKeys(lkin)
+
+			i.lko, err = i.client.ListKeys(i.ctx, lkin)
 			if err != nil {
 				return nil, err
 			}
@@ -106,10 +106,11 @@ func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
 		key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
 		i.index += 1
 
+		var kmserr smithy.APIError
 		if err == nil {
 			return key, nil
-		} else if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() != "AccessDeniedException" {
+		} else if errors.As(err, &kmserr) {
+			if kmserr.ErrorCode() != "AccessDeniedException" {
 				return nil, err
 			}
 		} else if err != crypt.ErrUnsupportedKeyType {
@@ -123,7 +124,7 @@ func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
 	return &awsKMSIterator{
 		ctx:    ctx,
 		v:      v,
-		kmsapi: v.kmsapi,
+		client: v.client,
 	}
 }
 
@@ -135,11 +136,11 @@ func (v *Vault) Name() string {
 func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	kid := key.ID()
-	sout, err := v.kmsapi.Sign(&kms.SignInput{
+	sout, err := v.client.Sign(ctx, &kms.SignInput{
 		KeyId:            &kid,
 		Message:          digest[:],
-		MessageType:      aws.String(kms.MessageTypeDigest),
-		SigningAlgorithm: aws.String(kms.SigningAlgorithmSpecEcdsaSha256),
+		MessageType:      types.MessageTypeDigest,
+		SigningAlgorithm: types.SigningAlgorithmSpecEcdsaSha256,
 	})
 	if err != nil {
 		return nil, err
@@ -153,18 +154,27 @@ func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.Store
 	return sig, nil
 }
 
-// New creates new AWS KMS backend
-func New(ctx context.Context, config *Config) (*Vault, error) {
+func NewConfig(ctx context.Context, config *Config) (aws.Config, error) {
 	if config.AccessKeyID != "" {
 		os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
 		os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
 	}
-	os.Setenv("AWS_REGION", config.Region)
-	sess := session.Must(session.NewSession())
+	if config.Region != "" {
+		os.Setenv("AWS_REGION", config.Region)
+	}
+	return awsconfig.LoadDefaultConfig(ctx)
+}
 
-	api := kms.New(sess)
+// New creates new AWS KMS backend
+func New(ctx context.Context, config *Config) (*Vault, error) {
+	cfg, err := NewConfig(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	client := kms.NewFromConfig(cfg)
 	return &Vault{
-		kmsapi: api,
+		client: client,
 		config: *config,
 	}, nil
 }
@@ -172,17 +182,11 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 func init() {
 	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
 		var conf Config
-		if node == nil || node.Kind == 0 {
-			return nil, errors.New("(AWSKMS): config is missing")
+		if node != nil {
+			if err := node.Decode(&conf); err != nil {
+				return nil, err
+			}
 		}
-		if err := node.Decode(&conf); err != nil {
-			return nil, err
-		}
-
-		if err := config.Validator().Struct(&conf); err != nil {
-			return nil, err
-		}
-
 		return New(ctx, &conf)
 	})
 }

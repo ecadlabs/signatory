@@ -74,6 +74,10 @@ vaults:
     config:
       file: /etc/signatory/secret.json
 
+watermark:
+  # Default
+  driver: file
+
 # List enabled public keys hashes here
 tezos:
   # Default policy allows "block" and "endorsement" operations
@@ -111,7 +115,7 @@ tezos:
 ]
 ```
 
-## Configuration Example - AWS KMS Vault
+### Configuration Example - AWS KMS Vault
 This configuration example uses AWS KMS as  
 
 ```yaml
@@ -128,7 +132,6 @@ vaults:
   aws:
     driver: awskms
     config:
-      user_name: signatory_testnets # IAM User or Role 
       access_key_id: <redacted> # Optional
       secret_access_key: <redacted> # Optional 
       region: us-west-2 
@@ -145,12 +148,27 @@ tezos:
         - transaction
 ```
 
+### Watermark backend
+
+Basic syntax:
+
+```yaml
+# Optional
+watermark:
+  driver: <driver>
+  # Optional
+  config: <config_object>
+```
+
+Currently three backends are supported: `file` (a default one), `mem` (for testing purpose only) and `aws`. See [AWS KMS][aws] for configuration syntax.
+
 ## Backends
 * [AWS KMS](aws_kms.md)
 * [Azure Key Vault](azure_kms.md)
 * [GCP Key Management](gcp_kms.md)
 * [YubiHSM2](yubihsm.md)
 * [Hashicorp Vault](hashicorp_vault.md)
+* [PKCS#11](pkcs11.md)
 
 ---
 
