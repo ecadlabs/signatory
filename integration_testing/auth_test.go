@@ -14,11 +14,14 @@ import (
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
 func TestAuthorization(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
 	priv, err := genEd25519Keys(2)
 	require.NoError(t, err)
 	signKey, authKey := priv[0], priv[1]

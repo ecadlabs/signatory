@@ -111,6 +111,8 @@ var opTests = []*opTest{
 }
 
 func TestOperations(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
 	priv1, err := genEd25519Keys(2)
 	require.NoError(t, err)
 

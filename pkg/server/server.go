@@ -145,6 +145,7 @@ func (s *Server) getKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := s.Signer.GetPublicKey(r.Context(), pkh)
 	if err != nil {
+		s.logger().Error(err)
 		tezosJSONError(w, err)
 		return
 	}
@@ -166,6 +167,7 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
 		if err != nil {
+			s.logger().Error(err)
 			tezosJSONError(w, err)
 			return
 		}
@@ -179,6 +181,7 @@ func (s *Server) Handler() (http.Handler, error) {
 	if s.Auth != nil {
 		hashes, err := s.Auth.ListPublicKeys(context.Background())
 		if err != nil {
+			s.logger().Error(err)
 			return nil, err
 		}
 		s.logger().Infof("Authorized keys: %v", hashes)
