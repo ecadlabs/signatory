@@ -95,3 +95,15 @@ func opKinds() []string {
 	sort.Strings(ops)
 	return ops
 }
+
+func genEd25519Keys(n int) ([]crypt.Ed25519PrivateKey, error) {
+	out := make([]crypt.Ed25519PrivateKey, n)
+	for i := 0; i < n; i++ {
+		_, k, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = crypt.Ed25519PrivateKey(k)
+	}
+	return out, nil
+}

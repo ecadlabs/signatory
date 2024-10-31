@@ -27,7 +27,7 @@ func (s *staticAuthorizedKeys) ListPublicKeys(ctx context.Context) ([]crypt.Publ
 }
 
 // StaticAuthorizedKeys returns an AuthorizedKeysStorage that uses the given public keys
-func StaticAuthorizedKeys(pub ...crypt.PublicKey) (AuthorizedKeysStorage, error) {
+func StaticAuthorizedKeys(pub ...crypt.PublicKey) AuthorizedKeysStorage {
 	idx := make(authorizedKeys)
 	keys := make([]crypt.PublicKeyHash, len(pub))
 	for i, pk := range pub {
@@ -38,7 +38,7 @@ func StaticAuthorizedKeys(pub ...crypt.PublicKey) (AuthorizedKeysStorage, error)
 	return &staticAuthorizedKeys{
 		idx:  idx,
 		keys: keys,
-	}, nil
+	}
 }
 
 // StaticAuthorizedKeysFromRaw returns an AuthorizedKeysStorage that uses the given public keys

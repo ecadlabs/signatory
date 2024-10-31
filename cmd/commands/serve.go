@@ -38,11 +38,7 @@ func NewServeCommand(c *Context) *cobra.Command {
 			}
 
 			if c.config.Server.AuthorizedKeys != nil {
-				ak, err := auth.StaticAuthorizedKeys(c.config.Server.AuthorizedKeys.List()...)
-				if err != nil {
-					return err
-				}
-				srvConf.Auth = ak
+				srvConf.Auth = auth.StaticAuthorizedKeys(c.config.Server.AuthorizedKeys.List()...)
 			}
 
 			srv, err := srvConf.New()

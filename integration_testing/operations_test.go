@@ -3,10 +3,8 @@ package integrationtesting
 import (
 	"context"
 	"crypto/ecdsa"
-	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -34,9 +32,8 @@ const (
 )
 
 type opTest struct {
-	name        string
-	clientArgs  []string
-	okMessageRe string
+	name       string
+	clientArgs []string
 }
 
 const contractBody = `{
@@ -111,18 +108,6 @@ var opTests = []*opTest{
 		name:       "increase_paid_storage",
 		clientArgs: []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", tz1Alias},
 	},
-}
-
-func genEd25519Keys(n int) ([]crypt.Ed25519PrivateKey, error) {
-	out := make([]crypt.Ed25519PrivateKey, n)
-	for i := 0; i < n; i++ {
-		_, k, err := ed25519.GenerateKey(rand.Reader)
-		if err != nil {
-			return nil, err
-		}
-		out[i] = crypt.Ed25519PrivateKey(k)
-	}
-	return out, nil
 }
 
 func TestOperations(t *testing.T) {
@@ -219,14 +204,8 @@ func TestOperations(t *testing.T) {
 	for _, test := range opTests {
 		t.Run(test.name, func(t *testing.T) {
 			log.Infof("octez-client arguments: %s", strings.Join(test.clientArgs, " "))
-			out, err := cont.Exec("octez-client", test.clientArgs...)
-			log.Info(string(out))
+			err := cont.ExecLog("octez-client", test.clientArgs...)
 			require.NoError(t, err)
-			if test.okMessageRe != "" {
-				matched, err := regexp.Match(test.okMessageRe, out)
-				require.NoError(t, err)
-				require.True(t, matched)
-			}
 		})
 	}
 }

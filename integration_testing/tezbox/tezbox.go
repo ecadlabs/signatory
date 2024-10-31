@@ -156,10 +156,20 @@ func Start(cfg *ServiceConfig) (*Container, error) {
 	return &Container{id: cid}, nil
 }
 
-func (c *Container) Exec(name string, args ...string) ([]byte, error) {
+func (c *Container) Exec(name string, args ...string) error {
 	v := []string{"container", "exec", c.id, name}
 	v = append(v, args...)
-	return exec.Command("docker", v...).CombinedOutput()
+	return exec.Command("docker", v...).Run()
+}
+
+func (c *Container) ExecLog(name string, args ...string) error {
+	v := []string{"container", "exec", c.id, name}
+	v = append(v, args...)
+	cmd := exec.Command("docker", v...)
+	l := log.StandardLogger().Writer()
+	cmd.Stdout = l
+	cmd.Stderr = l
+	return cmd.Run()
 }
 
 func (c *Container) Stop() error {

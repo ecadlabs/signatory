@@ -96,7 +96,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 
 	srv := server.Server{
 		Signer: signer,
-		Auth:   auth.Must(auth.StaticAuthorizedKeys(authPub1, authPub2)),
+		Auth:   auth.StaticAuthorizedKeys(authPub1, authPub2),
 	}
 
 	handler, err := srv.Handler()

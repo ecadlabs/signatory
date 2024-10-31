@@ -89,8 +89,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 	testSrv := httptest.NewServer(http.HandlerFunc(handler))
 	defer testSrv.Close()
 
-	hookAuth, err := auth.StaticAuthorizedKeys(hookPriv.Public())
-	require.NoError(t, err)
+	hookAuth := auth.StaticAuthorizedKeys(hookPriv.Public())
 
 	signPriv, err := generateKey()
 	require.NoError(t, err)

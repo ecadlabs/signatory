@@ -18,11 +18,3 @@ type AuthorizedKeysStorage interface {
 	GetPublicKey(ctx context.Context, keyHash gotez.PublicKeyHash) (crypt.PublicKey, error)
 	ListPublicKeys(ctx context.Context) ([]crypt.PublicKeyHash, error)
 }
-
-// Must panics in case of error
-func Must(s AuthorizedKeysStorage, err error) AuthorizedKeysStorage {
-	if err != nil {
-		panic(err)
-	}
-	return s
-}

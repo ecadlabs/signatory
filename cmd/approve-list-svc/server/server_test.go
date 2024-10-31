@@ -46,8 +46,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 	testSrv := httptest.NewServer(handler)
 	defer testSrv.Close()
 
-	hookAuth, err := auth.StaticAuthorizedKeys(priv.Public())
-	require.NoError(t, err)
+	hookAuth := auth.StaticAuthorizedKeys(priv.Public())
 
 	_, signPriv, err := generateKey()
 	require.NoError(t, err)
