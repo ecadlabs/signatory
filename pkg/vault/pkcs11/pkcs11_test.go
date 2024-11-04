@@ -72,15 +72,28 @@ func TestPKCS11Vault(t *testing.T) {
 		t.Fatal(string(out))
 	}
 
-	v, err := New(context.Background(), &Config{
+	mod, err := Open(path)
+	require.NoError(t, err)
+
+	slot, err := mod.FindSlot()
+	require.NoError(t, err)
+
+	pin := userPIN
+	v, err := NewWithModule(mod, &Config{
 		LibraryPath: path,
-		Pin:         userPIN,
-		Label:       keyLabel,
+		Slots: map[uint]*string{
+			slot: &pin,
+		},
+		Keys: []*KeyPair{
+			{
+				Private: KeyConfig{
+					Slot: slot,
+				},
+			},
+		},
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { v.Close() })
-
-	require.NoError(t, v.Unlock(context.Background()))
 
 	keys, err := vault.Collect(v.ListPublicKeys(context.Background()))
 	require.NoError(t, err)
