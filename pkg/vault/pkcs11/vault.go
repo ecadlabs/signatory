@@ -40,9 +40,9 @@ type KeyConfig struct {
 }
 
 type KeyPair struct {
-	Private     KeyConfig       `yaml:"private_key"`
-	Public      *KeyConfig      `yaml:"public_key"`
-	PublicValue gotez.PublicKey `yaml:"public_key_value"`
+	Private     KeyConfig       `yaml:"private"`
+	Public      *KeyConfig      `yaml:"public"`
+	PublicValue gotez.PublicKey `yaml:"public_value"`
 }
 
 type Config struct {
@@ -259,7 +259,7 @@ func (m Module) FindSlot() (uint, error) {
 			return s, nil
 		}
 	}
-	return 0, m.formatError(errors.New("Token not found"))
+	return 0, m.formatError(errors.New("token not found"))
 }
 
 func NewWithModule(mod Module, config *Config) (*PKCS11Vault, error) {
