@@ -3,6 +3,10 @@ package pkcs11
 import (
 	"context"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -37,6 +41,7 @@ type KeyConfig struct {
 	Slot     uint   `yaml:"slot"`
 	Label    string `yaml:"label"`
 	ObjectID string `yaml:"object_id"`
+	Index    int    `yaml:"index"`
 }
 
 type KeyPair struct {
@@ -53,7 +58,6 @@ type Config struct {
 
 type keyPair struct {
 	idx int
-	obj *pkcs11.Object
 	kp  pkcs11.KeyPair
 }
 
@@ -67,6 +71,29 @@ func (p *keyPair) PublicKey() crypt.PublicKey {
 		panic(err) // shouldn't happen
 	}
 	return pub
+}
+
+var testDigest = sha256.Sum256([]byte("test"))
+
+// check if the pair is valid
+func (p *keyPair) validate() error {
+	sig, err := p.kp.Sign(rand.Reader, testDigest[:], nil)
+	if err != nil {
+		return err
+	}
+	var ok bool
+	switch pub := p.kp.Public().(type) {
+	case ed25519.PublicKey:
+		ok = ed25519.Verify(pub, testDigest[:], sig)
+	case *ecdsa.PublicKey:
+		ok = ecdsa.VerifyASN1(pub, testDigest[:], sig)
+	default:
+		return fmt.Errorf("unexpected key type %T", pub)
+	}
+	if !ok {
+		return errors.New("key pair validation failed")
+	}
+	return nil
 }
 
 func (v *PKCS11Vault) formatError(err error) error {
@@ -131,11 +158,13 @@ func (v *PKCS11Vault) getKeyPair(k *KeyPair) (*keyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return &keyPair{
-		obj: privObj,
-		kp:  kp,
-	}, nil
+	out := keyPair{
+		kp: kp,
+	}
+	if err := out.validate(); err != nil {
+		return nil, v.formatError(err)
+	}
+	return &out, nil
 }
 
 func (v *PKCS11Vault) getKeyObj(c *KeyConfig, class pkcs11.Class) (*pkcs11.Object, error) {
@@ -163,10 +192,10 @@ func (v *PKCS11Vault) getKeyObj(c *KeyConfig, class pkcs11.Class) (*pkcs11.Objec
 	if len(objects) == 0 {
 		return nil, errors.Wrap(v.formatError(errors.New("key not found")), http.StatusNotFound)
 	}
-	if len(objects) > 1 {
-		return nil, v.formatError(errors.New("non-unique key object"))
+	if c.Index > len(objects)-1 {
+		return nil, v.formatError(fmt.Errorf("key index %d is out of range", c.Index))
 	}
-	return objects[0], nil
+	return objects[c.Index], nil
 }
 
 // GetPublicKey returns a public key by given ID

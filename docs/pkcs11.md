@@ -30,6 +30,7 @@ title: PKCS#11
 | slot      | integer | ✅        | Configured slot ID.                                          |
 | label     | string  |          | Limit key search to the specified label (use in case of multiple key pairs in the same token). |
 | object_id | hex     |          | Limit key search to the specified object ID (use in case of multiple key pairs in the same token). |
+| index     | integer |          | Use Nth key found by type, label and ID (use in case of non-unique labels). |
 
 ### Example
 
