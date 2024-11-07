@@ -327,6 +327,17 @@ func NewWithModule(mod Module, config *Config) (*PKCS11Vault, error) {
 			return nil, v.formatError(err)
 		}
 		v.sessions[s] = session
+
+		if log.GetLevel() >= log.DebugLevel {
+			filter := []pkcs11.Filter{}
+			objects, err := session.Objects(filter...)
+			if err != nil {
+				return nil, v.formatError(err)
+			}
+			for _, obj := range objects {
+				log.WithFields(log.Fields{"slot": s, "class": obj.Class(), "handle": obj.Handle()}).Debug("object found")
+			}
+		}
 	}
 	return &v, nil
 }
