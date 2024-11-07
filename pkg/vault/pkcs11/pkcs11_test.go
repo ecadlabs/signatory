@@ -86,9 +86,7 @@ func TestPKCS11Vault(t *testing.T) {
 		},
 		Keys: []*KeyPair{
 			{
-				Private: KeyConfig{
-					Slot: slot,
-				},
+				Slot: slot,
 			},
 		},
 	})

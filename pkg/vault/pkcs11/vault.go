@@ -39,14 +39,14 @@ type PKCS11Vault struct {
 }
 
 type KeyConfig struct {
-	Slot     uint   `yaml:"slot" json:"slot"`
 	Label    string `yaml:"label" json:"label,omitempty"`
 	ObjectID string `yaml:"object_id" json:"object_id,omitempty"`
-	Index    *int   `yaml:"index" json:"index,omitempty"`
+	Handle   *uint  `yaml:"handle" json:"handle,omitempty"`
 }
 
 type KeyPair struct {
-	Private     KeyConfig       `yaml:"private"`
+	Slot        uint            `yaml:"slot"`
+	Private     *KeyConfig      `yaml:"private"`
 	Public      *KeyConfig      `yaml:"public"`
 	PublicValue gotez.PublicKey `yaml:"public_value"`
 }
@@ -123,7 +123,7 @@ func (it *iterator) Next() (vault.StoredKey, error) {
 }
 
 func (v *PKCS11Vault) getKeyPair(k *KeyPair) (*keyPair, error) {
-	privObj, err := v.getKeyObj(&k.Private, pkcs11.ClassPrivateKey)
+	privObj, err := v.getKeyObj(k.Slot, k.Private, pkcs11.ClassPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -143,10 +143,10 @@ func (v *PKCS11Vault) getKeyPair(k *KeyPair) (*keyPair, error) {
 	} else {
 		pubConf := k.Public
 		if pubConf == nil {
-			pubConf = &k.Private
+			pubConf = k.Private
 		}
 
-		pubObj, err := v.getKeyObj(pubConf, pkcs11.ClassPublicKey)
+		pubObj, err := v.getKeyObj(k.Slot, pubConf, pkcs11.ClassPublicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -172,24 +172,34 @@ func ignoreError[X any](v X, _ error) X {
 	return v
 }
 
-func (v *PKCS11Vault) getKeyObj(c *KeyConfig, class pkcs11.Class) (*pkcs11.Object, error) {
-	session, ok := v.sessions[c.Slot]
+func (v *PKCS11Vault) getKeyObj(slot uint, c *KeyConfig, class pkcs11.Class) (*pkcs11.Object, error) {
+	session, ok := v.sessions[slot]
 	if !ok {
-		return nil, v.formatError(fmt.Errorf("slot %d is not configured", c.Slot))
+		return nil, v.formatError(fmt.Errorf("slot %d is not configured", slot))
 	}
+
+	if c != nil && c.Handle != nil {
+		// pick by handle
+		return session.NewObject(*c.Handle)
+	}
+
+	// find by label or id
 	filter := []pkcs11.Filter{
 		pkcs11.FilterClass(class),
 	}
-	if c.Label != "" {
-		filter = append(filter, pkcs11.FilterLabel(c.Label))
-	}
-	if c.ObjectID != "" {
-		id, err := hex.DecodeString(c.ObjectID)
-		if err != nil {
-			return nil, err
+	if c != nil {
+		if c.Label != "" {
+			filter = append(filter, pkcs11.FilterLabel(c.Label))
 		}
-		filter = append(filter, pkcs11.FilterID(id))
+		if c.ObjectID != "" {
+			id, err := hex.DecodeString(c.ObjectID)
+			if err != nil {
+				return nil, err
+			}
+			filter = append(filter, pkcs11.FilterID(id))
+		}
 	}
+
 	objects, err := session.Objects(filter...)
 	if err != nil {
 		return nil, v.formatError(err)
@@ -197,17 +207,10 @@ func (v *PKCS11Vault) getKeyObj(c *KeyConfig, class pkcs11.Class) (*pkcs11.Objec
 	if len(objects) == 0 {
 		return nil, errors.Wrap(v.formatError(fmt.Errorf("key is not found: %s", string(ignoreError(json.Marshal(c))))), http.StatusNotFound)
 	}
-	if c.Index == nil {
-		if len(objects) != 1 {
-			return nil, v.formatError(fmt.Errorf("non-unique key: %s", string(ignoreError(json.Marshal(c)))))
-		}
-		return objects[0], nil
-	} else {
-		if *c.Index > len(objects)-1 {
-			return nil, v.formatError(fmt.Errorf("key index %d is out of range", c.Index))
-		}
-		return objects[*c.Index], nil
+	if len(objects) != 1 {
+		return nil, v.formatError(fmt.Errorf("non-unique key: %s", string(ignoreError(json.Marshal(c)))))
 	}
+	return objects[0], nil
 }
 
 // GetPublicKey returns a public key by given ID
