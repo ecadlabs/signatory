@@ -157,7 +157,7 @@ func (v *PKCS11Vault) getKeyPair(k *KeyPair) (*keyPair, error) {
 
 	kp, err := priv.AddPublic(pub)
 	if err != nil {
-		return nil, err
+		return nil, v.formatError(err)
 	}
 	out := keyPair{
 		kp: kp,
@@ -180,7 +180,11 @@ func (v *PKCS11Vault) getKeyObj(slot uint, c *KeyConfig, class pkcs11.Class) (*p
 
 	if c != nil && c.Handle != nil {
 		// pick by handle
-		return session.NewObject(*c.Handle)
+		obj, err := session.NewObject(*c.Handle)
+		if err != nil {
+			return nil, v.formatError(err)
+		}
+		return obj, nil
 	}
 
 	// find by label or id
