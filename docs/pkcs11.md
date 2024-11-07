@@ -15,22 +15,21 @@ title: PKCS#11
 
 ### Key Pair
 
-| Field        | Type                     | Required | Description         |
-| ------------ | ------------------------ | -------- | ------------------- |
-| private      | `Key Config` (see below) | ✅        | Private key locator |
-| public       | `Key Config`             |          | Public key locator  |
-| public_value | Base58                   |          | Public key value    |
+| Field        | Type                     | Required | Description          |
+| ------------ | ------------------------ | -------- | -------------------- |
+| slot         | integer                  | ✅        | Configured slot ID.  |
+| private      | `Key Config` (see below) |          | Private key locator. |
+| public       | `Key Config`             |          | Public key locator.  |
+| public_value | Base58                   |          | Public key value.    |
 
-**Note**: `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator will be reused.
+**Note**: `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator `Key Config` will be reused.
 
 ### Key Config
 
-| Field     | Type    | Required | Description                                                  |
-| --------- | ------- | -------- | ------------------------------------------------------------ |
-| slot      | integer | ✅        | Configured slot ID.                                          |
-| label     | string  |          | Limit key search to the specified label (use in case of multiple key pairs in the same token). |
-| object_id | hex     |          | Limit key search to the specified object ID (use in case of multiple key pairs in the same token). |
-| index     | integer |          | Use Nth key found by type, label and ID (use in case of non-unique labels). |
+| Field     | Type   | Required | Description                                                  |
+| --------- | ------ | -------- | ------------------------------------------------------------ |
+| label     | string |          | Limit key search to the specified label (use in case of multiple key pairs in the same token). |
+| object_id | hex    |          | Limit key search to the specified object ID (use in case of multiple key pairs in the same token). |
 
 ### Example
 
