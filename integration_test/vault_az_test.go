@@ -40,7 +40,7 @@ func TestAZVault(t *testing.T) {
 	c.Tezos[tz3] = &p
 	backup_then_update_config(c)
 	defer restore_config()
-	restart_signatory()
+	//restart_signatory()
 
 	//setup
 	out, err := OctezClient("import", "secret", "key", tz2alias, "http://signatory:6732/"+tz2)
