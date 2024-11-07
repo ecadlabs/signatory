@@ -41,7 +41,6 @@ type PKCS11Vault struct {
 type KeyConfig struct {
 	Label    string `yaml:"label" json:"label,omitempty"`
 	ObjectID string `yaml:"object_id" json:"object_id,omitempty"`
-	Handle   *uint  `yaml:"handle" json:"handle,omitempty"`
 }
 
 type KeyPair struct {
@@ -176,15 +175,6 @@ func (v *PKCS11Vault) getKeyObj(slot uint, c *KeyConfig, class pkcs11.Class) (*p
 	session, ok := v.sessions[slot]
 	if !ok {
 		return nil, v.formatError(fmt.Errorf("slot %d is not configured", slot))
-	}
-
-	if c != nil && c.Handle != nil {
-		// pick by handle
-		obj, err := session.NewObject(*c.Handle)
-		if err != nil {
-			return nil, v.formatError(err)
-		}
-		return obj, nil
 	}
 
 	// find by label or id
