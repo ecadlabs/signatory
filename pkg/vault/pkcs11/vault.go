@@ -325,7 +325,11 @@ func NewWithModule(mod Module, config *Config) (*PKCS11Vault, error) {
 				return nil, v.formatError(err)
 			}
 			for _, obj := range objects {
-				log.WithFields(log.Fields{"slot": s, "class": obj.Class(), "handle": obj.Handle()}).Debug("object found")
+				l := log.WithFields(log.Fields{"slot": s, "class": obj.Class()})
+				if id := obj.ID(); id != nil {
+					l = l.WithField("id", hex.EncodeToString(id))
+				}
+				l.Debug("object found")
 			}
 		}
 	}
