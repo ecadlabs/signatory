@@ -271,7 +271,7 @@ func Open(p string) (Module, error) {
 	if p == "" {
 		p = os.Getenv(envLibraryPath)
 	}
-	mod, err := pkcs11.Open(p)
+	mod, err := pkcs11.Open(p, pkcs11.OptOsLockingOk)
 	if err != nil {
 		return Module{}, fmt.Errorf("(PKCS#11/%s): %w", path.Base(p), err)
 	}
