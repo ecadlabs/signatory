@@ -75,10 +75,6 @@ type keyPair struct {
 	v  *PKCS11Vault
 }
 
-func (p *keyPair) String() string {
-	return p.PublicKey().Hash().String()
-}
-
 func (p *keyPair) PublicKey() crypt.PublicKey {
 	pub, err := crypt.NewPublicKeyFrom(p.kp.Public())
 	if err != nil {

@@ -17,13 +17,6 @@ type PrivateKey struct {
 	ID  string
 }
 
-func (k *PrivateKey) String() string {
-	if k.ID != "" {
-		return k.ID
-	}
-	return k.Key.Public().Hash().String()
-}
-
 type UnparsedKey struct {
 	Data string
 	ID   string

@@ -69,7 +69,7 @@ type ledgerKey struct {
 }
 
 func (l *ledgerKey) PublicKey() crypt.PublicKey { return l.pub }
-func (l *ledgerKey) String() string             { return l.id.String() }
+func (l *ledgerKey) ID() string                 { return l.id.String() }
 func (l *ledgerKey) Vault() vault.Vault         { return l.v }
 
 func (key *ledgerKey) Sign(ctx context.Context, digest []byte) (crypt.Signature, error) {

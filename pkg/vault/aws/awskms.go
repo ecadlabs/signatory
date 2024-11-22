@@ -47,7 +47,7 @@ type awsKMSIterator struct {
 
 // PublicKey returns encoded public key
 func (k *awsKMSKey) PublicKey() crypt.PublicKey { return k.pub }
-func (k *awsKMSKey) String() string             { return *k.key.KeyId }
+func (k *awsKMSKey) ID() string                 { return *k.key.KeyId }
 func (k *awsKMSKey) Vault() vault.Vault         { return k.v }
 
 func (k *awsKMSKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {

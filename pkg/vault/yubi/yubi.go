@@ -53,7 +53,7 @@ type hsmKey struct {
 }
 
 func (h *hsmKey) PublicKey() crypt.PublicKey { return h.pub }
-func (h *hsmKey) String() string             { return fmt.Sprintf("%04x", h.id) }
+func (h *hsmKey) ID() string                 { return fmt.Sprintf("%04x", h.id) }
 func (h *hsmKey) Vault() vault.Vault         { return h.hsm }
 
 // Sign performs signing operation

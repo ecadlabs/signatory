@@ -13,10 +13,14 @@ import (
 
 // KeyReference represents a public key which has a private counterpart stored on the backend side
 type KeyReference interface {
-	String() string
 	PublicKey() crypt.PublicKey
 	Sign(ctx context.Context, message []byte) (crypt.Signature, error)
 	Vault() Vault
+}
+
+type WithID interface {
+	KeyReference
+	ID() string // Additional backend specific ID that can be displayed alongside the public key
 }
 
 // KeyIterator is used to iterate over stored public keys

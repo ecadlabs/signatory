@@ -52,7 +52,7 @@ type cloudKMSKey struct {
 }
 
 func (k *cloudKMSKey) PublicKey() crypt.PublicKey { return k.pub }      // PublicKey returns encoded public key
-func (k *cloudKMSKey) String() string             { return k.key.Name } // ID returnd a unique key ID
+func (k *cloudKMSKey) ID() string                 { return k.key.Name } // ID returnd a unique key ID
 func (k *cloudKMSKey) Vault() vault.Vault         { return k.v }
 
 func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {

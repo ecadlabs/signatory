@@ -62,7 +62,7 @@ type azureKey struct {
 }
 
 func (k *azureKey) PublicKey() crypt.PublicKey { return k.pub }
-func (k *azureKey) String() string             { return k.bundle.Key.KeyID }
+func (k *azureKey) ID() string                 { return k.bundle.Key.KeyID }
 func (k *azureKey) Vault() vault.Vault         { return k.v }
 
 func (key *azureKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {

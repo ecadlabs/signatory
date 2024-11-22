@@ -43,10 +43,8 @@ type vaultKey struct {
 
 // PublicKey returns encoded public key
 func (k *vaultKey) PublicKey() crypt.PublicKey { return k.pub }
-
-// ID returnd a unique key ID
-func (k *vaultKey) String() string     { return k.id }
-func (k *vaultKey) Vault() vault.Vault { return k.v }
+func (k *vaultKey) ID() string                 { return k.id }
+func (k *vaultKey) Vault() vault.Vault         { return k.v }
 func (k *vaultKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	sout, err := k.v.Transit().Sign(k.id, digest[:], &SignOpts{Hash: "sha2-256", Preshashed: false})
