@@ -11,15 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	// Install backends
-	_ "github.com/ecadlabs/signatory/pkg/vault/aws"
-	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
-	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
-	_ "github.com/ecadlabs/signatory/pkg/vault/file"
-	_ "github.com/ecadlabs/signatory/pkg/vault/hashicorp"
-	_ "github.com/ecadlabs/signatory/pkg/vault/ledger"
-	_ "github.com/ecadlabs/signatory/pkg/vault/mem"
-	_ "github.com/ecadlabs/signatory/pkg/vault/pkcs11"
-	_ "github.com/ecadlabs/signatory/pkg/vault/yubi"
+	_ "github.com/ecadlabs/signatory/pkg/vault/preamble"
 )
 
 func newRootCommand(ctx context.Context) *cobra.Command {

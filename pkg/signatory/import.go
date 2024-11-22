@@ -41,12 +41,6 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 		logPKH:   hash,
 		logVault: importer.Name(),
 	})
-	if n, ok := importer.(vault.VaultNamer); ok {
-		l = l.WithField(logVaultName, n.VaultName())
-	} else {
-		l = l.WithField(logVaultName, importerName)
-	}
-
 	l.Info("Requesting import operation")
 
 	stored, err := importer.Import(ctx, priv, opt)
@@ -54,14 +48,13 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 		return nil, err
 	}
 
-	s.cache.push(&keyVaultPair{pkh: hash, key: stored, vault: importer})
+	s.cache.push(&keyVaultPair{pkh: hash, key: stored})
 
-	l.WithField(logKeyID, stored.ID()).Info("Successfully imported")
+	l.WithField(logPKH, hash).Info("Successfully imported")
 	return &PublicKey{
 		PublicKey:     pub,
 		PublicKeyHash: hash,
 		VaultName:     importer.Name(),
-		ID:            stored.ID(),
 		Policy:        s.fetchPolicyOrDefault(hash),
 	}, nil
 }

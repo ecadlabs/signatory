@@ -38,41 +38,27 @@ type Vault struct {
 type vaultKey struct {
 	id  string
 	pub crypt.PublicKey
+	v   *Vault
 }
 
 // PublicKey returns encoded public key
-func (k *vaultKey) PublicKey() crypt.PublicKey {
-	return k.pub
-}
+func (k *vaultKey) PublicKey() crypt.PublicKey { return k.pub }
 
 // ID returnd a unique key ID
-func (k *vaultKey) ID() string {
-	return k.id
-}
+func (k *vaultKey) String() string     { return k.id }
+func (k *vaultKey) Vault() vault.Vault { return k.v }
+func (k *vaultKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+	digest := crypt.DigestFunc(message)
+	sout, err := k.v.Transit().Sign(k.id, digest[:], &SignOpts{Hash: "sha2-256", Preshashed: false})
+	if err != nil {
+		return nil, err
+	}
 
-type iterator struct {
-	ctx     context.Context
-	v       *Vault
-	keyList []string
-	index   int
-}
-
-func init() {
-	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
-		var conf Config
-		if node == nil || node.Kind == 0 {
-			return nil, errors.New("(HashicorpVault): config is missing")
-		}
-		if err := node.Decode(&conf); err != nil {
-			return nil, err
-		}
-
-		if err := config.Validator().Struct(&conf); err != nil {
-			return nil, err
-		}
-
-		return New(ctx, &conf)
-	})
+	sig, err := crypt.NewSignatureFromBytes(sout, k.PublicKey())
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // New creates new Hashicorp Vault backend
@@ -118,7 +104,7 @@ func New(ctx context.Context, cfg *Config) (*Vault, error) {
 
 // Name returns backend name
 func (v *Vault) Name() string {
-	return "HASHICORP_VAULT"
+	return "Hashicorp"
 }
 
 func (v *Vault) login() error {
@@ -138,15 +124,22 @@ func (v *Vault) login() error {
 	return nil
 }
 
-// ListPublicKeys returns a list of keys stored under the backend
-func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+// List returns a list of keys stored under the backend
+func (v *Vault) List(ctx context.Context) vault.KeyIterator {
 	return &iterator{
 		ctx: ctx,
 		v:   v,
 	}
 }
 
-func (i *iterator) Next() (key vault.StoredKey, err error) {
+type iterator struct {
+	ctx     context.Context
+	v       *Vault
+	keyList []string
+	index   int
+}
+
+func (i *iterator) Next() (key vault.KeyReference, err error) {
 	if i.keyList == nil {
 		i.keyList, err = i.v.Transit().ListKeys()
 		if err != nil {
@@ -158,7 +151,7 @@ func (i *iterator) Next() (key vault.StoredKey, err error) {
 		return nil, vault.ErrDone
 	}
 
-	key, err = i.v.GetPublicKey(i.ctx, i.keyList[i.index])
+	key, err = i.v.getPublicKey(i.ctx, i.keyList[i.index])
 	i.index += 1
 
 	if err != nil {
@@ -168,7 +161,7 @@ func (i *iterator) Next() (key vault.StoredKey, err error) {
 	return key, nil
 }
 
-func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
+func (v *Vault) getPublicKey(ctx context.Context, keyID string) (*vaultKey, error) {
 	wrappingPubKeyString, err := v.Transit().GetKeyWithContext(ctx, keyID)
 	if err != nil {
 		return nil, err
@@ -195,20 +188,26 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 	return &vaultKey{
 		id:  keyID,
 		pub: cryptPubKey,
+		v:   v,
 	}, nil
 }
 
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	digest := crypt.DigestFunc(message)
+func (v *Vault) Close(context.Context) error { return nil }
 
-	sout, err := v.Transit().Sign(key.ID(), digest[:], &SignOpts{Hash: "sha2-256", Preshashed: false})
-	if err != nil {
-		return nil, err
-	}
+func init() {
+	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+		var conf Config
+		if node == nil || node.Kind == 0 {
+			return nil, errors.New("(HashicorpVault): config is missing")
+		}
+		if err := node.Decode(&conf); err != nil {
+			return nil, err
+		}
 
-	sig, err := crypt.NewSignatureFromBytes(sout, key.PublicKey())
-	if err != nil {
-		return nil, err
-	}
-	return sig, nil
+		if err := config.Validator().Struct(&conf); err != nil {
+			return nil, err
+		}
+
+		return New(ctx, &conf)
+	})
 }

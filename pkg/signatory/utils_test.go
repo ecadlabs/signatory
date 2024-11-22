@@ -5,50 +5,48 @@ package signatory_test
 import (
 	"context"
 
-	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/vault"
 )
 
-type GetPublicKey func(ctx context.Context, id string) (vault.StoredKey, error)
-type ListPublicKeys func(ctx context.Context) vault.StoredKeysIterator
-type Sign func(ctx context.Context, digest []byte, key vault.StoredKey) (crypt.Signature, error)
+type GetPublicKey func(ctx context.Context, id string) (vault.KeyReference, error)
+type ListPublicKeys func(ctx context.Context) vault.KeyIterator
 type Name func() string
-type Next func() (vault.StoredKey, error)
+type Next func() (vault.KeyReference, error)
 
 type TestVault struct {
-	vaultname string
-	gp        GetPublicKey
-	lp        ListPublicKeys
-	si        Sign
-	na        Name
+	gp GetPublicKey
+	lp ListPublicKeys
+	na Name
 }
 
-func NewTestVault(g GetPublicKey, l ListPublicKeys, s Sign, n Name, vn string) *TestVault {
+func NewTestVault(g GetPublicKey, l ListPublicKeys, n Name, vn string) *TestVault {
 	return &TestVault{
-		vaultname: vn,
-		gp:        g,
-		lp:        l,
-		si:        s,
-		na:        n,
+		gp: g,
+		lp: l,
+		na: n,
 	}
 }
 
-type TestKeyIterator struct {
+type testKeyIterator struct {
 	idx int
-	nxt func(idx int) (key vault.StoredKey, err error)
+	nth func(idx int) (key vault.KeyReference, err error)
 }
 
-func (it *TestKeyIterator) Next() (key vault.StoredKey, err error) {
+func NewTestIterator(nth func(idx int) (key vault.KeyReference, err error)) *testKeyIterator {
+	return &testKeyIterator{
+		nth: nth,
+	}
+}
+
+func (it *testKeyIterator) Next() (key vault.KeyReference, err error) {
+	key, err = it.nth(it.idx)
 	it.idx += 1
-	return it.nxt(it.idx - 1)
+	return
 }
-func (v *TestVault) GetPublicKey(ctx context.Context, id string) (vault.StoredKey, error) {
-	return v.gp(ctx, id)
-}
-func (v *TestVault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+
+func (v *TestVault) List(ctx context.Context) vault.KeyIterator {
 	return v.lp(ctx)
 }
-func (v *TestVault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	return v.si(ctx, message, key)
-}
-func (v *TestVault) Name() string { return v.na() }
+
+func (v *TestVault) Name() string                { return v.na() }
+func (v *TestVault) Close(context.Context) error { return nil }

@@ -34,6 +34,7 @@ type Vault struct {
 type awsKMSKey struct {
 	key *kms.GetPublicKeyOutput
 	pub crypt.PublicKey
+	v   *Vault
 }
 
 type awsKMSIterator struct {
@@ -45,18 +46,69 @@ type awsKMSIterator struct {
 }
 
 // PublicKey returns encoded public key
-func (c *awsKMSKey) PublicKey() crypt.PublicKey {
-	return c.pub
+func (k *awsKMSKey) PublicKey() crypt.PublicKey { return k.pub }
+func (k *awsKMSKey) String() string             { return *k.key.KeyId }
+func (k *awsKMSKey) Vault() vault.Vault         { return k.v }
+
+func (k *awsKMSKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+	digest := crypt.DigestFunc(message)
+	sout, err := k.v.client.Sign(ctx, &kms.SignInput{
+		KeyId:            k.key.KeyId,
+		Message:          digest[:],
+		MessageType:      types.MessageTypeDigest,
+		SigningAlgorithm: types.SigningAlgorithmSpecEcdsaSha256,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sig, err := crypt.NewSignatureFromBytes(sout.Signature, k.pub)
+	if err != nil {
+		return nil, fmt.Errorf("(AWSKMS/%s): %w", *k.key.KeyId, err)
+	}
+	return sig, nil
 }
 
-// ID returnd a unique key ID
-func (c *awsKMSKey) ID() string {
-	return *c.key.KeyId
+func (i *awsKMSIterator) Next() (key vault.KeyReference, err error) {
+	for {
+		if i.lko == nil || i.index == len(i.lko.Keys) {
+			// get next page
+			if i.lko != nil && i.lko.NextMarker == nil {
+				// end of the list
+				return nil, vault.ErrDone
+			}
+			var lkin *kms.ListKeysInput
+			if i.lko != nil {
+				lkin = &kms.ListKeysInput{
+					Marker: i.lko.NextMarker,
+				}
+			} // otherwise leave it nil
+
+			i.lko, err = i.client.ListKeys(i.ctx, lkin)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		key, err = i.v.getPublicKey(i.ctx, i.lko.Keys[i.index].KeyId)
+		i.index += 1
+
+		var kmserr smithy.APIError
+		if err == nil {
+			return key, nil
+		} else if errors.As(err, &kmserr) {
+			if kmserr.ErrorCode() != "AccessDeniedException" {
+				return nil, err
+			}
+		} else if err != crypt.ErrUnsupportedKeyType {
+			return nil, err
+		}
+	}
 }
 
-func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
+func (v *Vault) getPublicKey(ctx context.Context, keyID *string) (*awsKMSKey, error) {
 	pkresp, err := v.client.GetPublicKey(ctx, &kms.GetPublicKeyInput{
-		KeyId: &keyID,
+		KeyId: keyID,
 	})
 	if err != nil {
 		return nil, err
@@ -79,48 +131,12 @@ func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey
 	return &awsKMSKey{
 		key: pkresp,
 		pub: pub,
+		v:   v,
 	}, nil
 }
 
-func (i *awsKMSIterator) Next() (key vault.StoredKey, err error) {
-	for {
-		if i.lko == nil || i.index == len(i.lko.Keys) {
-			// get next page
-			if i.lko != nil && i.lko.NextMarker == nil {
-				// end of the list
-				return nil, vault.ErrDone
-			}
-			var lkin *kms.ListKeysInput
-			if i.lko != nil {
-				lkin = &kms.ListKeysInput{
-					Marker: i.lko.NextMarker,
-				}
-			} // otherwise leave it nil
-
-			i.lko, err = i.client.ListKeys(i.ctx, lkin)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		key, err = i.v.GetPublicKey(i.ctx, *i.lko.Keys[i.index].KeyId)
-		i.index += 1
-
-		var kmserr smithy.APIError
-		if err == nil {
-			return key, nil
-		} else if errors.As(err, &kmserr) {
-			if kmserr.ErrorCode() != "AccessDeniedException" {
-				return nil, err
-			}
-		} else if err != crypt.ErrUnsupportedKeyType {
-			return nil, err
-		}
-	}
-}
-
-// ListPublicKeys returns a list of keys stored under the backend
-func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+// List returns a list of keys stored under the backend
+func (v *Vault) List(ctx context.Context) vault.KeyIterator {
 	return &awsKMSIterator{
 		ctx:    ctx,
 		v:      v,
@@ -133,25 +149,8 @@ func (v *Vault) Name() string {
 	return "AWSKMS"
 }
 
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	digest := crypt.DigestFunc(message)
-	kid := key.ID()
-	sout, err := v.client.Sign(ctx, &kms.SignInput{
-		KeyId:            &kid,
-		Message:          digest[:],
-		MessageType:      types.MessageTypeDigest,
-		SigningAlgorithm: types.SigningAlgorithmSpecEcdsaSha256,
-	})
-	if err != nil {
-		return nil, err
-	}
-	pubkey := key.(*awsKMSKey)
-
-	sig, err := crypt.NewSignatureFromBytes(sout.Signature, pubkey.pub)
-	if err != nil {
-		return nil, fmt.Errorf("(AWSKMS/%s): %w", kid, err)
-	}
-	return sig, nil
+func (v *Vault) Close(context.Context) error {
+	return nil
 }
 
 func NewConfig(ctx context.Context, config *Config) (aws.Config, error) {

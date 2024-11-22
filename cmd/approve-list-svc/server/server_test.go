@@ -62,7 +62,7 @@ func testServer(t *testing.T, addr []net.IP) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPriv,
+					Key: signPriv,
 				},
 			}, "Mock")
 		}),
