@@ -67,7 +67,7 @@ func (c *Config) searchOptions() *PublicKeysSearchOptions {
 	if c.PublicKeysSearchOptions != nil {
 		return c.PublicKeysSearchOptions
 	}
-	return &PublicKeysSearchOptions{MatchLabel: true, MatchID: true}
+	return &PublicKeysSearchOptions{MatchLabel: true, MatchID: true, ExtendedPrivate: true}
 }
 
 type keyPair struct {
