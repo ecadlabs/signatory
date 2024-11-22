@@ -43,18 +43,19 @@ func (s *Signatory) Import(ctx context.Context, importerName string, secretKey s
 	})
 	l.Info("Requesting import operation")
 
-	stored, err := importer.Import(ctx, priv, opt)
+	ref, err := importer.Import(ctx, priv, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	s.cache.push(&keyVaultPair{pkh: hash, key: stored})
+	s.cache.push(&keyVaultPair{pkh: hash, key: ref})
 
 	l.WithField(logPKH, hash).Info("Successfully imported")
+	pol := s.fetchPolicyOrDefault(hash)
 	return &PublicKey{
-		PublicKey:     pub,
-		PublicKeyHash: hash,
-		VaultName:     importer.Name(),
-		Policy:        s.fetchPolicyOrDefault(hash),
+		KeyReference: ref,
+		Hash:         hash,
+		Policy:       s.fetchPolicyOrDefault(hash),
+		Active:       pol != nil,
 	}, nil
 }

@@ -74,11 +74,10 @@ type PublicKeyPolicy struct {
 
 // PublicKey contains public key with its hash
 type PublicKey struct {
-	PublicKey     crypt.PublicKey
-	PublicKeyHash crypt.PublicKeyHash
-	VaultName     string
-	Policy        *PublicKeyPolicy
-	Active        bool
+	vault.KeyReference
+	Hash   crypt.PublicKeyHash
+	Policy *PublicKeyPolicy
+	Active bool
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -464,12 +463,10 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		pk := p.key.PublicKey()
 		ret[i] = &PublicKey{
-			PublicKey:     pk,
-			PublicKeyHash: p.pkh,
-			VaultName:     p.key.Vault().Name(),
-			Policy:        s.fetchPolicyOrDefault(p.pkh),
+			KeyReference: p.key,
+			Hash:         p.pkh,
+			Policy:       s.fetchPolicyOrDefault(p.pkh),
 		}
 		ret[i].Active = ret[i].Policy != nil
 	}
@@ -503,11 +500,12 @@ func (s *Signatory) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHas
 		return nil, err
 	}
 
+	pol := s.fetchPolicyOrDefault(keyHash)
 	return &PublicKey{
-		PublicKey:     p.key.PublicKey(),
-		PublicKeyHash: keyHash,
-		VaultName:     p.key.Vault().Name(),
-		Policy:        s.fetchPolicyOrDefault(keyHash),
+		KeyReference: p.key,
+		Hash:         keyHash,
+		Policy:       s.fetchPolicyOrDefault(keyHash),
+		Active:       pol != nil,
 	}, nil
 }
 

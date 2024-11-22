@@ -9,9 +9,9 @@ import (
 )
 
 const listTemplateSrc = `{{range . -}}
-Public Key Hash:    {{.PublicKeyHash}}
-Ref:                {{.}}
-Vault:              {{.VaultName}}
+Public Key Hash:    {{.Hash}}
+Reference:          {{.}}
+Vault:              {{.Vault.Name}}
 Active:             {{.Active}}
 {{with .Policy -}}
 Allowed Requests:   {{.AllowedRequests}}
