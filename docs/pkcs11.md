@@ -66,18 +66,18 @@ pin: user_pin
 library_path: /usr/lib/hsmdriver/libhsmdriver.so
 slot: 0
 pin: user_pin
-	keys:
-		- private:
-				label: PrivateKey0
-			public:
-				label: PublicKey0
-		- private:
-				label: Key1
-		# Use public key with the same label `Key1'
+  keys:
     - private:
-    		id: 1234abcd
-    	public_value: edpkuXdPrbYEu5x54NaZEzaSHzwi5Tis5NBHrs58AMJXf4gS4iz5eQ
+        label: PrivateKey0
+      public:
+        label: PublicKey0
     - private:
-    		label: Key2
-    	extended_private: true # Read the public key from the private object
+        label: Key1
+      # Use public key with the same label `Key1'
+    - private:
+        id: 1234abcd
+      public_value: edpkuXdPrbYEu5x54NaZEzaSHzwi5Tis5NBHrs58AMJXf4gS4iz5eQ
+    - private:
+        label: Key2
+      extended_private: true # Read the public key from the private object
 ```
