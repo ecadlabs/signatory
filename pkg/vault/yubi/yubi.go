@@ -42,10 +42,6 @@ type Config struct {
 	KeyImportDomains uint16 `yaml:"key_import_domains"`
 }
 
-func (c *Config) id() string {
-	return fmt.Sprintf("%s/%d", c.Address, c.AuthKeyID)
-}
-
 type hsmKey struct {
 	id  uint16
 	pub crypt.PublicKey
@@ -66,7 +62,7 @@ func (key *hsmKey) Sign(ctx context.Context, message []byte) (sig crypt.Signatur
 		return key.hsm.signED25519(digest[:], key.id)
 	}
 
-	return nil, fmt.Errorf("(YubiHSM/%s): unexpected key type: %T", key.hsm.conf.id(), key.pub)
+	return nil, fmt.Errorf("(YubiHSM/%s): unexpected key type: %T", key.hsm.conf.Address, key.pub)
 }
 
 // HSM struct containing information required to interrogate a YubiHSM
@@ -77,7 +73,7 @@ type HSM struct {
 
 // Name returns backend name
 func (h *HSM) Name() string {
-	return fmt.Sprintf("YubiHSM/%s", h.conf.id())
+	return fmt.Sprintf("YubiHSM/%s", h.conf.Address)
 }
 
 type yubihsmStoredKeysIterator struct {
@@ -148,7 +144,7 @@ func (y *yubihsmStoredKeysIterator) Next() (key vault.KeyReference, err error) {
 	if y.objects == nil {
 		y.objects, err = y.hsm.listObjects(commands.NewObjectTypeOption(commands.ObjectTypeAsymmetricKey))
 		if err != nil {
-			return nil, fmt.Errorf("(YubiHSM/%s): %w", y.hsm.conf.id(), err)
+			return nil, fmt.Errorf("(YubiHSM/%s): %w", y.hsm.conf.Address, err)
 		}
 	}
 
@@ -160,22 +156,22 @@ func (y *yubihsmStoredKeysIterator) Next() (key vault.KeyReference, err error) {
 		obj := y.objects[y.idx]
 		command, err := commands.CreateGetPubKeyCommand(obj.ObjectID)
 		if err != nil {
-			return nil, fmt.Errorf("(YubiHSM/%s): GetPubKey: %w", y.hsm.conf.id(), err)
+			return nil, fmt.Errorf("(YubiHSM/%s): GetPubKey: %w", y.hsm.conf.Address, err)
 		}
 		res, err := y.hsm.session.SendEncryptedCommand(command)
 		if err != nil {
-			return nil, fmt.Errorf("(YubiHSM/%s): GetPubKey: %w", y.hsm.conf.id(), err)
+			return nil, fmt.Errorf("(YubiHSM/%s): GetPubKey: %w", y.hsm.conf.Address, err)
 		}
 
 		pubKeyResponse, ok := res.(*commands.GetPubKeyResponse)
 		if !ok {
-			return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", y.hsm.conf.id(), res)
+			return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", y.hsm.conf.Address, res)
 		}
 		y.idx++
 
 		pub, ok, err := parsePublicKey(pubKeyResponse)
 		if err != nil {
-			return nil, fmt.Errorf("(YubiHSM/%s): %w", y.hsm.conf.id(), err)
+			return nil, fmt.Errorf("(YubiHSM/%s): %w", y.hsm.conf.Address, err)
 		}
 		if !ok {
 			continue // Skip
@@ -197,16 +193,16 @@ func (h *HSM) List(ctx context.Context) vault.KeyIterator {
 func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*crypt.ECDSASignature, error) {
 	command, err := commands.CreateSignDataEcdsaCommand(id, digest)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 	res, err := h.session.SendEncryptedCommand(command)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): SignDataEcdsa: %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): SignDataEcdsa: %w", h.conf.Address, err)
 	}
 
 	ecdsaResponse, ok := res.(*commands.SignDataEcdsaResponse)
 	if !ok {
-		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
+		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.Address, res)
 	}
 
 	var sig struct {
@@ -214,7 +210,7 @@ func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*crypt.
 		S *big.Int
 	}
 	if _, err = asn1.Unmarshal(ecdsaResponse.Signature, &sig); err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 	return &crypt.ECDSASignature{
 		R:     sig.R,
@@ -226,20 +222,20 @@ func (h *HSM) signECDSA(digest []byte, id uint16, curve elliptic.Curve) (*crypt.
 func (h *HSM) signED25519(digest []byte, id uint16) (crypt.Ed25519Signature, error) {
 	command, err := commands.CreateSignDataEddsaCommand(id, digest)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 	res, err := h.session.SendEncryptedCommand(command)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): SignDataEddsa: %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): SignDataEddsa: %w", h.conf.Address, err)
 	}
 
 	eddsaResponse, ok := res.(*commands.SignDataEddsaResponse)
 	if !ok {
-		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
+		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.Address, res)
 	}
 
 	if len(eddsaResponse.Signature) != ed25519.SignatureSize {
-		return nil, fmt.Errorf("(YubiHSM/%s): invalid ED25519 signature length: %d", h.conf.id(), len(eddsaResponse.Signature))
+		return nil, fmt.Errorf("(YubiHSM/%s): invalid ED25519 signature length: %d", h.conf.Address, len(eddsaResponse.Signature))
 	}
 
 	return crypt.Ed25519Signature(eddsaResponse.Signature), nil
@@ -251,7 +247,7 @@ var echoMessage = []byte("health")
 func (h *HSM) Ready(ctx context.Context) (bool, error) {
 	command, err := commands.CreateEchoCommand(echoMessage)
 	if err != nil {
-		return false, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return false, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 
 	res, err := h.session.SendEncryptedCommand(command)
@@ -261,11 +257,11 @@ func (h *HSM) Ready(ctx context.Context) (bool, error) {
 
 	echoResponse, ok := res.(*commands.EchoResponse)
 	if !ok {
-		return false, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
+		return false, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.Address, res)
 	}
 
 	if !bytes.Equal(echoResponse.Data, echoMessage) {
-		return false, fmt.Errorf("(YubiHSM/%s): echoed data is invalid", h.conf.id())
+		return false, fmt.Errorf("(YubiHSM/%s): echoed data is invalid", h.conf.Address)
 	}
 
 	return true, nil
@@ -295,13 +291,13 @@ func getPrivateKeyData(pk crypt.PrivateKey) (typ string, alg commands.Algorithm,
 func (h *HSM) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.KeyReference, error) {
 	typ, alg, caps, p, err := getPrivateKeyData(pk)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 
 	domains := h.conf.KeyImportDomains
 	d, ok, err := opt.GetInt("domains")
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 	if ok {
 		domains = uint16(d)
@@ -309,7 +305,7 @@ func (h *HSM) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options
 
 	label, ok, err := opt.GetString("name")
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 	if !ok {
 		label = fmt.Sprintf("signatory-%s-%d", typ, time.Now().Unix())
@@ -317,17 +313,17 @@ func (h *HSM) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options
 
 	command, err := commands.CreatePutAsymmetricKeyCommand(0, []byte(label), domains, caps, alg, p, nil)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): %w", h.conf.Address, err)
 	}
 
 	res, err := h.session.SendEncryptedCommand(command)
 	if err != nil {
-		return nil, fmt.Errorf("(YubiHSM/%s): PutAsymmetricKey: %w", h.conf.id(), err)
+		return nil, fmt.Errorf("(YubiHSM/%s): PutAsymmetricKey: %w", h.conf.Address, err)
 	}
 
 	keyResponse, ok := res.(*commands.PutAsymmetricKeyResponse)
 	if !ok {
-		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.id(), res)
+		return nil, fmt.Errorf("(YubiHSM/%s): unexpected response type: %T", h.conf.Address, res)
 	}
 
 	return &hsmKey{
