@@ -288,12 +288,9 @@ func New(config *Config) (*PKCS11Vault, error) {
 	if config.Slot != nil {
 		slot = *config.Slot
 	} else if s := os.Getenv(envSlot); s != "" {
-		v, err := strconv.ParseUint(s, 0, 64)
+		v, err := strconv.ParseUint(s, 0, strconv.IntSize)
 		if err != nil {
 			return nil, formatError(mod, err)
-		}
-		if v > uint64(^uint(0)) {
-			return nil, fmt.Errorf("(PKCS#11/%s): slot value exceeds maximum uint size", path.Base(lib))
 		}
 		slot = uint(v)
 	} else if slot, err = findSlot(mod); err != nil {
