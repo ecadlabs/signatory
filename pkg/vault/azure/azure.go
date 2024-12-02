@@ -58,10 +58,56 @@ type Vault struct {
 type azureKey struct {
 	bundle *keyBundle
 	pub    *crypt.ECDSAPublicKey
+	v      *Vault
 }
 
-func (a *azureKey) PublicKey() crypt.PublicKey { return a.pub }
-func (a *azureKey) ID() string                 { return a.bundle.Key.KeyID }
+func (k *azureKey) PublicKey() crypt.PublicKey { return k.pub }
+func (k *azureKey) ID() string                 { return k.bundle.Key.KeyID }
+func (k *azureKey) Vault() vault.Vault         { return k.v }
+
+func (key *azureKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+	digest := crypt.DigestFunc(message)
+	var req signRequest
+	if req.Algorithm = algByCurve(key.pub.Curve); req.Algorithm == "" {
+		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): can't find corresponding signature algorithm for %s curve", key.v.config.Vault, key.bundle.Key.Curve), http.StatusBadRequest)
+	}
+	req.Value = base64.RawURLEncoding.EncodeToString(digest[:])
+
+	u, err := key.v.makeURL(key.bundle.Key.KeyID, "/sign")
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %w", key.v.config.Vault, err)
+	}
+
+	r, err := json.Marshal(&req)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %w", key.v.config.Vault, err)
+	}
+
+	var res keyOperationResult
+	status, err := key.v.request(ctx, key.v.client, "POST", u, bytes.NewReader(r), &res)
+	if err != nil {
+		err = fmt.Errorf("(Azure/%s): %w", key.v.config.Vault, err)
+		if status != 0 {
+			err = errors.Wrap(err, status)
+		}
+		return nil, err
+	}
+
+	sig, err := base64.RawURLEncoding.DecodeString(res.Value)
+	if err != nil {
+		return nil, fmt.Errorf("(Azure/%s): %w", key.v.config.Vault, err)
+	}
+
+	byteLen := (key.pub.Params().BitSize + 7) >> 3
+	if len(sig) != byteLen*2 {
+		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", key.v.config.Vault, len(sig))
+	}
+	return &crypt.ECDSASignature{
+		R:     new(big.Int).SetBytes(sig[:byteLen]),
+		S:     new(big.Int).SetBytes(sig[byteLen:]),
+		Curve: key.pub.Curve,
+	}, nil
+}
 
 // New creates new Azure KeyVault backend
 func New(ctx context.Context, config *Config) (vault *Vault, err error) {
@@ -160,7 +206,7 @@ type azureIterator struct {
 	done bool
 }
 
-func (a *azureIterator) Next() (key vault.StoredKey, err error) {
+func (a *azureIterator) Next() (key vault.KeyReference, err error) {
 	if a.done {
 		return nil, vault.ErrDone
 	}
@@ -233,6 +279,7 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 				return &azureKey{
 					bundle: &bundle,
 					pub:    pub,
+					v:      a.v,
 				}, nil
 			} else {
 				panic(fmt.Sprintf("unsupported key type: %T", p)) // unlikely
@@ -243,111 +290,20 @@ func (a *azureIterator) Next() (key vault.StoredKey, err error) {
 	}
 }
 
-// ListPublicKeys returns a list of keys stored under the backend
-func (v *Vault) ListPublicKeys(ctx context.Context) vault.StoredKeysIterator {
+// List returns a list of keys stored under the backend
+func (v *Vault) List(ctx context.Context) vault.KeyIterator {
 	return &azureIterator{
 		ctx: ctx,
 		v:   v,
 	}
 }
 
-// GetPublicKey returns a public key by given ID
-func (v *Vault) GetPublicKey(ctx context.Context, keyID string) (vault.StoredKey, error) {
-	u, err := v.makeURL(keyID, "")
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-
-	var bundle keyBundle
-	status, err := v.request(ctx, v.client, "GET", u, nil, &bundle)
-	if err != nil {
-		err = fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-		if status != 0 {
-			err = errors.Wrap(err, status)
-		}
-		return nil, err
-	}
-
-	p, err := bundle.Key.PublicKey()
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-	pub, err := crypt.NewPublicKeyFrom(p)
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-	if p, ok := pub.(*crypt.ECDSAPublicKey); ok {
-		return &azureKey{
-			bundle: &bundle,
-			pub:    p,
-		}, nil
-	} else {
-		panic(fmt.Sprintf("unsupported key type: %T", pub)) // unlikely
-	}
-}
-
-// Name returns backend name
 func (v *Vault) Name() string {
-	return "Azure"
-}
-
-// VaultName returns vault name
-func (v *Vault) VaultName() string {
-	return v.config.Vault
-}
-
-// Sign performs signing operation
-func (v *Vault) SignMessage(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
-	digest := crypt.DigestFunc(message)
-	azureKey, ok := key.(*azureKey)
-	if !ok {
-		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): not a Azure key: %T", v.config.Vault, key), http.StatusBadRequest)
-	}
-
-	var req signRequest
-	if req.Algorithm = algByCurve(azureKey.pub.Curve); req.Algorithm == "" {
-		return nil, errors.Wrap(fmt.Errorf("(Azure/%s): can't find corresponding signature algorithm for %s curve", v.config.Vault, azureKey.bundle.Key.Curve), http.StatusBadRequest)
-	}
-	req.Value = base64.RawURLEncoding.EncodeToString(digest[:])
-
-	u, err := v.makeURL(azureKey.bundle.Key.KeyID, "/sign")
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-
-	r, err := json.Marshal(&req)
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-
-	var res keyOperationResult
-	status, err := v.request(ctx, v.client, "POST", u, bytes.NewReader(r), &res)
-	if err != nil {
-		err = fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-		if status != 0 {
-			err = errors.Wrap(err, status)
-		}
-		return nil, err
-	}
-
-	sig, err := base64.RawURLEncoding.DecodeString(res.Value)
-	if err != nil {
-		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
-	}
-
-	byteLen := (azureKey.pub.Params().BitSize + 7) >> 3
-	if len(sig) != byteLen*2 {
-		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", v.config.Vault, len(sig))
-	}
-	return &crypt.ECDSASignature{
-		R:     new(big.Int).SetBytes(sig[:byteLen]),
-		S:     new(big.Int).SetBytes(sig[byteLen:]),
-		Curve: azureKey.pub.Curve,
-	}, nil
+	return fmt.Sprintf("Azure/%s", v.config.Vault)
 }
 
 // Import imports a private key
-func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Options) (vault.StoredKey, error) {
+func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Options) (vault.KeyReference, error) {
 	keyName, ok, err := opt.GetString("name")
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
@@ -404,6 +360,7 @@ func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Opt
 		return &azureKey{
 			bundle: &bundle,
 			pub:    p,
+			v:      v,
 		}, nil
 	} else {
 		panic(fmt.Sprintf("unsupported key type: %T", pub)) // unlikely
@@ -446,6 +403,10 @@ func (v *Vault) Ready(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (v *Vault) Close(context.Context) error {
+	return nil
 }
 
 func algByCurve(curve elliptic.Curve) string {

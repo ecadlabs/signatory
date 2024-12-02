@@ -72,23 +72,16 @@ func TestPKCS11Vault(t *testing.T) {
 		t.Fatal(string(out))
 	}
 
-	v, err := New(context.Background(), &Config{
+	v, err := New(&Config{
 		LibraryPath: path,
 		Pin:         userPIN,
-		Label:       keyLabel,
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() { v.Close() })
+	t.Cleanup(func() { v.Close(context.Background()) })
 
-	require.NoError(t, v.Unlock(context.Background()))
-
-	keys, err := vault.Collect(v.ListPublicKeys(context.Background()))
+	keys, err := vault.Collect(v.List(context.Background()))
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
-	k0 := keys[0].PublicKey().(*crypt.ECDSAPublicKey)
-
-	key, err := v.GetPublicKey(context.Background(), keys[0].ID())
-	require.NoError(t, err)
-	k1 := key.PublicKey().(*crypt.ECDSAPublicKey)
-	require.Equal(t, k0, k1)
+	_, ok := keys[0].PublicKey().(*crypt.ECDSAPublicKey)
+	require.True(t, ok)
 }

@@ -7,30 +7,77 @@ title: PKCS#11
 
 ## Configuration
 
-|||||
-|--- |--- |--- |--- |
-|Name|Type|Required|Description|
-|library_path|string|✅|Library Path|
-|pin|string|✅|User PIN|
-|slot|string||Slot ID|
-|label|string||Limit key search to the specified label (use in case of multiple key pairs in the same token)|
-|object_ih|hex||Limit key search to the specified object ID (use in case of multiple key pairs in the same token)|
+| Field                      | Type                               | Required | Description                                                  |
+| -------------------------- | ---------------------------------- | -------- | ------------------------------------------------------------ |
+| library_path               | string                             | ✅        | Library path. If not specified then `PKCS11_PATH` environment variable value will be used instead. |
+| slot                       | unsigned integer                   |          | Slot ID. Is both the field and `PKCS11_SLOT` environment variable are missed then the first slot with an initialised token will be used. |
+| pin                        | string                             | ✅        | User PIN.  If not specified then `PKCS11_PIN` environment variable value will be used instead. |
+| keys                       | sequence of `Key Pair` (see below) |          | Key list. Use all available keys if not specified (see `public_keys_search_options` description) |
+| public_keys_search_options |                                    |          | Automatic key pair discovery options (see below)             |
 
-**Note**: If the token contains multiple key pairs, every pair must have unique label or ID shared between private and public parts.
+### Key Pair
 
-### Example
+| Field            | Type                     | Required | Description                                                  |
+| ---------------- | ------------------------ | -------- | ------------------------------------------------------------ |
+| private          | `Key Config` (see below) |          | Private key locator.                                         |
+| public           | `Key Config`             |          | Public key locator.                                          |
+| public_value     | Base58 string            |          | Public key value.                                            |
+| extended_private | boolean                  |          | Try to read the public key data from the private key object. In some PKCS#11 implementations private key objects have `EC_POINT` attribute. |
+
+**Note**: `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator `Key Config` will be reused.
+
+### Key Config
+
+| Field | Type   | Required | Description  |
+| ----- | ------ | -------- | ------------ |
+| label | string |          | Object label |
+| id    | hex    |          | Object ID    |
+
+### Public Keys Search Options
+
+| Field            | Type    | Required | Description                                                  |
+| ---------------- | ------- | -------- | ------------------------------------------------------------ |
+| match_label      | boolean |          | Find the corresponding public key by matching label.         |
+| match_id         | boolean |          | Find the corresponding public key by matching ID.            |
+| extended_private | boolean |          | Try to read the public key data from the private key object. |
+
+**Note**: if the whole object is missing then all options will be assumed as **true**
+
+### Environment Variables
+
+| Variable    | Description  |
+| ----------- | ------------ |
+| PKCS11_PATH | Library path |
+| PKCS11_SLOT | Slot ID      |
+| PKCS11_PIN  | User PIN     |
+
+## Examples
+
+### Automatic discovery
 
 ```yaml
-library_path: /opt/homebrew/lib/softhsm/libsofthsm2.so
-pin: 1234
-slot: 0x4d0b85a2
-label: TestKey
+library_path: /usr/lib/hsmdriver/libhsmdriver.so
+pin: user_pin
 ```
 
-## Environment variables
+### Manual Configuration
 
-* `PKCS11_PATH`
-* `PKCS11_PIN`
-* `PKCS11_SLOT`
-* `PKCS11_LABEL`
-* `PKCS11_OBJECT_ID`
+```yaml
+library_path: /usr/lib/hsmdriver/libhsmdriver.so
+slot: 0
+pin: user_pin
+  keys:
+    - private:
+        label: PrivateKey0
+      public:
+        label: PublicKey0
+    - private:
+        label: Key1
+      # Use public key with the same label `Key1'
+    - private:
+        id: 1234abcd
+      public_value: edpkuXdPrbYEu5x54NaZEzaSHzwi5Tis5NBHrs58AMJXf4gS4iz5eQ
+    - private:
+        label: Key2
+      extended_private: true # Read the public key from the private object
+```

@@ -46,8 +46,8 @@ func TestImport(t *testing.T) {
 
 	imported, err := s.Import(context.Background(), "mock", privateKey, nil, nil)
 	require.NoError(t, err)
-	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey.String())
-	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.PublicKeyHash.String())
+	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey().String())
+	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.Hash.String())
 
 	list, err := s.ListPublicKeys(context.Background())
 	require.NoError(t, err)
@@ -393,12 +393,10 @@ func TestListPublicKeys(t *testing.T) {
 				LogPayloads:     true,
 			},
 			expected: "Vault not reachable",
-			lpk: func(ctx context.Context) vault.StoredKeysIterator {
-				return &TestKeyIterator{
-					nxt: func(idx int) (key vault.StoredKey, err error) {
-						return nil, fmt.Errorf("Vault not reachable")
-					},
-				}
+			lpk: func(ctx context.Context) vault.KeyIterator {
+				return NewTestIterator(func(idx int) (key vault.KeyReference, err error) {
+					return nil, fmt.Errorf("Vault not reachable")
+				})
 			},
 		},
 		{
@@ -408,12 +406,10 @@ func TestListPublicKeys(t *testing.T) {
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 				LogPayloads:     true,
 			},
-			lpk: func(ctx context.Context) vault.StoredKeysIterator {
-				return &TestKeyIterator{
-					nxt: func(idx int) (key vault.StoredKey, err error) {
-						return nil, vault.ErrDone
-					},
-				}
+			lpk: func(ctx context.Context) vault.KeyIterator {
+				return NewTestIterator(func(idx int) (key vault.KeyReference, err error) {
+					return nil, vault.ErrDone
+				})
 			},
 		},
 		{
@@ -423,17 +419,14 @@ func TestListPublicKeys(t *testing.T) {
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "transaction", "origination", "delegation"},
 				LogPayloads:     true,
 			},
-			lpk: func(ctx context.Context) vault.StoredKeysIterator {
-				return &TestKeyIterator{
-					idx: 0,
-					nxt: func(idx int) (key vault.StoredKey, err error) {
-						if idx == 0 {
-							return nil, vault.ErrKey
-						} else {
-							return nil, vault.ErrDone
-						}
-					},
-				}
+			lpk: func(ctx context.Context) vault.KeyIterator {
+				return NewTestIterator(func(idx int) (key vault.KeyReference, err error) {
+					if idx == 0 {
+						return nil, vault.ErrKey
+					} else {
+						return nil, vault.ErrDone
+					}
+				})
 			},
 		},
 	}
@@ -448,7 +441,7 @@ func TestListPublicKeys(t *testing.T) {
 				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
 				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
-					return NewTestVault(nil, c.lpk, nil, nil, "test"), nil
+					return NewTestVault(nil, c.lpk, nil, "test"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
 			}

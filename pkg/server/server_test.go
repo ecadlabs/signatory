@@ -13,6 +13,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/server"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/stretchr/testify/require"
 )
 
@@ -130,6 +131,17 @@ func TestSign(t *testing.T) {
 	}
 }
 
+type mockRef struct {
+	key crypt.PublicKey
+}
+
+func (k *mockRef) PublicKey() crypt.PublicKey { return k.key }
+func (k *mockRef) String() string             { return k.key.Hash().String() }
+func (k *mockRef) Vault() vault.Vault         { panic("not implemented") }
+func (k *mockRef) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+	panic("not implemented")
+}
+
 func TestGetPublicKey(t *testing.T) {
 	type testCase struct {
 		Name       string
@@ -157,7 +169,7 @@ func TestGetPublicKey(t *testing.T) {
 		{
 			Name:       "Normal",
 			StatusCode: http.StatusOK,
-			Response:   &signatory.PublicKey{PublicKey: mustPk(&tz.Ed25519PublicKey{1, 2, 3})},
+			Response:   &signatory.PublicKey{KeyReference: &mockRef{mustPk(&tz.Ed25519PublicKey{1, 2, 3})}},
 			Expected:   "{\"public_key\":\"edpktefgU4dfKqN1rZVBwBP8ZueBoJZfhDS3kHPSbo8c3aGPrMrunt\"}\n",
 		},
 	}

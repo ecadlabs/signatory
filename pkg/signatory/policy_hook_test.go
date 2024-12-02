@@ -104,8 +104,7 @@ func testPolicyHookAuth(t *testing.T, status int) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPriv,
-					KeyID:      signKeyHash.String(),
+					Key: signPriv,
 				},
 			}, "Mock")
 		}),
@@ -143,8 +142,7 @@ func testPolicyHook(t *testing.T, status int) error {
 		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{
 				{
-					PrivateKey: signPriv,
-					KeyID:      signKeyHash.String(),
+					Key: signPriv,
 				},
 			}, "Mock")
 		}),

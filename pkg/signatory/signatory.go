@@ -74,12 +74,10 @@ type PublicKeyPolicy struct {
 
 // PublicKey contains public key with its hash
 type PublicKey struct {
-	PublicKey     crypt.PublicKey
-	PublicKeyHash crypt.PublicKeyHash
-	VaultName     string
-	ID            string
-	Policy        *PublicKeyPolicy
-	Active        bool
+	vault.KeyReference
+	Hash   crypt.PublicKeyHash
+	Policy *PublicKeyPolicy
+	Active bool
 }
 
 // Signatory is a struct coordinate signatory action and select vault according to the key being used
@@ -98,10 +96,9 @@ type SignRequest struct {
 }
 
 type keyVaultPair struct {
-	pkh   crypt.PublicKeyHash
-	key   vault.StoredKey
-	vault vault.Vault
-	name  string
+	pkh       crypt.PublicKeyHash
+	key       vault.KeyReference
+	vaultName string
 }
 
 type keyCache struct {
@@ -368,13 +365,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		return nil, err
 	}
 
-	l = l.WithField(logVault, p.vault.Name())
-	if n, ok := p.vault.(vault.VaultNamer); ok {
-		l = l.WithField(logVaultName, n.VaultName())
-	} else {
-		l = l.WithField(logVaultName, p.name)
-	}
-
+	l = l.WithField(logVault, p.key.Vault().Name())
 	if err = matchFilter(policy, req, msg); err != nil {
 		l.Error(err)
 		return nil, errors.Wrap(err, http.StatusForbidden)
@@ -393,20 +384,21 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 	l.WithField(logRaw, hex.EncodeToString(req.Message)).Log(level, "About to sign raw bytes")
 	digest := crypt.DigestFunc(req.Message)
-	signFunc := func(ctx context.Context, message []byte, key vault.StoredKey) (crypt.Signature, error) {
+
+	signFunc := func(ctx context.Context, message []byte, key vault.KeyReference) (crypt.Signature, error) {
 		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
 			l.Error(err)
 			return nil, err
 		}
-		return p.vault.SignMessage(ctx, message, key)
+		return key.Sign(ctx, message)
 	}
 
 	var sig crypt.Signature
 	if s.config.Interceptor != nil {
 		err = s.config.Interceptor(&SignInterceptorOptions{
 			Address: req.PublicKeyHash,
-			Vault:   p.vault.Name(),
+			Vault:   p.key.Vault().Name(),
 			Req:     msg.SignRequestKind(),
 			Stat:    opStat,
 		}, func() (err error) {
@@ -433,7 +425,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []
 	ret = make(publicKeys)
 	for name, v := range s.vaults {
 		var vaultKeys []*keyVaultPair
-		iter := v.ListPublicKeys(ctx)
+		iter := v.List(ctx)
 	keys:
 		for {
 			key, err := iter.Next()
@@ -448,7 +440,7 @@ func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []
 				}
 			}
 			pkh := key.PublicKey().Hash()
-			p := &keyVaultPair{pkh: pkh, key: key, vault: v, name: name}
+			p := &keyVaultPair{pkh: pkh, key: key, vaultName: name}
 			s.cache.push(p)
 
 			ret.Insert(pkh, p)
@@ -471,13 +463,10 @@ func (s *Signatory) ListPublicKeys(ctx context.Context) ([]*PublicKey, error) {
 
 	ret := make([]*PublicKey, len(list))
 	for i, p := range list {
-		pk := p.key.PublicKey()
 		ret[i] = &PublicKey{
-			PublicKey:     pk,
-			PublicKeyHash: p.pkh,
-			VaultName:     p.vault.Name(),
-			ID:            p.key.ID(),
-			Policy:        s.fetchPolicyOrDefault(p.pkh),
+			KeyReference: p.key,
+			Hash:         p.pkh,
+			Policy:       s.fetchPolicyOrDefault(p.pkh),
 		}
 		ret[i].Active = ret[i].Policy != nil
 	}
@@ -511,12 +500,12 @@ func (s *Signatory) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHas
 		return nil, err
 	}
 
+	pol := s.fetchPolicyOrDefault(keyHash)
 	return &PublicKey{
-		PublicKey:     p.key.PublicKey(),
-		PublicKeyHash: keyHash,
-		VaultName:     p.vault.Name(),
-		ID:            p.key.ID(),
-		Policy:        s.fetchPolicyOrDefault(keyHash),
+		KeyReference: p.key,
+		Hash:         keyHash,
+		Policy:       s.fetchPolicyOrDefault(keyHash),
+		Active:       pol != nil,
 	}, nil
 }
 
