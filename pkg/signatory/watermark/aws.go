@@ -51,6 +51,14 @@ func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
 		return nil, err
 	}
 
+	if log.StandardLogger().Level >= log.DebugLevel {
+		cred, err := cfg.Credentials.Retrieve(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		log.WithFields(log.Fields{"region": cfg.Region, "access_key_id": cred.AccessKeyID}).Debug("Dynamo DB config")
+	}
+
 	client := dynamodb.NewFromConfig(cfg)
 	a := AWS{
 		client: client,
