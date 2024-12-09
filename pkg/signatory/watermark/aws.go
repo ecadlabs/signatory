@@ -29,8 +29,8 @@ const (
 )
 
 type AWSConfig struct {
-	awskms.Config
-	Table string `yaml:"table"`
+	awskms.Config `yaml:",inline"`
+	Table         string `yaml:"table"`
 }
 
 func (c *AWSConfig) table() string {
