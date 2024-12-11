@@ -33,7 +33,7 @@ type Config struct {
 	KeyRing                    string `yaml:"key_ring" validate:"required"`
 }
 
-// KeyRingName returns full Google Cloud KMS key ring path
+// keyRingName returns full Google Cloud KMS key ring path
 func (c *Config) keyRingName() string {
 	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s", c.Project, c.Location, c.KeyRing)
 }
