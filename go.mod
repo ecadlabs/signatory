@@ -1,8 +1,8 @@
 module github.com/ecadlabs/signatory
 
-go 1.22
+go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	cloud.google.com/go/kms v1.15.5
@@ -16,7 +16,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.0.0
-	github.com/ecadlabs/gotez/v2 v2.2.0
+	github.com/ecadlabs/gotez/v2 v2.2.1
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.4.0
