@@ -12,7 +12,13 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const PortAny = unix.VMADDR_PORT_ANY
+const (
+	ContextAny        = unix.VMADDR_CID_ANY
+	ContextHost       = unix.VMADDR_CID_HOST
+	ContextHypervisor = unix.VMADDR_CID_HYPERVISOR
+
+	PortAny = unix.VMADDR_PORT_ANY
+)
 
 type Conn struct {
 	fd     *os.File
