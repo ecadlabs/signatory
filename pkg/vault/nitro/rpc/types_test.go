@@ -65,12 +65,6 @@ func TestUnmarshal(t *testing.T) {
 			expect: &Request{PublicKey: newVal(uint64(0))},
 		},
 		{
-			name:   "Terminate",
-			src:    testdata.RequestTerminate,
-			val:    new(string),
-			expect: newVal("Terminate"),
-		},
-		{
 			name: "Ok",
 			src:  testdata.ReplyOk,
 			val:  new(SimpleResult),

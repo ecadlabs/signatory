@@ -58,6 +58,3 @@ var RequestSign []byte
 
 //go:embed request_sign_with.bin
 var RequestSignWith []byte
-
-//go:embed request_terminate.bin
-var RequestTerminate []byte
