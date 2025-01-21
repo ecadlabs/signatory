@@ -130,21 +130,26 @@ func Dial(addr *Addr) (conn *Conn, err error) {
 		return nil, err
 	}
 
+	var pn unix.Sockaddr
 	if poll_err := raw.Write(func(fd uintptr) bool {
 		var val int
 		val, err = unix.GetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_ERROR)
 		if err == nil && val != 0 {
 			err = unix.Errno(val)
 		}
-		return true
+		if err != nil {
+			return true
+		}
+		// check for premature wake up
+		pn, err = unix.Getpeername(int(fd))
+		return err == nil || err != unix.ENOTCONN
 	}); poll_err != nil {
 		return nil, wrapErr(poll_err, "dial", nil, addr)
 	}
 	if err != nil {
 		return nil, wrapErr(err, "dial", nil, addr)
 	}
-
-	return newConn(fd, nil)
+	return newConn(fd, pn)
 }
 
 func (conn *Conn) Close() error {
