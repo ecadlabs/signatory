@@ -2,7 +2,14 @@ package rpc
 
 import "github.com/fxamacker/cbor/v2"
 
-const TerminateRequest = "Terminate"
+type KeyType string
+
+const (
+	KeySecp256k1 KeyType = "Secp256k1"
+	KeyNistP256  KeyType = "NistP256"
+	KeyEd25519   KeyType = "Ed25519"
+	KeyBls       KeyType = "Bls"
+)
 
 type Credentials struct {
 	AccessKeyID     string  `cbor:"access_key_id"`
@@ -23,8 +30,8 @@ type SignWithRequest struct {
 type Request struct {
 	Initialize        *Credentials
 	Import            []byte
-	Generate          *string
-	GenerateAndImport *string
+	Generate          *KeyType
+	GenerateAndImport *KeyType
 	Sign              *SignRequest
 	SignWith          *SignWithRequest
 	PublicKey         *uint64
@@ -86,7 +93,21 @@ type Result[T any] struct {
 	Err *RPCError
 }
 
+func (r *Result[T]) Error() error {
+	if r.Err != nil {
+		return r.Err
+	}
+	return nil
+}
+
 type SimpleResult struct {
 	Ok  cbor.SimpleValue
 	Err *RPCError
+}
+
+func (r *SimpleResult) Error() error {
+	if r.Err != nil {
+		return r.Err
+	}
+	return nil
 }

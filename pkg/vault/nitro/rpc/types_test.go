@@ -41,7 +41,7 @@ func TestUnmarshal(t *testing.T) {
 			name:   "Generate",
 			src:    testdata.RequestGenerate,
 			val:    new(Request),
-			expect: &Request{Generate: newVal("Secp256k1")},
+			expect: &Request{Generate: newVal(KeySecp256k1)},
 		},
 		{
 			name:   "Sign",
