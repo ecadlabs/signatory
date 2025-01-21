@@ -11,7 +11,6 @@ func TestVSock(t *testing.T) {
 	listener, err := vsock.Listen(&vsock.Addr{CID: vsock.ContextAny, Port: vsock.PortAny})
 	require.NoError(t, err)
 
-	localAddr := listener.Addr().(*vsock.Addr)
 	go func() {
 		conn, err := listener.Accept()
 		require.NoError(t, err)
@@ -27,7 +26,8 @@ func TestVSock(t *testing.T) {
 	}()
 
 	data := []byte("datadata")
-	conn, err := vsock.Dial(localAddr)
+
+	conn, err := vsock.Dial(&vsock.Addr{CID: vsock.ContextLocal, Port: listener.Addr().(*vsock.Addr).Port})
 	require.NoError(t, err)
 
 	n, err := conn.Write(data)
