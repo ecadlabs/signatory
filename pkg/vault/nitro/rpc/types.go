@@ -36,7 +36,6 @@ type Request struct {
 	SignWith          *SignWithRequest
 	PublicKey         *uint64
 	PublicKeyFrom     []byte
-	Terminate         *cbor.SimpleValue
 }
 
 type PublicKey struct {
