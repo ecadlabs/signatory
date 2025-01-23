@@ -28,21 +28,29 @@ Security and convenience are typically at odds with each other. Signatory makes 
 
 Explore detailed documentation for various components of Signatory:
 
+### Introduction
+- [Getting Started](./docs/start.md)
 - [Authorized Keys](./docs/authorized_keys.md)
-- [Azure KMS](./docs/azure_kms.md)
-- [Bakers](./docs/bakers.md)
 - [Command-Line Interface (CLI)](./docs/cli.md)
-- [Ledger Integration](./docs/ledger.md)
-- [Local Secret Storage](./docs/localsecret.md)
-- [Remote Policy Configuration](./docs/remote_policy.md)
-- [Signatory Architecture](./docs/signatory-architecture.md)
+- [Bakers](./docs/bakers.md)
+
+### Vault Backends
+- [Azure KMS](./docs/azure_kms.md)
+- [AWS KMS](./docs/aws_kms.md)
 - [Google Cloud KMS](./docs/gcp_kms.md)
 - [Hashicorp Vault](./docs/hashicorp_vault.md)
-- [JWT Authentication](./docs/jwt_auth.md)
-- [AWS KMS](./docs/aws_kms.md)
+- [Ledger Integration](./docs/ledger.md)
+- [Local Secret Storage](./docs/localsecret.md)
 - [PKCS#11](./docs/pkcs11.md)
-- [Getting Started](./docs/start.md)
 - [YubiHSM](./docs/yubihsm.md)
+
+### Watermark backends 
+- [AWS (DynamoDB)](./docs/aws_dynamodb.md)
+
+### Other
+- [JWT Authentication](./docs/jwt_auth.md)
+- [Remote Policy Configuration](./docs/remote_policy.md)
+- [Signatory Architecture](./docs/signatory-architecture.md)
 
 ## Features
 
