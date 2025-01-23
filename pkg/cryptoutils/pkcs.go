@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"golang.org/x/crypto/cryptobyte"
 )
@@ -37,7 +36,7 @@ func oidFromNamedCurve(curve elliptic.Curve) asn1.ObjectIdentifier {
 		return oidNamedCurveP384
 	case elliptic.P521():
 		return oidNamedCurveP521
-	case secp256k1.S256():
+	case crypt.S256():
 		return oidNamedCurveS256
 	default:
 		return nil
@@ -142,7 +141,7 @@ func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
 	case oid.Equal(oidNamedCurveP521):
 		return elliptic.P521()
 	case oid.Equal(oidNamedCurveS256):
-		return secp256k1.S256()
+		return crypt.S256()
 	}
 	return nil
 }

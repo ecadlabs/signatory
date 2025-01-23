@@ -15,7 +15,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -417,7 +416,7 @@ func algByCurve(curve elliptic.Curve) string {
 		return "ES384"
 	case elliptic.P521():
 		return "ES512"
-	case secp256k1.S256():
+	case crypt.S256():
 		return "ES256K" // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/security/keyvault/azkeys/constants.go
 	default:
 		return ""

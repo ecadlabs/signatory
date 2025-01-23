@@ -16,7 +16,6 @@ import (
 	"github.com/certusone/yubihsm-go"
 	"github.com/certusone/yubihsm-go/commands"
 	"github.com/certusone/yubihsm-go/connector"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -88,7 +87,7 @@ func parsePublicKey(r *commands.GetPubKeyResponse) (crypt.PublicKey, bool, error
 		var curve elliptic.Curve
 		switch r.Algorithm {
 		case commands.AlgorithmSecp256k1:
-			curve = secp256k1.S256()
+			curve = crypt.S256()
 		case commands.AlgorithmP256:
 			curve = elliptic.P256()
 		}
@@ -273,7 +272,7 @@ func getPrivateKeyData(pk crypt.PrivateKey) (typ string, alg commands.Algorithm,
 		switch key.Curve {
 		case elliptic.P256():
 			alg = commands.AlgorithmP256
-		case secp256k1.S256():
+		case crypt.S256():
 			alg = commands.AlgorithmSecp256k1
 		default:
 			return "", 0, 0, nil, fmt.Errorf("unsupported curve: %s", key.Params().Name)

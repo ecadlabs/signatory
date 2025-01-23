@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/vault/ledger/ledger"
 )
@@ -178,7 +177,7 @@ func parsePublicKey(data []byte, derivation DerivationType) (pub crypt.PublicKey
 
 		var curve elliptic.Curve
 		if derivation == DerivationSECP256K1 {
-			curve = secp256k1.S256()
+			curve = crypt.S256()
 		} else {
 			curve = elliptic.P256()
 		}
@@ -285,7 +284,7 @@ func (t *App) Sign(derivation DerivationType, path BIP32, data []byte) (sig cryp
 	case DerivationSECP256K1, DerivationSECP256R1:
 		var curve elliptic.Curve
 		if derivation == DerivationSECP256K1 {
-			curve = secp256k1.S256()
+			curve = crypt.S256()
 		} else {
 			curve = elliptic.P256()
 		}

@@ -1,6 +1,17 @@
 package rpc
 
-import "github.com/fxamacker/cbor/v2"
+import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"errors"
+	"math/big"
+
+	"github.com/ecadlabs/goblst/minpk"
+	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/fxamacker/cbor/v2"
+)
 
 type KeyType string
 
@@ -17,39 +28,124 @@ type Credentials struct {
 	SessionToken    *string `cbor:"session_token"`
 }
 
-type SignRequest struct {
+type signRequest struct {
 	Handle uint64 `cbor:"handle"`
 	Msg    []byte `cbor:"msg"`
 }
 
-type SignWithRequest struct {
+type signWithRequest struct {
 	KeyData []byte `cbor:"key_data"`
 	Msg     []byte `cbor:"msg"`
 }
 
-type Request struct {
+type request struct {
 	Initialize        *Credentials
 	Import            []byte
 	Generate          *KeyType
 	GenerateAndImport *KeyType
-	Sign              *SignRequest
-	SignWith          *SignWithRequest
+	Sign              *signRequest
+	SignWith          *signWithRequest
 	PublicKey         *uint64
 	PublicKeyFrom     []byte
 }
 
 type PublicKey struct {
-	Secp256k1 []byte
-	NistP256  []byte
-	Ed25519   []byte
-	Bls       []byte
+	Secp256k1 []byte `cbor:"Secp256k1"`
+	P256      []byte `cbor:"NistP256"`
+	Ed25519   []byte `cbor:"Ed25519"`
+	BLS       []byte `cbor:"Bls"`
+}
+
+func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
+	switch {
+	case p.Secp256k1 != nil || p.P256 != nil:
+		var data []byte
+		if p.Secp256k1 != nil {
+			data = p.Secp256k1
+		} else {
+			data = p.P256
+		}
+		parsed, err := cryptoutils.ParsePKIXPublicKey(data)
+		if err != nil {
+			return nil, err
+		}
+		pub, ok := parsed.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, errors.New("unexpected public key type")
+		}
+		return (*crypt.ECDSAPublicKey)(pub), nil
+
+	case p.Ed25519 != nil:
+		if len(p.Ed25519) != ed25519.PublicKeySize {
+			return nil, errors.New("invalid ed25519 public key length")
+		}
+		return crypt.Ed25519PublicKey(p.Ed25519), nil
+
+	case p.BLS != nil:
+		p, err := minpk.PublicKeyFromBytes(p.BLS)
+		if err != nil {
+			return nil, err
+		}
+		return (*crypt.BLSPublicKey)(p), nil
+
+	default:
+		return nil, errors.New("malformed public key RPC response")
+	}
 }
 
 type Signature struct {
-	Secp256k1 []byte
-	NistP256  []byte
-	Ed25519   []byte
-	Bls       []byte
+	Secp256k1 []byte `cbor:"Secp256k1"`
+	P256      []byte `cbor:"NistP256"`
+	Ed25519   []byte `cbor:"Ed25519"`
+	BLS       []byte `cbor:"Bls"`
+}
+
+func point(src []byte) (r, s *big.Int) {
+	return new(big.Int).SetBytes(src[:32]), new(big.Int).SetBytes(src[32:])
+}
+
+const ecdsaSignatureLength = 64
+
+func (s *Signature) Signature() (crypt.Signature, error) {
+	switch {
+	case s.Secp256k1 != nil:
+		if len(s.Secp256k1) != ecdsaSignatureLength {
+			return nil, errors.New("invalid Secp256k1 signature length")
+		}
+		r, s := point(s.Secp256k1)
+		return &crypt.ECDSASignature{
+			R:     r,
+			S:     s,
+			Curve: crypt.S256(),
+		}, nil
+
+	case s.P256 != nil:
+		if len(s.P256) != ecdsaSignatureLength {
+			return nil, errors.New("invalid P256 signature length")
+		}
+		r, s := point(s.P256)
+		return &crypt.ECDSASignature{
+			R:     r,
+			S:     s,
+			Curve: elliptic.P256(),
+		}, nil
+
+	case s.Ed25519 != nil:
+		if len(s.Ed25519) != ed25519.SignatureSize {
+			return nil, errors.New("invalid ed25519 signature length")
+		}
+		return crypt.Ed25519Signature(s.Ed25519[:]), nil
+
+	case s.BLS != nil:
+		sig, err := minpk.SignatureFromBytes(s.BLS[:])
+		if err != nil {
+			return nil, err
+		}
+		return (*crypt.BLSSignature)(sig), nil
+
+	default:
+		return nil, errors.New("malformed signature RPC response")
+	}
 }
 
 type RPCError struct {
@@ -68,43 +164,43 @@ func (e *RPCError) Unwrap() error {
 	return nil
 }
 
-type ImportResult struct {
+type importResult struct {
 	_         struct{} `cbor:",toarray"`
 	PublicKey PublicKey
 	Handle    uint64
 }
 
-type GenerateResult struct {
+type generateResult struct {
 	_          struct{} `cbor:",toarray"`
 	PrivateKey []byte
 	PublicKey  PublicKey
 }
 
-type GenerateAndImportResult struct {
+type generateAndImportResult struct {
 	_          struct{} `cbor:",toarray"`
 	PrivateKey []byte
 	PublicKey  PublicKey
 	Handle     uint64
 }
 
-type Result[T any] struct {
+type result[T any] struct {
 	Ok  *T
 	Err *RPCError
 }
 
-func (r *Result[T]) Error() error {
+func (r *result[T]) Error() error {
 	if r.Err != nil {
 		return r.Err
 	}
 	return nil
 }
 
-type SimpleResult struct {
+type simpleResult struct {
 	Ok  cbor.SimpleValue
 	Err *RPCError
 }
 
-func (r *SimpleResult) Error() error {
+func (r *simpleResult) Error() error {
 	if r.Err != nil {
 		return r.Err
 	}

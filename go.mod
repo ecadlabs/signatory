@@ -1,8 +1,8 @@
 module github.com/ecadlabs/signatory
 
-go 1.22
+go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	cloud.google.com/go/kms v1.15.5
@@ -13,10 +13,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3
 	github.com/aws/smithy-go v1.20.3
 	github.com/certusone/yubihsm-go v0.3.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.0.0
-	github.com/ecadlabs/gotez/v2 v2.1.3
+	github.com/ecadlabs/gotez/v2 v2.2.3
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/google/tink/go v1.7.0
@@ -30,7 +29,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.29.0
+	golang.org/x/crypto v0.32.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
 	golang.org/x/oauth2 v0.15.0
 	google.golang.org/api v0.152.0
@@ -55,6 +54,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.3 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.5 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
@@ -77,7 +77,7 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4 // indirect
@@ -104,9 +104,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.27.0
-	golang.org/x/term v0.26.0
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/sys v0.29.0
+	golang.org/x/term v0.28.0
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
