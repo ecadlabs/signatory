@@ -1,5 +1,5 @@
 ---
-id: aws_watermark
+id: aws_dynamodb
 title: AWS Watermark Backend
 ---
 
