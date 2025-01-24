@@ -1,9 +1,11 @@
 ---
 id: pkcs11
-title: PKCS#11
+title: PKCS#11 (AWS CloudHSM compatible)
 ---
 
 # PKCS#11 Vault
+
+> **Note**: The PKCS#11 configuration is commonly used for signing with an AWS Cloud HSM backend. Ensure that your AWS Cloud HSM setup is properly configured and the required libraries are available.
 
 ## Configuration
 
@@ -24,7 +26,7 @@ title: PKCS#11
 | public_value     | Base58 string            |          | Public key value.                                            |
 | extended_private | boolean                  |          | Try to read the public key data from the private key object. In some PKCS#11 implementations private key objects have `EC_POINT` attribute. |
 
-**Note**: `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator `Key Config` will be reused.
+> **Note**: `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator `Key Config` will be reused.
 
 ### Key Config
 
@@ -41,7 +43,7 @@ title: PKCS#11
 | match_id         | boolean |          | Find the corresponding public key by matching ID.            |
 | extended_private | boolean |          | Try to read the public key data from the private key object. |
 
-**Note**: if the whole object is missing then all options will be assumed as **true**
+> **Note**: if the whole object is missing then all options will be assumed as **true**
 
 ### Environment Variables
 
