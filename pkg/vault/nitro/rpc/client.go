@@ -22,17 +22,34 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func roundTrip[T any](ctx context.Context, conn net.Conn, req *request) (*T, error) {
-	if dl, ok := ctx.Deadline(); ok {
-		conn.SetDeadline(dl)
-	} else {
-		conn.SetDeadline(time.Time{})
-	}
+var aLongTimeAgo = time.Unix(1, 0)
 
+func roundTrip[T any](ctx context.Context, conn net.Conn, req *request) (result *T, err error) {
 	reqBuf, err := cbor.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
+
+	intErr := make(chan error)
+	done := make(chan struct{})
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			conn.SetDeadline(aLongTimeAgo)
+			intErr <- ctx.Err()
+		case <-done:
+			intErr <- nil
+		}
+	}()
+
+	defer func() {
+		close(done)
+		if e := <-intErr; e != nil {
+			err = e
+		}
+		conn.SetDeadline(time.Time{})
+	}()
 
 	wrBuf := make([]byte, len(reqBuf)+4)
 	binary.BigEndian.PutUint32(wrBuf, uint32(len(reqBuf)))

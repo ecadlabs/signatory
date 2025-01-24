@@ -17,15 +17,15 @@ type KeyType string
 
 const (
 	KeySecp256k1 KeyType = "Secp256k1"
-	KeyNistP256  KeyType = "NistP256"
+	KeyNISTP256  KeyType = "NistP256"
 	KeyEd25519   KeyType = "Ed25519"
-	KeyBls       KeyType = "Bls"
+	KeyBLS       KeyType = "Bls"
 )
 
 type Credentials struct {
 	AccessKeyID     string  `cbor:"access_key_id"`
 	SecretAccessKey string  `cbor:"secret_access_key"`
-	SessionToken    *string `cbor:"session_token"`
+	SessionToken    *string `cbor:"session_token,omitempty"`
 }
 
 type signRequest struct {
@@ -39,14 +39,14 @@ type signWithRequest struct {
 }
 
 type request struct {
-	Initialize        *Credentials
-	Import            []byte
-	Generate          *KeyType
-	GenerateAndImport *KeyType
-	Sign              *signRequest
-	SignWith          *signWithRequest
-	PublicKey         *uint64
-	PublicKeyFrom     []byte
+	Initialize        *Credentials     `cbor:"Initialize,omitempty"`
+	Import            []byte           `cbor:"Import,omitempty"`
+	Generate          *KeyType         `cbor:"Generate,omitempty"`
+	GenerateAndImport *KeyType         `cbor:"GenerateAndImport,omitempty"`
+	Sign              *signRequest     `cbor:"Sign,omitempty"`
+	SignWith          *signWithRequest `cbor:"SignWith,omitempty"`
+	PublicKey         *uint64          `cbor:"PublicKey,omitempty"`
+	PublicKeyFrom     []byte           `cbor:"PublicKeyFrom,omitempty"`
 }
 
 type PublicKey struct {
