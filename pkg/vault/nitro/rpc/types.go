@@ -5,8 +5,10 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"errors"
+	"fmt"
 	"math/big"
 
+	"github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -41,6 +43,7 @@ type signWithRequest struct {
 type request struct {
 	Initialize        *Credentials     `cbor:"Initialize,omitempty"`
 	Import            []byte           `cbor:"Import,omitempty"`
+	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted"`
 	Generate          *KeyType         `cbor:"Generate,omitempty"`
 	GenerateAndImport *KeyType         `cbor:"GenerateAndImport,omitempty"`
 	Sign              *signRequest     `cbor:"Sign,omitempty"`
@@ -90,6 +93,37 @@ func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
 
 	default:
 		return nil, errors.New("malformed public key RPC response")
+	}
+}
+
+type PrivateKey struct {
+	Secp256k1 []byte `cbor:"Secp256k1"`
+	P256      []byte `cbor:"NistP256"`
+	Ed25519   []byte `cbor:"Ed25519"`
+	BLS       []byte `cbor:"Bls"`
+}
+
+func NewPrivateKey(priv crypt.PrivateKey) (*PrivateKey, error) {
+	switch priv := priv.(type) {
+	case *crypt.ECDSAPrivateKey:
+		data := priv.D.Bytes()
+		switch priv.Curve {
+		case elliptic.P256():
+			return &PrivateKey{P256: data}, nil
+		case crypt.S256():
+			return &PrivateKey{Secp256k1: data}, nil
+		default:
+			return nil, fmt.Errorf("unsupported curve %T", priv.Curve)
+		}
+
+	case crypt.Ed25519PrivateKey:
+		return &PrivateKey{Ed25519: priv}, nil
+
+	case *crypt.BLSPrivateKey:
+		return &PrivateKey{BLS: (*goblst.Scalar)(priv).BEBytes()}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported key type %T", priv)
 	}
 }
 

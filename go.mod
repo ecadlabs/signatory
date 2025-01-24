@@ -14,7 +14,7 @@ require (
 	github.com/aws/smithy-go v1.20.3
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
-	github.com/ecadlabs/goblst v1.0.0
+	github.com/ecadlabs/goblst v1.0.1
 	github.com/ecadlabs/gotez/v2 v2.2.3
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/go-playground/validator/v10 v10.22.0

@@ -94,6 +94,19 @@ func (c *Client) Import(ctx context.Context, keyData []byte) (publicKey *PublicK
 	return &res.Ok.PublicKey, res.Ok.Handle, nil
 }
 
+func (c *Client) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (publicKey *PublicKey, handle uint64, err error) {
+	res, err := roundTrip[result[importResult]](ctx, c.conn, &request{
+		ImportUnencrypted: priv,
+	})
+	if err == nil && res.Error() != nil {
+		err = res.Error()
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	return &res.Ok.PublicKey, res.Ok.Handle, nil
+}
+
 func (c *Client) Generate(ctx context.Context, keyType KeyType) (privateKeyData []byte, publicKey *PublicKey, err error) {
 	res, err := roundTrip[result[generateResult]](ctx, c.conn, &request{
 		Generate: &keyType,
