@@ -44,6 +44,16 @@ const sidebars = {
           label: "Client Authorization",
           items: [`authorized_keys`, `jwt`],
         },
+		{
+			type: "category",
+			label: "Watermark Backends",
+			items: [`aws_dynamodb`],
+		},
+		{
+			type: "category",
+			label: "Vault Backends",
+			items: [`hashicorp_vault`, `aws_kms`, `azure_kms`, `gcp_kms`, `yubihsm`, `ledger`, `pkcs11`, `file_based`],
+		},
       ],
     },
   ],
