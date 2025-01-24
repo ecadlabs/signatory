@@ -41,7 +41,7 @@ Explore detailed documentation for various components of Signatory:
 - [Hashicorp Vault](./docs/hashicorp_vault.md)
 - [Ledger Integration](./docs/ledger.md)
 - [Local Secret Storage](./docs/localsecret.md)
-- [PKCS#11](./docs/pkcs11.md)
+- [PKCS#11 (AWS CloudHSM compatible)](./docs/pkcs11.md)
 - [YubiHSM](./docs/yubihsm.md)
 
 ### Watermark backends 
