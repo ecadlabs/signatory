@@ -17,7 +17,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 	)
 
 	importCmd := &cobra.Command{
-		Use:   "import [flags]",
+		Use:   "import [secret-key]",
 		Short: "Import Tezos private keys (edsk..., spsk..., p2sk...)",
 		Args:  cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -31,9 +31,10 @@ func NewImportCommand(c *Context) *cobra.Command {
 				passCB = func() ([]byte, error) { return []byte(password), nil }
 			} else {
 				passCB = func() ([]byte, error) {
-					fmt.Println()
-					fmt.Print("This key is encrypted, enter the password: ")
-					return terminal.ReadPassword(int(syscall.Stdin))
+					fmt.Print("Enter the password: ")
+					pwd, err := terminal.ReadPassword(int(syscall.Stdin))
+					fmt.Println("")
+					return pwd, err
 				}
 			}
 
@@ -42,19 +43,24 @@ func NewImportCommand(c *Context) *cobra.Command {
 				options[k] = v
 			}
 
-			fmt.Print("Enter secret key: ")
-			key, err := terminal.ReadPassword(int(syscall.Stdin))
-			if err != nil {
-				return err
-			}
-			fmt.Println()
-			if len(key) == 0 {
-				return fmt.Errorf("enter a valid secret key")
+			var keys []string
+			if len(args) == 0 {
+				fmt.Print("Enter the secret key: ")
+				key, err := terminal.ReadPassword(int(syscall.Stdin))
+				fmt.Println("")
+				if err != nil {
+					return err
+				}
+				keys = []string{string(key)}
+			} else {
+				keys = args
 			}
 
-			_, err = c.signatory.Import(c.Context, vaultName, string(key), passCB, options)
-			if err != nil {
-				return err
+			for _, key := range keys {
+				_, err := c.signatory.Import(c.Context, vaultName, key, passCB, options)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
