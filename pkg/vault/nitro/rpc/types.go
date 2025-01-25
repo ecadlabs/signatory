@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"errors"
@@ -68,15 +67,7 @@ func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
 		} else {
 			data = p.P256
 		}
-		parsed, err := cryptoutils.ParsePKIXPublicKey(data)
-		if err != nil {
-			return nil, err
-		}
-		pub, ok := parsed.(*ecdsa.PublicKey)
-		if !ok {
-			return nil, errors.New("unexpected public key type")
-		}
-		return (*crypt.ECDSAPublicKey)(pub), nil
+		return cryptoutils.ParsePKIXPublicKey(data)
 
 	case p.Ed25519 != nil:
 		if len(p.Ed25519) != ed25519.PublicKeySize {

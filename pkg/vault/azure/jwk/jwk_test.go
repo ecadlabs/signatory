@@ -4,14 +4,14 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/x509"
+	stdx509 "crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"math/big"
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils/x509"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +28,7 @@ func parsePrivateKey(buf []byte) (pk interface{}, err error) {
 	}
 
 	if block.Type == "RSA PRIVATE KEY" {
-		return x509.ParsePKCS1PrivateKey(block.Bytes)
+		return stdx509.ParsePKCS1PrivateKey(block.Bytes)
 	}
 
 	return x509.ParsePKCS8PrivateKey(block.Bytes) // Unencrypted PKCS#8 only
@@ -40,7 +40,7 @@ func parsePublicKey(buf []byte) (pk interface{}, err error) {
 		return nil, errors.New("failed to parse PEM block containing the public key")
 	}
 
-	return cryptoutils.ParsePKIXPublicKey(block.Bytes)
+	return x509.ParsePKIXPublicKey(block.Bytes)
 }
 
 func TestParse(t *testing.T) {

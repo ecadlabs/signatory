@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils/x509"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -92,11 +93,7 @@ func (c *Vault) getPublicKey(ctx context.Context, name string) (crypt.PublicKey,
 	}
 
 	block, _ := pem.Decode([]byte(pk.Pem))
-	pkixKey, err := cryptoutils.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return crypt.NewPublicKeyFrom(pkixKey)
+	return cryptoutils.ParsePKIXPublicKey(block.Bytes)
 }
 
 type cloudKMSIterator struct {
@@ -280,7 +277,7 @@ func (c *Vault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Optio
 
 	// Decode job's public key
 	pemBlock, _ := pem.Decode([]byte(job.PublicKey.Pem))
-	opaqueJobKey, err := cryptoutils.ParsePKIXPublicKey(pemBlock.Bytes)
+	opaqueJobKey, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("(CloudKMS/%s): %w", c.config.keyRingName(), err)
 	}

@@ -118,12 +118,7 @@ func (v *Vault) getPublicKey(ctx context.Context, keyID *string) (*awsKMSKey, er
 		return nil, errors.New("key usage must be SIGN_VERIFY")
 	}
 
-	pkixKey, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse public key: %w", err)
-	}
-
-	pub, err := crypt.NewPublicKeyFrom(pkixKey)
+	pub, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)
 	if err != nil {
 		return nil, err
 	}

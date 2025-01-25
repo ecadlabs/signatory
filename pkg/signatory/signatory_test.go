@@ -44,7 +44,7 @@ func TestImport(t *testing.T) {
 	s, err := signatory.New(context.Background(), &conf)
 	require.NoError(t, err)
 
-	imported, err := s.Import(context.Background(), "mock", privateKey, nil, nil)
+	imported, err := s.Import(context.Background(), "mock", []byte(privateKey), nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey().String())
 	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.Hash.String())

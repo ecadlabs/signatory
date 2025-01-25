@@ -8,8 +8,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ecadlabs/gotez/v2/b58/base58"
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
@@ -182,6 +182,38 @@ func (v *NitroVault) List(ctx context.Context) vault.KeyIterator {
 	})
 }
 
+func (v *NitroVault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.KeyReference, error) {
+	rpcPk, err := rpc.NewPrivateKey(pk)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+
+	v.mtx.Lock()
+	defer v.mtx.Unlock()
+
+	data, pub, handle, err := v.client.ImportUnencrypted(ctx, rpcPk)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+	p, err := pub.PublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+	key := &nitroKey{
+		pub:    p,
+		handle: handle,
+	}
+	v.keys = append(v.keys, key)
+	if err := v.storage.ImportKey(ctx, data); err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+
+	return &nitroKeyRef{
+		nitroKey: key,
+		v:        v,
+	}, nil
+}
+
 func (v *NitroVault) Generate(ctx context.Context, keyType *vault.KeyType, n int) (vault.KeyIterator, error) {
 	var kt rpc.KeyType
 	switch keyType {
@@ -194,7 +226,7 @@ func (v *NitroVault) Generate(ctx context.Context, keyType *vault.KeyType, n int
 	case vault.KeyBLS12_381:
 		kt = rpc.KeyBLS
 	default:
-		return nil, fmt.Errorf("(Nitro): unsupported key type %s", string(base58.Encode(keyType.Prefix)))
+		return nil, fmt.Errorf("(Nitro): unsupported key type %v", keyType)
 	}
 
 	v.mtx.Lock()
@@ -259,6 +291,6 @@ func newStorage(conf *StorageConfig) (keyBlobStorage, error) {
 }
 
 var (
-	_ vault.Vault     = (*NitroVault)(nil)
+	_ vault.Importer  = (*NitroVault)(nil)
 	_ vault.Generator = (*NitroVault)(nil)
 )

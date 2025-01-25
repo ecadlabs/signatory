@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"syscall"
 
 	"github.com/ecadlabs/signatory/pkg/utils"
@@ -14,6 +15,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 		vaultName string
 		password  string
 		opt       string
+		pemFile   string
 	)
 
 	importCmd := &cobra.Command{
@@ -24,6 +26,10 @@ func NewImportCommand(c *Context) *cobra.Command {
 			o, err := utils.ParseMap(opt, ':', ',')
 			if err != nil {
 				return err
+			}
+			options := make(utils.Options)
+			for k, v := range o {
+				options[k] = v
 			}
 
 			var passCB func() ([]byte, error)
@@ -38,22 +44,26 @@ func NewImportCommand(c *Context) *cobra.Command {
 				}
 			}
 
-			options := make(utils.Options)
-			for k, v := range o {
-				options[k] = v
-			}
-
-			var keys []string
-			if len(args) == 0 {
+			var keys [][]byte
+			if pemFile != "" {
+				pemData, err := os.ReadFile(pemFile)
+				if err != nil {
+					return err
+				}
+				keys = [][]byte{pemData}
+			} else if len(args) != 0 {
+				keys = make([][]byte, len(args))
+				for i, a := range args {
+					keys[i] = []byte(a)
+				}
+			} else {
 				fmt.Print("Enter the secret key: ")
 				key, err := terminal.ReadPassword(int(syscall.Stdin))
 				fmt.Println("")
 				if err != nil {
 					return err
 				}
-				keys = []string{string(key)}
-			} else {
-				keys = args
+				keys = [][]byte{key}
 			}
 
 			for _, key := range keys {
@@ -69,6 +79,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 
 	importCmd.Flags().StringVar(&vaultName, "vault", "", "Vault name for importing")
 	importCmd.Flags().StringVar(&password, "password", "", "Password for private key(s)")
+	importCmd.Flags().StringVarP(&pemFile, "from", "f", "", "Import PKCS#8 PEM file")
 	importCmd.Flags().StringVarP(&opt, "opt", "o", "", "Options to be passed to the backend. Syntax: key:val[,...]")
 	cobra.MarkFlagRequired(importCmd.Flags(), "vault")
 
