@@ -7,7 +7,7 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
-	terminal "golang.org/x/term"
+	"golang.org/x/term"
 )
 
 func NewImportCommand(c *Context) *cobra.Command {
@@ -36,12 +36,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 			if password != "" {
 				passCB = func() ([]byte, error) { return []byte(password), nil }
 			} else {
-				passCB = func() ([]byte, error) {
-					fmt.Print("Enter the password: ")
-					pwd, err := terminal.ReadPassword(int(syscall.Stdin))
-					fmt.Println("")
-					return pwd, err
-				}
+				passCB = utils.KeyboardInteractivePassphraseFunc("Enter the password: ")
 			}
 
 			var keys [][]byte
@@ -58,7 +53,7 @@ func NewImportCommand(c *Context) *cobra.Command {
 				}
 			} else {
 				fmt.Print("Enter the secret key: ")
-				key, err := terminal.ReadPassword(int(syscall.Stdin))
+				key, err := term.ReadPassword(int(syscall.Stdin))
 				fmt.Println("")
 				if err != nil {
 					return err

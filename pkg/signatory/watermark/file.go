@@ -1,7 +1,6 @@
 package watermark
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -18,6 +17,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -137,29 +137,13 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 		return err
 	}
 
-	fd, err := os.CreateTemp(dir, "watermark")
+	buf, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		return err
-	}
-	defer func() {
-		e := fd.Close()
-		if err == nil {
-			err = e
-		}
-	}()
-
-	w := bufio.NewWriter(fd)
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	if err = enc.Encode(data); err != nil {
-		return err
-	}
-	if err := w.Flush(); err != nil {
 		return err
 	}
 
 	path := filepath.Join(dir, fmt.Sprintf("%s.json", chain.String()))
-	return os.Rename(fd.Name(), path)
+	return utils.WriteRename(path, "watermark", buf)
 }
 
 func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {

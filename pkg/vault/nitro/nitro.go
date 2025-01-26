@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -29,14 +30,19 @@ type StorageConfig struct {
 	Config yaml.Node `yaml:"config"`
 }
 
-type Result[T any] interface {
+type encryptedKey struct {
+	PublicKeyHash       tz.PublicKeyHash `json:"public_key_hash"`
+	EncryptedPrivateKey []byte           `json:"encrypted_private_key"`
+}
+
+type result[T any] interface {
 	Result() iter.Seq[T]
 	Err() error
 }
 
 type keyBlobStorage interface {
-	GetKeys(ctx context.Context) (Result[[]byte], error)
-	ImportKey(ctx context.Context, encryptedKeyData []byte) error
+	GetKeys(ctx context.Context) (result[*encryptedKey], error)
+	ImportKey(ctx context.Context, encryptedKey *encryptedKey) error
 }
 
 const (
@@ -140,7 +146,7 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	storage, err := newStorage(conf.Storage, global)
+	storage, err := newStorage(ctx, conf.Storage, global)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
@@ -181,7 +187,7 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 
 	var keys []*nitroKey
 	for k := range r.Result() {
-		pub, handle, err := client.Import(ctx, k)
+		pub, handle, err := client.Import(ctx, k.EncryptedPrivateKey)
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
@@ -193,6 +199,9 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 			pub:    p,
 			handle: handle,
 		})
+	}
+	if err := r.Err(); err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
 	return &NitroVault{
@@ -243,7 +252,11 @@ func (v *NitroVault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.
 		handle: handle,
 	}
 	v.keys = append(v.keys, key)
-	if err := v.storage.ImportKey(ctx, data); err != nil {
+
+	if err := v.storage.ImportKey(ctx, &encryptedKey{
+		PublicKeyHash:       p.Hash(),
+		EncryptedPrivateKey: data,
+	}); err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
@@ -286,7 +299,10 @@ func (v *NitroVault) Generate(ctx context.Context, keyType *cryptoutils.KeyType,
 			handle: handle,
 		}
 		v.keys = append(v.keys, key)
-		if err := v.storage.ImportKey(ctx, data); err != nil {
+		if err := v.storage.ImportKey(ctx, &encryptedKey{
+			PublicKeyHash:       p.Hash(),
+			EncryptedPrivateKey: data,
+		}); err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
 		imported = append(imported, key)
@@ -314,7 +330,7 @@ func (v *NitroVault) Name() string { return "NitroEnclave" }
 
 const defaultFile = "enclave_keys.json"
 
-func newStorage(conf *StorageConfig, global config.GlobalContext) (keyBlobStorage, error) {
+func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalContext) (keyBlobStorage, error) {
 	if conf != nil {
 		switch conf.Driver {
 		case "file":
@@ -325,6 +341,12 @@ func newStorage(conf *StorageConfig, global config.GlobalContext) (keyBlobStorag
 				return nil, err
 			}
 			return newFileStorage(path)
+		case "aws", "dynamodb":
+			var cfg awsStorageConfig
+			if err := conf.Config.Decode(&cfg); err != nil {
+				return nil, err
+			}
+			return newAWSStorage(ctx, &cfg)
 		default:
 			return nil, fmt.Errorf("unknown key storage %s", conf.Driver)
 		}

@@ -1,20 +1,20 @@
 package nitro
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"iter"
 	"os"
-	"path/filepath"
 	"slices"
 	"sync"
+
+	"github.com/ecadlabs/signatory/pkg/utils"
 )
 
 type fileStorage struct {
 	path string
 	mtx  sync.RWMutex
-	keys [][]byte
+	keys []*encryptedKey
 }
 
 func newFileStorage(path string) (*fileStorage, error) {
@@ -23,7 +23,7 @@ func newFileStorage(path string) (*fileStorage, error) {
 		return nil, err
 	}
 	defer fd.Close()
-	var keys [][]byte
+	var keys []*encryptedKey
 	if err = json.NewDecoder(fd).Decode(&keys); err != nil {
 		return nil, err
 	}
@@ -34,45 +34,29 @@ func newFileStorage(path string) (*fileStorage, error) {
 }
 
 type fileResult struct {
-	keys [][]byte
+	keys []*encryptedKey
 }
 
 func (f *fileResult) Err() error { return nil }
-func (f *fileResult) Result() iter.Seq[[]byte] {
+func (f *fileResult) Result() iter.Seq[*encryptedKey] {
 	return slices.Values(f.keys)
 }
 
-func (f *fileStorage) GetKeys(ctx context.Context) (Result[[]byte], error) {
+func (f *fileStorage) GetKeys(ctx context.Context) (result[*encryptedKey], error) {
 	f.mtx.RLock()
 	defer f.mtx.RUnlock()
-
 	return &fileResult{keys: f.keys}, nil
 }
 
-func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) (err error) {
+func (f *fileStorage) ImportKey(ctx context.Context, encryptedKey *encryptedKey) (err error) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
-	f.keys = append(f.keys, encryptedKeyData)
-	fd, err := os.CreateTemp(filepath.Dir(f.path), "keys")
+	f.keys = append(f.keys, encryptedKey)
+
+	data, err := json.MarshalIndent(f.keys, "", "    ")
 	if err != nil {
 		return err
 	}
-	defer func() {
-		e := fd.Close()
-		if err == nil {
-			err = e
-		}
-	}()
-
-	w := bufio.NewWriter(fd)
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	if err = enc.Encode(f.keys); err != nil {
-		return err
-	}
-	if err := w.Flush(); err != nil {
-		return err
-	}
-	return os.Rename(fd.Name(), f.path)
+	return utils.WriteRename(f.path, "keys", data)
 }

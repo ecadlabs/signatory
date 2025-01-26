@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -17,8 +16,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
-	awskms "github.com/ecadlabs/signatory/pkg/vault/aws"
-	log "github.com/sirupsen/logrus"
+	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,8 +27,8 @@ const (
 )
 
 type AWSConfig struct {
-	awskms.Config `yaml:",inline"`
-	Table         string `yaml:"table"`
+	awsutils.Config `yaml:",inline"`
+	Table           string `yaml:"table"`
 }
 
 func (c *AWSConfig) table() string {
@@ -46,7 +44,7 @@ type AWS struct {
 }
 
 func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
-	cfg, err := awskms.NewConfig(ctx, &config.Config)
+	cfg, err := config.Config.NewAWSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,14 +54,14 @@ func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
 		client: client,
 		cfg:    *config,
 	}
-	if err := a.maybeCreateTable(ctx); err != nil {
+	if err := awsutils.DynamoDBMaybeCreateTable(ctx, client, a.makeCreateTableInput()); err != nil {
 		return nil, fmt.Errorf("(AWSWatermark) NewAWSWatermark: %w", err)
 	}
 	return &a, nil
 }
 
-func (a *AWS) maybeCreateTable(ctx context.Context) error {
-	_, err := a.client.CreateTable(ctx, &dynamodb.CreateTableInput{
+func (a *AWS) makeCreateTableInput() *dynamodb.CreateTableInput {
+	return &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("idx"),
@@ -89,19 +87,7 @@ func (a *AWS) maybeCreateTable(ctx context.Context) error {
 			WriteCapacityUnits: aws.Int64(writeCapacityUnits),
 		},
 		TableName: aws.String(a.cfg.table()),
-	})
-	if err != nil {
-		var serr smithy.APIError
-		if errors.As(err, &serr) && serr.ErrorCode() == "ResourceInUseException" {
-			return nil
-		}
-		return err
 	}
-	log.WithField("table", a.cfg.table()).Info("table created")
-	waiter := dynamodb.NewTableExistsWaiter(a.client)
-	return waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
-		TableName: aws.String(a.cfg.table()),
-	}, time.Minute*5) // give excess time
 }
 
 type watermark struct {
