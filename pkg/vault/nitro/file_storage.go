@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"iter"
 	"os"
+	"path/filepath"
 	"slices"
 	"sync"
 )
@@ -53,8 +54,7 @@ func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) er
 	defer f.mtx.Unlock()
 
 	f.keys = append(f.keys, encryptedKeyData)
-
-	fd, err := os.Create(f.path)
+	fd, err := os.CreateTemp(filepath.Dir(f.path), "keys")
 	if err != nil {
 		return err
 	}
@@ -64,5 +64,11 @@ func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) er
 	if err = enc.Encode(f.keys); err != nil {
 		return err
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	if err := fd.Close(); err != nil {
+		return err
+	}
+	return os.Rename(fd.Name(), f.path)
 }

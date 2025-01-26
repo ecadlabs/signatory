@@ -5,10 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"net"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
@@ -33,15 +38,13 @@ type keyBlobStorage interface {
 }
 
 const (
-	defaultCID  = 16
-	defaultPort = 2000
+	defaultAddress = "vsock://16:2000"
 )
 
 type Config struct {
-	EnclaveSignerCID  *uint32       `yaml:"enclave_signer_cid"`
-	EnclaveSignerPort *uint32       `yaml:"enclave_signer_port"`
-	Storage           StorageConfig `yaml:"storage"`
-	Credentials       *Credentials  `yaml:"credentials"`
+	EnclaveSignerAddress string        `yaml:"enclave_signer_address"`
+	Storage              StorageConfig `yaml:"storage"`
+	Credentials          *Credentials  `yaml:"credentials"`
 }
 
 type Credentials struct {
@@ -104,16 +107,35 @@ func New(ctx context.Context, conf *Config) (*NitroVault, error) {
 		return nil, errors.New("(Nitro): missing credentials")
 	}
 
-	var cid, port uint32
-	if conf.EnclaveSignerCID != nil {
-		cid = *conf.EnclaveSignerCID
+	var addr string
+	if conf.EnclaveSignerAddress != "" {
+		addr = conf.EnclaveSignerAddress
 	} else {
-		cid = defaultCID
+		addr = defaultAddress
 	}
-	if conf.EnclaveSignerPort != nil {
-		port = *conf.EnclaveSignerPort
+
+	isTCP := false
+	var hostport string
+	if strings.Contains(addr, "//") {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return nil, fmt.Errorf("(Nitro): %w", err)
+		}
+		switch u.Scheme {
+		case "vsock":
+		case "tcp":
+			isTCP = true
+		default:
+			return nil, fmt.Errorf("(Nitro): unknown scheme: %s", u.Scheme)
+		}
+		hostport = u.Host
 	} else {
-		port = defaultPort
+		hostport = addr
+	}
+
+	host, port, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
 	storage, err := newStorage(&conf.Storage)
@@ -121,12 +143,27 @@ func New(ctx context.Context, conf *Config) (*NitroVault, error) {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	enclaveAddr := vsock.Addr{CID: cid, Port: port}
-	log.Infof("(Nitro): connecting to the enclave signer on %v...", &enclaveAddr)
+	log.Infof("(Nitro): connecting to the enclave signer on %s...", addr)
+	var conn net.Conn
+	if !isTCP {
+		h, err := strconv.ParseUint(host, 0, 32)
+		if err != nil {
+			return nil, fmt.Errorf("(Nitro): %w", err)
+		}
+		p, err := strconv.ParseUint(port, 0, 32)
+		if err != nil {
+			return nil, fmt.Errorf("(Nitro): %w", err)
+		}
+		enclaveAddr := vsock.Addr{CID: uint32(h), Port: uint32(p)}
 
-	conn, err := vsock.Dial(&enclaveAddr)
-	if err != nil {
-		return nil, fmt.Errorf("(Nitro): %w", err)
+		if conn, err = vsock.Dial(&enclaveAddr); err != nil {
+			return nil, fmt.Errorf("(Nitro): %w", err)
+		}
+	} else {
+		var d net.Dialer
+		if conn, err = d.DialContext(ctx, "tcp", host+":"+port); err != nil {
+			return nil, fmt.Errorf("(Nitro): %w", err)
+		}
 	}
 
 	client := rpc.NewClient(conn)
@@ -214,16 +251,16 @@ func (v *NitroVault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.
 	}, nil
 }
 
-func (v *NitroVault) Generate(ctx context.Context, keyType *vault.KeyType, n int) (vault.KeyIterator, error) {
+func (v *NitroVault) Generate(ctx context.Context, keyType *cryptoutils.KeyType, n int) (vault.KeyIterator, error) {
 	var kt rpc.KeyType
 	switch keyType {
-	case vault.KeyEd25519:
+	case cryptoutils.KeyEd25519:
 		kt = rpc.KeyEd25519
-	case vault.KeySecp256k1:
+	case cryptoutils.KeySecp256k1:
 		kt = rpc.KeySecp256k1
-	case vault.KeyP256:
+	case cryptoutils.KeyP256:
 		kt = rpc.KeyNISTP256
-	case vault.KeyBLS12_381:
+	case cryptoutils.KeyBLS12_381:
 		kt = rpc.KeyBLS
 	default:
 		return nil, fmt.Errorf("(Nitro): unsupported key type %v", keyType)

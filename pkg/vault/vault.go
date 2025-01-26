@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ecadlabs/gotez/v2/b58/base58"
-	"github.com/ecadlabs/gotez/v2/b58/prefix"
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -47,20 +46,9 @@ type Importer interface {
 	Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (KeyReference, error)
 }
 
-type KeyType prefix.Prefix
-
-var (
-	KeyEd25519   = (*KeyType)(&prefix.Ed25519Seed)
-	KeySecp256k1 = (*KeyType)(&prefix.Secp256k1SecretKey)
-	KeyP256      = (*KeyType)(&prefix.P256SecretKey)
-	KeyBLS12_381 = (*KeyType)(&prefix.BLS12_381SecretKey)
-)
-
-func (k *KeyType) String() string { return string(base58.Encode(k.Prefix)) }
-
 // Generator represents a backend which is able to generate keys on its side
 type Generator interface {
-	Generate(ctx context.Context, keyType *KeyType, n int) (KeyIterator, error)
+	Generate(ctx context.Context, keyType *cryptoutils.KeyType, n int) (KeyIterator, error)
 }
 
 // Unlocker interface representing an unlocker backend
