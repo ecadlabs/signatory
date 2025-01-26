@@ -8,11 +8,13 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -42,9 +44,9 @@ const (
 )
 
 type Config struct {
-	EnclaveSignerAddress string        `yaml:"enclave_signer_address"`
-	Storage              StorageConfig `yaml:"storage"`
-	Credentials          *Credentials  `yaml:"credentials"`
+	EnclaveSignerAddress string         `yaml:"enclave_signer_address"`
+	Storage              *StorageConfig `yaml:"storage"`
+	Credentials          *Credentials   `yaml:"credentials"`
 }
 
 type Credentials struct {
@@ -94,7 +96,7 @@ func fromEnv(value *string, name string) {
 	}
 }
 
-func New(ctx context.Context, conf *Config) (*NitroVault, error) {
+func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault, error) {
 	var cred rpc.Credentials
 	if conf.Credentials != nil {
 		cred.AccessKeyID = conf.Credentials.AccessKeyID
@@ -138,7 +140,7 @@ func New(ctx context.Context, conf *Config) (*NitroVault, error) {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	storage, err := newStorage(&conf.Storage)
+	storage, err := newStorage(conf.Storage, global)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
@@ -310,21 +312,39 @@ func (v *NitroVault) Close(ctx context.Context) error {
 
 func (v *NitroVault) Name() string { return "NitroEnclave" }
 
-func newStorage(conf *StorageConfig) (keyBlobStorage, error) {
-	switch conf.Driver {
-	case "file":
-		var path string
-		if err := conf.Config.Decode(&path); err != nil {
-			return nil, err
+const defaultFile = "enclave_keys.json"
+
+func newStorage(conf *StorageConfig, global config.GlobalContext) (keyBlobStorage, error) {
+	if conf != nil {
+		switch conf.Driver {
+		case "file":
+			var path string
+			if conf.Config.IsZero() {
+				path = filepath.Join(global.GetBaseDir(), defaultFile)
+			} else if err := conf.Config.Decode(&path); err != nil {
+				return nil, err
+			}
+			return newFileStorage(path)
+		default:
+			return nil, fmt.Errorf("unknown key storage %s", conf.Driver)
 		}
-		storage, err := newFileStorage(path)
-		if err != nil {
-			return nil, err
-		}
-		return storage, nil
-	default:
-		return nil, fmt.Errorf("unknown key storage %s", conf.Driver)
+	} else {
+		path := filepath.Join(global.GetBaseDir(), defaultFile)
+		return newFileStorage(path)
 	}
+}
+
+func init() {
+	vault.RegisterVault("nitro", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
+		var conf Config
+		if node == nil || node.Kind == 0 {
+			return nil, errors.New("(Nitro): config is missing")
+		}
+		if err := node.Decode(&conf); err != nil {
+			return nil, err
+		}
+		return New(ctx, &conf, global)
+	})
 }
 
 var (

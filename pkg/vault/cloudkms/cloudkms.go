@@ -355,7 +355,7 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 }
 
 func init() {
-	vault.RegisterVault("cloudkms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("cloudkms", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(CloudKMS): config is missing")

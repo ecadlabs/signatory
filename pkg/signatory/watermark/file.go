@@ -137,18 +137,29 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 		return err
 	}
 
-	fd, err := os.Create(filepath.Join(dir, fmt.Sprintf("%s.json", chain.String())))
+	fd, err := os.CreateTemp(dir, "watermark")
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer func() {
+		e := fd.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
 	w := bufio.NewWriter(fd)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
 	if err = enc.Encode(data); err != nil {
 		return err
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	path := filepath.Join(dir, fmt.Sprintf("%s.json", chain.String()))
+	return os.Rename(fd.Name(), path)
 }
 
 func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
@@ -168,7 +179,7 @@ func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pr
 }
 
 func init() {
-	RegisterWatermark("file", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
-		return NewFileWatermark(global.BaseDir)
+	RegisterWatermark("file", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+		return NewFileWatermark(global.GetBaseDir())
 	})
 }

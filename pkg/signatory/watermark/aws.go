@@ -192,7 +192,7 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 }
 
 func init() {
-	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
+	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
 		var conf AWSConfig
 		if node != nil {
 			if err := node.Decode(&conf); err != nil {

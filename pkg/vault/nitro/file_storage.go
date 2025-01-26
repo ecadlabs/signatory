@@ -49,7 +49,7 @@ func (f *fileStorage) GetKeys(ctx context.Context) (Result[[]byte], error) {
 	return &fileResult{keys: f.keys}, nil
 }
 
-func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) error {
+func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) (err error) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
@@ -58,6 +58,13 @@ func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) er
 	if err != nil {
 		return err
 	}
+	defer func() {
+		e := fd.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
 	w := bufio.NewWriter(fd)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
@@ -65,9 +72,6 @@ func (f *fileStorage) ImportKey(ctx context.Context, encryptedKeyData []byte) er
 		return err
 	}
 	if err := w.Flush(); err != nil {
-		return err
-	}
-	if err := fd.Close(); err != nil {
 		return err
 	}
 	return os.Rename(fd.Name(), f.path)

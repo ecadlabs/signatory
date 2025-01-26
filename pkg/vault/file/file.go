@@ -31,7 +31,7 @@ type tezosSecretJSONEntry struct {
 }
 
 func init() {
-	vault.RegisterVault("file", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("file", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf cfg
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(File): config is missing")

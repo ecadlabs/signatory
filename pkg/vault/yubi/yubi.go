@@ -375,7 +375,7 @@ func New(ctx context.Context, config *Config) (*HSM, error) {
 }
 
 func init() {
-	vault.RegisterVault("yubihsm", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("yubihsm", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(YubiHSM): config is missing")

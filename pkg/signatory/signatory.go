@@ -538,6 +538,11 @@ type Config struct {
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
 	PolicyHook   *PolicyHook
+	BaseDir      string
+}
+
+func (c *Config) GetBaseDir() string {
+	return c.BaseDir
 }
 
 // New returns Signatory instance
@@ -564,7 +569,7 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		if factory == nil {
 			factory = vault.Registry()
 		}
-		v, err := factory.New(ctx, vc.Driver, &vc.Config)
+		v, err := factory.New(ctx, vc.Driver, &vc.Config, c)
 		if err != nil {
 			return nil, err
 		}

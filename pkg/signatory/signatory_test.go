@@ -32,7 +32,7 @@ func TestImport(t *testing.T) {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: watermark.Ignore{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+		VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 			v, err := memory.New(nil, "Mock")
 			if err != nil {
 				return nil, err
@@ -348,7 +348,7 @@ func TestPolicy(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 				Watermark: watermark.Ignore{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
@@ -440,7 +440,7 @@ func TestListPublicKeys(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
 				Watermark: watermark.Ignore{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, "test"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
