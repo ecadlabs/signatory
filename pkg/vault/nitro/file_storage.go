@@ -3,6 +3,7 @@ package nitro
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"iter"
 	"os"
 	"slices"
@@ -20,7 +21,14 @@ type fileStorage struct {
 func newFileStorage(path string) (*fileStorage, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		} else {
+			return &fileStorage{
+				path: path,
+				keys: make([]*encryptedKey, 0),
+			}, nil
+		}
 	}
 	defer fd.Close()
 	var keys []*encryptedKey

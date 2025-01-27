@@ -287,7 +287,7 @@ func (v *NitroVault[C]) Generate(ctx context.Context, keyType *cryptoutils.KeyTy
 	}), nil
 }
 
-func (v *NitroVault[C]) Close(ctx context.Context) error {
+func (v *NitroVault[C]) Close(context.Context) error {
 	return v.client.Close()
 }
 

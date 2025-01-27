@@ -42,7 +42,7 @@ type signWithRequest struct {
 type request[C any] struct {
 	Initialize        *C               `cbor:"Initialize,omitempty"`
 	Import            []byte           `cbor:"Import,omitempty"`
-	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted"`
+	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted,omitempty"`
 	Generate          *KeyType         `cbor:"Generate,omitempty"`
 	GenerateAndImport *KeyType         `cbor:"GenerateAndImport,omitempty"`
 	Sign              *signRequest     `cbor:"Sign,omitempty"`
@@ -215,7 +215,7 @@ type result[T any] struct {
 
 func (r *result[T]) Error() error {
 	if r.Err != nil {
-		return r.Err
+		return fmt.Errorf("RPC Error: %w", r.Err)
 	}
 	return nil
 }
@@ -227,7 +227,7 @@ type simpleResult struct {
 
 func (r *simpleResult) Error() error {
 	if r.Err != nil {
-		return r.Err
+		return fmt.Errorf("RPC Error: %w", r.Err)
 	}
 	return nil
 }
