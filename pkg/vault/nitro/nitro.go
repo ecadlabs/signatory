@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"iter"
 	"net"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
@@ -46,13 +43,15 @@ type keyBlobStorage interface {
 }
 
 const (
-	defaultAddress = "vsock://16:2000"
+	defaultCID  = 16
+	defaultPort = 2000
 )
 
 type Config struct {
-	EnclaveSignerAddress string         `yaml:"enclave_signer_address"`
-	Storage              *StorageConfig `yaml:"storage"`
-	Credentials          *Credentials   `yaml:"credentials"`
+	EnclaveCID  *uint32        `yaml:"enclave_cid"`
+	EnclavePort *uint32        `yaml:"enclave_port"`
+	Storage     *StorageConfig `yaml:"storage"`
+	Credentials *Credentials   `yaml:"credentials"`
 }
 
 type Credentials struct {
@@ -60,8 +59,8 @@ type Credentials struct {
 	SecretAccessKey string `yaml:"secret_access_key"`
 }
 
-type NitroVault struct {
-	client  *rpc.Client
+type NitroVault[C any] struct {
+	client  *rpc.Client[C]
 	storage keyBlobStorage
 	keys    []*nitroKey
 	mtx     sync.Mutex
@@ -72,15 +71,15 @@ type nitroKey struct {
 	handle uint64
 }
 
-type nitroKeyRef struct {
+type nitroKeyRef[C any] struct {
 	*nitroKey
-	v *NitroVault
+	v *NitroVault[C]
 }
 
-func (r *nitroKeyRef) PublicKey() crypt.PublicKey { return r.pub }
-func (r *nitroKeyRef) Vault() vault.Vault         { return r.v }
+func (r *nitroKeyRef[C]) PublicKey() crypt.PublicKey { return r.pub }
+func (r *nitroKeyRef[C]) Vault() vault.Vault         { return r.v }
 
-func (r *nitroKeyRef) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
 	r.v.mtx.Lock()
 	defer r.v.mtx.Unlock()
 
@@ -102,8 +101,8 @@ func fromEnv(value *string, name string) {
 	}
 }
 
-func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault, error) {
-	var cred rpc.Credentials
+func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault[rpc.AWSCredentials], error) {
+	var cred rpc.AWSCredentials
 	if conf.Credentials != nil {
 		cred.AccessKeyID = conf.Credentials.AccessKeyID
 		cred.SecretAccessKey = conf.Credentials.SecretAccessKey
@@ -115,35 +114,13 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 		return nil, errors.New("(Nitro): missing credentials")
 	}
 
-	var addr string
-	if conf.EnclaveSignerAddress != "" {
-		addr = conf.EnclaveSignerAddress
-	} else {
-		addr = defaultAddress
+	cid := uint32(defaultCID)
+	port := uint32(defaultPort)
+	if conf.EnclaveCID != nil {
+		cid = *conf.EnclaveCID
 	}
-
-	isTCP := false
-	var hostport string
-	if strings.Contains(addr, "//") {
-		u, err := url.Parse(addr)
-		if err != nil {
-			return nil, fmt.Errorf("(Nitro): %w", err)
-		}
-		switch u.Scheme {
-		case "vsock":
-		case "tcp":
-			isTCP = true
-		default:
-			return nil, fmt.Errorf("(Nitro): unknown scheme: %s", u.Scheme)
-		}
-		hostport = u.Host
-	} else {
-		hostport = addr
-	}
-
-	host, port, err := net.SplitHostPort(hostport)
-	if err != nil {
-		return nil, fmt.Errorf("(Nitro): %w", err)
+	if conf.EnclavePort != nil {
+		port = *conf.EnclavePort
 	}
 
 	storage, err := newStorage(ctx, conf.Storage, global)
@@ -151,31 +128,18 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	log.Infof("(Nitro): connecting to the enclave signer on %s...", addr)
-	var conn net.Conn
-	if !isTCP {
-		h, err := strconv.ParseUint(host, 0, 32)
-		if err != nil {
-			return nil, fmt.Errorf("(Nitro): %w", err)
-		}
-		p, err := strconv.ParseUint(port, 0, 32)
-		if err != nil {
-			return nil, fmt.Errorf("(Nitro): %w", err)
-		}
-		enclaveAddr := vsock.Addr{CID: uint32(h), Port: uint32(p)}
-
-		if conn, err = vsock.Dial(&enclaveAddr); err != nil {
-			return nil, fmt.Errorf("(Nitro): %w", err)
-		}
-	} else {
-		var d net.Dialer
-		if conn, err = d.DialContext(ctx, "tcp", host+":"+port); err != nil {
-			return nil, fmt.Errorf("(Nitro): %w", err)
-		}
+	addr := vsock.Addr{CID: cid, Port: port}
+	log.Infof("(Nitro): connecting to the enclave signer on %v...", &addr)
+	conn, err := vsock.Dial(&addr)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
+	return newWithConn(ctx, conn, &cred, storage)
+}
 
-	client := rpc.NewClient(conn)
-	if err := client.Initialize(ctx, &cred); err != nil {
+func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*NitroVault[C], error) {
+	client := rpc.NewClient[C](conn)
+	if err := client.Initialize(ctx, credentials); err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
@@ -187,6 +151,7 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 
 	var keys []*nitroKey
 	for k := range r.Result() {
+		log.WithField("pkh", k.PublicKeyHash).Debug("Importing encrypted key")
 		pub, handle, err := client.Import(ctx, k.EncryptedPrivateKey)
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
@@ -204,14 +169,14 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	return &NitroVault{
+	return &NitroVault[C]{
 		client:  client,
 		storage: storage,
 		keys:    keys,
 	}, nil
 }
 
-func (v *NitroVault) List(ctx context.Context) vault.KeyIterator {
+func (v *NitroVault[C]) List(ctx context.Context) vault.KeyIterator {
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
 
@@ -221,7 +186,7 @@ func (v *NitroVault) List(ctx context.Context) vault.KeyIterator {
 		if i >= len(snap) {
 			return nil, vault.ErrDone
 		}
-		k := &nitroKeyRef{
+		k := &nitroKeyRef[C]{
 			nitroKey: snap[i],
 			v:        v,
 		}
@@ -230,7 +195,7 @@ func (v *NitroVault) List(ctx context.Context) vault.KeyIterator {
 	})
 }
 
-func (v *NitroVault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.KeyReference, error) {
+func (v *NitroVault[C]) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (vault.KeyReference, error) {
 	rpcPk, err := rpc.NewPrivateKey(pk)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
@@ -260,13 +225,13 @@ func (v *NitroVault) Import(ctx context.Context, pk crypt.PrivateKey, opt utils.
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
-	return &nitroKeyRef{
+	return &nitroKeyRef[C]{
 		nitroKey: key,
 		v:        v,
 	}, nil
 }
 
-func (v *NitroVault) Generate(ctx context.Context, keyType *cryptoutils.KeyType, n int) (vault.KeyIterator, error) {
+func (v *NitroVault[C]) Generate(ctx context.Context, keyType *cryptoutils.KeyType, n int) (vault.KeyIterator, error) {
 	var kt rpc.KeyType
 	switch keyType {
 	case cryptoutils.KeyEd25519:
@@ -313,7 +278,7 @@ func (v *NitroVault) Generate(ctx context.Context, keyType *cryptoutils.KeyType,
 		if i >= len(imported) {
 			return nil, vault.ErrDone
 		}
-		k := &nitroKeyRef{
+		k := &nitroKeyRef[C]{
 			nitroKey: imported[i],
 			v:        v,
 		}
@@ -322,11 +287,11 @@ func (v *NitroVault) Generate(ctx context.Context, keyType *cryptoutils.KeyType,
 	}), nil
 }
 
-func (v *NitroVault) Close(ctx context.Context) error {
+func (v *NitroVault[C]) Close(ctx context.Context) error {
 	return v.client.Close()
 }
 
-func (v *NitroVault) Name() string { return "NitroEnclave" }
+func (v *NitroVault[C]) Name() string { return "NitroEnclave" }
 
 const defaultFile = "enclave_keys.json"
 
@@ -370,6 +335,6 @@ func init() {
 }
 
 var (
-	_ vault.Importer  = (*NitroVault)(nil)
-	_ vault.Generator = (*NitroVault)(nil)
+	_ vault.Importer  = (*NitroVault[rpc.AWSCredentials])(nil)
+	_ vault.Generator = (*NitroVault[rpc.AWSCredentials])(nil)
 )

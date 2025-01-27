@@ -23,7 +23,7 @@ const (
 	KeyBLS       KeyType = "Bls"
 )
 
-type Credentials struct {
+type AWSCredentials struct {
 	AccessKeyID     string  `cbor:"access_key_id"`
 	SecretAccessKey string  `cbor:"secret_access_key"`
 	SessionToken    *string `cbor:"session_token,omitempty"`
@@ -39,8 +39,8 @@ type signWithRequest struct {
 	Msg     []byte `cbor:"msg"`
 }
 
-type request struct {
-	Initialize        *Credentials     `cbor:"Initialize,omitempty"`
+type request[C any] struct {
+	Initialize        *C               `cbor:"Initialize,omitempty"`
 	Import            []byte           `cbor:"Import,omitempty"`
 	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted"`
 	Generate          *KeyType         `cbor:"Generate,omitempty"`

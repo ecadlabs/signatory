@@ -10,21 +10,21 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
-type Client struct {
+type Client[C any] struct {
 	conn net.Conn
 }
 
-func NewClient(conn net.Conn) *Client {
-	return &Client{conn: conn}
+func NewClient[C any](conn net.Conn) *Client[C] {
+	return &Client[C]{conn: conn}
 }
 
-func (c *Client) Close() error {
+func (c *Client[C]) Close() error {
 	return c.conn.Close()
 }
 
 var aLongTimeAgo = time.Unix(1, 0)
 
-func roundTrip[T any](ctx context.Context, conn net.Conn, req *request) (result *T, err error) {
+func roundTrip[T, C any](ctx context.Context, conn net.Conn, req *request[C]) (result *T, err error) {
 	reqBuf, err := cbor.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -73,16 +73,16 @@ func roundTrip[T any](ctx context.Context, conn net.Conn, req *request) (result 
 	return &res, nil
 }
 
-func (c *Client) Initialize(ctx context.Context, cred *Credentials) error {
-	res, err := roundTrip[simpleResult](ctx, c.conn, &request{Initialize: cred})
+func (c *Client[C]) Initialize(ctx context.Context, cred *C) error {
+	res, err := roundTrip[simpleResult](ctx, c.conn, &request[C]{Initialize: cred})
 	if err != nil {
 		return err
 	}
 	return res.Error()
 }
 
-func (c *Client) Import(ctx context.Context, keyData []byte) (publicKey *PublicKey, handle uint64, err error) {
-	res, err := roundTrip[result[importResult]](ctx, c.conn, &request{
+func (c *Client[C]) Import(ctx context.Context, keyData []byte) (publicKey *PublicKey, handle uint64, err error) {
+	res, err := roundTrip[result[importResult]](ctx, c.conn, &request[C]{
 		Import: keyData,
 	})
 	if err == nil && res.Error() != nil {
@@ -94,8 +94,8 @@ func (c *Client) Import(ctx context.Context, keyData []byte) (publicKey *PublicK
 	return &res.Ok.PublicKey, res.Ok.Handle, nil
 }
 
-func (c *Client) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (privateKeyData []byte, publicKey *PublicKey, handle uint64, err error) {
-	res, err := roundTrip[result[generateAndImportResult]](ctx, c.conn, &request{
+func (c *Client[C]) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (privateKeyData []byte, publicKey *PublicKey, handle uint64, err error) {
+	res, err := roundTrip[result[generateAndImportResult]](ctx, c.conn, &request[C]{
 		ImportUnencrypted: priv,
 	})
 	if err == nil && res.Error() != nil {
@@ -107,8 +107,8 @@ func (c *Client) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (priva
 	return res.Ok.PrivateKey, &res.Ok.PublicKey, res.Ok.Handle, nil
 }
 
-func (c *Client) Generate(ctx context.Context, keyType KeyType) (privateKeyData []byte, publicKey *PublicKey, err error) {
-	res, err := roundTrip[result[generateResult]](ctx, c.conn, &request{
+func (c *Client[C]) Generate(ctx context.Context, keyType KeyType) (privateKeyData []byte, publicKey *PublicKey, err error) {
+	res, err := roundTrip[result[generateResult]](ctx, c.conn, &request[C]{
 		Generate: &keyType,
 	})
 	if err == nil && res.Error() != nil {
@@ -120,8 +120,8 @@ func (c *Client) Generate(ctx context.Context, keyType KeyType) (privateKeyData 
 	return res.Ok.PrivateKey, &res.Ok.PublicKey, nil
 }
 
-func (c *Client) GenerateAndImport(ctx context.Context, keyType KeyType) (privateKeyData []byte, publicKey *PublicKey, handle uint64, err error) {
-	res, err := roundTrip[result[generateAndImportResult]](ctx, c.conn, &request{
+func (c *Client[C]) GenerateAndImport(ctx context.Context, keyType KeyType) (privateKeyData []byte, publicKey *PublicKey, handle uint64, err error) {
+	res, err := roundTrip[result[generateAndImportResult]](ctx, c.conn, &request[C]{
 		GenerateAndImport: &keyType,
 	})
 	if err == nil && res.Error() != nil {
@@ -133,8 +133,8 @@ func (c *Client) GenerateAndImport(ctx context.Context, keyType KeyType) (privat
 	return res.Ok.PrivateKey, &res.Ok.PublicKey, res.Ok.Handle, nil
 }
 
-func (c *Client) Sign(ctx context.Context, handle uint64, message []byte) (sig *Signature, err error) {
-	res, err := roundTrip[result[Signature]](ctx, c.conn, &request{
+func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (sig *Signature, err error) {
+	res, err := roundTrip[result[Signature]](ctx, c.conn, &request[C]{
 		Sign: &signRequest{Handle: handle, Msg: message},
 	})
 	if err == nil && res.Error() != nil {
@@ -146,8 +146,8 @@ func (c *Client) Sign(ctx context.Context, handle uint64, message []byte) (sig *
 	return res.Ok, nil
 }
 
-func (c *Client) SignWith(ctx context.Context, keyData []byte, message []byte) (sig *Signature, err error) {
-	res, err := roundTrip[result[Signature]](ctx, c.conn, &request{
+func (c *Client[C]) SignWith(ctx context.Context, keyData []byte, message []byte) (sig *Signature, err error) {
+	res, err := roundTrip[result[Signature]](ctx, c.conn, &request[C]{
 		SignWith: &signWithRequest{KeyData: keyData, Msg: message},
 	})
 	if err == nil && res.Error() != nil {
@@ -159,8 +159,8 @@ func (c *Client) SignWith(ctx context.Context, keyData []byte, message []byte) (
 	return res.Ok, nil
 }
 
-func (c *Client) PublicKey(ctx context.Context, handle uint64) (publicKey *PublicKey, err error) {
-	res, err := roundTrip[result[PublicKey]](ctx, c.conn, &request{
+func (c *Client[C]) PublicKey(ctx context.Context, handle uint64) (publicKey *PublicKey, err error) {
+	res, err := roundTrip[result[PublicKey]](ctx, c.conn, &request[C]{
 		PublicKey: &handle,
 	})
 	if err == nil && res.Error() != nil {
@@ -172,8 +172,8 @@ func (c *Client) PublicKey(ctx context.Context, handle uint64) (publicKey *Publi
 	return res.Ok, nil
 }
 
-func (c *Client) PublicKeyFrom(ctx context.Context, data []byte) (publicKey *PublicKey, err error) {
-	res, err := roundTrip[result[PublicKey]](ctx, c.conn, &request{
+func (c *Client[C]) PublicKeyFrom(ctx context.Context, data []byte) (publicKey *PublicKey, err error) {
+	res, err := roundTrip[result[PublicKey]](ctx, c.conn, &request[C]{
 		PublicKeyFrom: data,
 	})
 	if err == nil && res.Error() != nil {

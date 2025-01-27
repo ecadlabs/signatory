@@ -22,9 +22,9 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "Initialize",
 			src:  testdata.RequestInitialize,
-			val:  new(request),
-			expect: &request{
-				Initialize: &Credentials{
+			val:  new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{
+				Initialize: &AWSCredentials{
 					AccessKeyID:     "access_key",
 					SecretAccessKey: "secret_key",
 					SessionToken:    newVal("token"),
@@ -34,26 +34,26 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name:   "Import",
 			src:    testdata.RequestImport,
-			val:    new(request),
-			expect: &request{Import: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}},
+			val:    new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{Import: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}},
 		},
 		{
 			name:   "Generate",
 			src:    testdata.RequestGenerate,
-			val:    new(request),
-			expect: &request{Generate: newVal(KeySecp256k1)},
+			val:    new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{Generate: newVal(KeySecp256k1)},
 		},
 		{
 			name:   "Sign",
 			src:    testdata.RequestSign,
-			val:    new(request),
-			expect: &request{Sign: &signRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
+			val:    new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{Sign: &signRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
 		},
 		{
 			name: "SignWith",
 			src:  testdata.RequestSignWith,
-			val:  new(request),
-			expect: &request{SignWith: &signWithRequest{
+			val:  new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{SignWith: &signWithRequest{
 				KeyData: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				Msg:     []byte{9, 10, 11, 12, 13, 14, 15, 16, 17},
 			}},
@@ -61,8 +61,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name:   "PublicKey",
 			src:    testdata.RequestPublicKey,
-			val:    new(request),
-			expect: &request{PublicKey: newVal(uint64(0))},
+			val:    new(request[AWSCredentials]),
+			expect: &request[AWSCredentials]{PublicKey: newVal(uint64(0))},
 		},
 		{
 			name: "Ok",
