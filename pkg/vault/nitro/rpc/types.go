@@ -27,6 +27,7 @@ type AWSCredentials struct {
 	AccessKeyID     string  `cbor:"access_key_id"`
 	SecretAccessKey string  `cbor:"secret_access_key"`
 	SessionToken    *string `cbor:"session_token,omitempty"`
+	EncryptionKeyID string  `cbor:"encryption_key_id"`
 }
 
 type signRequest struct {
