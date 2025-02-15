@@ -11,7 +11,6 @@ import (
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
-	"github.com/fxamacker/cbor/v2"
 )
 
 type KeyType string
@@ -40,7 +39,7 @@ type signWithRequest struct {
 	Msg     []byte `cbor:"msg"`
 }
 
-type request[C any] struct {
+type Request[C any] struct {
 	Initialize        *C               `cbor:"Initialize,omitempty"`
 	Import            []byte           `cbor:"Import,omitempty"`
 	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted,omitempty"`
@@ -53,10 +52,10 @@ type request[C any] struct {
 }
 
 type PublicKey struct {
-	Secp256k1 []byte `cbor:"Secp256k1"`
-	P256      []byte `cbor:"NistP256"`
-	Ed25519   []byte `cbor:"Ed25519"`
-	BLS       []byte `cbor:"Bls"`
+	Secp256k1 []byte `cbor:"Secp256k1,omitempty"`
+	P256      []byte `cbor:"NistP256,omitempty"`
+	Ed25519   []byte `cbor:"Ed25519,omitempty"`
+	BLS       []byte `cbor:"Bls,omitempty"`
 }
 
 func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
@@ -89,10 +88,10 @@ func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
 }
 
 type PrivateKey struct {
-	Secp256k1 []byte `cbor:"Secp256k1"`
-	P256      []byte `cbor:"NistP256"`
-	Ed25519   []byte `cbor:"Ed25519"`
-	BLS       []byte `cbor:"Bls"`
+	Secp256k1 []byte `cbor:"Secp256k1,omitempty"`
+	P256      []byte `cbor:"NistP256,omitempty"`
+	Ed25519   []byte `cbor:"Ed25519,omitempty"`
+	BLS       []byte `cbor:"Bls,omitempty"`
 }
 
 func NewPrivateKey(priv crypt.PrivateKey) (*PrivateKey, error) {
@@ -120,10 +119,10 @@ func NewPrivateKey(priv crypt.PrivateKey) (*PrivateKey, error) {
 }
 
 type Signature struct {
-	Secp256k1 []byte `cbor:"Secp256k1"`
-	P256      []byte `cbor:"NistP256"`
-	Ed25519   []byte `cbor:"Ed25519"`
-	BLS       []byte `cbor:"Bls"`
+	Secp256k1 []byte `cbor:"Secp256k1,omitempty"`
+	P256      []byte `cbor:"NistP256,omitempty"`
+	Ed25519   []byte `cbor:"Ed25519,omitempty"`
+	BLS       []byte `cbor:"Bls,omitempty"`
 }
 
 func point(src []byte) (r, s *big.Int) {
@@ -176,7 +175,7 @@ func (s *Signature) Signature() (crypt.Signature, error) {
 
 type RPCError struct {
 	Message string    `cbor:"message"`
-	Source  *RPCError `cbor:"source"`
+	Source  *RPCError `cbor:"source,omitempty"`
 }
 
 func (e *RPCError) Error() string {
@@ -209,24 +208,12 @@ type generateAndImportResult struct {
 	Handle     uint64
 }
 
-type result[T any] struct {
-	Ok  *T
-	Err *RPCError
+type Result[T any] struct {
+	Ok  T         `json:",omitempty"`
+	Err *RPCError `json:",omitempty"`
 }
 
-func (r *result[T]) Error() error {
-	if r.Err != nil {
-		return fmt.Errorf("RPC Error: %w", r.Err)
-	}
-	return nil
-}
-
-type simpleResult struct {
-	Ok  cbor.SimpleValue
-	Err *RPCError
-}
-
-func (r *simpleResult) Error() error {
+func (r *Result[T]) Error() error {
 	if r.Err != nil {
 		return fmt.Errorf("RPC Error: %w", r.Err)
 	}

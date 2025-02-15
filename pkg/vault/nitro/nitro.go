@@ -43,15 +43,16 @@ type keyBlobStorage interface {
 }
 
 const (
-	defaultCID  = 16
-	defaultPort = 2000
+	DefaultCID  = 16
+	DefaultPort = 2000
 )
 
 type Config struct {
-	EnclaveCID  *uint32        `yaml:"enclave_cid"`
-	EnclavePort *uint32        `yaml:"enclave_port"`
-	Storage     *StorageConfig `yaml:"storage"`
-	Credentials *Credentials   `yaml:"credentials"`
+	EnclaveCID      *uint32        `yaml:"enclave_cid"`
+	EnclavePort     *uint32        `yaml:"enclave_port"`
+	EncryptionKeyID string         `yaml:"encryption_key_id"`
+	Storage         *StorageConfig `yaml:"storage"`
+	Credentials     *Credentials   `yaml:"credentials"`
 }
 
 type Credentials struct {
@@ -102,20 +103,23 @@ func fromEnv(value *string, name string) {
 }
 
 func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault[rpc.AWSCredentials], error) {
-	var cred rpc.AWSCredentials
+	cred := rpc.AWSCredentials{
+		EncryptionKeyID: conf.EncryptionKeyID,
+	}
 	if conf.Credentials != nil {
 		cred.AccessKeyID = conf.Credentials.AccessKeyID
 		cred.SecretAccessKey = conf.Credentials.SecretAccessKey
 	}
 	fromEnv(&cred.AccessKeyID, "NITRO_ENCLAVE_AWS_ACCESS_KEY_ID")
 	fromEnv(&cred.SecretAccessKey, "NITRO_ENCLAVE_AWS_SECRET_ACCESS_KEY")
+	fromEnv(&cred.EncryptionKeyID, "NITRO_ENCLAVE_ENCRYPTION_KEY_ID")
 
 	if cred.AccessKeyID == "" || cred.SecretAccessKey == "" {
 		return nil, errors.New("(Nitro): missing credentials")
 	}
 
-	cid := uint32(defaultCID)
-	port := uint32(defaultPort)
+	cid := uint32(DefaultCID)
+	port := uint32(DefaultPort)
 	if conf.EnclaveCID != nil {
 		cid = *conf.EnclaveCID
 	}

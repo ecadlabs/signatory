@@ -22,8 +22,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "Initialize",
 			src:  testdata.RequestInitialize,
-			val:  new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{
+			val:  new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{
 				Initialize: &AWSCredentials{
 					AccessKeyID:     "access_key",
 					SecretAccessKey: "secret_key",
@@ -34,26 +34,26 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name:   "Import",
 			src:    testdata.RequestImport,
-			val:    new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{Import: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}},
+			val:    new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{Import: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}},
 		},
 		{
 			name:   "Generate",
 			src:    testdata.RequestGenerate,
-			val:    new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{Generate: newVal(KeySecp256k1)},
+			val:    new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{Generate: newVal(KeySecp256k1)},
 		},
 		{
 			name:   "Sign",
 			src:    testdata.RequestSign,
-			val:    new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{Sign: &signRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
+			val:    new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{Sign: &signRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
 		},
 		{
 			name: "SignWith",
 			src:  testdata.RequestSignWith,
-			val:  new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{SignWith: &signWithRequest{
+			val:  new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{SignWith: &signWithRequest{
 				KeyData: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				Msg:     []byte{9, 10, 11, 12, 13, 14, 15, 16, 17},
 			}},
@@ -61,22 +61,22 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name:   "PublicKey",
 			src:    testdata.RequestPublicKey,
-			val:    new(request[AWSCredentials]),
-			expect: &request[AWSCredentials]{PublicKey: newVal(uint64(0))},
+			val:    new(Request[AWSCredentials]),
+			expect: &Request[AWSCredentials]{PublicKey: newVal(uint64(0))},
 		},
 		{
 			name: "Ok",
 			src:  testdata.ReplyOk,
-			val:  new(simpleResult),
-			expect: &simpleResult{
-				Ok: 0x16, // null
+			val:  new(Result[*struct{}]),
+			expect: &Result[*struct{}]{
+				Ok: nil,
 			},
 		},
 		{
 			name: "EdOk",
 			src:  testdata.ReplyImportEdOk,
-			val:  new(result[importResult]),
-			expect: &result[importResult]{Ok: &importResult{
+			val:  new(Result[*importResult]),
+			expect: &Result[*importResult]{Ok: &importResult{
 				PublicKey: PublicKey{
 					Ed25519: []byte{0x31, 0x08, 0x8b, 0x5a, 0xdd, 0x36, 0xfd, 0x58, 0x99, 0x15, 0xed, 0xf6, 0xd7, 0x18, 0x25, 0xf4, 0xee, 0xdb, 0xaf, 0x89, 0x01, 0xcf, 0xef, 0x93, 0xec, 0xe0, 0x5d, 0xef, 0xe5, 0x85, 0x2f, 0xaa},
 				},
@@ -86,8 +86,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "ImportErr",
 			src:  testdata.ReplyImportErr,
-			val:  new(result[importResult]),
-			expect: &result[importResult]{Err: &RPCError{
+			val:  new(Result[*importResult]),
+			expect: &Result[*importResult]{Err: &RPCError{
 				Message: "message0",
 				Source: &RPCError{
 					Message: "message1",
@@ -97,8 +97,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "GenerateSecp",
 			src:  testdata.ReplyGenerateSecp,
-			val:  new(result[generateResult]),
-			expect: &result[generateResult]{Ok: &generateResult{
+			val:  new(Result[*generateResult]),
+			expect: &Result[*generateResult]{Ok: &generateResult{
 				PrivateKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				PublicKey: PublicKey{
 					Secp256k1: []byte{
@@ -115,8 +115,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "GenerateNist",
 			src:  testdata.ReplyGenerateNist,
-			val:  new(result[generateResult]),
-			expect: &result[generateResult]{Ok: &generateResult{
+			val:  new(Result[*generateResult]),
+			expect: &Result[*generateResult]{Ok: &generateResult{
 				PrivateKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				PublicKey: PublicKey{
 					P256: []byte{
@@ -133,8 +133,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "GenerateEd",
 			src:  testdata.ReplyGenerateEd,
-			val:  new(result[generateResult]),
-			expect: &result[generateResult]{Ok: &generateResult{
+			val:  new(Result[*generateResult]),
+			expect: &Result[*generateResult]{Ok: &generateResult{
 				PrivateKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				PublicKey: PublicKey{
 					Ed25519: []byte{
@@ -147,8 +147,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "GenerateBls",
 			src:  testdata.ReplyGenerateBls,
-			val:  new(result[generateResult]),
-			expect: &result[generateResult]{Ok: &generateResult{
+			val:  new(Result[*generateResult]),
+			expect: &Result[*generateResult]{Ok: &generateResult{
 				PrivateKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				PublicKey: PublicKey{
 					BLS: []byte{
@@ -162,8 +162,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "GenerateAndImport",
 			src:  testdata.ReplyGenerateAndImport,
-			val:  new(result[generateAndImportResult]),
-			expect: &result[generateAndImportResult]{Ok: &generateAndImportResult{
+			val:  new(Result[*generateAndImportResult]),
+			expect: &Result[*generateAndImportResult]{Ok: &generateAndImportResult{
 				PrivateKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				PublicKey: PublicKey{
 					Secp256k1: []byte{
@@ -181,8 +181,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "TrySignNist",
 			src:  testdata.ReplyTrySignNist,
-			val:  new(result[Signature]),
-			expect: &result[Signature]{Ok: &Signature{
+			val:  new(Result[*Signature]),
+			expect: &Result[*Signature]{Ok: &Signature{
 				P256: []byte{
 					0x69, 0xe5, 0xc7, 0xed, 0x5e, 0x66, 0x8f, 0xb6, 0x35, 0x22, 0x2c, 0x6f, 0x07, 0x98, 0xde, 0x62,
 					0x45, 0x76, 0x35, 0xd4, 0x20, 0x96, 0xca, 0xa3, 0xdc, 0xd2, 0x0e, 0x2b, 0x47, 0x8e, 0x90, 0x73,
@@ -194,8 +194,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "TrySignBls",
 			src:  testdata.ReplyTrySignBls,
-			val:  new(result[Signature]),
-			expect: &result[Signature]{Ok: &Signature{
+			val:  new(Result[*Signature]),
+			expect: &Result[*Signature]{Ok: &Signature{
 				BLS: []byte{
 					0xa6, 0x93, 0x18, 0xe7, 0xed, 0x36, 0x5c, 0x0d, 0x14, 0x3c, 0x96, 0xf3, 0x99, 0x06, 0xfa, 0xec,
 					0x64, 0x22, 0x2b, 0xc1, 0x53, 0x56, 0x01, 0x57, 0x3e, 0xc3, 0x99, 0x7a, 0x71, 0xf3, 0x38, 0xda,
@@ -209,8 +209,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "TrySignEd",
 			src:  testdata.ReplyTrySignEd,
-			val:  new(result[Signature]),
-			expect: &result[Signature]{Ok: &Signature{
+			val:  new(Result[*Signature]),
+			expect: &Result[*Signature]{Ok: &Signature{
 				Ed25519: []byte{
 					0x47, 0x87, 0x9c, 0x65, 0xbf, 0x31, 0x2c, 0xd7, 0xe1, 0x9b, 0x52, 0x09, 0xbe, 0xfc, 0x0d, 0x1f,
 					0xf6, 0xca, 0x13, 0xe6, 0xc7, 0xfe, 0x9e, 0xec, 0x55, 0x5e, 0x35, 0x4f, 0xb2, 0xf1, 0xd5, 0x04,
@@ -256,7 +256,7 @@ func TestParsePublicKey(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var val result[generateResult]
+			var val Result[*generateResult]
 			require.NoError(t, cbor.Unmarshal(test.src, &val))
 			_, err := val.Ok.PublicKey.PublicKey()
 			require.NoError(t, err)
