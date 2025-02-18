@@ -153,6 +153,9 @@ func Dial(addr *Addr) (conn *Conn, err error) {
 }
 
 func (conn *Conn) Close() error {
+	if err := unix.Shutdown(int(conn.fd.Fd()), unix.SHUT_RDWR); err != nil {
+		return wrapErr(err, "close", nil, nil)
+	}
 	if err := conn.fd.Close(); err != nil {
 		return wrapErr(err, "close", nil, nil)
 	}
