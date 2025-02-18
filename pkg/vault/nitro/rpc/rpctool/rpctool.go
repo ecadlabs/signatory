@@ -20,16 +20,7 @@ type logFunc func(format string, args ...interface{}) (int, error)
 
 func (l logFunc) Debugf(format string, args ...interface{}) { l(format, args) }
 
-func main() {
-	var (
-		cid, port uint64
-		debug     bool
-	)
-	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
-	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
-	flag.BoolVar(&debug, "d", false, "Debug")
-	flag.Parse()
-
+func rpcTool(cid, port uint64, logger rpc.Logger) error {
 	var readLine func() ([]byte, error)
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
@@ -73,10 +64,9 @@ func main() {
 		line, err := readLine()
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
-			return
+			return nil
 		}
 		if len(strings.TrimSpace(string(line))) == 0 {
 			continue
@@ -88,18 +78,44 @@ func main() {
 			continue
 		}
 
-		res, err := rpc.RoundTripRaw[any](context.Background(), conn, &req, logFunc(fmt.Printf))
+		res, err := rpc.RoundTripRaw[any](context.Background(), conn, &req, logger)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 
-		buf, err := json.MarshalIndent(res, "", "    ")
+		buf, err := json.MarshalIndent(jsonify(res), "", "    ")
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 
 		fmt.Println(string(buf))
+	}
+}
+
+// transform map[any]any as returned by CBOR codec into JSON-appropriate map[string]any
+func jsonify(src any) any {
+	if m, ok := src.(map[any]any); ok {
+		out := make(map[string]any, len(m))
+		for k, v := range m {
+			out[fmt.Sprint(k)] = jsonify(v)
+		}
+		return out
+	}
+	return src
+}
+
+func main() {
+	var (
+		cid, port uint64
+		debug     bool
+	)
+	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
+	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
+	flag.BoolVar(&debug, "d", false, "Debug")
+	flag.Parse()
+
+	if err := rpcTool(cid, port, logFunc(fmt.Printf)); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
