@@ -16,12 +16,18 @@ import (
 	"golang.org/x/term"
 )
 
+type logFunc func(format string, args ...interface{}) (int, error)
+
+func (l logFunc) Debugf(format string, args ...interface{}) { l(format, args) }
+
 func main() {
 	var (
 		cid, port uint64
+		debug     bool
 	)
 	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
 	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
+	flag.BoolVar(&debug, "d", false, "Debug")
 	flag.Parse()
 
 	var readLine func() ([]byte, error)
@@ -82,7 +88,7 @@ func main() {
 			continue
 		}
 
-		res, err := rpc.RoundTripRaw[any](context.Background(), conn, &req)
+		res, err := rpc.RoundTripRaw[any](context.Background(), conn, &req, logFunc(fmt.Printf))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
