@@ -103,7 +103,7 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 		}
 
 		if logger != nil {
-			logger.Debugf("%# v", pretty.Formatter(res))
+			logger.Debugf("%# v\n", pretty.Formatter(res))
 		}
 
 		buf, err := json.MarshalIndent(jsonify(res), "", "    ")
