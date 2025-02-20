@@ -68,7 +68,7 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 	fmt.Printf("Connecting to the enclave signer on %v...\n", &addr)
 	conn, err := vsock.Dial(&addr)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	client := rpc.NewClient[rpc.AWSCredentials](conn, nil)
@@ -76,7 +76,7 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 
 	fmt.Println("Sending credentials...")
 	if err := client.Initialize(context.Background(), cred); err != nil {
-		return nil
+		return err
 	}
 
 	for {
