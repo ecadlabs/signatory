@@ -117,14 +117,22 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 
 // transform map[any]any as returned by CBOR codec into JSON-appropriate map[string]any
 func jsonify(src any) any {
-	if m, ok := src.(map[any]any); ok {
-		out := make(map[string]any, len(m))
-		for k, v := range m {
+	switch x := src.(type) {
+	case map[any]any:
+		out := make(map[string]any, len(x))
+		for k, v := range x {
 			out[fmt.Sprint(k)] = jsonify(v)
 		}
 		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, v := range x {
+			out[i] = jsonify(v)
+		}
+		return out
+	default:
+		return src
 	}
-	return src
 }
 
 func main() {
