@@ -106,7 +106,7 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 			logger.Debugf("%# v\n", pretty.Formatter(res))
 		}
 
-		buf, err := json.MarshalIndent(jsonify(res), "", "    ")
+		buf, err := json.Marshal(jsonify(res))
 		if err != nil {
 			return err
 		}
