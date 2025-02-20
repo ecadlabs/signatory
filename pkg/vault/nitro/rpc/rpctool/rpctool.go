@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -20,7 +21,18 @@ type logFunc func(format string, args ...interface{}) (int, error)
 
 func (l logFunc) Debugf(format string, args ...interface{}) { l(format, args) }
 
-func rpcTool(cid, port uint64, logger rpc.Logger) error {
+func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
+	cred, err := rpc.LoadAWSCredentials(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	if keyID != "" {
+		cred.EncryptionKeyID = keyID
+	}
+	if !cred.IsValid() {
+		return errors.New("missing credentials")
+	}
+
 	var readLine func() ([]byte, error)
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
@@ -55,10 +67,16 @@ func rpcTool(cid, port uint64, logger rpc.Logger) error {
 	fmt.Printf("Connecting to the enclave signer on %v...\n", &addr)
 	conn, err := vsock.Dial(&addr)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil
 	}
-	defer conn.Close()
+
+	client := rpc.NewClient[rpc.AWSCredentials](conn, nil)
+	defer client.Close()
+
+	fmt.Println("Sending credentials...")
+	if err := client.Initialize(context.Background(), cred); err != nil {
+		return nil
+	}
 
 	for {
 		line, err := readLine()
@@ -78,7 +96,7 @@ func rpcTool(cid, port uint64, logger rpc.Logger) error {
 			continue
 		}
 
-		res, err := rpc.RoundTripRaw[any](context.Background(), conn, &req, logger)
+		res, err := rpc.RoundTripRaw[any](context.Background(), client.Conn(), &req, logger)
 		if err != nil {
 			return err
 		}
@@ -108,13 +126,19 @@ func main() {
 	var (
 		cid, port uint64
 		debug     bool
+		keyID     string
 	)
 	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
 	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
+	flag.StringVar(&keyID, "key-id", "", "Encryption key ID")
 	flag.BoolVar(&debug, "d", false, "Debug")
 	flag.Parse()
 
-	if err := rpcTool(cid, port, logFunc(fmt.Printf)); err != nil {
+	var logger logFunc
+	if debug {
+		logger = logFunc(fmt.Printf)
+	}
+	if err := rpcTool(cid, port, keyID, logger); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

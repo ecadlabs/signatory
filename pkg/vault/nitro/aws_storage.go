@@ -36,7 +36,7 @@ type awsStorage struct {
 }
 
 func newAWSStorage(ctx context.Context, config *awsStorageConfig) (*awsStorage, error) {
-	cfg, err := config.Config.NewAWSConfig(ctx)
+	cfg, err := awsutils.NewAWSConfig(ctx, &config.Config)
 	if err != nil {
 		return nil, err
 	}

@@ -1,16 +1,19 @@
 package rpc
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 )
 
 type KeyType string
@@ -27,6 +30,36 @@ type AWSCredentials struct {
 	SecretAccessKey string  `cbor:"secret_access_key"`
 	SessionToken    *string `cbor:"session_token,omitempty"`
 	EncryptionKeyID string  `cbor:"encryption_key_id"`
+}
+
+func fromEnv(value *string, name string) {
+	if *value == "" {
+		*value = os.Getenv(name)
+	}
+}
+
+func LoadAWSCredentials(ctx context.Context, conf awsutils.ConfigProvider) (*AWSCredentials, error) {
+	awsConf, err := awsutils.NewAWSConfig(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+	apiCred, err := awsConf.Credentials.Retrieve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rpcCred := AWSCredentials{
+		AccessKeyID:     apiCred.AccessKeyID,
+		SecretAccessKey: apiCred.SecretAccessKey,
+	}
+	if apiCred.SessionToken != "" {
+		rpcCred.SessionToken = &apiCred.SessionToken
+	}
+	fromEnv(&rpcCred.EncryptionKeyID, "AWS_KMS_ENCRYPTION_KEY_ID")
+	return &rpcCred, nil
+}
+
+func (c *AWSCredentials) IsValid() bool {
+	return c.AccessKeyID != "" && c.SecretAccessKey != "" && c.EncryptionKeyID != ""
 }
 
 type signRequest struct {

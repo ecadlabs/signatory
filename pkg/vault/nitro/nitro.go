@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"iter"
 	"net"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
+	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
@@ -58,7 +58,12 @@ type Config struct {
 type Credentials struct {
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
+	SessionToken    string `yaml:"session_token"`
 }
+
+func (c *Credentials) GetAccessKeyID() string     { return c.AccessKeyID }
+func (c *Credentials) GetSecretAccessKey() string { return c.SecretAccessKey }
+func (c *Credentials) GetSessionToken() string    { return c.SessionToken }
 
 type NitroVault[C any] struct {
 	client  *rpc.Client[C]
@@ -96,26 +101,14 @@ func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signat
 	return res, nil
 }
 
-func fromEnv(value *string, name string) {
-	if *value == "" {
-		*value = os.Getenv(name)
-	}
-}
-
 func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault[rpc.AWSCredentials], error) {
-	cred := rpc.AWSCredentials{
-		EncryptionKeyID: conf.EncryptionKeyID,
-	}
+	var tmp awsutils.ConfigProvider
 	if conf.Credentials != nil {
-		cred.AccessKeyID = conf.Credentials.AccessKeyID
-		cred.SecretAccessKey = conf.Credentials.SecretAccessKey
+		tmp = conf.Credentials
 	}
-	fromEnv(&cred.AccessKeyID, "NITRO_ENCLAVE_AWS_ACCESS_KEY_ID")
-	fromEnv(&cred.SecretAccessKey, "NITRO_ENCLAVE_AWS_SECRET_ACCESS_KEY")
-	fromEnv(&cred.EncryptionKeyID, "NITRO_ENCLAVE_ENCRYPTION_KEY_ID")
-
-	if cred.AccessKeyID == "" || cred.SecretAccessKey == "" {
-		return nil, errors.New("(Nitro): missing credentials")
+	rpcCred, err := rpc.LoadAWSCredentials(ctx, tmp)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 
 	cid := uint32(DefaultCID)
@@ -138,7 +131,7 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
-	return newWithConn(ctx, conn, &cred, storage)
+	return newWithConn(ctx, conn, rpcCred, storage)
 }
 
 func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*NitroVault[C], error) {

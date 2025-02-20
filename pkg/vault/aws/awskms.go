@@ -142,7 +142,7 @@ func (v *Vault) Close(context.Context) error {
 
 // New creates new AWS KMS backend
 func New(ctx context.Context, config *awsutils.Config) (*Vault, error) {
-	cfg, err := config.NewAWSConfig(ctx)
+	cfg, err := awsutils.NewAWSConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}

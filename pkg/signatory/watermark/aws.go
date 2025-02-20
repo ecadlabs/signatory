@@ -44,7 +44,7 @@ type AWS struct {
 }
 
 func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
-	cfg, err := config.Config.NewAWSConfig(ctx)
+	cfg, err := awsutils.NewAWSConfig(ctx, &config.Config)
 	if err != nil {
 		return nil, err
 	}

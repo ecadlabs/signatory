@@ -24,6 +24,10 @@ func (c *Client[C]) Close() error {
 	return c.conn.Close()
 }
 
+func (c *Client[C]) Conn() net.Conn {
+	return c.conn
+}
+
 type Logger interface {
 	Debugf(format string, args ...interface{})
 }
