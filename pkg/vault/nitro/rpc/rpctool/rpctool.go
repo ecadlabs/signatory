@@ -14,6 +14,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/vault/nitro"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
+	"github.com/kr/pretty"
 	"golang.org/x/term"
 )
 
@@ -100,6 +101,8 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 		if err != nil {
 			return err
 		}
+
+		logger.Debugf("%# v", pretty.Formatter(res))
 
 		buf, err := json.MarshalIndent(jsonify(res), "", "    ")
 		if err != nil {
