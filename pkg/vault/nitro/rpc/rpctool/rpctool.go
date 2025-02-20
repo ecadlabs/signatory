@@ -134,7 +134,7 @@ func main() {
 	flag.BoolVar(&debug, "d", false, "Debug")
 	flag.Parse()
 
-	var logger logFunc
+	var logger rpc.Logger
 	if debug {
 		logger = logFunc(fmt.Printf)
 	}
