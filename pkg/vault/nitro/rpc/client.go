@@ -156,7 +156,7 @@ func (c *Client[C]) GenerateAndImport(ctx context.Context, keyType KeyType) (pri
 
 func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (sig *Signature, err error) {
 	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
-		Sign: &signRequest{Handle: handle, Msg: message},
+		Sign: &SignRequest{Handle: handle, Msg: message},
 	}, c.log)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
@@ -169,7 +169,7 @@ func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (si
 
 func (c *Client[C]) SignWith(ctx context.Context, keyData []byte, message []byte) (sig *Signature, err error) {
 	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
-		SignWith: &signWithRequest{KeyData: keyData, Msg: message},
+		SignWith: &SignWithRequest{KeyData: keyData, Msg: message},
 	}, c.log)
 	if err == nil && res.Error() != nil {
 		err = res.Error()

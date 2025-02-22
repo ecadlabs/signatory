@@ -47,13 +47,13 @@ func TestUnmarshal(t *testing.T) {
 			name:   "Sign",
 			src:    testdata.RequestSign,
 			val:    new(Request[AWSCredentials]),
-			expect: &Request[AWSCredentials]{Sign: &signRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
+			expect: &Request[AWSCredentials]{Sign: &SignRequest{Handle: 0, Msg: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}}},
 		},
 		{
 			name: "SignWith",
 			src:  testdata.RequestSignWith,
 			val:  new(Request[AWSCredentials]),
-			expect: &Request[AWSCredentials]{SignWith: &signWithRequest{
+			expect: &Request[AWSCredentials]{SignWith: &SignWithRequest{
 				KeyData: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8},
 				Msg:     []byte{9, 10, 11, 12, 13, 14, 15, 16, 17},
 			}},

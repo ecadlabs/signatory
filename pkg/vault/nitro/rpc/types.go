@@ -12,7 +12,6 @@ import (
 	"github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 )
 
@@ -62,12 +61,12 @@ func (c *AWSCredentials) IsValid() bool {
 	return c.AccessKeyID != "" && c.SecretAccessKey != "" && c.EncryptionKeyID != ""
 }
 
-type signRequest struct {
+type SignRequest struct {
 	Handle uint64 `cbor:"handle"`
 	Msg    []byte `cbor:"msg"`
 }
 
-type signWithRequest struct {
+type SignWithRequest struct {
 	KeyData []byte `cbor:"key_data"`
 	Msg     []byte `cbor:"msg"`
 }
@@ -78,8 +77,8 @@ type Request[C any] struct {
 	ImportUnencrypted *PrivateKey      `cbor:"ImportUnencrypted,omitempty"`
 	Generate          *KeyType         `cbor:"Generate,omitempty"`
 	GenerateAndImport *KeyType         `cbor:"GenerateAndImport,omitempty"`
-	Sign              *signRequest     `cbor:"Sign,omitempty"`
-	SignWith          *signWithRequest `cbor:"SignWith,omitempty"`
+	Sign              *SignRequest     `cbor:"Sign,omitempty"`
+	SignWith          *SignWithRequest `cbor:"SignWith,omitempty"`
 	PublicKey         *uint64          `cbor:"PublicKey,omitempty"`
 	PublicKeyFrom     []byte           `cbor:"PublicKeyFrom,omitempty"`
 }
@@ -94,13 +93,11 @@ type PublicKey struct {
 func (p *PublicKey) PublicKey() (crypt.PublicKey, error) {
 	switch {
 	case p.Secp256k1 != nil || p.P256 != nil:
-		var data []byte
 		if p.Secp256k1 != nil {
-			data = p.Secp256k1
+			return crypt.UnmarshalECDSAPublicKey(p.Secp256k1, crypt.S256())
 		} else {
-			data = p.P256
+			return crypt.UnmarshalECDSAPublicKey(p.P256, elliptic.P256())
 		}
-		return cryptoutils.ParsePKIXPublicKey(data)
 
 	case p.Ed25519 != nil:
 		if len(p.Ed25519) != ed25519.PublicKeySize {
@@ -130,7 +127,8 @@ type PrivateKey struct {
 func NewPrivateKey(priv crypt.PrivateKey) (*PrivateKey, error) {
 	switch priv := priv.(type) {
 	case *crypt.ECDSAPrivateKey:
-		data := priv.D.Bytes()
+		data := make([]byte, (priv.Params().BitSize+7)/8)
+		priv.D.FillBytes(data)
 		switch priv.Curve {
 		case elliptic.P256():
 			return &PrivateKey{P256: data}, nil
