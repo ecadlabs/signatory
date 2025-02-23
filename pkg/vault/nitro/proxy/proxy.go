@@ -77,9 +77,6 @@ func (p *VSockProxy) start(l net.Listener, addr *net.TCPAddr) (handle Handle, er
 			var conn net.Conn
 			conn, err = l.Accept()
 			if err != nil {
-				if !errors.Is(err, net.ErrClosed) {
-					log.Error(err)
-				}
 				return
 			}
 			log.WithField("from", conn.RemoteAddr()).Debug("Incoming connection")
