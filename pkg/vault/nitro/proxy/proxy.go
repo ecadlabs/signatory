@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/vsock"
@@ -127,7 +128,10 @@ func serve(ctx context.Context, clientConn net.Conn, addr *net.TCPAddr) {
 
 func pipe(dst io.WriteCloser, src io.Reader) {
 	_, err := io.Copy(dst, src)
-	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
+	if err != nil &&
+		!errors.Is(err, io.EOF) &&
+		!errors.Is(err, net.ErrClosed) &&
+		!errors.Is(err, os.ErrClosed) {
 		log.Error(err)
 	}
 	dst.Close()
