@@ -149,17 +149,17 @@ func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, stor
 	var keys []*nitroKey
 	for k := range r.Result() {
 		log.WithField("pkh", k.PublicKeyHash).Debug("Importing encrypted key")
-		pub, handle, err := client.Import(ctx, k.EncryptedPrivateKey)
+		res, err := client.Import(ctx, k.EncryptedPrivateKey)
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
-		p, err := pub.PublicKey()
+		p, err := res.PublicKey.PublicKey()
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
 		keys = append(keys, &nitroKey{
 			pub:    p,
-			handle: handle,
+			handle: res.Handle,
 		})
 	}
 	if err := r.Err(); err != nil {
@@ -201,23 +201,23 @@ func (v *NitroVault[C]) Import(ctx context.Context, pk crypt.PrivateKey, opt uti
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
 
-	data, pub, handle, err := v.client.ImportUnencrypted(ctx, rpcPk)
+	res, err := v.client.ImportUnencrypted(ctx, rpcPk)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
-	p, err := pub.PublicKey()
+	p, err := res.PublicKey.PublicKey()
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
 	key := &nitroKey{
 		pub:    p,
-		handle: handle,
+		handle: res.Handle,
 	}
 	v.keys = append(v.keys, key)
 
 	if err := v.storage.ImportKey(ctx, &encryptedKey{
 		PublicKeyHash:       p.Hash(),
-		EncryptedPrivateKey: data,
+		EncryptedPrivateKey: res.EncryptedPrivateKey,
 	}); err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
@@ -248,22 +248,22 @@ func (v *NitroVault[C]) Generate(ctx context.Context, keyType *cryptoutils.KeyTy
 
 	var imported []*nitroKey
 	for i := 0; i < n; i++ {
-		data, pub, handle, err := v.client.GenerateAndImport(ctx, kt)
+		res, err := v.client.GenerateAndImport(ctx, kt)
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
-		p, err := pub.PublicKey()
+		p, err := res.PublicKey.PublicKey()
 		if err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}
 		key := &nitroKey{
 			pub:    p,
-			handle: handle,
+			handle: res.Handle,
 		}
 		v.keys = append(v.keys, key)
 		if err := v.storage.ImportKey(ctx, &encryptedKey{
 			PublicKeyHash:       p.Hash(),
-			EncryptedPrivateKey: data,
+			EncryptedPrivateKey: res.EncryptedPrivateKey,
 		}); err != nil {
 			return nil, fmt.Errorf("(Nitro): %w", err)
 		}

@@ -62,13 +62,13 @@ func (c *AWSCredentials) IsValid() bool {
 }
 
 type SignRequest struct {
-	Handle uint64 `cbor:"handle"`
-	Msg    []byte `cbor:"msg"`
+	Handle  uint64 `cbor:"handle"`
+	Message []byte `cbor:"message"`
 }
 
 type SignWithRequest struct {
-	KeyData []byte `cbor:"key_data"`
-	Msg     []byte `cbor:"msg"`
+	EncryptedPrivateKey []byte `cbor:"encrypted_private_key"`
+	Message             []byte `cbor:"message"`
 }
 
 type Request[C any] struct {
@@ -220,23 +220,20 @@ func (e *RPCError) Unwrap() error {
 	return nil
 }
 
-type importResult struct {
-	_         struct{} `cbor:",toarray"`
-	PublicKey PublicKey
-	Handle    uint64
+type ImportResult struct {
+	PublicKey PublicKey `cbor:"public_key"`
+	Handle    uint64    `cbor:"handle"`
 }
 
-type generateResult struct {
-	_          struct{} `cbor:",toarray"`
-	PrivateKey []byte
-	PublicKey  PublicKey
+type GenerateResult struct {
+	EncryptedPrivateKey []byte    `cbor:"encrypted_private_key"`
+	PublicKey           PublicKey `cbor:"public_key"`
 }
 
-type generateAndImportResult struct {
-	_          struct{} `cbor:",toarray"`
-	PrivateKey []byte
-	PublicKey  PublicKey
-	Handle     uint64
+type GenerateAndImportResult struct {
+	EncryptedPrivateKey []byte    `cbor:"encrypted_private_key"`
+	PublicKey           PublicKey `cbor:"public_key"`
+	Handle              uint64    `cbor:"handle"`
 }
 
 type Result[T any] struct {
