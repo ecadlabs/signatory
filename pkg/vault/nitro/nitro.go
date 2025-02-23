@@ -17,7 +17,7 @@ import (
 	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
-	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
+	"github.com/ecadlabs/signatory/pkg/vault/nitro/vsock"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

@@ -12,17 +12,14 @@ import (
 	"strings"
 
 	"github.com/ecadlabs/signatory/pkg/vault/nitro"
+	"github.com/ecadlabs/signatory/pkg/vault/nitro/proxy"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
-	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
-	"github.com/kr/pretty"
+	"github.com/ecadlabs/signatory/pkg/vault/nitro/vsock"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/term"
 )
 
-type logFunc func(format string, args ...interface{}) (int, error)
-
-func (l logFunc) Debugf(format string, args ...interface{}) { l(format, args) }
-
-func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
+func rpcTool(cid, port uint64, keyID string) error {
 	cred, err := rpc.LoadAWSCredentials(context.Background(), nil)
 	if err != nil {
 		return err
@@ -97,13 +94,9 @@ func rpcTool(cid, port uint64, keyID string, logger rpc.Logger) error {
 			continue
 		}
 
-		res, err := rpc.RoundTripRaw[any](context.Background(), client.Conn(), &req, logger)
+		res, err := rpc.RoundTripRaw[any](context.Background(), client.Conn(), &req, nil)
 		if err != nil {
 			return err
-		}
-
-		if logger != nil {
-			logger.Debugf("%# v\n", pretty.Formatter(res))
 		}
 
 		buf, err := json.Marshal(jsonify(res))
@@ -137,22 +130,36 @@ func jsonify(src any) any {
 
 func main() {
 	var (
-		cid, port uint64
-		debug     bool
-		keyID     string
+		cid, port, proxyPort uint64
+		debug                bool
+		keyID                string
+		remoteAddr           string
 	)
 	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
 	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
 	flag.StringVar(&keyID, "key-id", "", "Encryption key ID")
+	flag.Uint64Var(&proxyPort, "proxy-port", 8000, "VSock proxy listening port")
+	flag.StringVar(&remoteAddr, "remote-address", "", "Remote address to forward connections")
 	flag.BoolVar(&debug, "d", false, "Debug")
 	flag.Parse()
 
-	var logger rpc.Logger
 	if debug {
-		logger = logFunc(fmt.Printf)
+		log.SetLevel(log.DebugLevel)
 	}
-	if err := rpcTool(cid, port, keyID, logger); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+
+	if remoteAddr != "" {
+		prx := proxy.VSockProxy{
+			Port:    uint32(proxyPort),
+			Address: remoteAddr,
+		}
+		h, err := prx.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer h.Shutdown(context.Background())
+	}
+
+	if err := rpcTool(cid, port, keyID); err != nil {
+		log.Fatal(err)
 	}
 }
