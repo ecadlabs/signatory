@@ -2,6 +2,7 @@ package nitro
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 	"net"
@@ -161,7 +162,6 @@ func New(ctx context.Context, config *Config, global config.GlobalContext) (*Nit
 
 func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage) (*NitroVault[rpc.AWSCredentials], error) {
 	conf := populateConfig(config)
-
 	var tmp awsutils.ConfigProvider
 	if conf.Credentials != nil {
 		// nil pointer passed as an interface is not a nil interface!
@@ -170,6 +170,14 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 	rpcCred, err := rpc.LoadAWSCredentials(ctx, tmp)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+	rpcCred.EncryptionKeyID = conf.EncryptionKeyID
+
+	if rpcCred.EncryptionKeyID == "" {
+		return nil, errors.New("(Nitro): missing encryption key id")
+	}
+	if !rpcCred.IsValid() {
+		return nil, errors.New("(Nitro): missing credentials")
 	}
 
 	cid := uint32(DefaultCID)

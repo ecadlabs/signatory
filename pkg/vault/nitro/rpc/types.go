@@ -24,11 +24,21 @@ const (
 	KeyBLS       KeyType = "Bls"
 )
 
+type Protected string
+
+// prevent leakage via "%#v" format used for debugging
+func (p Protected) GoString() string {
+	if p != "" {
+		return "\"(FILTERED)\""
+	}
+	return "\"\""
+}
+
 type AWSCredentials struct {
-	AccessKeyID     string  `cbor:"access_key_id"`
-	SecretAccessKey string  `cbor:"secret_access_key"`
-	SessionToken    *string `cbor:"session_token,omitempty"`
-	EncryptionKeyID string  `cbor:"encryption_key_id"`
+	AccessKeyID     Protected  `cbor:"access_key_id"`
+	SecretAccessKey Protected  `cbor:"secret_access_key"`
+	SessionToken    *Protected `cbor:"session_token,omitempty"`
+	EncryptionKeyID string     `cbor:"encryption_key_id"`
 }
 
 func fromEnv(value *string, name string) {
@@ -47,13 +57,12 @@ func LoadAWSCredentials(ctx context.Context, conf awsutils.ConfigProvider) (*AWS
 		return nil, err
 	}
 	rpcCred := AWSCredentials{
-		AccessKeyID:     apiCred.AccessKeyID,
-		SecretAccessKey: apiCred.SecretAccessKey,
+		AccessKeyID:     Protected(apiCred.AccessKeyID),
+		SecretAccessKey: Protected(apiCred.SecretAccessKey),
 	}
 	if apiCred.SessionToken != "" {
-		rpcCred.SessionToken = &apiCred.SessionToken
+		rpcCred.SessionToken = (*Protected)(&apiCred.SessionToken)
 	}
-	fromEnv(&rpcCred.EncryptionKeyID, "AWS_KMS_ENCRYPTION_KEY_ID")
 	return &rpcCred, nil
 }
 
