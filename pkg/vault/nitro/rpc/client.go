@@ -3,21 +3,21 @@ package rpc
 import (
 	"context"
 	"encoding/binary"
-	"encoding/hex"
 	"io"
 	"net"
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
+	"github.com/kr/pretty"
 )
 
 type Client[C any] struct {
-	log  Logger
-	conn net.Conn
+	Logger Logger
+	conn   net.Conn
 }
 
-func NewClient[C any](conn net.Conn, log Logger) *Client[C] {
-	return &Client[C]{conn: conn, log: log}
+func NewClient[C any](conn net.Conn) *Client[C] {
+	return &Client[C]{conn: conn}
 }
 
 func (c *Client[C]) Close() error {
@@ -35,11 +35,19 @@ type Logger interface {
 var aLongTimeAgo = time.Unix(1, 0)
 
 func RoundTripRaw[T, C any](ctx context.Context, conn net.Conn, req *Request[C], log Logger) (r T, err error) {
+	var debugLog func(format string, args ...interface{})
+	if log != nil {
+		debugLog = log.Debugf
+	} else {
+		debugLog = func(string, ...interface{}) {}
+	}
+
 	var res T
 	reqBuf, err := cbor.Marshal(req)
 	if err != nil {
 		return res, err
 	}
+	debugLog("<<< %# v\n", pretty.Formatter(req))
 
 	intErr := make(chan error)
 	done := make(chan struct{})
@@ -65,9 +73,6 @@ func RoundTripRaw[T, C any](ctx context.Context, conn net.Conn, req *Request[C],
 	wrBuf := make([]byte, len(reqBuf)+4)
 	binary.BigEndian.PutUint32(wrBuf, uint32(len(reqBuf)))
 	copy(wrBuf[4:], reqBuf)
-	if log != nil {
-		log.Debugf("<<< %s\n", hex.EncodeToString(wrBuf))
-	}
 	if _, err := conn.Write(wrBuf); err != nil {
 		return res, err
 	}
@@ -76,17 +81,14 @@ func RoundTripRaw[T, C any](ctx context.Context, conn net.Conn, req *Request[C],
 	if _, err := io.ReadFull(conn, lenBuf[:]); err != nil {
 		return res, err
 	}
-	if log != nil {
-		log.Debugf(">>> %s\n", hex.EncodeToString(lenBuf[:]))
-	}
 	rBuf := make([]byte, int(binary.BigEndian.Uint32(lenBuf[:])))
 	if _, err := io.ReadFull(conn, rBuf); err != nil {
 		return res, err
 	}
-	if log != nil {
-		log.Debugf(">>> %s\n", hex.EncodeToString(rBuf))
-	}
 	err = cbor.Unmarshal(rBuf, &res)
+	if err == nil {
+		debugLog(">>> %# v\n", pretty.Formatter(&res))
+	}
 	return res, err
 }
 
@@ -95,7 +97,7 @@ func RoundTrip[T, C any](ctx context.Context, conn net.Conn, req *Request[C], lo
 }
 
 func (c *Client[C]) Initialize(ctx context.Context, cred *C) error {
-	res, err := RoundTrip[struct{}](ctx, c.conn, &Request[C]{Initialize: cred}, c.log)
+	res, err := RoundTrip[struct{}](ctx, c.conn, &Request[C]{Initialize: cred}, c.Logger)
 	if err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func (c *Client[C]) Initialize(ctx context.Context, cred *C) error {
 func (c *Client[C]) Import(ctx context.Context, keyData []byte) (*ImportResult, error) {
 	res, err := RoundTrip[ImportResult](ctx, c.conn, &Request[C]{
 		Import: keyData,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -118,7 +120,7 @@ func (c *Client[C]) Import(ctx context.Context, keyData []byte) (*ImportResult, 
 func (c *Client[C]) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (*GenerateAndImportResult, error) {
 	res, err := RoundTrip[GenerateAndImportResult](ctx, c.conn, &Request[C]{
 		ImportUnencrypted: priv,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -131,7 +133,7 @@ func (c *Client[C]) ImportUnencrypted(ctx context.Context, priv *PrivateKey) (*G
 func (c *Client[C]) Generate(ctx context.Context, keyType KeyType) (*GenerateResult, error) {
 	res, err := RoundTrip[GenerateResult](ctx, c.conn, &Request[C]{
 		Generate: &keyType,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -144,7 +146,7 @@ func (c *Client[C]) Generate(ctx context.Context, keyType KeyType) (*GenerateRes
 func (c *Client[C]) GenerateAndImport(ctx context.Context, keyType KeyType) (*GenerateAndImportResult, error) {
 	res, err := RoundTrip[GenerateAndImportResult](ctx, c.conn, &Request[C]{
 		GenerateAndImport: &keyType,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -157,7 +159,7 @@ func (c *Client[C]) GenerateAndImport(ctx context.Context, keyType KeyType) (*Ge
 func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (sig *Signature, err error) {
 	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
 		Sign: &SignRequest{Handle: handle, Message: message},
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -170,7 +172,7 @@ func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (si
 func (c *Client[C]) SignWith(ctx context.Context, keyData []byte, message []byte) (sig *Signature, err error) {
 	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
 		SignWith: &SignWithRequest{EncryptedPrivateKey: keyData, Message: message},
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -183,7 +185,7 @@ func (c *Client[C]) SignWith(ctx context.Context, keyData []byte, message []byte
 func (c *Client[C]) PublicKey(ctx context.Context, handle uint64) (publicKey *PublicKey, err error) {
 	res, err := RoundTrip[PublicKey](ctx, c.conn, &Request[C]{
 		PublicKey: &handle,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}
@@ -196,7 +198,7 @@ func (c *Client[C]) PublicKey(ctx context.Context, handle uint64) (publicKey *Pu
 func (c *Client[C]) PublicKeyFrom(ctx context.Context, data []byte) (publicKey *PublicKey, err error) {
 	res, err := RoundTrip[PublicKey](ctx, c.conn, &Request[C]{
 		PublicKeyFrom: data,
-	}, c.log)
+	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()
 	}

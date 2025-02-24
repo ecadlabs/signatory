@@ -68,7 +68,7 @@ func rpcTool(cid, port uint64, keyID string) error {
 		return err
 	}
 
-	client := rpc.NewClient[rpc.AWSCredentials](conn, nil)
+	client := rpc.NewClient[rpc.AWSCredentials](conn)
 	defer client.Close()
 
 	log.Println("Sending credentials...")

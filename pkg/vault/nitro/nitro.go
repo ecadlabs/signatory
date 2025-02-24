@@ -215,7 +215,9 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 }
 
 func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*NitroVault[C], error) {
-	client := rpc.NewClient[C](conn, nil)
+	client := rpc.NewClient[C](conn)
+	client.Logger = log.StandardLogger()
+
 	if err := client.Initialize(ctx, credentials); err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
