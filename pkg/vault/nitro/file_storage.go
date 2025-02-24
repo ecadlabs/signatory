@@ -19,20 +19,19 @@ type fileStorage struct {
 }
 
 func newFileStorage(path string) (*fileStorage, error) {
-	fd, err := os.Open(path)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
+	buf, err := os.ReadFile(path)
+	if err != nil || len(buf) == 0 {
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
-		} else {
-			return &fileStorage{
-				path: path,
-				keys: make([]*encryptedKey, 0),
-			}, nil
 		}
+		return &fileStorage{
+			path: path,
+			keys: make([]*encryptedKey, 0),
+		}, nil
 	}
-	defer fd.Close()
+
 	var keys []*encryptedKey
-	if err = json.NewDecoder(fd).Decode(&keys); err != nil {
+	if err = json.Unmarshal(buf, &keys); err != nil {
 		return nil, err
 	}
 	return &fileStorage{
