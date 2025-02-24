@@ -85,18 +85,19 @@ func resolvePtr[T any](value *T, ev string) *T {
 }
 
 func populateConfig(c *Config) *Config {
-	var conf Config
 	if c == nil {
-		return &conf
+		var zero Config
+		c = &zero
 	}
-	conf.EnclaveCID = resolvePtr(c.EnclaveCID, "ENCLAVE_CID")
-	conf.EnclavePort = resolvePtr(c.EnclavePort, "ENCLAVE_PORT")
-	conf.EncryptionKeyID = resolve(c.EncryptionKeyID, "ENCRYPTION_KEY_ID")
-	conf.ProxyPort = resolvePtr(c.ProxyPort, "PROXY_LOCAL_PORT")
-	conf.ProxyRemoteAddress = resolve(c.ProxyRemoteAddress, "PROXY_REMOTE_ADDRESS")
-	conf.Storage = c.Storage
-	conf.Credentials = c.Credentials
-	return &conf
+	return &Config{
+		EnclaveCID:         resolvePtr(c.EnclaveCID, "ENCLAVE_CID"),
+		EnclavePort:        resolvePtr(c.EnclavePort, "ENCLAVE_PORT"),
+		EncryptionKeyID:    resolve(c.EncryptionKeyID, "ENCRYPTION_KEY_ID"),
+		ProxyPort:          resolvePtr(c.ProxyPort, "PROXY_LOCAL_PORT"),
+		ProxyRemoteAddress: resolve(c.ProxyRemoteAddress, "PROXY_REMOTE_ADDRESS"),
+		Storage:            c.Storage,
+		Credentials:        c.Credentials,
+	}
 }
 
 type Credentials struct {
