@@ -2,10 +2,10 @@ package nitro
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"iter"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/utils"
 	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/ecadlabs/signatory/pkg/vault/nitro/proxy"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc"
 	"github.com/ecadlabs/signatory/pkg/vault/nitro/vsock"
 	log "github.com/sirupsen/logrus"
@@ -43,16 +44,59 @@ type keyBlobStorage interface {
 }
 
 const (
-	DefaultCID  = 16
-	DefaultPort = 2000
+	DefaultCID       = 16
+	DefaultPort      = 2000
+	DefaultProxyPort = 8000
 )
 
 type Config struct {
-	EnclaveCID      *uint32        `yaml:"enclave_cid"`
-	EnclavePort     *uint32        `yaml:"enclave_port"`
-	EncryptionKeyID string         `yaml:"encryption_key_id"`
-	Storage         *StorageConfig `yaml:"storage"`
-	Credentials     *Credentials   `yaml:"credentials"`
+	EnclaveCID         *uint32        `yaml:"enclave_cid"`
+	EnclavePort        *uint32        `yaml:"enclave_port"`
+	EncryptionKeyID    string         `yaml:"encryption_key_id"`
+	ProxyPort          *uint32        `yaml:"proxy_local_port"`
+	ProxyRemoteAddress string         `yaml:"proxy_remote_address"`
+	Storage            *StorageConfig `yaml:"storage"`
+	Credentials        *Credentials   `yaml:"credentials"`
+}
+
+func resolve[T comparable](value T, ev string) T {
+	var zero T
+	if value == zero {
+		if env := os.Getenv(ev); env != "" {
+			var tmp T
+			if _, err := fmt.Sscanf(env, "%v", &tmp); err == nil {
+				return tmp
+			}
+		}
+	}
+	return value
+}
+
+func resolvePtr[T any](value *T, ev string) *T {
+	if value == nil {
+		if env := os.Getenv(ev); env != "" {
+			var tmp T
+			if _, err := fmt.Sscanf(env, "%v", &tmp); err == nil {
+				return &tmp
+			}
+		}
+	}
+	return value
+}
+
+func populateConfig(c *Config) *Config {
+	var conf Config
+	if c == nil {
+		return &conf
+	}
+	conf.EnclaveCID = resolvePtr(c.EnclaveCID, "ENCLAVE_CID")
+	conf.EnclavePort = resolvePtr(c.EnclavePort, "ENCLAVE_PORT")
+	conf.EncryptionKeyID = resolve(c.EncryptionKeyID, "ENCRYPTION_KEY_ID")
+	conf.ProxyPort = resolvePtr(c.ProxyPort, "PROXY_LOCAL_PORT")
+	conf.ProxyRemoteAddress = resolve(c.ProxyRemoteAddress, "PROXY_REMOTE_ADDRESS")
+	conf.Storage = c.Storage
+	conf.Credentials = c.Credentials
+	return &conf
 }
 
 type Credentials struct {
@@ -66,10 +110,11 @@ func (c *Credentials) GetSecretAccessKey() string { return c.SecretAccessKey }
 func (c *Credentials) GetSessionToken() string    { return c.SessionToken }
 
 type NitroVault[C any] struct {
-	client  *rpc.Client[C]
-	storage keyBlobStorage
-	keys    []*nitroKey
-	mtx     sync.Mutex
+	client      *rpc.Client[C]
+	storage     keyBlobStorage
+	keys        []*nitroKey
+	mtx         sync.Mutex
+	proxyHandle proxy.Handle
 }
 
 type nitroKey struct {
@@ -101,9 +146,24 @@ func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signat
 	return res, nil
 }
 
-func New(ctx context.Context, conf *Config, global config.GlobalContext) (*NitroVault[rpc.AWSCredentials], error) {
+func New(ctx context.Context, config *Config, global config.GlobalContext) (*NitroVault[rpc.AWSCredentials], error) {
+	var sc *StorageConfig
+	if config != nil {
+		sc = config.Storage
+	}
+	storage, err := newStorage(ctx, sc, global)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+	return newWithStorage(ctx, config, storage)
+}
+
+func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage) (*NitroVault[rpc.AWSCredentials], error) {
+	conf := populateConfig(config)
+
 	var tmp awsutils.ConfigProvider
 	if conf.Credentials != nil {
+		// nil pointer passed as an interface is not a nil interface!
 		tmp = conf.Credentials
 	}
 	rpcCred, err := rpc.LoadAWSCredentials(ctx, tmp)
@@ -113,6 +173,7 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 
 	cid := uint32(DefaultCID)
 	port := uint32(DefaultPort)
+
 	if conf.EnclaveCID != nil {
 		cid = *conf.EnclaveCID
 	}
@@ -120,9 +181,21 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 		port = *conf.EnclavePort
 	}
 
-	storage, err := newStorage(ctx, conf.Storage, global)
-	if err != nil {
-		return nil, fmt.Errorf("(Nitro): %w", err)
+	var handle proxy.Handle
+	if conf.ProxyRemoteAddress != "" {
+		proxyPort := uint32(DefaultProxyPort)
+		if conf.ProxyPort != nil {
+			proxyPort = *conf.ProxyPort
+		}
+
+		prx := proxy.VSockProxy{
+			Port:    uint32(proxyPort),
+			Address: conf.ProxyRemoteAddress,
+		}
+		handle, err = prx.Start()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	addr := vsock.Addr{CID: cid, Port: port}
@@ -131,7 +204,13 @@ func New(ctx context.Context, conf *Config, global config.GlobalContext) (*Nitro
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}
-	return newWithConn(ctx, conn, rpcCred, storage)
+
+	v, err := newWithConn(ctx, conn, rpcCred, storage)
+	if err != nil {
+		return nil, err
+	}
+	v.proxyHandle = handle
+	return v, nil
 }
 
 func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*NitroVault[C], error) {
@@ -284,8 +363,14 @@ func (v *NitroVault[C]) Generate(ctx context.Context, keyType *cryptoutils.KeyTy
 	}), nil
 }
 
-func (v *NitroVault[C]) Close(context.Context) error {
-	return v.client.Close()
+func (v *NitroVault[C]) Close(ctx context.Context) (err error) {
+	if v.proxyHandle != nil {
+		err = v.proxyHandle.Shutdown(ctx)
+	}
+	if e := v.client.Close(); err == nil {
+		err = e
+	}
+	return err
 }
 
 func (v *NitroVault[C]) Name() string { return "NitroEnclave" }
@@ -320,14 +405,14 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 
 func init() {
 	vault.RegisterVault("nitro", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
-		var conf Config
-		if node == nil || node.Kind == 0 {
-			return nil, errors.New("(Nitro): config is missing")
+		var conf *Config
+		if node != nil {
+			conf = &Config{}
+			if err := node.Decode(conf); err != nil {
+				return nil, err
+			}
 		}
-		if err := node.Decode(&conf); err != nil {
-			return nil, err
-		}
-		return New(ctx, &conf, global)
+		return New(ctx, conf, global)
 	})
 }
 

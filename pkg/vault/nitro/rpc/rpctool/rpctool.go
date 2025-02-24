@@ -138,7 +138,7 @@ func main() {
 	flag.Uint64Var(&cid, "cid", nitro.DefaultCID, "Enclave CID")
 	flag.Uint64Var(&port, "port", nitro.DefaultPort, "Enclave signer port")
 	flag.StringVar(&keyID, "key-id", "", "Encryption key ID")
-	flag.Uint64Var(&proxyPort, "proxy-port", 8000, "VSock proxy listening port")
+	flag.Uint64Var(&proxyPort, "proxy-port", nitro.DefaultProxyPort, "VSock proxy listening port")
 	flag.StringVar(&remoteAddr, "remote-address", "", "Remote address to forward connections")
 	flag.BoolVar(&debug, "d", false, "Debug")
 	flag.Parse()

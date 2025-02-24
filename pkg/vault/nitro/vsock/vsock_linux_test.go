@@ -3,7 +3,7 @@ package vsock_test
 import (
 	"testing"
 
-	"github.com/ecadlabs/signatory/pkg/vault/nitro/rpc/vsock"
+	"github.com/ecadlabs/signatory/pkg/vault/nitro/vsock"
 	"github.com/stretchr/testify/require"
 )
 

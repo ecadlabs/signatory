@@ -5,8 +5,7 @@ package nitro
 import (
 	"context"
 	"errors"
-	"flag"
-	"net"
+	"os"
 	"testing"
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -14,39 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type dummyCred struct{}
-
-type inMemoryStorage struct {
-	*fileStorage
-}
-
-func newInMemoryStorage() *inMemoryStorage {
-	return &inMemoryStorage{
-		fileStorage: &fileStorage{
-			keys: make([]*encryptedKey, 0),
-		},
-	}
-}
-
-func (f *inMemoryStorage) ImportKey(ctx context.Context, encryptedKey *encryptedKey) (err error) {
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-
-	f.keys = append(f.keys, encryptedKey)
-	return nil
-}
-
 func TestNitro(t *testing.T) {
-	address := flag.String("connect", "localhost:6543", "Address of an enclave mockup")
-	flag.Parse()
+	tmpfd, err := os.CreateTemp("", "nitro_test")
+	require.NoError(t, err)
+	require.NoError(t, tmpfd.Close())
 
-	storage := newInMemoryStorage()
+	storage, err := newFileStorage(tmpfd.Name())
+	require.NoError(t, err)
 
 	// generate and import
-	conn, err := net.Dial("tcp", *address)
-	require.NoError(t, err)
-	var cred dummyCred
-	v, err := newWithConn(context.Background(), conn, &cred, storage)
+	v, err := newWithStorage(context.Background(), nil, storage)
 	require.NoError(t, err)
 
 	kTypes := []*cryptoutils.KeyType{cryptoutils.KeyEd25519, cryptoutils.KeySecp256k1, cryptoutils.KeyP256, cryptoutils.KeyBLS12_381}
@@ -58,9 +34,7 @@ func TestNitro(t *testing.T) {
 	require.NoError(t, v.Close(context.Background()))
 
 	// import back
-	conn, err = net.Dial("tcp", *address)
-	require.NoError(t, err)
-	v, err = newWithConn(context.Background(), conn, &cred, storage)
+	v, err = newWithStorage(context.Background(), nil, storage)
 	require.NoError(t, err)
 
 	t.Cleanup(func() { v.Close(context.Background()) })
