@@ -10,10 +10,13 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/vault"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNitro(t *testing.T) {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tmpfd, err := os.CreateTemp("", "nitro_test")
 	require.NoError(t, err)
 	require.NoError(t, tmpfd.Close())
