@@ -169,6 +169,7 @@ Currently three backends are supported: `file` (a default one), `mem` (for testi
 * [YubiHSM2](yubihsm.md)
 * [Hashicorp Vault](hashicorp_vault.md)
 * [PKCS#11](pkcs11.md)
+* [Nitro](nitro.md)
 
 ---
 
