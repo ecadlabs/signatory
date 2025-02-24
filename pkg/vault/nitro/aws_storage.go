@@ -23,27 +23,31 @@ type awsStorageConfig struct {
 	Table           string `yaml:"table"`
 }
 
-func (c *awsStorageConfig) table() string {
-	if c.Table != "" {
-		return c.Table
+func (c *awsStorage) table() string {
+	if c.cfg != nil && c.cfg.Table != "" {
+		return c.cfg.Table
 	}
 	return defaultTable
 }
 
 type awsStorage struct {
-	cfg    awsStorageConfig
+	cfg    *awsStorageConfig
 	client *dynamodb.Client
 }
 
 func newAWSStorage(ctx context.Context, config *awsStorageConfig) (*awsStorage, error) {
-	cfg, err := awsutils.NewAWSConfig(ctx, &config.Config)
+	var tmp awsutils.ConfigProvider
+	if config != nil {
+		tmp = config
+	}
+	cfg, err := awsutils.NewAWSConfig(ctx, tmp)
 	if err != nil {
 		return nil, err
 	}
 	client := dynamodb.NewFromConfig(cfg)
 	a := awsStorage{
 		client: client,
-		cfg:    *config,
+		cfg:    config,
 	}
 	if err := awsutils.DynamoDBMaybeCreateTable(ctx, client, a.makeCreateTableInput()); err != nil {
 		return nil, err
@@ -69,7 +73,7 @@ func (a *awsStorage) makeCreateTableInput() *dynamodb.CreateTableInput {
 			ReadCapacityUnits:  aws.Int64(readCapacityUnits),
 			WriteCapacityUnits: aws.Int64(writeCapacityUnits),
 		},
-		TableName: aws.String(a.cfg.table()),
+		TableName: aws.String(a.table()),
 	}
 }
 
@@ -111,7 +115,7 @@ func (r *awsResult) Err() error { return r.err }
 
 func (a *awsStorage) GetKeys(ctx context.Context) (result[*encryptedKey], error) {
 	out, err := a.client.Scan(ctx, &dynamodb.ScanInput{
-		TableName: aws.String(a.cfg.table()),
+		TableName: aws.String(a.table()),
 	})
 	if err != nil {
 		return nil, err
@@ -130,7 +134,7 @@ func (a *awsStorage) ImportKey(ctx context.Context, encryptedKey *encryptedKey) 
 		return err
 	}
 	_, err = a.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(a.cfg.table()),
+		TableName: aws.String(a.table()),
 		Item:      item,
 	})
 	return err

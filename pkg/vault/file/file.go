@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	config "github.com/ecadlabs/signatory/pkg/config"
@@ -15,7 +15,7 @@ import (
 )
 
 type cfg struct {
-	File string `yaml:"file" validate:"required"`
+	File string `yaml:"file"`
 }
 
 func trimSecretKey(k string) string {
@@ -32,19 +32,27 @@ type tezosSecretJSONEntry struct {
 
 func init() {
 	vault.RegisterVault("file", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
-		var conf cfg
-		if node == nil || node.Kind == 0 {
+		if node == nil {
 			return nil, errors.New("(File): config is missing")
 		}
-		if err := node.Decode(&conf); err != nil {
-			return nil, err
+		var path string
+		if node.Kind == yaml.ScalarNode {
+			if err := node.Decode(&path); err != nil {
+				return nil, err
+			}
+		} else {
+			var conf cfg
+			if err := node.Decode(&conf); err != nil {
+				return nil, err
+			}
+			path = conf.File
 		}
-
-		if err := config.Validator().Struct(&conf); err != nil {
-			return nil, err
+		if path == "" {
+			return nil, errors.New("(File): config is missing")
 		}
+		path = os.ExpandEnv(path)
 
-		content, err := ioutil.ReadFile(conf.File)
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("(File): %w", err)
 		}

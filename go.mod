@@ -24,6 +24,7 @@ require (
 	github.com/hashicorp/vault/api v1.10.0
 	github.com/hashicorp/vault/api/auth/approle v0.5.0
 	github.com/karalabe/hid v1.0.0
+	github.com/kr/pretty v0.3.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sirupsen/logrus v1.9.3
@@ -70,7 +71,6 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.6 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

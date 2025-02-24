@@ -395,14 +395,18 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 			var path string
 			if conf.Config.IsZero() {
 				path = filepath.Join(global.GetBaseDir(), defaultFile)
-			} else if err := conf.Config.Decode(&path); err != nil {
+			} else if err := conf.Config.Decode(&path); err == nil {
+				path = os.ExpandEnv(path)
+			} else {
 				return nil, err
 			}
 			return newFileStorage(path)
 		case "aws", "dynamodb":
 			var cfg awsStorageConfig
-			if err := conf.Config.Decode(&cfg); err != nil {
-				return nil, err
+			if !conf.Config.IsZero() {
+				if err := conf.Config.Decode(&cfg); err != nil {
+					return nil, err
+				}
 			}
 			return newAWSStorage(ctx, &cfg)
 		default:
@@ -417,7 +421,7 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 func init() {
 	vault.RegisterVault("nitro", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf *Config
-		if node != nil {
+		if node != nil && !node.IsZero() {
 			conf = &Config{}
 			if err := node.Decode(conf); err != nil {
 				return nil, err
