@@ -101,15 +101,7 @@ func populateConfig(c *Config) *Config {
 	}
 }
 
-type Credentials struct {
-	AccessKeyID     string `yaml:"access_key_id"`
-	SecretAccessKey string `yaml:"secret_access_key"`
-	SessionToken    string `yaml:"session_token"`
-}
-
-func (c *Credentials) GetAccessKeyID() string     { return c.AccessKeyID }
-func (c *Credentials) GetSecretAccessKey() string { return c.SecretAccessKey }
-func (c *Credentials) GetSessionToken() string    { return c.SessionToken }
+type Credentials = awsutils.Config
 
 type NitroVault[C any] struct {
 	client      *rpc.Client[C]

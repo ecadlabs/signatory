@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
 
 	"github.com/ecadlabs/goblst"
 	"github.com/ecadlabs/goblst/minpk"
@@ -39,12 +38,7 @@ type AWSCredentials struct {
 	SecretAccessKey Protected  `cbor:"secret_access_key"`
 	SessionToken    *Protected `cbor:"session_token,omitempty"`
 	EncryptionKeyID string     `cbor:"encryption_key_id"`
-}
-
-func fromEnv(value *string, name string) {
-	if *value == "" {
-		*value = os.Getenv(name)
-	}
+	Region          string     `cbor:"region"`
 }
 
 func LoadAWSCredentials(ctx context.Context, conf awsutils.ConfigProvider) (*AWSCredentials, error) {
@@ -59,6 +53,7 @@ func LoadAWSCredentials(ctx context.Context, conf awsutils.ConfigProvider) (*AWS
 	rpcCred := AWSCredentials{
 		AccessKeyID:     Protected(apiCred.AccessKeyID),
 		SecretAccessKey: Protected(apiCred.SecretAccessKey),
+		Region:          awsConf.Region,
 	}
 	if apiCred.SessionToken != "" {
 		rpcCred.SessionToken = (*Protected)(&apiCred.SessionToken)
@@ -148,7 +143,7 @@ func NewPrivateKey(priv crypt.PrivateKey) (*PrivateKey, error) {
 		}
 
 	case crypt.Ed25519PrivateKey:
-		return &PrivateKey{Ed25519: priv}, nil
+		return &PrivateKey{Ed25519: priv.Seed()}, nil
 
 	case *crypt.BLSPrivateKey:
 		return &PrivateKey{BLS: (*goblst.Scalar)(priv).BEBytes()}, nil

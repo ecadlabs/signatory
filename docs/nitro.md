@@ -27,6 +27,7 @@ Please refer to [kmstool](https://github.com/aws/aws-nitro-enclaves-sdk-c/blob/m
 | access_key_id     | AWS_ACCESS_KEY_ID     | string |
 | secret_access_key | AWS_SECRET_ACCESS_KEY | string |
 | session_token     | AWS_SESSION_TOKEN     | string |
+| region            | AWS_REGION            | string |
 
 Credentials block is optional. If the user has a properly configured access to AWS the client code will pick it automatically.
 
