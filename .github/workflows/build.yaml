@@ -35,7 +35,7 @@ jobs:
           echo "Running tests..."
           mkdir unitcoverage
           go test -cover $(go list ./... | grep -v integration_test) -args -test.gocoverdir="$PWD/unitcoverage"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: unit-test-coverage
           path: ./unitcoverage/
@@ -177,7 +177,7 @@ jobs:
          docker compose kill;
          rm -f gcp-token.json;
          rm -f service-principal.key;
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: integration-test-coverage-env${{ matrix.testenvs }}
           path: ./integration_test/coverage/
@@ -196,15 +196,15 @@ jobs:
         run: |
           curl -L "$CC_BINARY_URL" > ./cc-test-reporter
           chmod +x ./cc-test-reporter
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: unit-test-coverage
           path: unit-test-coverage
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: integration-test-coverage-envcurrent
           path: integration-test-coverage-envcurrent
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: integration-test-coverage-envnext
           path: integration-test-coverage-envnext
