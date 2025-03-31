@@ -142,6 +142,9 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 		response, err := a.client.GetItem(ctx, &dynamodb.GetItemInput{
 			Key:       prev.key(),
 			TableName: aws.String(a.cfg.table()),
+			// Essential for high-availability setups to prevent race conditions with stale reads.
+			// Without strongly consistent reads, retries might repeatedly see outdated watermarks.
+			ConsistentRead: aws.Bool(true),
 		})
 		if err != nil {
 			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)

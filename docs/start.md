@@ -21,7 +21,7 @@ The goal of the Signatory service is to make key management as secure as possibl
 
 Security and convenience are often opposed, but we hope to make it easier for the community to manage their keys in an adequately secure manner.
 
-By supporting multiple Cloud KMS/HSM systems, we hope to help the network from centralization on a particular Cloud offering. In the first year of the Tezos network operation, there was anecdotal evidence that many bakers run on AWS. AWS is a superb provider, but concentrating nodes on one cloud vendor centralizes the network’s underlying infrastructure, which is not desirable.
+By supporting multiple Cloud KMS/HSM systems, we hope to help the network from centralization on a particular Cloud offering. In the first year of the Tezos network operation, there was anecdotal evidence that many bakers run on AWS. AWS is a superb provider, but concentrating nodes on one cloud vendor centralizes the network's underlying infrastructure, which is not desirable.
 
 Observability is a first-class concern. Signatory allows for rich reporting and alerting capabilities. It exposes metrics about its operation via Prometheus metrics, enabling teams to set up robust monitoring of their critical infrastructure and allowing operators to see historical trends, signing volumes, errors and latencies. Users can report feature requests, security issues, or bug reports can via the Github project page: 
 github.com/ecadlabs/signatory or via email to security@ecadlabs.com
@@ -150,17 +150,27 @@ tezos:
 
 ### Watermark backend
 
+Watermarks prevent double signing of operations, which is critical to avoid slashing penalties on the Tezos network. They track the highest block level and round numbers that have been signed for each key and only allow signing of operations with higher values.
+
 Basic syntax:
 
 ```yaml
-# Optional
+# The base directory is used by the file watermark backend
+base_dir: /var/lib/signatory  # Default path if not specified
+
+# Optional watermark configuration
 watermark:
-  driver: <driver>
-  # Optional
+  driver: <driver>  # Options: file (default), mem, aws
+  # Optional driver-specific configuration
   config: <config_object>
 ```
 
-Currently three backends are supported: `file` (a default one), `mem` (for testing purpose only) and `aws`. See [AWS KMS][aws] for configuration syntax.
+Three watermark backends are supported:
+- `file` (default): Persistent local storage, good for single-instance bakers
+- `mem`: In-memory only (for testing), not suitable for production as data is lost on restart
+- `aws`: AWS DynamoDB-based storage, ideal for high-availability or cloud deployments
+
+For detailed information about watermarks and configuration options, see [Watermarks](watermarks.md) and [AWS DynamoDB Backend](aws_dynamodb.md).
 
 ## Backends
 * [AWS KMS](aws_kms.md)
