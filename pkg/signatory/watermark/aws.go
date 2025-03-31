@@ -140,8 +140,9 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 	}
 	for {
 		response, err := a.client.GetItem(ctx, &dynamodb.GetItemInput{
-			Key:       prev.key(),
-			TableName: aws.String(a.cfg.table()),
+			Key:            prev.key(),
+			TableName:      aws.String(a.cfg.table()),
+			ConsistentRead: aws.Bool(true),
 		})
 		if err != nil {
 			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)

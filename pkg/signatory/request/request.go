@@ -28,9 +28,6 @@ func NewWatermark(req WithWatermark, hash *crypt.Digest) *Watermark {
 }
 
 func (l *Watermark) Validate(stored *Watermark) bool {
-	if l.Hash.IsSome() && stored.Hash.IsSome() && l.Hash.Unwrap() == stored.Hash.Unwrap() {
-		return true
-	}
 	var diff int32
 	if d := l.Level - stored.Level; d == 0 {
 		diff = l.Round - stored.Round
