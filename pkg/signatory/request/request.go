@@ -27,6 +27,8 @@ func NewWatermark(req WithWatermark, hash *crypt.Digest) *Watermark {
 	}
 }
 
+// Validate compares watermarks to prevent double signing.
+// We intentionally don't consider hash equality, as that would allow two instances to sign the same block.
 func (l *Watermark) Validate(stored *Watermark) bool {
 	var diff int32
 	if d := l.Level - stored.Level; d == 0 {
