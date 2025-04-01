@@ -130,7 +130,10 @@ func (w *watermark) watermark() *request.Watermark {
 func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
-		// watermark is not required
+		log.WithFields(log.Fields{
+			"pkh":  pkh.String(),
+			"kind": req.SignRequestKind(),
+		}).Debug("Watermark not required for this request type")
 		return nil
 	}
 	wm := request.NewWatermark(m, digest)
@@ -142,24 +145,133 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 		Round:   wm.Round,
 		Digest:  wm.Hash.UnwrapPtr(),
 	}
+
+	log.WithFields(log.Fields{
+		"pkh":      pkh.String(),
+		"chain_id": m.GetChainID().String(),
+		"level":    wm.Level,
+		"round":    wm.Round,
+		"kind":     req.SignRequestKind(),
+		"hash":     wm.Hash.UnwrapPtr(),
+		"idx":      wmData.Idx,
+	}).Debug("Starting watermark validation in DynamoDB")
+
 	item, err := attributevalue.MarshalMap(&wmData)
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"pkh":      pkh.String(),
+			"chain_id": m.GetChainID().String(),
+		}).Error("Failed to marshal watermark data")
 		return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
 	}
-	putItemInput := dynamodb.PutItemInput{
-		TableName:           aws.String(a.cfg.table()),
-		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(idx) or lvl < :new_lvl or (lvl = :new_lvl and round < :new_round)"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":new_lvl":   item["lvl"],
-			":new_round": item["round"],
+
+	// First try to get the current watermark
+	getItemInput := dynamodb.GetItemInput{
+		TableName: aws.String(a.cfg.table()),
+		Key: map[string]types.AttributeValue{
+			"idx":     &types.AttributeValueMemberS{Value: wmData.Idx},
+			"request": &types.AttributeValueMemberS{Value: wmData.Request},
 		},
 	}
-	_, err = a.client.PutItem((ctx), &putItemInput)
+
+	log.WithFields(log.Fields{
+		"table":   a.cfg.table(),
+		"idx":     wmData.Idx,
+		"request": wmData.Request,
+	}).Debug("Fetching current watermark from DynamoDB")
+
+	result, err := a.client.GetItem(ctx, &getItemInput)
 	if err != nil {
-		log.Error(err)
-		return ErrWatermark
+		log.WithError(err).WithFields(log.Fields{
+			"table":   a.cfg.table(),
+			"idx":     wmData.Idx,
+			"request": wmData.Request,
+		}).Error("Failed to get current watermark from DynamoDB")
+		return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
 	}
+
+	// If item exists, validate against it
+	if result.Item != nil {
+		var stored watermark
+		if err := attributevalue.UnmarshalMap(result.Item, &stored); err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"idx":     wmData.Idx,
+				"request": wmData.Request,
+			}).Error("Failed to unmarshal stored watermark")
+			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
+		}
+
+		log.WithFields(log.Fields{
+			"stored_level": stored.Level,
+			"stored_round": stored.Round,
+			"stored_hash":  stored.Digest,
+			"new_level":    wm.Level,
+			"new_round":    wm.Round,
+			"new_hash":     wm.Hash.UnwrapPtr(),
+			"idx":          wmData.Idx,
+			"request":      wmData.Request,
+		}).Debug("Comparing new watermark with stored watermark")
+
+		// Validate the new watermark against stored one
+		if wm.Level < stored.Level || (wm.Level == stored.Level && wm.Round <= stored.Round) {
+			log.WithFields(log.Fields{
+				"stored_level": stored.Level,
+				"stored_round": stored.Round,
+				"stored_hash":  stored.Digest,
+				"new_level":    wm.Level,
+				"new_round":    wm.Round,
+				"new_hash":     wm.Hash.UnwrapPtr(),
+				"idx":          wmData.Idx,
+				"request":      wmData.Request,
+				"reason":       "new watermark is not higher than stored watermark",
+			}).Error("Watermark validation failed")
+			return ErrWatermark
+		}
+		log.WithFields(log.Fields{
+			"stored_level": stored.Level,
+			"stored_round": stored.Round,
+			"new_level":    wm.Level,
+			"new_round":    wm.Round,
+		}).Debug("Watermark validation passed - new watermark is higher")
+	} else {
+		log.WithFields(log.Fields{
+			"idx":     wmData.Idx,
+			"request": wmData.Request,
+		}).Debug("No existing watermark found - proceeding with new watermark")
+	}
+
+	// If we get here, either no watermark exists or the new one is valid
+	// Now try to write the new watermark
+	putItemInput := dynamodb.PutItemInput{
+		TableName: aws.String(a.cfg.table()),
+		Item:      item,
+	}
+
+	log.WithFields(log.Fields{
+		"table":   a.cfg.table(),
+		"idx":     wmData.Idx,
+		"request": wmData.Request,
+		"level":   wm.Level,
+		"round":   wm.Round,
+	}).Debug("Writing new watermark to DynamoDB")
+
+	_, err = a.client.PutItem(ctx, &putItemInput)
+	if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"table":   a.cfg.table(),
+			"idx":     wmData.Idx,
+			"request": wmData.Request,
+		}).Error("Failed to write new watermark to DynamoDB")
+		return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
+	}
+
+	log.WithFields(log.Fields{
+		"level":   wm.Level,
+		"round":   wm.Round,
+		"idx":     wmData.Idx,
+		"request": wmData.Request,
+		"hash":    wm.Hash.UnwrapPtr(),
+	}).Debug("Watermark validation completed successfully and updated in DynamoDB")
 	return nil
 }
 
