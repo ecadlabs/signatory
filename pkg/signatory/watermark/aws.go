@@ -157,7 +157,13 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 	}
 	_, err = a.client.PutItem((ctx), &putItemInput)
 	if err != nil {
-		log.Error(err)
+		log.WithFields(log.Fields{
+			"chain_id": m.GetChainID().String(),
+			"level":    wm.Level,
+			"round":    wm.Round,
+			"pkh":      pkh.String(),
+			"request":  req.SignRequestKind(),
+		}).Debug("Watermark validation prevented double signing - this is expected behavior")
 		return ErrWatermark
 	}
 	return nil
