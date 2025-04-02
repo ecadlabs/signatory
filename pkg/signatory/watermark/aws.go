@@ -163,7 +163,10 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 			"round":    wm.Round,
 			"pkh":      pkh.String(),
 			"request":  req.SignRequestKind(),
-		}).Debug("Watermark validation prevented double signing - this is expected behavior")
+			"table":    a.cfg.table(),
+			"idx":      wmData.Idx,
+			"digest":   wm.Hash.UnwrapPtr(),
+		}).Info("Watermark validation prevented double signing - this is expected behavior")
 		return ErrWatermark
 	}
 	return nil
