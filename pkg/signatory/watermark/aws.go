@@ -158,17 +158,13 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 	_, err = a.client.PutItem((ctx), &putItemInput)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"chain_id":     m.GetChainID().String(),
-			"level":        wm.Level,
-			"round":        wm.Round,
-			"pkh":          pkh.String(),
-			"request":      req.SignRequestKind(),
-			"table":        a.cfg.table(),
-			"idx":          wmData.Idx,
-			"digest":       wm.Hash.UnwrapPtr(),
-			"stored_level": item["lvl"],
-			"stored_round": item["round"],
-		}).Info("Watermark validation prevented double signing - this is expected behavior")
+			"chain_id": m.GetChainID().String(),
+			"level":    wm.Level,
+			"round":    wm.Round,
+			"pkh":      pkh.String(),
+			"request":  req.SignRequestKind(),
+			"table":    a.cfg.table(),
+		}).Info(fmt.Sprintf("Watermark validation prevented double signing - the watermark stored in %s is higher than %d", a.cfg.table(), wm.Level))
 		return ErrWatermark
 	}
 	return nil
