@@ -161,6 +161,13 @@ func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pr
 	defer f.mem.mtx.Unlock()
 
 	if err := f.mem.isSafeToSignUnlocked(pkh, m, digest); err != nil {
+		if err == ErrWatermark {
+			log.WithFields(log.Fields{
+				"chain_id": m.GetChainID().String(),
+				"pkh":      pkh.String(),
+				"request":  req.SignRequestKind(),
+			}).Info("Signatory prevented double baking by validating watermark")
+		}
 		return err
 	}
 	chain := m.GetChainID()

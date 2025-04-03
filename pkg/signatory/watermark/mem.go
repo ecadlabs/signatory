@@ -9,6 +9,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,6 +52,11 @@ func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.Si
 	watermark := request.NewWatermark(m, digest)
 	if stored, ok := requests[req.SignRequestKind()]; ok {
 		if !watermark.Validate(stored) {
+			log.WithFields(log.Fields{
+				"chain_id":     m.GetChainID().String(),
+				"pkh":          pkh.String(),
+				"request":      req.SignRequestKind(),
+			}).Info("Signatory prevented double baking by validating watermark")
 			return ErrWatermark
 		}
 	}
