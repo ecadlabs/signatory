@@ -15,6 +15,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -123,7 +124,11 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signature, err := s.Signer.Sign(r.Context(), &signRequest)
 	if err != nil {
-		s.logger().Errorf("Error signing request: %v", err)
+		if err == watermark.ErrWatermark {
+			s.logger().Info("Signatory prevented double baking by validating watermark")
+		} else {
+			s.logger().Errorf("Error signing request: %v", err)
+		}
 		tezosJSONError(w, err)
 		return
 	}
