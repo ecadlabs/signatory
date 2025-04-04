@@ -2,16 +2,16 @@ module github.com/ecadlabs/signatory
 
 go 1.23.0
 
-toolchain go1.23.2
+toolchain go1.24.1
 
 require (
 	cloud.google.com/go/kms v1.15.5
-	github.com/aws/aws-sdk-go-v2 v1.30.3
+	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.14.10
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.4
 	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3
-	github.com/aws/smithy-go v1.20.3
+	github.com/aws/smithy-go v1.22.2
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
