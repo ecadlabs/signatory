@@ -69,8 +69,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 h1:rpfIENRNNilwHwZeG5+P150SMrnN
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0/go.mod h1:v57UDF4pDQJcEfFUCRop3lJL149eHGSe9Jvczhzjo/0=
 github.com/ecadlabs/go-pkcs11 v0.3.0 h1:AsLURdNoZn0YocumJFloWXIlx1f2SDw4eTx4nPMa7II=
 github.com/ecadlabs/go-pkcs11 v0.3.0/go.mod h1:PwAVBY0muwp6quQFmSDcB5Ekl4TjGG7cEQQwY9KpNVc=
-github.com/ecadlabs/goblst v1.0.0 h1:8/e3SQGwqbV0+ul+pg0aSNFfC3lgQcvEed3VdDBXSl8=
-github.com/ecadlabs/goblst v1.0.0/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
+github.com/ecadlabs/goblst v1.0.1 h1:TgU9NAl/Ew0zpaltzi0nvC2dF6JX6APcVGFxYe/npN8=
+github.com/ecadlabs/goblst v1.0.1/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
 github.com/ecadlabs/gotez/v2 v2.3.0 h1:rKC20AQ8oMzrzFm/frMjVix927OG6WivUJOcbOWRVg4=
 github.com/ecadlabs/gotez/v2 v2.3.0/go.mod h1:OoIoXcbDQVYGtG7FXYOIVagK8+szKWHAdxLkAWG5Lk4=
 github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 h1:7WdblGykGxtGGtchW4kzTaJJO8Fm+JKhLzhttOOWr9k=
