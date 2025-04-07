@@ -7,10 +7,7 @@ RUN make
 FROM amazonlinux:2023
 WORKDIR /signatory
 # Install necessary runtime dependencies
-RUN dnf update -y \
-    && dnf install -y curl \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf
+RUN dnf update -y
 COPY --from=builder /signatory/signatory.yaml /signatory/signatory.yaml
 COPY --from=builder /signatory/signatory /usr/bin/signatory
 COPY --from=builder /signatory/signatory-cli /usr/bin/signatory-cli
