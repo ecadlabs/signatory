@@ -60,6 +60,12 @@ When Signatory initializes the AWS backend, it automatically creates the DynamoD
 - Sort key: `request` (type of request: block, endorsement, etc.)
 - Provisioned capacity: 5 read and 5 write capacity units
 
+When Signatory starts up, it will log one of these messages to confirm which table is being used:
+- `DynamoDB watermark backend created table 'table_name'` - when creating a new table
+- `DynamoDB watermark backend using existing table 'table_name'` - when using an existing table
+
+This allows operators to verify that Signatory is using the expected DynamoDB table.
+
 ### Data Structure
 
 Each watermark record contains:

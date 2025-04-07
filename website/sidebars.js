@@ -36,9 +36,12 @@ const sidebars = {
         },
         {
           type: "category",
-          label: "Watermark Backends",
+          label: "Watermark",
           collapsed: false,
-          items: [`aws_dynamodb`],
+          items: [
+            `watermarks`,
+            `aws_dynamodb`,
+          ],
         },
         {
           type: "category",
