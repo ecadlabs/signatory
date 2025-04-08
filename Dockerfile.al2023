@@ -1,11 +1,11 @@
 FROM golang:1.21-bullseye AS builder
-RUN apt-get update && apt-get install -y git
-RUN ls -la  # Debug: List all files to verify the copy
-RUN pwd     # Debug: Verify working directory
-ADD . /signatory
 WORKDIR /signatory
-RUN ls -la  # Debug: List all files to verify the copy
-RUN pwd     # Debug: Verify working directory
+RUN echo "Step 1: Initial directory contents" && ls -la
+COPY . .
+RUN echo "Step 2: After COPY contents" && ls -la
+RUN echo "Step 3: Current working directory" && pwd
+RUN apt-get update && apt-get install -y git
+RUN echo "Step 4: Before make" && ls -la
 RUN make
 
 FROM amazonlinux:2023
