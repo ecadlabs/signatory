@@ -282,48 +282,6 @@ dockers:
     - "--platform=linux/arm/v7"
     goarch: arm
     goarm: '7'
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-al2023-amd64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-al2023-amd64{{ end }}'
-    dockerfile: Dockerfile.al2023
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/amd64"
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-al2023-arm64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-al2023-arm64{{ end }}'
-    dockerfile: Dockerfile.al2023
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm64"
-    goarch: arm64
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-al2023-armv7'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-al2023-armv7{{ end }}'
-    dockerfile: Dockerfile.al2023
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm/v7"
-    goarch: arm
-    goarm: '7'
 
 docker_manifests:
   - name_template: 'ecadlabs/signatory:latest'
@@ -336,16 +294,6 @@ docker_manifests:
       - 'ecadlabs/signatory:{{ .Tag }}-amd64'
       - 'ecadlabs/signatory:{{ .Tag }}-arm64'
       - 'ecadlabs/signatory:{{ .Tag }}-armv7'
-  - name_template: 'ecadlabs/signatory:latest-al2023'
-    image_templates:
-      - 'ecadlabs/signatory:latest-al2023-amd64'
-      - 'ecadlabs/signatory:latest-al2023-arm64'
-      - 'ecadlabs/signatory:latest-al2023-armv7'
-  - name_template: 'ecadlabs/signatory:{{ .Tag }}-al2023'
-    image_templates:
-      - 'ecadlabs/signatory:{{ .Tag }}-al2023-amd64'
-      - 'ecadlabs/signatory:{{ .Tag }}-al2023-arm64'
-      - 'ecadlabs/signatory:{{ .Tag }}-al2023-armv7'
 
 checksum:
   name_template: checksums.txt
