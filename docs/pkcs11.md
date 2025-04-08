@@ -13,6 +13,19 @@ The PKCS#11 configuration is commonly used for signing with an AWS Cloud HSM bac
 AWS CloudHSM Client SDK 5.8.0 and earlier versions are deprecated. Users should upgrade to Client SDK 5.9 or higher. Additionally, as of January 1, 2024, AWS CloudHSM has deprecated Triple DES and RSA PKCS#1 v1.5 padding in FIPS-compliant clusters. See [AWS CloudHSM deprecation notice](https://docs.aws.amazon.com/cloudhsm/latest/userguide/deprecated.html) for details.
 :::
 
+## Library Installation and Configuration
+
+### Installation
+
+To use the PKCS#11 library with AWS CloudHSM, you need to download and install the library for your operating system. Below is an example for Amazon Linux 2023:
+
+```bash
+wget https://s3.amazonaws.com/cloudhsmv2-software/CloudHsmClient/Amzn2023/cloudhsm-pkcs11-latest.amzn2023.x86_64.rpm
+sudo yum install ./cloudhsm-pkcs11-latest.amzn2023.x86_64.rpm
+sudo /opt/cloudhsm/bin/configure-pkcs11 --hsm-ca-cert <customerCA certificate file>
+sudo /opt/cloudhsm/bin/configure-pkcs11 -a <HSM IP addresses>
+```
+
 ## Configuration
 
 | Field                      | Type                               | Required | Description                                                  |
@@ -22,6 +35,7 @@ AWS CloudHSM Client SDK 5.8.0 and earlier versions are deprecated. Users should 
 | pin                        | string                             | ✅        | User PIN.  If not specified then `PKCS11_PIN` environment variable value will be used instead. |
 | keys                       | sequence of `Key Pair` (see below) |          | Key list. Use all available keys if not specified (see `public_keys_search_options` description) |
 | public_keys_search_options |                                    |          | Automatic key pair discovery options (see below)             |
+
 
 ### Key Pair
 
@@ -80,6 +94,62 @@ The search behavior is controlled by `public_keys_search_options`:
 - `extended_private: true` - Extract public key data from the PKCS#11 object representing the private key (AWS CloudHSM specific)
 
 By default, all three options are enabled. For AWS CloudHSM, the `extended_private` option is particularly important as it allows Signatory to access the public key information (EC_POINT attribute) stored as an attribute of the private key's PKCS#11 object, eliminating the need to locate separate public key objects. The actual private key material always remains secure within the HSM's hardware boundary.
+
+## Docker Integration
+
+Newer images for Signatory already have the CloudHSM SDK installed. One would only need to mount the configuration file and CA cert to `/opt/cloudhsm/etc` in the container. Below is an example ome the configuration file.
+
+### Configuration
+
+Create a `cloudhsm.json` configuration file with the following structure:
+
+```json
+{
+  "clusters": [
+    {
+      "type": "hsm1",
+      "cluster": {
+        "hsm_ca_file": "/opt/cloudhsm/etc/customerCA.crt",
+        "servers": [
+          {
+            "hostname": "<cloudhsm_address>",
+            "port": <cloudhsm_port>,
+            "enable": true
+          }
+        ]
+      }
+    }
+  ],
+  "logging": {
+    "log_type": "file",
+    "log_file": "/opt/cloudhsm/run/cloudhsm-pkcs11.log",
+    "log_level": "info",
+    "log_interval": "daily"
+  }
+}
+```
+
+### Running the Container
+
+Run the Docker container with the necessary volume mounts to include the configuration and CA certificate:
+
+```bash
+docker run --detach \
+  --volume "/path/to/signatory/config:/etc/signatory" \
+  --volume "/path/to/cloudhsm/config:/opt/cloudhsm/etc" \
+  ecadlabs/signatory:<version>
+```
+
+### Using Host Machine's CloudHSM SDK Library
+
+If you prefer to use the CloudHSM pre-configured SDK with the library from your host machine, you can mount the entire CloudHSM directory to `/opt/cloudhsm`:
+
+```bash
+docker run --detach \
+  --volume "/path/to/signatory/config:/etc/signatory" \
+  --volume "/opt/cloudhsm:/opt/cloudhsm" \
+  <your-docker-image>
+```
 
 ## Examples
 
