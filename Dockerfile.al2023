@@ -1,17 +1,19 @@
 FROM golang:1.21-bullseye AS builder
+RUN apt-get update && apt-get install
+ADD . /signatory
 WORKDIR /signatory
-RUN echo "Step 1: Initial directory contents" && ls -la
-COPY . .
-RUN echo "Step 2: After COPY contents" && ls -la
-RUN echo "Step 3: Current working directory" && pwd
-RUN apt-get update && apt-get install -y git
-RUN echo "Step 4: Before make" && ls -la
 RUN make
 
 FROM amazonlinux:2023
 WORKDIR /signatory
-# Install necessary runtime dependencies
-RUN dnf update -y
+# First, let's try without installing curl since it might be pre-installed
+RUN dnf update -y \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+# Add this command to check if curl is already installed
+RUN which curl || echo "curl not found"
+
 COPY --from=builder /signatory/signatory.yaml /signatory/signatory.yaml
 COPY --from=builder /signatory/signatory /usr/bin/signatory
 COPY --from=builder /signatory/signatory-cli /usr/bin/signatory-cli
