@@ -1,7 +1,11 @@
 FROM golang:1.21-bullseye AS builder
+RUN apt-get update && apt-get install -y git
+RUN ls -la  # Debug: List all files to verify the copy
+RUN pwd     # Debug: Verify working directory
+ADD . /signatory
 WORKDIR /signatory
-COPY . .
-RUN apt-get update && apt-get install -y
+RUN ls -la  # Debug: List all files to verify the copy
+RUN pwd     # Debug: Verify working directory
 RUN make
 
 FROM amazonlinux:2023
