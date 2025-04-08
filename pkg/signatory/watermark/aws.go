@@ -93,11 +93,12 @@ func (a *AWS) maybeCreateTable(ctx context.Context) error {
 	if err != nil {
 		var serr smithy.APIError
 		if errors.As(err, &serr) && serr.ErrorCode() == "ResourceInUseException" {
+			log.Infof("DynamoDB watermark backend using existing table '%s'", a.cfg.table())
 			return nil
 		}
 		return err
 	}
-	log.WithField("table", a.cfg.table()).Info("table created")
+	log.Infof("DynamoDB watermark backend created table '%s'", a.cfg.table())
 	waiter := dynamodb.NewTableExistsWaiter(a.client)
 	return waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
 		TableName: aws.String(a.cfg.table()),
