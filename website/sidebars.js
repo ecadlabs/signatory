@@ -13,34 +13,54 @@
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-	// By default, Docusaurus generates a sidebar from the docs folder structure
+  // By default, Docusaurus generates a sidebar from the docs folder structure
 
-	docs: [
-		{
-			type: 'category',
-			label: 'Start',
-			className: 'sidebarHeader',
-			collapsed: false,
-			collapsible: false,
-			items: ['start',
-				'file_based',
-				'yubihsm',
-				'azure_kms',
-				'gcp_kms',
-				'aws_kms',
-				'hashicorp_vault',
-				'ledger',
-				'cli',
-				'remote_policy',
-				'architecture',
-				'bakers',
-				{
-					type: 'category',
-					label: 'Client Authorization',
-					items: [`authorized_keys`, `jwt`]
-				}],
-		},
-	],
+  docs: [
+    {
+      type: "category",
+      label: "Start",
+      className: "sidebarHeader",
+      collapsed: false,
+      collapsible: false,
+      items: [
+        "start",
+        "architecture",
+        "bakers",
+        "cli",
+        "remote_policy",
+        {
+          type: "category",
+          label: "Client Authorization",
+          collapsed: false,
+          items: [`authorized_keys`, `jwt`],
+        },
+        {
+          type: "category",
+          label: "Watermark",
+          collapsed: false,
+          items: [
+            `watermarks`,
+            `aws_dynamodb`,
+          ],
+        },
+        {
+          type: "category",
+          label: "Vault Backends",
+          collapsed: false,
+          items: [
+            `hashicorp_vault`,
+            `aws_kms`,
+            `azure_kms`,
+            `gcp_kms`,
+            `yubihsm`,
+            `ledger`,
+            `pkcs11`,
+            `file_based`,
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 module.exports = sidebars;
