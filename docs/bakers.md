@@ -35,12 +35,12 @@ flowchart LR
 ## Bakers on Tezos Networks
 
 Things you will need to know:
-- a working octez-client instance
-- the host_address for a Tezos Node`
-    - in this example we will host a node locally at `http://localhost:8732`
-- a public_key_hash to be the baker
+- A working octez-client instance
+- The host_address for a Tezos Node
+    - In this example, we will host a node locally at `http://localhost:8732`
+- A public_key_hash to be the baker
     - e.g. `tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU`
-- the protocol running on the network used
+- The protocol running on the network used
     - e.g. `PtMumbai`
 
 Verify the node:
@@ -113,8 +113,8 @@ make signatory-cli
 
 
 ### 1. Local Secret
-This is not a secure method of key storage but it is the simplest example.
-Create a file /etc/secret.json and populate it with the PKH and secret key for the baker
+This is not a secure method of key storage, but it is the simplest example.
+Create a file `/etc/secret.json` and populate it with the PKH and secret key for the baker:
 ```json!
 [
   {
