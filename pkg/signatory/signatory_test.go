@@ -337,6 +337,64 @@ func TestPolicy(t *testing.T) {
 				LogPayloads:     true,
 			},
 		},
+		{
+			title: "ballot allowed",
+			req: &protocol.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.OperationContents{
+					&latest.Ballot{
+						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+						Period:   0,
+						Proposal: &tz.ProtocolHash{},
+						Ballot:   core.BallotNay,
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"ballot"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "ballot nay allowed",
+			req: &protocol.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.OperationContents{
+					&latest.Ballot{
+						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+						Period:   0,
+						Proposal: &tz.ProtocolHash{},
+						Ballot:   core.BallotNay,
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"ballot:nay"},
+				LogPayloads:     true,
+			},
+		},
+		{
+			title: "ballot yay not allowed",
+			req: &protocol.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.OperationContents{
+					&latest.Ballot{
+						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+						Period:   0,
+						Proposal: &tz.ProtocolHash{},
+						Ballot:   core.BallotYay,
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"ballot:nay"},
+				LogPayloads:     true,
+			},
+			expected: "operation `ballot:yay' is not allowed",
+		},
 	}
 
 	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
