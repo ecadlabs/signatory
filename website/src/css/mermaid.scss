@@ -1,0 +1,32 @@
+/* Mermaid diagram overrides */
+
+/* Fix text color in Mermaid diagrams to be white instead of grey */
+.mermaid {
+  /* Common text color for all diagram types */
+  text, .messageText, .actor, .labelText {
+    fill: white !important;
+    color: white !important;
+  }
+  
+  /* Specific overrides for flowchart */
+  .node rect, .node circle, .node ellipse, .node polygon, .node path {
+    fill-opacity: 1 !important;
+  }
+  
+  /* Specific overrides for classDef */
+  .focusSystem text, .supportingSystem text, .person text {
+    fill: white !important;
+    color: white !important;
+  }
+  
+  /* Sequence diagram text */
+  .sequenceNumber, .noteText, .loopText, .actor-text {
+    fill: white !important;
+  }
+  
+  /* Labels and text in flowcharts */
+  .label text, .cluster-label text, .nodeLabel {
+    fill: white !important;
+    color: white !important;
+  }
+} 
