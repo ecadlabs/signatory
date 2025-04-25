@@ -155,6 +155,15 @@ func (s *Signatory) fetchPolicyOrDefault(keyHash crypt.PublicKeyHash) *PublicKey
 	return &defaultPolicy
 }
 
+func strInSlice(slice []string, s string) bool {
+	for _, x := range slice {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
 func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignRequest) error {
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == nil {
@@ -176,27 +185,22 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignReq
 	}
 
 	kind := msg.SignRequestKind()
-	var allowed bool
-	for _, k := range policy.AllowedRequests {
-		if kind == k {
-			allowed = true
-			break
-		}
-	}
-
-	if !allowed {
+	if !strInSlice(policy.AllowedRequests, kind) {
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
 	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
 		for _, op := range ops.Contents {
-			kind := core.GetOperationKind(op)
-			allowed = false
-			for _, k := range policy.AllowedOps {
-				if kind == k {
-					allowed = true
-					break
-				}
+			allowed := false
+			var kind string
+			if ballot, ok := op.(core.Ballot); ok {
+				ballotKind := ballot.BallotKind().String()
+				kind = "ballot:" + ballotKind
+				allowed = strInSlice(policy.AllowedOps, "ballot") ||
+					strInSlice(policy.AllowedOps, kind)
+			} else {
+				kind = core.GetOperationKind(op)
+				allowed = strInSlice(policy.AllowedOps, kind)
 			}
 			if !allowed {
 				return fmt.Errorf("operation `%s' is not allowed", kind)
