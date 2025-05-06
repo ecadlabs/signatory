@@ -551,6 +551,10 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		vaults: make(map[string]vault.Vault, len(c.Vaults)),
 	}
 
+	factory := c.VaultFactory
+	if factory == nil {
+		factory = vault.Registry()
+	}
 	// Initialize vaults
 	for name, vc := range c.Vaults {
 		if vc == nil {
@@ -563,14 +567,10 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		})
 
 		l.Info("Initializing vault")
-
-		factory := c.VaultFactory
-		if factory == nil {
-			factory = vault.Registry()
-		}
 		v, err := factory.New(ctx, vc.Driver, &vc.Config)
 		if err != nil {
-			return nil, err
+			l.Error("Error initializing vault, skipping")
+			continue
 		}
 		s.vaults[name] = v
 	}
