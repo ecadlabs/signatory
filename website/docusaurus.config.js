@@ -12,6 +12,27 @@ module.exports = {
 	},
 	themes: ['@docusaurus/theme-mermaid'],
 	themeConfig: {
+		mermaid: {
+			theme: {
+				light: 'neutral',
+				dark: 'dark',
+			},
+			options: {
+				themeVariables: {
+					primaryColor: '#1168bd',
+					primaryTextColor: '#ffffff',
+					primaryBorderColor: '#7C0000',
+					lineColor: '#F8B229',
+					secondaryColor: '#666',
+					tertiaryColor: '#fff',
+					textColor: '#ffffff',
+					labelColor: '#ffffff',
+					actorTextColor: '#ffffff',
+					signalTextColor: '#ffffff',
+					noteTextColor: '#ffffff',
+				}
+			}
+		},
 		colorMode: {
 			defaultMode: 'light',
 			disableSwitch: true,
@@ -146,6 +167,7 @@ module.exports = {
 						require.resolve('./src/css/admonitions.scss'),
 						require.resolve('./src/css/codeBlock.scss'),
 						require.resolve('./src/css/tabs.scss'),
+						require.resolve('./src/css/mermaid.scss'),
 					],
 				},
 			},

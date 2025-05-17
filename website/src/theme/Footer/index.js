@@ -137,6 +137,7 @@ function Footer() {
 													</li>
 												) : item.html === 'image' ? (
 													<a
+														key={key}
 														href='/'
 														target='_blank'
 														rel='noreferrer noopener'
