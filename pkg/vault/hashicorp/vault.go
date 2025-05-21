@@ -193,7 +193,7 @@ func (v *Vault) getPublicKey(ctx context.Context, keyID string) (*vaultKey, erro
 func (v *Vault) Close(context.Context) error { return nil }
 
 func init() {
-	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("hashicorpvault", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(HashicorpVault): config is missing")

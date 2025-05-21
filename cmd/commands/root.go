@@ -89,6 +89,7 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				Vaults:      conf.Vaults,
 				Interceptor: metrics.Interceptor,
 				Watermark:   watermark,
+				BaseDir:     conf.BaseDir,
 			}
 
 			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {

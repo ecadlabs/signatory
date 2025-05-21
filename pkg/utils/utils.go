@@ -3,6 +3,8 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"unicode"
@@ -159,4 +161,21 @@ func KeyboardInteractivePassphraseFunc(prompt string) func() ([]byte, error) {
 		defer fmt.Println()
 		return term.ReadPassword(int(syscall.Stdin))
 	}
+}
+
+func WriteRename(path, tmpPrefix string, data []byte) (err error) {
+	fd, err := os.CreateTemp(filepath.Dir(path), tmpPrefix)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		e := fd.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+	if _, err := fd.Write(data); err != nil {
+		return err
+	}
+	return os.Rename(fd.Name(), path)
 }

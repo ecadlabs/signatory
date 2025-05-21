@@ -75,7 +75,7 @@ func TestAuthenticatedRequest(t *testing.T) {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: watermark.Ignore{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+		VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 			return memory.New([]*memory.PrivateKey{{Key: signPriv}}, "Mock")
 		}),
 		Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{

@@ -9,7 +9,6 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/spf13/cobra"
@@ -56,7 +55,7 @@ func NewGenKeyCommand() *cobra.Command {
 					priv = crypt.Ed25519PrivateKey(k)
 				case "secp256k1":
 					var k *ecdsa.PrivateKey
-					k, err = ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+					k, err = ecdsa.GenerateKey(crypt.S256(), rand.Reader)
 					priv = (*crypt.ECDSAPrivateKey)(k)
 				case "p256":
 					var k *ecdsa.PrivateKey

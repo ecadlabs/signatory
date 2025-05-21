@@ -23,6 +23,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	rootCmd.AddCommand(
 		commands.NewListCommand(&rootCtx),
 		commands.NewImportCommand(&rootCtx),
+		commands.NewGenerateCommand(&rootCtx),
 		commands.NewVersionCommand(&rootCtx),
 		commands.NewListRequests(&rootCtx),
 		commands.NewListOps(&rootCtx),
