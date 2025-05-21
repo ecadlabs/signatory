@@ -17,7 +17,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
-	awskms "github.com/ecadlabs/signatory/pkg/vault/aws"
+	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -29,8 +29,8 @@ const (
 )
 
 type AWSConfig struct {
-	awskms.Config `yaml:",inline"`
-	Table         string `yaml:"table"`
+	awsutils.Config `yaml:",inline"`
+	Table           string `yaml:"table"`
 }
 
 func (c *AWSConfig) table() string {
@@ -46,7 +46,7 @@ type AWS struct {
 }
 
 func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
-	cfg, err := awskms.NewConfig(ctx, &config.Config)
+	cfg, err := awsutils.NewAWSConfig(ctx, &config.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 }
 
 func init() {
-	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
+	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
 		var conf AWSConfig
 		if node != nil {
 			if err := node.Decode(&conf); err != nil {
