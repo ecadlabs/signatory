@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -16,7 +17,8 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
-	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
+	awskms "github.com/ecadlabs/signatory/pkg/vault/aws"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,8 +29,8 @@ const (
 )
 
 type AWSConfig struct {
-	awsutils.Config `yaml:",inline"`
-	Table           string `yaml:"table"`
+	awskms.Config `yaml:",inline"`
+	Table         string `yaml:"table"`
 }
 
 func (c *AWSConfig) table() string {
@@ -44,7 +46,7 @@ type AWS struct {
 }
 
 func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
-	cfg, err := awsutils.NewAWSConfig(ctx, &config.Config)
+	cfg, err := awskms.NewConfig(ctx, &config.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -54,14 +56,14 @@ func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
 		client: client,
 		cfg:    *config,
 	}
-	if err := awsutils.DynamoDBMaybeCreateTable(ctx, client, a.makeCreateTableInput()); err != nil {
+	if err := a.maybeCreateTable(ctx); err != nil {
 		return nil, fmt.Errorf("(AWSWatermark) NewAWSWatermark: %w", err)
 	}
 	return &a, nil
 }
 
-func (a *AWS) makeCreateTableInput() *dynamodb.CreateTableInput {
-	return &dynamodb.CreateTableInput{
+func (a *AWS) maybeCreateTable(ctx context.Context) error {
+	_, err := a.client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("idx"),
@@ -87,7 +89,20 @@ func (a *AWS) makeCreateTableInput() *dynamodb.CreateTableInput {
 			WriteCapacityUnits: aws.Int64(writeCapacityUnits),
 		},
 		TableName: aws.String(a.cfg.table()),
+	})
+	if err != nil {
+		var serr smithy.APIError
+		if errors.As(err, &serr) && serr.ErrorCode() == "ResourceInUseException" {
+			log.Infof("DynamoDB watermark backend using existing table '%s'", a.cfg.table())
+			return nil
+		}
+		return err
 	}
+	log.Infof("DynamoDB watermark backend created table '%s'", a.cfg.table())
+	waiter := dynamodb.NewTableExistsWaiter(a.client)
+	return waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
+		TableName: aws.String(a.cfg.table()),
+	}, time.Minute*5) // give excess time
 }
 
 type watermark struct {
@@ -120,65 +135,37 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req pro
 		return nil
 	}
 	wm := request.NewWatermark(m, digest)
-	prev := watermark{
+
+	wmData := watermark{
 		Idx:     strings.Join([]string{m.GetChainID().String(), pkh.String()}, "/"),
 		Request: req.SignRequestKind(),
+		Level:   wm.Level,
+		Round:   wm.Round,
+		Digest:  wm.Hash.UnwrapPtr(),
 	}
-	for {
-		response, err := a.client.GetItem(ctx, &dynamodb.GetItemInput{
-			Key:       prev.key(),
-			TableName: aws.String(a.cfg.table()),
-		})
-		if err != nil {
-			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
-		}
-
-		update := watermark{
-			Idx:     prev.Idx,
-			Request: prev.Request,
-			Level:   wm.Level,
-			Round:   wm.Round,
-			Digest:  wm.Hash.UnwrapPtr(),
-		}
-		item, err := attributevalue.MarshalMap(&update)
-		if err != nil {
-			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
-		}
-		input := dynamodb.PutItemInput{
-			TableName: aws.String(a.cfg.table()),
-			Item:      item,
-		}
-
-		if response.Item != nil {
-			if err := attributevalue.UnmarshalMap(response.Item, &prev); err != nil {
-				return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
-			}
-			if !wm.Validate(prev.watermark()) {
-				return ErrWatermark
-			}
-			input.ConditionExpression = aws.String("lvl = :lvl AND round = :round AND digest = :digest")
-			input.ExpressionAttributeValues = map[string]types.AttributeValue{
-				":lvl":    response.Item["lvl"],
-				":round":  response.Item["round"],
-				":digest": response.Item["digest"],
-			}
-		} else {
-			input.ConditionExpression = aws.String("attribute_not_exists(idx)")
-		}
-
-		_, err = a.client.PutItem((ctx), &input)
-		var serr smithy.APIError
-		if err == nil {
-			return nil
-		} else if !errors.As(err, &serr) || serr.ErrorCode() != "ConditionalCheckFailedException" {
-			return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
-		}
-		// retry
+	item, err := attributevalue.MarshalMap(&wmData)
+	if err != nil {
+		return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
 	}
+	putItemInput := dynamodb.PutItemInput{
+		TableName:           aws.String(a.cfg.table()),
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(idx) or lvl < :new_lvl or (lvl = :new_lvl and round < :new_round)"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":new_lvl":   item["lvl"],
+			":new_round": item["round"],
+		},
+	}
+	_, err = a.client.PutItem((ctx), &putItemInput)
+	if err != nil {
+		log.Error(err)
+		return ErrWatermark
+	}
+	return nil
 }
 
 func init() {
-	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
 		var conf AWSConfig
 		if node != nil {
 			if err := node.Decode(&conf); err != nil {
