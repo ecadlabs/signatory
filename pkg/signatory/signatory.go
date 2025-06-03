@@ -423,6 +423,57 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	return sig, nil
 }
 
+func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
+	l := s.logger().WithField(logPKH, req.PublicKeyHash)
+
+	if req.ClientPublicKeyHash != nil {
+		l = l.WithField(logClient, req.ClientPublicKeyHash)
+	}
+
+	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
+	if policy == nil {
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(string(req.PublicKeyHash.ToBase58()), "\n", "", -1))
+		l.Error(err)
+		return nil, errors.Wrap(err, http.StatusForbidden)
+	}
+
+	u := ctx.Value("user")
+	if u != nil {
+		if err := jwtVerifyUser(u.(string), policy, req); err != nil {
+			l.Error(err)
+			return nil, errors.Wrap(err, http.StatusForbidden)
+		}
+	}
+
+	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
+	if err != nil {
+		l.Error(err)
+		return nil, err
+	}
+
+	prover, ok := p.key.(vault.PossessionProver)
+	if !ok {
+		l.Error("Proof of possession is not supported")
+		return nil, errors.Wrap(errors.New("proof of possession is not supported"), http.StatusBadRequest)
+	}
+
+	if err = s.callPolicyHook(ctx, req); err != nil {
+		l.Error(err)
+		return nil, err
+	}
+	l.Info("Requesting proof of possession")
+
+	sig, err := prover.ProvePossession(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Debugf("Encoded signature: %v", sig)
+	l.Info("Possession proved successfully")
+
+	return sig, nil
+}
+
 type publicKeys = hashmap.PublicKeyHashMap[*keyVaultPair]
 
 func (s *Signatory) listPublicKeys(ctx context.Context) (ret publicKeys, list []*keyVaultPair, err error) {
