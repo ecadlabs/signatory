@@ -2,6 +2,7 @@ package nitro
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"iter"
@@ -11,6 +12,7 @@ import (
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -32,6 +34,25 @@ type StorageConfig struct {
 type encryptedKey struct {
 	PublicKeyHash       tz.PublicKeyHash `json:"public_key_hash"`
 	EncryptedPrivateKey []byte           `json:"encrypted_private_key"`
+}
+
+func (e *encryptedKey) UnmarshalJSON(data []byte) error {
+	type Alias encryptedKey
+	aux := &struct {
+		PublicKeyHash string `json:"public_key_hash"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	pkh, err := b58.ParsePublicKeyHash([]byte(aux.PublicKeyHash))
+	if err != nil {
+		return err
+	}
+	e.PublicKeyHash = pkh
+	return nil
 }
 
 type result[T any] interface {
