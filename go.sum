@@ -67,8 +67,8 @@ github.com/ecadlabs/go-pkcs11 v0.3.0 h1:AsLURdNoZn0YocumJFloWXIlx1f2SDw4eTx4nPMa
 github.com/ecadlabs/go-pkcs11 v0.3.0/go.mod h1:PwAVBY0muwp6quQFmSDcB5Ekl4TjGG7cEQQwY9KpNVc=
 github.com/ecadlabs/goblst v1.1.0 h1:U0JzRxIbtv1OsefUqfXNJ1HLzPMSaHY8aOeIQggUe9U=
 github.com/ecadlabs/goblst v1.1.0/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
-github.com/ecadlabs/gotez/v2 v2.3.2 h1:h+B6TL/pl568inwPduEg8CMNeWQHxhMKK+xgmJcxoqs=
-github.com/ecadlabs/gotez/v2 v2.3.2/go.mod h1:GNR3XjOXxeeJceS0dTGvO2uNzpz2wgKRL9q6f5rMGiY=
+github.com/ecadlabs/gotez/v2 v2.3.3 h1:BIQxGIo+8VLRqHoMWFulGiNNOifchJViZQDCoMPcO8U=
+github.com/ecadlabs/gotez/v2 v2.3.3/go.mod h1:GNR3XjOXxeeJceS0dTGvO2uNzpz2wgKRL9q6f5rMGiY=
 github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 h1:7WdblGykGxtGGtchW4kzTaJJO8Fm+JKhLzhttOOWr9k=
 github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04/go.mod h1:VApUlocsLMpp4hUXHxTTIlosebnwo0BM6e1hy78qTPM=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
