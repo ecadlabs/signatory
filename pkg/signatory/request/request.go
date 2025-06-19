@@ -3,11 +3,12 @@ package request
 import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
+	"github.com/ecadlabs/signatory/pkg/proto"
 )
 
 type WithWatermark interface {
-	protocol.SignRequest
+	core.SignRequest
 	GetChainID() *tz.ChainID
 	GetLevel() int32
 	GetRound() int32
@@ -41,7 +42,7 @@ func (l *Watermark) Validate(stored *Watermark) bool {
 }
 
 var (
-	_ WithWatermark = (*protocol.BlockSignRequest)(nil)
-	_ WithWatermark = (*protocol.PreendorsementSignRequest)(nil)
-	_ WithWatermark = (*protocol.EndorsementSignRequest)(nil)
+	_ WithWatermark = (*proto.BlockSignRequest)(nil)
+	_ WithWatermark = (*proto.PreattestationSignRequest)(nil)
+	_ WithWatermark = (*proto.AttestationSignRequest)(nil)
 )

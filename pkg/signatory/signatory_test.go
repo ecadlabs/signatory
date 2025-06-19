@@ -12,7 +12,6 @@ import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/gotez/v2/protocol/core/expression"
 	"github.com/ecadlabs/gotez/v2/protocol/latest"
@@ -66,7 +65,7 @@ func TestPolicy(t *testing.T) {
 	type testCase struct {
 		title    string
 		msg      []byte
-		req      protocol.SignRequest
+		req      latest.SignRequest
 		policy   signatory.PublicKeyPolicy
 		expected string
 	}
@@ -311,7 +310,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "Stake allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Transaction{
@@ -339,7 +338,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{
@@ -358,7 +357,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot nay allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{
@@ -377,7 +376,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot yay not allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{
