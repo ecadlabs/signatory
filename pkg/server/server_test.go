@@ -28,6 +28,10 @@ func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (cryp
 	return c.SignResponse, c.SignError
 }
 
+func (c *signerMock) ProvePossession(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error) {
+	return c.SignResponse, c.SignError
+}
+
 func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error) {
 	if c.PublicKeyResponse == nil && c.PublicKeyError == nil {
 		return nil, errors.New("key not found")

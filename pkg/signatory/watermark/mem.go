@@ -6,7 +6,7 @@ import (
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"gopkg.in/yaml.v3"
@@ -19,13 +19,13 @@ type InMemory struct {
 }
 
 // IsSafeToSign return true if this msgID is safe to sign
-func (w *InMemory) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
 	return w.isSafeToSignUnlocked(pkh, req, digest)
 }
 
-func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error {
+func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required

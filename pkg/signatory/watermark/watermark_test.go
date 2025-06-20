@@ -10,7 +10,7 @@ import (
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +28,7 @@ func (r *dummyMsg) GetRound() int32         { return r.round }
 
 type testCase struct {
 	pkh       crypt.PublicKeyHash
-	req       protocol.SignRequest
+	req       core.SignRequest
 	reqDigest crypt.Digest
 	expectErr bool
 }
