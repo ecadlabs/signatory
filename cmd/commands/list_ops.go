@@ -6,8 +6,7 @@ import (
 	"text/template"
 
 	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/gotez/v2/protocol"
-	"github.com/ecadlabs/gotez/v2/protocol/latest"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,7 @@ func NewListRequests(c *Context) *cobra.Command {
 		Short: "Print possible request types",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var kinds []string
-			for _, k := range encoding.ListVariants[protocol.SignRequest]() {
+			for _, k := range encoding.ListVariants[proto.SignRequest]() {
 				kinds = append(kinds, k.SignRequestKind())
 			}
 			sort.Strings(kinds)
@@ -51,10 +50,10 @@ func NewListOps(c *Context) *cobra.Command {
 		Short: "Print possible operation types inside the `generic` request",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var ops []string
-			for _, k := range latest.ListOperations() {
+			for _, k := range proto.ListOperations() {
 				ops = append(ops, k.OperationKind())
 			}
-			for _, op := range latest.ListPseudoOperations() {
+			for _, op := range proto.ListPseudoOperations() {
 				ops = append(ops, op.PseudoOperation())
 			}
 			sort.Strings(ops)

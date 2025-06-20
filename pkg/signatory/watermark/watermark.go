@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/protocol"
+	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/signatory/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -13,14 +13,14 @@ import (
 
 // Watermark tests level against stored high watermark
 type Watermark interface {
-	IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req protocol.SignRequest, digest *crypt.Digest) error
+	IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error
 }
 
 // Ignore watermark that do not validation and return true
 type Ignore struct{}
 
 // IsSafeToSign always return true
-func (w Ignore) IsSafeToSign(context.Context, crypt.PublicKeyHash, protocol.SignRequest, *crypt.Digest) error {
+func (w Ignore) IsSafeToSign(context.Context, crypt.PublicKeyHash, core.SignRequest, *crypt.Digest) error {
 	return nil
 }
 
