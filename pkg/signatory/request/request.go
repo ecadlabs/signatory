@@ -4,7 +4,7 @@ import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
-	"github.com/ecadlabs/signatory/pkg/proto"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 )
 
 type WithWatermark interface {

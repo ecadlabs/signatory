@@ -5,7 +5,7 @@ import (
 
 	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
-	"github.com/ecadlabs/signatory/pkg/proto"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 )
 
 func AuthenticatedBytesToSign(req *SignRequest) ([]byte, error) {

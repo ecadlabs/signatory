@@ -6,7 +6,7 @@ import (
 	"text/template"
 
 	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/signatory/pkg/proto"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/spf13/cobra"
 )
 
