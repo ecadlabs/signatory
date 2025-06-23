@@ -207,3 +207,16 @@ func (c *Client[C]) PublicKeyFrom(ctx context.Context, data []byte) (publicKey *
 	}
 	return res.Ok, nil
 }
+
+func (c *Client[C]) ProvePossession(ctx context.Context, handle uint64) (sig *Signature, err error) {
+	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
+		ProvePossession: &handle,
+	}, c.Logger)
+	if err == nil && res.Error() != nil {
+		err = res.Error()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res.Ok, nil
+}

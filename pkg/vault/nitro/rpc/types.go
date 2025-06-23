@@ -85,6 +85,7 @@ type Request[C any] struct {
 	SignWith          *SignWithRequest `cbor:"SignWith,omitempty"`
 	PublicKey         *uint64          `cbor:"PublicKey,omitempty"`
 	PublicKeyFrom     []byte           `cbor:"PublicKeyFrom,omitempty"`
+	ProvePossession   *uint64          `cbor:"ProvePossession,omitempty"`
 }
 
 type PublicKey struct {

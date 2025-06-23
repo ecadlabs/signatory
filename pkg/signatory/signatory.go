@@ -462,7 +462,7 @@ func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (cryp
 	}
 	l.Info("Requesting proof of possession")
 
-	sig, err := prover.ProvePossession(ctx)
+	sig, err := prover.ProvePossession(ctx, req.PublicKeyHash)
 	if err != nil {
 		return nil, err
 	}
@@ -624,7 +624,7 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		l.Info("Initializing vault")
 		v, err := factory.New(ctx, vc.Driver, &vc.Config, c)
 		if err != nil {
-			l.Error("Error initializing vault, skipping")
+			l.Errorf("Error initializing vault, skipping... %v", err)
 			continue
 		}
 		s.vaults[name] = v
