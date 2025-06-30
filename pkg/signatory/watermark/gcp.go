@@ -20,26 +20,26 @@ const (
 	defaultCollection = "watermark"
 )
 
-type FirestoreConfig struct {
+type GCPConfig struct {
 	CredentialsFile string `yaml:"file"`
 	Database        string `yaml:"database"`
 	ProjectID       string `yaml:"project_id"`
 	Collection      string `yaml:"collection"`
 }
 
-func (c *FirestoreConfig) collection() string {
+func (c *GCPConfig) collection() string {
 	if c.Collection != "" {
 		return c.Collection
 	}
 	return defaultCollection
 }
 
-type Firestore struct {
+type GCP struct {
 	client *firestore.Client
 	col    *firestore.CollectionRef
 }
 
-func NewFirestoreWatermark(ctx context.Context, config *FirestoreConfig) (*Firestore, error) {
+func NewGCPWatermark(ctx context.Context, config *GCPConfig) (*GCP, error) {
 	var client *firestore.Client
 	var err error
 
@@ -55,7 +55,7 @@ func NewFirestoreWatermark(ctx context.Context, config *FirestoreConfig) (*Fires
 
 	col := client.Collection(config.collection())
 
-	inst := Firestore{
+	inst := GCP{
 		client: client,
 		col:    col,
 	}
@@ -63,14 +63,14 @@ func NewFirestoreWatermark(ctx context.Context, config *FirestoreConfig) (*Fires
 	return &inst, nil
 }
 
-type FirestoreWatermark struct {
+type GCPWatermark struct {
 	Request string               `firestore:"request"`
 	Level   int32                `firestore:"lvl"`
 	Round   int32                `firestore:"round"`
 	Digest  *tz.BlockPayloadHash `firestore:"digest"`
 }
 
-func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
+func (f *GCP) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
 		// watermark is not required
@@ -81,7 +81,7 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 
 	wm := request.NewWatermark(m, digest)
 
-	newWm := FirestoreWatermark{
+	newWm := GCPWatermark{
 		Request: req.SignRequestKind(),
 		Level:   wm.Level,
 		Round:   wm.Round,
@@ -97,7 +97,7 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 		}
 
 		if err == nil { // watermark exists
-			var oldWm FirestoreWatermark
+			var oldWm GCPWatermark
 			err := docSnap.DataTo(&oldWm)
 			if err != nil {
 				return err
@@ -114,13 +114,13 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 }
 
 func init() {
-	RegisterWatermark("firestore", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
-		var config FirestoreConfig
+	RegisterWatermark("gcp", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
+		var config GCPConfig
 		if node != nil {
 			if err := node.Decode(&config); err != nil {
 				return nil, err
 			}
 		}
-		return NewFirestoreWatermark(ctx, &config)
+		return NewGCPWatermark(ctx, &config)
 	})
 }
