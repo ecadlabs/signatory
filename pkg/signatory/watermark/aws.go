@@ -105,7 +105,7 @@ func (a *AWS) maybeCreateTable(ctx context.Context) error {
 	}, time.Minute*5) // give excess time
 }
 
-type DynamoWatermark struct {
+type AWSWatermark struct {
 	Idx     string               `dynamodbav:"idx"`
 	Request string               `dynamodbav:"request"`
 	Level   int32                `dynamodbav:"lvl"`
@@ -113,14 +113,14 @@ type DynamoWatermark struct {
 	Digest  *tz.BlockPayloadHash `dynamodbav:"digest"`
 }
 
-func (w *DynamoWatermark) key() map[string]types.AttributeValue {
+func (w *AWSWatermark) key() map[string]types.AttributeValue {
 	return map[string]types.AttributeValue{
 		"idx":     &types.AttributeValueMemberS{Value: w.Idx},
 		"request": &types.AttributeValueMemberS{Value: w.Request},
 	}
 }
 
-func (w *DynamoWatermark) watermark() *request.Watermark {
+func (w *AWSWatermark) watermark() *request.Watermark {
 	return &request.Watermark{
 		Level: w.Level,
 		Round: w.Round,
@@ -136,7 +136,7 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 	}
 	wm := request.NewWatermark(m, digest)
 
-	wmData := DynamoWatermark{
+	wmData := AWSWatermark{
 		Idx:     strings.Join([]string{m.GetChainID().String(), pkh.String()}, "/"),
 		Request: req.SignRequestKind(),
 		Level:   wm.Level,
