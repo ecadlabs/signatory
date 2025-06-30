@@ -55,6 +55,14 @@ Signatory supports three watermark backend types, each suited for different depl
   - Enables multiple Signatory instances to safely share signing keys
 - **Configuration**: [See detailed documentation](aws_dynamodb.md)
 
+### Google Firestore (`gcp`)
+- **Best for**: Production environments, especially cloud-based or high-availability setups
+- **Pros**: 
+  - Persistent storage independent of the Signatory instance
+  - Supports concurrent access with strong consistency
+  - Enables multiple Signatory instances to safely share signing keys
+- **Configuration**: [See detailed documentation](gcp_firestore.md)
+
 ## Configuration Examples
 
 ### Basic Configuration
