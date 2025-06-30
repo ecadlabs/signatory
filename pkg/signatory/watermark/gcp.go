@@ -2,6 +2,9 @@ package watermark
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
@@ -27,6 +30,33 @@ type GCPConfig struct {
 	Collection      string `yaml:"collection"`
 }
 
+type GCPCredentials struct {
+	ProjectID string `json:"project_id"`
+}
+
+func extractProjectIDFromCredentials(credentialsFile string) (string, error) {
+	// reads the GCP credentials file and extracts the project_id
+	if credentialsFile == "" {
+		return "", fmt.Errorf("credentials file path is empty")
+	}
+
+	data, err := os.ReadFile(credentialsFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read credentials file: %w", err)
+	}
+
+	var creds GCPCredentials
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return "", fmt.Errorf("failed to parse credentials JSON: %w", err)
+	}
+
+	if creds.ProjectID == "" {
+		return "", fmt.Errorf("project_id not found in credentials file")
+	}
+
+	return creds.ProjectID, nil
+}
+
 func (c *GCPConfig) collection() string {
 	if c.Collection != "" {
 		return c.Collection
@@ -43,10 +73,19 @@ func NewGCPWatermark(ctx context.Context, config *GCPConfig) (*GCP, error) {
 	var client *firestore.Client
 	var err error
 
+	projectID := config.ProjectID
+	if projectID == "" {
+		// Try to extract project ID from credentials file
+		projectID, err = extractProjectIDFromCredentials(config.CredentialsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get project ID from credentials file: %w", err)
+		}
+	}
+
 	if config.Database != "" {
-		client, err = firestore.NewClientWithDatabase(ctx, config.ProjectID, config.Database, option.WithCredentialsFile(config.CredentialsFile))
+		client, err = firestore.NewClientWithDatabase(ctx, projectID, config.Database, option.WithCredentialsFile(config.CredentialsFile))
 	} else {
-		client, err = firestore.NewClient(ctx, config.ProjectID, option.WithCredentialsFile(config.CredentialsFile))
+		client, err = firestore.NewClient(ctx, projectID, option.WithCredentialsFile(config.CredentialsFile))
 	}
 
 	if err != nil {
