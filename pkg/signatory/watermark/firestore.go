@@ -2,7 +2,6 @@ package watermark
 
 import (
 	"context"
-	"strings"
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
@@ -17,11 +16,22 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
+const (
+	defaultCollection = "watermark"
+)
+
 type FirestoreConfig struct {
 	CredentialsFile string `yaml:"file"`
 	Database        string `yaml:"database"`
 	ProjectID       string `yaml:"project_id"`
 	Collection      string `yaml:"collection"`
+}
+
+func (c *FirestoreConfig) collection() string {
+	if c.Collection != "" {
+		return c.Collection
+	}
+	return defaultCollection
 }
 
 type Firestore struct {
@@ -43,7 +53,7 @@ func NewFirestoreWatermark(ctx context.Context, config *FirestoreConfig) (*Fires
 		return nil, err
 	}
 
-	col := client.Collection(config.Collection)
+	col := client.Collection(config.collection())
 
 	inst := Firestore{
 		client: client,
@@ -67,8 +77,7 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 		return nil
 	}
 
-	docRef := f.col.Doc(strings.Join([]string{m.GetChainID().String(), pkh.String()}, "\\"))
-	// docRef := f.col.Doc(m.GetChainID().String()).Doc(pkh.String())
+	docRef := f.col.Doc(m.GetChainID().String()).Collection(req.SignRequestKind()).Doc(pkh.String())
 
 	wm := request.NewWatermark(m, digest)
 
@@ -94,7 +103,7 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 				return err
 			}
 
-			if oldWm.Level > newWm.Level || (oldWm.Level == newWm.Level && oldWm.Round >= newWm.Round) {
+			if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
 				return ErrWatermark
 			}
 		}
@@ -105,8 +114,6 @@ func (f *Firestore) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, r
 }
 
 func init() {
-	// Assuming newWMBackendFunc is defined something like:
-	// type newWMBackendFunc func(ctx context.Context, conf *yaml.Node, global *config.Config) (Watermark, error)
 	RegisterWatermark("firestore", func(ctx context.Context, node *yaml.Node, global *config.Config) (Watermark, error) {
 		var config FirestoreConfig
 		if node != nil {
