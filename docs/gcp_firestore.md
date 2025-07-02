@@ -81,7 +81,7 @@ This structure ensures that:
 2. Each key's watermarks are separated by operation type
 3. Different chains maintain separate watermarks
 
-<!-- ## Verifying and Managing the Firestore Collection
+## Verifying and Managing the Firestore Collection
 
 You can use the Google Cloud Console or gcloud CLI to verify and manage your watermark collection. Here are some useful commands:
 
@@ -183,7 +183,7 @@ watermark:
   driver: gcp
   config:
     project_id: my-gcp-project
-    file: /path/to/signatory-key.json -->
+    file: /path/to/signatory-key.json
 ```
 
 ## Operational Notes
