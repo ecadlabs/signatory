@@ -42,8 +42,8 @@ watermark:
 | Name            | Type   | Required | Description                                                         |
 |-----------------|--------|:--------:|---------------------------------------------------------------------|
 | file            | string | ✅ | Path to GCP service account credentials JSON file                   |
-| database        | string | ✅ | Firestore database name (default: uses default database)            |
-| project_id      | string | OPTIONAL       | GCP project ID where Firestore is located                           |
+| database        | string | ✅ | Firestore database name            |
+| project_id      | string | OPTIONAL       | GCP project ID where Firestore is located (default: uses project id in credentials file)  |
 | collection      | string | OPTIONAL | Name of the Firestore collection (default: `watermark`)             |
 <!-- 
 ### Environment Variables Support
