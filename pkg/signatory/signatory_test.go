@@ -12,7 +12,6 @@ import (
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/gotez/v2/protocol/core/expression"
 	"github.com/ecadlabs/gotez/v2/protocol/latest"
@@ -66,7 +65,7 @@ func TestPolicy(t *testing.T) {
 	type testCase struct {
 		title    string
 		msg      []byte
-		req      protocol.SignRequest
+		req      latest.SignRequest
 		policy   signatory.PublicKeyPolicy
 		expected string
 	}
@@ -178,7 +177,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "reveal not allowed",
-			msg:   mustHex("0333faca8a156c5e69fc8a63a799911b7c94b126fc7294dbbc0b8cb6880a81944e6b0008460955bf19f2d43ff015d938d53198b14ff637eb09f5ae3f904e000084d813c61c2478b2f30cda0b5593ae5ba293226f44120e42476f0e0941f3702a6e0008460955bf19f2d43ff015d938d53198b14ff6378a09f6ae3ff44e00ff004b415314d2b56b0481a3ae8c992ce8bb8dba0369"),
+			msg:   mustHex("0333faca8a156c5e69fc8a63a799911b7c94b126fc7294dbbc0b8cb6880a81944e6b0008460955bf19f2d43ff015d938d53198b14ff637eb09f5ae3f904e000084d813c61c2478b2f30cda0b5593ae5ba293226f44120e42476f0e0941f3702a006e0008460955bf19f2d43ff015d938d53198b14ff6378a09f6ae3ff44e00ff004b415314d2b56b0481a3ae8c992ce8bb8dba0369"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "transaction", "origination", "delegation"},
@@ -292,7 +291,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "Delegate with consesus key",
-			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a2302826e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
+			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a230282006e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation", "update_consensus_key"},
@@ -301,7 +300,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "Delegate with consesus key not allowed",
-			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a2302826e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
+			msg:   mustHex("03f6622bc2e0b99604f1f103f1cbda4fa1b07ad8a993838c4f62855bfe36e8fb6a6b02f846b9ed8834c257a6f0c3cebeab4f58508b20ade60215e807000202dbc1715493e74def32a7d219df06accd6ca75d775d4177dd09471f9a9a230282006e02f846b9ed8834c257a6f0c3cebeab4f58508b20adfa0116e80700ff02f846b9ed8834c257a6f0c3cebeab4f58508b20ad7202f846b9ed8834c257a6f0c3cebeab4f58508b20ad900217cc08000202ce4ab1f214186fc04b06383e012357ccf7b67f9bddbd5818dba80f704b3a79f4"),
 			policy: signatory.PublicKeyPolicy{
 				AllowedRequests: []string{"generic", "block", "endorsement"},
 				AllowedOps:      []string{"endorsement", "seed_nonce_revelation", "activate_account", "ballot", "reveal", "origination", "delegation"},
@@ -311,7 +310,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "Stake allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Transaction{
@@ -339,7 +338,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{
@@ -358,7 +357,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot nay allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{
@@ -377,7 +376,7 @@ func TestPolicy(t *testing.T) {
 		},
 		{
 			title: "ballot yay not allowed",
-			req: &protocol.GenericOperationSignRequest{
+			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
 				Contents: []latest.OperationContents{
 					&latest.Ballot{

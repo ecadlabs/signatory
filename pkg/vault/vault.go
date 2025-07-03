@@ -25,6 +25,10 @@ type WithID interface {
 	ID() string // Additional backend specific ID that can be displayed alongside the public key
 }
 
+type PossessionProver interface {
+	ProvePossession(ctx context.Context, pkh crypt.PublicKeyHash) (crypt.Signature, error)
+}
+
 // KeyIterator is used to iterate over stored public keys
 type KeyIterator interface {
 	Next() (KeyReference, error)

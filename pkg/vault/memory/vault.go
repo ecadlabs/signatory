@@ -27,6 +27,10 @@ type keyRef struct {
 	v *Vault
 }
 
+type popKeyRef struct {
+	keyRef
+}
+
 func (k *keyRef) PublicKey() crypt.PublicKey { return k.Key.Public() }
 func (k *keyRef) Vault() vault.Vault         { return k.v }
 func (k *keyRef) Sign(ctx context.Context, message []byte) (sig crypt.Signature, err error) {
@@ -35,6 +39,11 @@ func (k *keyRef) Sign(ctx context.Context, message []byte) (sig crypt.Signature,
 		return nil, fmt.Errorf("(%s): %w", k.v.name, err)
 	}
 	return signature, nil
+}
+
+func (k *popKeyRef) ProvePossession(ctx context.Context, pkh crypt.PublicKeyHash) (crypt.Signature, error) {
+	key := k.Key.(*crypt.BLSPrivateKey)
+	return key.ProvePossession(), nil
 }
 
 // Vault is a file system based vault
@@ -69,6 +78,19 @@ func New(keys []*PrivateKey, name string) (*Vault, error) {
 	}, nil
 }
 
+func (v *Vault) newKeyRef(key *PrivateKey) vault.KeyReference {
+	k := keyRef{
+		PrivateKey: key,
+		v:          v,
+	}
+	if _, ok := key.Key.(*crypt.BLSPrivateKey); ok {
+		return &popKeyRef{
+			keyRef: k,
+		}
+	}
+	return &k
+}
+
 // List list all public key available on disk
 func (v *Vault) List(ctx context.Context) vault.KeyIterator {
 	v.mtx.Lock()
@@ -80,10 +102,7 @@ func (v *Vault) List(ctx context.Context) vault.KeyIterator {
 		if i >= len(snap) {
 			return nil, vault.ErrDone
 		}
-		k := &keyRef{
-			PrivateKey: snap[i],
-			v:          v,
-		}
+		k := v.newKeyRef(snap[i])
 		i++
 		return k, nil
 	})
@@ -153,10 +172,7 @@ func (v *Vault) ImportKey(ctx context.Context, priv crypt.PrivateKey, opt utils.
 	defer v.mtx.Unlock()
 	v.keys = append(v.keys, key)
 
-	return &keyRef{
-		PrivateKey: key,
-		v:          v,
-	}, nil
+	return v.newKeyRef(key), nil
 }
 
 func (v *Vault) Close(context.Context) error { return nil }

@@ -17,9 +17,8 @@ import (
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/encoding"
-	"github.com/ecadlabs/gotez/v2/protocol"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
-	"github.com/ecadlabs/gotez/v2/protocol/latest"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -164,7 +163,7 @@ func strInSlice(slice []string, s string) bool {
 	return false
 }
 
-func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignRequest) error {
+func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest) error {
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == nil {
 			return errors.New("authentication required")
@@ -189,7 +188,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg protocol.SignReq
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
+	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
 		for _, op := range ops.Contents {
 			allowed := false
 			var kind string
@@ -344,7 +343,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		}
 	}
 
-	var msg protocol.SignRequest
+	var msg proto.SignRequest
 	_, err := encoding.Decode(req.Message, &msg)
 	if err != nil {
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
@@ -358,7 +357,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var opStat operationsStat
-	if ops, ok := msg.(*protocol.GenericOperationSignRequest); ok {
+	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
 		opStat = getOperationsStat(ops)
 		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}
@@ -419,6 +418,57 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l.WithField("raw", sig).Debug("Signed bytes")
 	l.Debugf("Encoded signature: %v", sig)
 	l.Infof("Signed %s successfully", msg.SignRequestKind())
+
+	return sig, nil
+}
+
+func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
+	l := s.logger().WithField(logPKH, req.PublicKeyHash)
+
+	if req.ClientPublicKeyHash != nil {
+		l = l.WithField(logClient, req.ClientPublicKeyHash)
+	}
+
+	policy := s.fetchPolicyOrDefault(req.PublicKeyHash)
+	if policy == nil {
+		err := fmt.Errorf("%s is not listed in config", strings.Replace(string(req.PublicKeyHash.ToBase58()), "\n", "", -1))
+		l.Error(err)
+		return nil, errors.Wrap(err, http.StatusForbidden)
+	}
+
+	u := ctx.Value("user")
+	if u != nil {
+		if err := jwtVerifyUser(u.(string), policy, req); err != nil {
+			l.Error(err)
+			return nil, errors.Wrap(err, http.StatusForbidden)
+		}
+	}
+
+	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
+	if err != nil {
+		l.Error(err)
+		return nil, err
+	}
+
+	prover, ok := p.key.(vault.PossessionProver)
+	if !ok {
+		l.Error("Proof of possession is not supported")
+		return nil, errors.Wrap(errors.New("proof of possession is not supported"), http.StatusBadRequest)
+	}
+
+	if err = s.callPolicyHook(ctx, req); err != nil {
+		l.Error(err)
+		return nil, err
+	}
+	l.Info("Requesting proof of possession")
+
+	sig, err := prover.ProvePossession(ctx, req.PublicKeyHash)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Debugf("Encoded signature: %v", sig)
+	l.Info("Possession proved successfully")
 
 	return sig, nil
 }
@@ -574,7 +624,7 @@ func New(ctx context.Context, c *Config) (*Signatory, error) {
 		l.Info("Initializing vault")
 		v, err := factory.New(ctx, vc.Driver, &vc.Config, c)
 		if err != nil {
-			l.Error("Error initializing vault, skipping")
+			l.Errorf("Error initializing vault, skipping... %v", err)
 			continue
 		}
 		s.vaults[name] = v
@@ -665,21 +715,19 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			pipe.Close()
 		}
 
-		if core.CompareProtocols(&latest.Protocol, &core.Proto018Proxford) >= 0 {
-			for i, o := range pol.AllowedOps {
-				switch o {
-				case "endorsement":
-					pol.AllowedOps[i] = "attestation"
-				case "preendorsement":
-					pol.AllowedOps[i] = "preattestation"
-				case "double_endorsement_evidence":
-					pol.AllowedOps[i] = "double_attestation_evidence"
-				case "double_preendorsement_evidence":
-					pol.AllowedOps[i] = "double_preattestation_evidence"
-				}
+		for i, o := range pol.AllowedOps {
+			switch o {
+			case "endorsement":
+				pol.AllowedOps[i] = "attestation"
+			case "preendorsement":
+				pol.AllowedOps[i] = "preattestation"
+			case "double_endorsement_evidence":
+				pol.AllowedOps[i] = "double_attestation_evidence"
+			case "double_preendorsement_evidence":
+				pol.AllowedOps[i] = "double_preattestation_evidence"
 			}
-			sort.Strings(pol.AllowedOps)
 		}
+		sort.Strings(pol.AllowedOps)
 
 		if v.AuthorizedKeys != nil {
 			keys := v.AuthorizedKeys.List()
