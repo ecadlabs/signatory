@@ -1,0 +1,88 @@
+version: "3.9"
+
+networks:
+  ecadnet: {}
+
+configs:
+  accounts:
+    file: ./accounts.hjson
+  sigy-config:
+    file: ./signatory.yaml
+  sigy-secret:
+    file: ./signatory-local-secret.json
+  gcp-token:
+    file: ./gcp-token.json
+  az-sp-key:
+    file: ./service-principal.key
+
+services:
+
+  tezos-node:
+    container_name: tezos-node
+    hostname: tezos-node
+    image: tezos/tezos:master_5ab083be_20250704151130
+    ports:
+      - 18731:18731
+      - 19731:19731
+    entrypoint: /bin/sh
+    volumes:
+      - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
+    command: -c "sudo apk add --no-cache bash && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    # depends_on:
+    #   signatory:
+    #     condition: service_healthy
+      # speculos:
+      #   condition: service_healthy
+    networks:
+      - ecadnet
+
+  tezos-client:
+    container_name: tezos-client
+    hostname: tezos-client
+    image: tezos/tezos:master_5ab083be_20250704151130
+    entrypoint: /bin/sh
+    volumes:
+      - ./tezos_scripts:/home/tezos/tezos_scripts
+    command: -c "sudo apk add --no-cache bash && eval `/home/tezos/tezos_scripts/octez-init-sandboxed-client.sh 1 tezos-node` && octez-activate-023-PtSeouLo"
+    depends_on:
+      signatory:
+        condition: service_healthy
+      tezos-node:
+        condition: service_started
+      # speculos:
+      #   condition: service_healthy
+    networks:
+      - ecadnet
+
+  signatory:
+    container_name: signatory
+    hostname: signatory
+    image: ghcr.io/ecadlabs/signatory:firestore-watermark-amd64
+    ports:
+      - "6732:6732"
+      - "9583:9583"
+    volumes:
+      - ./.watermarks:/var/lib/signatory
+      - ./coverage:/opt/coverage
+      - ./hashicerts:/opt/hashicerts
+    configs:
+      - source: sigy-config
+        target: /etc/signatory.yaml
+      - source: sigy-secret
+        target: /etc/secret.json
+      - source: gcp-token
+        target: /etc/gcp-token.json
+      - source: az-sp-key
+        target: /etc/service-principal.key
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
+      - GOCOVERDIR=/opt/coverage
+    command: serve
+    networks:
+      - ecadnet
+    healthcheck:
+      test: "curl --fail http://localhost:9583/healthz || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
