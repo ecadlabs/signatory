@@ -1,6 +1,11 @@
 server:
   address: :6732
   utility_address: :9583
+
+watermark:
+  # Default
+  driver: file
+  
 vaults:
   local_secret:
     driver: file
@@ -16,6 +21,7 @@ vaults:
   #       - "secp256k1/0'/0'"
   #       - "P-256/0'/0'"
   #     close_after: 3600s
+
 tezos:
   #alice
   tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:

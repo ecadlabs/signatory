@@ -129,6 +129,8 @@ main() {
   # echo "exec $compiler \"\$@\"" >> "$client_dir"/bin/octez-protocol-compiler
   # chmod +x "$client_dir"/bin/octez-protocol-compiler
 
+  local target_protocol="$3"
+
   local activate_commands
 
   while IFS= read -r protocol; do
@@ -187,6 +189,10 @@ main() {
 alias octez-activate-$protocol="$client -block genesis activate protocol $hash with fitness 1 and key activator and parameters $parameters_file";
 
 EOF
+
+    if [ -n "$target_protocol" ] && [[ "$protocol" == *"$target_protocol" ]]; then
+      $client -block genesis activate protocol $hash with fitness 1 and key activator and parameters $parameters_file
+    fi
 
   done < <(cat $tezos_script_dir/active_protocol_versions | grep -E '^[0-9]{3}-[A-Za-z]+$')
 
