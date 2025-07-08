@@ -41,7 +41,7 @@ func (k *keyRef) Sign(ctx context.Context, message []byte) (sig crypt.Signature,
 	return signature, nil
 }
 
-func (k *popKeyRef) ProvePossession(ctx context.Context, pkh crypt.PublicKeyHash) (crypt.Signature, error) {
+func (k *popKeyRef) ProvePossession(ctx context.Context) (crypt.Signature, error) {
 	key := k.Key.(*crypt.BLSPrivateKey)
 	return key.ProvePossession(), nil
 }

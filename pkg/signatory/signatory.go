@@ -462,7 +462,7 @@ func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (cryp
 	}
 	l.Info("Requesting proof of possession")
 
-	sig, err := prover.ProvePossession(ctx, req.PublicKeyHash)
+	sig, err := prover.ProvePossession(ctx)
 	if err != nil {
 		return nil, err
 	}

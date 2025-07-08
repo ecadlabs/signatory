@@ -26,7 +26,7 @@ type WithID interface {
 }
 
 type PossessionProver interface {
-	ProvePossession(ctx context.Context, pkh crypt.PublicKeyHash) (crypt.Signature, error)
+	ProvePossession(ctx context.Context) (crypt.Signature, error)
 }
 
 // KeyIterator is used to iterate over stored public keys
