@@ -206,9 +206,9 @@ func (s *Server) blsProveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := struct {
-		Signature crypt.Signature `json:"signature"`
+		BlsProvePossession crypt.Signature `json:"bls_prove_possession"`
 	}{
-		Signature: signature,
+		BlsProvePossession: signature,
 	}
 	jsonResponse(w, http.StatusOK, &resp)
 }

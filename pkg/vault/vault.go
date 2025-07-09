@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/cryptoutils"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -49,6 +51,11 @@ type Importer interface {
 	Import(ctx context.Context, pk crypt.PrivateKey, opt utils.Options) (KeyReference, error)
 }
 
+// Generator represents a backend which is able to generate keys on its side
+type Generator interface {
+	Generate(ctx context.Context, keyType *cryptoutils.KeyType, n int) (KeyIterator, error)
+}
+
 // Unlocker interface representing an unlocker backend
 type Unlocker interface {
 	Vault
@@ -66,23 +73,23 @@ var (
 	ErrKey  = errors.New("unsupported key type")
 )
 
-type newVaultFunc func(ctx context.Context, conf *yaml.Node) (Vault, error)
+type newVaultFunc func(ctx context.Context, conf *yaml.Node, global config.GlobalContext) (Vault, error)
 
 type Factory interface {
-	New(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+	New(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Vault, error)
 }
 
-type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node) (Vault, error)
+type FactoryFunc func(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Vault, error)
 
-func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
-	return f(ctx, name, conf)
+func (f FactoryFunc) New(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Vault, error) {
+	return f(ctx, name, conf, global)
 }
 
 type registry map[string]newVaultFunc
 
-func (r registry) New(ctx context.Context, name string, conf *yaml.Node) (Vault, error) {
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Vault, error) {
 	if newFunc, ok := r[name]; ok {
-		return newFunc(ctx, conf)
+		return newFunc(ctx, conf, global)
 	}
 	return nil, fmt.Errorf("unknown vault driver: %s", name)
 }

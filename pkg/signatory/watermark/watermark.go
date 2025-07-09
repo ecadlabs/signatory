@@ -27,14 +27,14 @@ func (w Ignore) IsSafeToSign(context.Context, crypt.PublicKeyHash, core.SignRequ
 var _ Watermark = (*Ignore)(nil)
 
 type Factory interface {
-	New(ctx context.Context, name string, conf *yaml.Node, global *config.Config) (Watermark, error)
+	New(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Watermark, error)
 }
 
-type newWMBackendFunc func(ctx context.Context, conf *yaml.Node, global *config.Config) (Watermark, error)
+type newWMBackendFunc func(ctx context.Context, conf *yaml.Node, global config.GlobalContext) (Watermark, error)
 
 type registry map[string]newWMBackendFunc
 
-func (r registry) New(ctx context.Context, name string, conf *yaml.Node, global *config.Config) (Watermark, error) {
+func (r registry) New(ctx context.Context, name string, conf *yaml.Node, global config.GlobalContext) (Watermark, error) {
 	if newFunc, ok := r[name]; ok {
 		log.WithField("backend", name).Info("Initializing watermark backend")
 		return newFunc(ctx, conf, global)
