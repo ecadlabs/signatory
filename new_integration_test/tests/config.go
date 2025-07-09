@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	ConfigFilename = "../../signatory.yaml"
+	DefaultConfigFilename = "../../signatory.default.yaml"
+	ConfigFilename        = "../../signatory.yaml"
 )
 
 type Config struct {
@@ -59,7 +60,7 @@ type FileVault struct {
 }
 
 func (c *Config) Read() error {
-	yamlFile, err := os.ReadFile(ConfigFilename)
+	yamlFile, err := os.ReadFile(DefaultConfigFilename)
 	if err != nil {
 		return err
 	}

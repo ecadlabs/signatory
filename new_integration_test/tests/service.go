@@ -18,22 +18,16 @@ func Restart_signatory() {
 }
 
 func Backup_then_update_config(c Config) {
-	backupFilename := ConfigFilename + ".bak"
-	_, err := exec.Command("cp", ConfigFilename, backupFilename).CombinedOutput()
-	if err != nil {
-		panic("failed to backup config")
-	}
-	err = c.Write()
+	err := c.Write()
 	if err != nil {
 		panic("failed to write new config")
 	}
 }
 
 func Restore_config() {
-	backupFilename := ConfigFilename + ".bak"
-	_, err := exec.Command("mv", backupFilename, ConfigFilename).CombinedOutput()
+	_, err := exec.Command("cp", DefaultConfigFilename, ConfigFilename).CombinedOutput()
 	if err != nil {
-		panic("failed to restore original config")
+		panic("failed to restore config")
 	}
 	Restart_signatory()
 }
