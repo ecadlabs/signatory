@@ -90,9 +90,21 @@ $client --wait none transfer 100000 from bootstrap2 to opstest1 --burn-cap 0.07
 # bake for minimal timestamp
 $client bake for --minimal-timestamp
 
+# tz1alias
+$client import secret key tz1alias http://signatory:6732/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR
+$client --wait none transfer 100000 from bootstrap2 to tz1alias --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
 # tz2alias
 $client import secret key tz2alias http://signatory:6732/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
 $client --wait none transfer 100000 from bootstrap2 to tz2alias --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# tz3alias
+$client import secret key tz3alias http://signatory:6732/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK
+$client --wait none transfer 100000 from bootstrap2 to tz3alias --burn-cap 0.07
 # bake for minimal timestamp
 $client bake for --minimal-timestamp
 

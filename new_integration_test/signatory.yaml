@@ -29,6 +29,7 @@ tezos:
     allow:
       generic:
         - transaction
+        - reveal
       
   #bob
   tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6:
@@ -82,12 +83,29 @@ tezos:
   #     generic:
   #       - transaction
 
+  #tz1
+  tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
   #tz2
   tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN:
     log_payloads: true
     allow:
       generic:
         - transaction
+        - reveal
+
+  #tz3
+  tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
 
   #tz4
   tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME:
