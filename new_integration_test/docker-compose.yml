@@ -43,7 +43,9 @@ services:
     entrypoint: /bin/sh
     volumes:
       - ./tezos_scripts:/home/tezos/tezos_scripts
-    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/octez-client-init-and-import.sh PtSeouLo"
+      # - ./.tezos-client:/home/tezos/.tezos-client
+      # - ./contract.event.tz:/home/tezos/contract.event.tz
+    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/setup-client.sh PtSeouLo"
     depends_on:
       signatory:
         condition: service_healthy

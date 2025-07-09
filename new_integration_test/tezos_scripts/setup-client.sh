@@ -1,2 +1,111 @@
 #!/usr/bin/env bash
 
+protocol_name="$1"
+if [ -z "$protocol_name" ]; then
+  echo "Protocol name is required"
+  exit 1
+fi
+
+# This script initializes a sandboxed Tezos client with a specific protocol.
+
+tezos_bin_dir="/usr/local/bin/"
+tezos_script_dir="/usr/local/share/tezos"
+script_dir="/home/tezos/tezos_scripts"
+
+endpoint="http://tezos-node:18731"
+client="octez-client -E $endpoint"
+
+## Sandboxed client ########################################################
+
+# key pairs from $src_dir/test/sandbox.json
+
+#BOOTSTRAP1_IDENTITY="tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
+#BOOTSTRAP1_PUBLIC="edpkuBknW28nW72KG6RoHtYW7p12T6GKc7nAbwYX5m8Wd9sDVC9yav"
+BOOTSTRAP1_SECRET="unencrypted:edsk3gUfUPyBSfrS9CCgmCiQsTCHGkviBDusMxDJstFtojtc1zcpsh"
+
+#BOOTSTRAP2_IDENTITY="tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN"
+#BOOTSTRAP2_PUBLIC="edpktzNbDAUjUk697W7gYg2CRuBQjyPxbEg8dLccYYwKSKvkPvjtV9"
+BOOTSTRAP2_SECRET="unencrypted:edsk39qAm1fiMjgmPkw1EgQYkMzkJezLNewd7PLNHTkr6w9XA2zdfo"
+
+#BOOTSTRAP3_IDENTITY="tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU"
+#BOOTSTRAP3_PUBLIC="edpkuTXkJDGcFd5nh6VvMz8phXxU3Bi7h6hqgywNFi1vZTfQNnS1RV"
+BOOTSTRAP3_SECRET="unencrypted:edsk4ArLQgBTLWG5FJmnGnT689VKoqhXwmDPBuGx3z4cvwU9MmrPZZ"
+
+#BOOTSTRAP4_IDENTITY="tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv"
+#BOOTSTRAP4_PUBLIC="edpkuFrRoDSEbJYgxRtLx2ps82UdaYc1WwfS9sE11yhauZt5DgCHbU"
+BOOTSTRAP4_SECRET="unencrypted:edsk2uqQB9AY4FvioK2YMdfmyMrer5R8mGFyuaLLFfSRo8EoyNdht3"
+
+#BOOTSTRAP5_IDENTITY="tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv"
+#BOOTSTRAP5_PUBLIC="edpkv8EUUH68jmo3f7Um5PezmfGrRF24gnfLpH3sVNwJnV5bVCxL2n"
+BOOTSTRAP5_SECRET="unencrypted:edsk4QLrcijEffxV31gGdN2HU7UpyJjA8drFoNcmnB28n89YjPNRFm"
+
+ACTIVATOR_SECRET="unencrypted:edsk31vznjHSSpGExDMHYASz45VZqXN4DPxvsa4hAyY8dHM28cZzp6"
+
+$client import secret key bootstrap1 $BOOTSTRAP1_SECRET || exit 1
+$client import secret key bootstrap2 $BOOTSTRAP2_SECRET || exit 1
+$client import secret key bootstrap3 $BOOTSTRAP3_SECRET || exit 1
+$client import secret key bootstrap4 $BOOTSTRAP4_SECRET || exit 1
+$client import secret key bootstrap5 $BOOTSTRAP5_SECRET || exit 1
+$client import secret key activator $ACTIVATOR_SECRET || exit 1
+
+protocol_hash=$(grep "^$protocol_name" $script_dir/protocol_hash)
+protocol_full_name=$(cat $tezos_script_dir/active_protocol_versions | grep -E '^[0-9]{3}-[A-Za-z]+$' | grep "$protocol_name$")
+# Activate the protocol
+if [ -z "$protocol_hash" ]; then
+  echo "Protocol hash for $protocol_name not found in $script_dir/protocol_hash"
+  exit 1
+fi
+if [ -z "$protocol_full_name" ]; then
+  echo "Protocol full name for $protocol_name not found in $tezos_script_dir/active_protocol_versions"
+  exit 1
+fi
+echo $protocol_hash
+echo $protocol_full_name
+$client -block genesis activate protocol $protocol_hash with fitness 1 and key activator and parameters $tezos_script_dir/$protocol_full_name-parameters/sandbox-parameters.json
+
+# Importing additional keys for testing
+# These keys are used in the integration tests and should be imported after the protocol activation.
+
+# alice
+$client import secret key alice http://signatory:6732/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
+$client --wait none transfer 100000 from bootstrap2 to alice --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# bob
+$client import secret key bob http://signatory:6732/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6
+$client --wait none transfer 100000 from bootstrap2 to bob --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# opstest
+$client import secret key opstest http://signatory:6732/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B
+$client --wait none transfer 100000 from bootstrap2 to opstest --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# opstest1
+$client import secret key opstest1 http://signatory:6732/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi
+$client --wait none transfer 100000 from bootstrap2 to opstest1 --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# tz2alias
+$client import secret key tz2alias http://signatory:6732/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
+$client --wait none transfer 100000 from bootstrap2 to tz2alias --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# tz4alias
+$client import secret key tz4alias http://signatory:6732/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME
+$client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
+# # bake for minimal timestamp
+# $client bake for --minimal-timestamp
+
+echo "All keys imported successfully!"
+
+octez-baker -E $endpoint run remotely --without-dal --liquidity-baking-toggle-vote pass
+# sleep infinity
