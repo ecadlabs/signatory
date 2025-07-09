@@ -1,4 +1,4 @@
-package integrationtest
+package new_integration_test
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	filename = "signatory.yaml"
+	ConfigFilename = "../../signatory.yaml"
 )
 
 type Config struct {
@@ -59,7 +59,7 @@ type FileVault struct {
 }
 
 func (c *Config) Read() error {
-	yamlFile, err := os.ReadFile(filename)
+	yamlFile, err := os.ReadFile(ConfigFilename)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (c *Config) Write() error {
 	if err != nil {
 		panic(err)
 	}
-	if err = os.WriteFile(filename, yamlFile, 0644); err != nil {
+	if err = os.WriteFile(ConfigFilename, yamlFile, 0644); err != nil {
 		panic(err)
 	}
 	return nil

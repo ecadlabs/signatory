@@ -1,4 +1,4 @@
-package integrationtest
+package new_integration_test
 
 import (
 	"os/exec"
