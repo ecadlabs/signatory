@@ -161,7 +161,7 @@ func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signat
 	return res, nil
 }
 
-func (r *nitroKeyRef[C]) ProvePossession(ctx context.Context, pkh crypt.PublicKeyHash) (crypt.Signature, error) {
+func (r *nitroKeyRef[C]) ProvePossession(ctx context.Context) (crypt.Signature, error) {
 	r.v.mtx.Lock()
 	defer r.v.mtx.Unlock()
 
