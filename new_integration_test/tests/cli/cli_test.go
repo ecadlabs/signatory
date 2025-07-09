@@ -11,12 +11,9 @@ import (
 func TestCliList(t *testing.T) {
 	out, err := integrationtest.SignatoryCli("list")
 	assert.Nil(t, err)
-	require.Contains(t, string(out), "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb")
-	require.Contains(t, string(out), "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6")
-	require.Contains(t, string(out), "tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B")
-	require.Contains(t, string(out), "tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi")
-	require.Contains(t, string(out), "tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN")
-	require.Contains(t, string(out), "tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME")
+	for _, pkh := range integrationtest.GetAllTestPKHs() {
+		require.Contains(t, string(out), pkh)
+	}
 }
 
 func TestCliUsage(t *testing.T) {
