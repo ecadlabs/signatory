@@ -11,7 +11,7 @@ import (
 func TestAuthorizedKeys(t *testing.T) {
 	var c integrationtest.Config
 	c.Read()
-	c.Server.Keys = []string{"edpkujLb5ZCZ2gprnRzE9aVHKZfx9A8EtWu2xxkwYSjBUJbesJ9rWE"}
+	c.Server.Keys = []string{integrationtest.AuthKeyPK}
 	integrationtest.Backup_then_update_config(c)
 	defer integrationtest.Restore_config()
 	integrationtest.Restart_signatory()
@@ -20,7 +20,7 @@ func TestAuthorizedKeys(t *testing.T) {
 	require.NotNil(t, err)
 	require.Contains(t, string(out), "remote signer expects authentication signature, but no authorized key was found in the wallet")
 
-	out, err = integrationtest.OctezClient("import", "secret", "key", "auth", "unencrypted:edsk3ZAm9nqEo7qNugo2wcmxWnbDe7oUUmHt5UJYDdqwucsaHTAsVQ", "--force")
+	out, err = integrationtest.OctezClient("import", "secret", "key", "auth", integrationtest.AuthKeySK, "--force")
 	defer integrationtest.OctezClient("forget", "address", "auth", "--force")
 	if err != nil {
 		log.Println("failed to import auth key: " + err.Error() + string(out))
