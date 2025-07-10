@@ -11,7 +11,7 @@ func OctezClient(arg ...string) ([]byte, error) {
 	return exec.Command(cmd, args...).CombinedOutput()
 }
 
-func clean_tezos_folder() {
+func Clean_tezos_folder() {
 	delete_contracts_aliases()
 	delete_wallet_lock()
 	delete_watermark_files()
