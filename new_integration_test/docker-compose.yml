@@ -59,7 +59,7 @@ services:
   signatory:
     container_name: signatory
     hostname: signatory
-    image: ghcr.io/ecadlabs/signatory:firestore-watermark-amd64
+    image: ghcr.io/ecadlabs/signatory:main-amd64
     ports:
       - "6732:6732"
       - "9583:9583"
