@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
@@ -10,7 +11,7 @@ import (
 )
 
 func init() {
-	vault.RegisterVault("mem", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("mem", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf []string
 		if node == nil || node.Kind == 0 {
 			return nil, errors.New("(Mem): config is missing")

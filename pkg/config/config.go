@@ -11,6 +11,10 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+type GlobalContext interface {
+	GetBaseDir() string
+}
+
 // PolicyHook is an external service for secondary validation of sign requests
 type PolicyHook struct {
 	Address        string          `yaml:"address"`
@@ -52,6 +56,10 @@ type Config struct {
 	PolicyHook *PolicyHook             `yaml:"policy_hook"`
 	BaseDir    string                  `yaml:"base_dir" validate:"required"`
 	Watermark  *WatermarkConfig        `yaml:"watermark"`
+}
+
+func (c *Config) GetBaseDir() string {
+	return c.BaseDir
 }
 
 // WatermarkConfig represents watermark backend configuration
