@@ -60,7 +60,7 @@ type FileVault struct {
 }
 
 func (c *Config) Read() error {
-	yamlFile, err := os.ReadFile(DefaultConfigFilename)
+	yamlFile, err := os.ReadFile(ConfigFilename)
 	if err != nil {
 		return err
 	}
