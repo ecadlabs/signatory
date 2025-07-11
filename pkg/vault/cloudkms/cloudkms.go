@@ -100,6 +100,15 @@ func (c *Vault) getPublicKey(ctx context.Context, name string) (crypt.PublicKey,
 	return cryptoutils.ParsePKIXPublicKey(block.Bytes)
 }
 
+// errorIterator always returns the stored error
+type errorIterator struct {
+	err error
+}
+
+func (e *errorIterator) Next() (vault.KeyReference, error) {
+	return nil, e.err
+}
+
 type configKeyIterator struct {
 	ctx      context.Context
 	vault    *Vault
@@ -242,6 +251,24 @@ func (c *Vault) List(ctx context.Context) vault.KeyIterator {
 		}
 	}
 
+	// Try to create the iterator, but check for permission error immediately
+	keyIter := c.client.ListCryptoKeys(ctx, &kmspb.ListCryptoKeysRequest{Parent: c.config.keyRingName()})
+	// Try to fetch the first key to trigger any permission error
+	_, err := keyIter.Next()
+	if err != nil {
+		var apiErr *apierror.APIError
+		if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+			return &errorIterator{err: fmt.Errorf(
+				"(CloudKMS/%s) ListCryptoKeys: missing permission 'cloudkms.cryptoKeys.list' or resource does not exist. "+
+					"Set 'key_list' in config to use specific keys without this permission",
+				c.config.keyRingName(),
+			)}
+		}
+		// Other errors: return as error iterator
+		return &errorIterator{err: fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.config.keyRingName(), err)}
+	}
+
+	// Fall back to original listing behavior
 	return &cloudKMSIterator{
 		ctx:     ctx,
 		vault:   c,
