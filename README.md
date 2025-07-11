@@ -100,6 +100,7 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | Ledger Nano S/S+ (Baking only) | ✅     |
 | Hashicorp Vault                | ✅     |
 | PKCS#11                        | ✅     |
+| Nitro Enclave                  | ✅     |
 
 ### Tezos Address Types
 
@@ -112,14 +113,15 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 
 ## Signing Algorithm Support From Various Backends
 
-|                  | tz1 | tz2 | tz3 |
-| ---------------- | --- | --- | --- |
-| Hashicorp Vault  | ✅   | ❌   | ❌   |
-| Google Cloud KMS | ❌   | ❌   | ✅   |
-| AWS KMS          | ❌   | ✅   | ✅   |
-| Azure KMS        | ❌   | ✅   | ✅   |
-| YubiHSM2         | ✅   | ✅   | ✅   |
-| PKCS#11          | ✅   | ✅   | ✅   |
+|                  | tz1 | tz2 | tz3 | tz4 |
+| ---------------- | --- | --- | --- | --- |
+| Hashicorp Vault  | ✅   | ❌   | ❌   | ❌   |
+| Google Cloud KMS | ❌   | ❌   | ✅   | ❌   |
+| AWS KMS          | ❌   | ✅   | ✅   | ❌   |
+| Azure KMS        | ❌   | ✅   | ✅   | ❌   |
+| YubiHSM2         | ✅   | ✅   | ✅   | ❌   |
+| PKCS#11          | ✅   | ✅   | ✅   | ❌   |
+| Nitro            | ✅   | ✅   | ✅   | ✅   |
 
 ---
 

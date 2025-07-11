@@ -4,30 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/smithy-go"
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
+	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	"github.com/ecadlabs/signatory/pkg/vault"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Config contains AWS KMS backend configuration
-type Config struct {
-	AccessKeyID string `yaml:"access_key_id"`
-	AccessKey   string `yaml:"secret_access_key"`
-	Region      string `yaml:"region"`
-}
-
 type Vault struct {
 	client *kms.Client
-	config Config
+	config awsutils.Config
 }
 
 // awsKMSKey represents a key stored in AWS KMS
@@ -118,12 +110,7 @@ func (v *Vault) getPublicKey(ctx context.Context, keyID *string) (*awsKMSKey, er
 		return nil, errors.New("key usage must be SIGN_VERIFY")
 	}
 
-	pkixKey, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse public key: %w", err)
-	}
-
-	pub, err := crypt.NewPublicKeyFrom(pkixKey)
+	pub, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -153,20 +140,9 @@ func (v *Vault) Close(context.Context) error {
 	return nil
 }
 
-func NewConfig(ctx context.Context, config *Config) (aws.Config, error) {
-	if config.AccessKeyID != "" {
-		os.Setenv("AWS_ACCESS_KEY_ID", config.AccessKeyID)
-		os.Setenv("AWS_SECRET_ACCESS_KEY", config.AccessKey)
-	}
-	if config.Region != "" {
-		os.Setenv("AWS_REGION", config.Region)
-	}
-	return awsconfig.LoadDefaultConfig(ctx)
-}
-
 // New creates new AWS KMS backend
-func New(ctx context.Context, config *Config) (*Vault, error) {
-	cfg, err := NewConfig(ctx, config)
+func New(ctx context.Context, config *awsutils.Config) (*Vault, error) {
+	cfg, err := awsutils.NewAWSConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +155,8 @@ func New(ctx context.Context, config *Config) (*Vault, error) {
 }
 
 func init() {
-	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
-		var conf Config
+	vault.RegisterVault("awskms", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
+		var conf awsutils.Config
 		if node != nil {
 			if err := node.Decode(&conf); err != nil {
 				return nil, err

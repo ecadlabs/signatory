@@ -53,7 +53,7 @@ func NewPublicKeyHashMap[V any](init []PublicKeyKV[V]) PublicKeyHashMap[V] {
 	for i, x := range init {
 		tmp[i] = KV[tz.PublicKeyHash, V](x)
 	}
-	return PublicKeyHashMap[V](New[tz.EncodedPublicKeyHash](tmp))
+	return PublicKeyHashMap[V](New(tmp))
 }
 
 func (m PublicKeyHashMap[V]) Insert(key tz.PublicKeyHash, val V) (V, bool) {

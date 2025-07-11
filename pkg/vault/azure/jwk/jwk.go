@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ecadlabs/gotez/v2/crypt"
 )
 
 // JWK represents a A JSON Web Key
@@ -278,7 +278,7 @@ func curveByName(name string) elliptic.Curve {
 	case "P-521":
 		return elliptic.P521()
 	case "P-256K", "SECP256K1", "secp256k1":
-		return secp256k1.S256()
+		return crypt.S256()
 	default:
 		return nil
 	}
@@ -294,7 +294,7 @@ func curveName(curve elliptic.Curve) string {
 		return "P-384"
 	case elliptic.P521():
 		return "P-521"
-	case secp256k1.S256():
+	case crypt.S256():
 		return "P-256K" // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/security/keyvault/azkeys/constants.go
 	default:
 		return ""

@@ -13,10 +13,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.38.3
 	github.com/aws/smithy-go v1.22.3
 	github.com/certusone/yubihsm-go v0.3.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.1.0
 	github.com/ecadlabs/gotez/v2 v2.3.8
+	github.com/fxamacker/cbor/v2 v2.8.0
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.6.0
@@ -24,6 +24,7 @@ require (
 	github.com/hashicorp/vault/api v1.16.0
 	github.com/hashicorp/vault/api/auth/approle v0.9.0
 	github.com/karalabe/hid v1.0.0
+	github.com/kr/pretty v0.3.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sirupsen/logrus v1.9.3
@@ -58,6 +59,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
@@ -81,6 +83,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
@@ -111,7 +114,7 @@ require (
 	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.33.0
 	golang.org/x/term v0.32.0
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/grpc v1.71.1 // indirect

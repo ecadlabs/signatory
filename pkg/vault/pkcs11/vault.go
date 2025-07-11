@@ -12,6 +12,7 @@ import (
 	"github.com/ecadlabs/go-pkcs11/pkcs11"
 	"github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	log "github.com/sirupsen/logrus"
@@ -324,7 +325,7 @@ func (v *PKCS11Vault) Close(context.Context) error {
 }
 
 func init() {
-	vault.RegisterVault("pkcs11", func(ctx context.Context, node *yaml.Node) (vault.Vault, error) {
+	vault.RegisterVault("pkcs11", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (vault.Vault, error) {
 		var conf Config
 		if node == nil {
 			return nil, errors.New("(PKCS#11): config is missing")
