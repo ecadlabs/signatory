@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/pem"
+	stderr "errors"
 	"fmt"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	kwp "github.com/google/tink/go/kwp/subtle"
+	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
@@ -209,6 +211,10 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 		if c.verIter != nil {
 			ver, err = c.verIter.Next()
 			if err != nil && err != iterator.Done {
+				var apiErr *apierror.APIError
+				if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+					continue
+				}
 				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 			}
 		}
@@ -225,6 +231,10 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 						c.keyIter = nil
 						return nil, vault.ErrDone
 					} else {
+						var apiErr *apierror.APIError
+						if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+							continue
+						}
 						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 					}
 				}
@@ -239,6 +249,10 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 			if ver.State == kmspb.CryptoKeyVersion_ENABLED {
 				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
 				if err != nil {
+					var apiErr *apierror.APIError
+					if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+						continue
+					}
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
 				} else {
 					return &cloudKMSKey{
