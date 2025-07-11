@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	account       = "tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B"
-	alias         = "opstest"
-	account1      = "tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi"
-	alias1        = "opstest1"
+	account       = integrationtest.OpstestPKH
+	alias         = integrationtest.OpstestAlias
+	account1      = integrationtest.Opstest1PKH
+	alias1        = integrationtest.Opstest1Alias
 	contract      = "contract.event.tz"
 	contractAlias = "emit_event"
 	vault         = "File"
