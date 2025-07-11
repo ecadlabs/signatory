@@ -30,11 +30,12 @@ import (
 
 // Config contains Google Cloud KMS backend configuration
 type Config struct {
-	ApplicationCredentialsData string `yaml:"application_credentials_data"`
-	ApplicationCredentials     string `yaml:"application_credentials"`
-	Project                    string `yaml:"project" validate:"required"`
-	Location                   string `yaml:"location" validate:"required"`
-	KeyRing                    string `yaml:"key_ring" validate:"required"`
+	ApplicationCredentialsData string   `yaml:"application_credentials_data"`
+	ApplicationCredentials     string   `yaml:"application_credentials"`
+	Project                    string   `yaml:"project" validate:"required"`
+	Location                   string   `yaml:"location" validate:"required"`
+	KeyRing                    string   `yaml:"key_ring" validate:"required"`
+	KeyList                    []string `yaml:"key_list"`
 }
 
 // keyRingName returns full Google Cloud KMS key ring path
@@ -97,6 +98,59 @@ func (c *Vault) getPublicKey(ctx context.Context, name string) (crypt.PublicKey,
 
 	block, _ := pem.Decode([]byte(pk.Pem))
 	return cryptoutils.ParsePKIXPublicKey(block.Bytes)
+}
+
+type configKeyIterator struct {
+	ctx      context.Context
+	vault    *Vault
+	keyPaths []string
+	index    int
+}
+
+// Next implements vault.StoredKeysIterator for keys specified in the config
+func (s *configKeyIterator) Next() (vault.KeyReference, error) {
+	if s.index >= len(s.keyPaths) {
+		return nil, vault.ErrDone
+	}
+
+	keyPath := s.keyPaths[s.index]
+	s.index++
+
+	// Get the key version info
+	ver, err := s.vault.client.GetCryptoKeyVersion(s.ctx, &kmspb.GetCryptoKeyVersionRequest{
+		Name: keyPath,
+	})
+	if err != nil {
+		var apiErr *apierror.APIError
+		if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+			// Skip this key if we don't have permission
+			return s.Next()
+		}
+		return nil, fmt.Errorf("(CloudKMS/%s) GetCryptoKeyVersion: %w", s.vault.config.keyRingName(), err)
+	}
+
+	// Check if key is enabled
+	if ver.State != kmspb.CryptoKeyVersion_ENABLED {
+		// Skip disabled keys
+		return s.Next()
+	}
+
+	// Get the public key
+	pub, err := s.vault.getPublicKey(s.ctx, ver.Name)
+	if err != nil {
+		var apiErr *apierror.APIError
+		if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+			// Skip this key if we don't have permission
+			return s.Next()
+		}
+		return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", s.vault.config.keyRingName(), err)
+	}
+
+	return &cloudKMSKey{
+		key: ver,
+		pub: pub,
+		v:   s.vault,
+	}, nil
 }
 
 type cloudKMSIterator struct {
@@ -178,6 +232,16 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 
 // List returns a list of keys stored under the backend
 func (c *Vault) List(ctx context.Context) vault.KeyIterator {
+	// If specific keys are configured, use them instead of listing
+	if len(c.config.KeyList) > 0 {
+		return &configKeyIterator{
+			ctx:      ctx,
+			vault:    c,
+			keyPaths: c.config.KeyList,
+			index:    0,
+		}
+	}
+
 	return &cloudKMSIterator{
 		ctx:     ctx,
 		vault:   c,

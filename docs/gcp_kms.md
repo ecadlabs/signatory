@@ -41,6 +41,7 @@ Below are the configuration fields which are required for Signatory.
 |project|string|✅|Project name|
 |location|string|✅|Location|
 |key_ring|string|✅|Key ring name|
+|key_list|string array|OPTIONAL|List of specific key paths to use instead of listing all keys in the key ring. Useful when you don't have `cloudkms.cryptoKeys.list` permission.|
 
 ## **Key Management**
 
