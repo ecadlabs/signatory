@@ -59,7 +59,7 @@ func (w *InMemory) isSafeToSignUnlocked(pkh crypt.PublicKeyHash, req core.SignRe
 }
 
 func init() {
-	RegisterWatermark("mem", func(context.Context, *yaml.Node, *config.Config) (Watermark, error) {
+	RegisterWatermark("mem", func(context.Context, *yaml.Node, config.GlobalContext) (Watermark, error) {
 		return new(InMemory), nil
 	})
 }

@@ -178,6 +178,7 @@ For detailed information about watermarks, their importance, and configuration o
 * [YubiHSM2](yubihsm.md)
 * [Hashicorp Vault](hashicorp_vault.md)
 * [PKCS#11](pkcs11.md)
+* [Nitro](nitro.md)
 
 ---
 

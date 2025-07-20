@@ -31,7 +31,7 @@ func TestImport(t *testing.T) {
 	conf := signatory.Config{
 		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 		Watermark: watermark.Ignore{},
-		VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+		VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 			v, err := memory.New(nil, "Mock")
 			if err != nil {
 				return nil, err
@@ -43,7 +43,7 @@ func TestImport(t *testing.T) {
 	s, err := signatory.New(context.Background(), &conf)
 	require.NoError(t, err)
 
-	imported, err := s.Import(context.Background(), "mock", privateKey, nil, nil)
+	imported, err := s.Import(context.Background(), "mock", []byte(privateKey), nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV", imported.PublicKey().String())
 	require.Equal(t, "tz1LggX2HUdvJ1tF4Fvv8fjsrzLeW4Jr9t2Q", imported.Hash.String())
@@ -405,7 +405,7 @@ func TestPolicy(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 				Watermark: watermark.Ignore{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
@@ -497,7 +497,7 @@ func TestListPublicKeys(t *testing.T) {
 			conf := signatory.Config{
 				Vaults:    map[string]*config.VaultConfig{"test": {Driver: "test"}},
 				Watermark: watermark.Ignore{},
-				VaultFactory: vault.FactoryFunc(func(ctx context.Context, name string, conf *yaml.Node) (vault.Vault, error) {
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
 					return NewTestVault(nil, c.lpk, nil, "test"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &c.policy}}),
