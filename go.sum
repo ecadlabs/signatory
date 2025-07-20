@@ -69,8 +69,6 @@ github.com/ecadlabs/goblst v1.1.0 h1:U0JzRxIbtv1OsefUqfXNJ1HLzPMSaHY8aOeIQggUe9U
 github.com/ecadlabs/goblst v1.1.0/go.mod h1:s67gqaOol9o6fguh+evH75X5uQniOhv1HG/EU8xPLPY=
 github.com/ecadlabs/gotez/v2 v2.3.8 h1:pLV1CaWTV9m9E4FzPUVH2hp6aIaLwJWfbMkOc77OG80=
 github.com/ecadlabs/gotez/v2 v2.3.8/go.mod h1:GNR3XjOXxeeJceS0dTGvO2uNzpz2wgKRL9q6f5rMGiY=
-github.com/ecadlabs/gotez/v2 v2.3.9 h1:5suUi5Ri0mNflEAHoine+MusOOzckISy2hxYVO8PKAM=
-github.com/ecadlabs/gotez/v2 v2.3.9/go.mod h1:tgp2C5U1fgdniQwl//Jp5ejSB2suySXixD+a4GbK2s8=
 github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 h1:7WdblGykGxtGGtchW4kzTaJJO8Fm+JKhLzhttOOWr9k=
 github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04/go.mod h1:VApUlocsLMpp4hUXHxTTIlosebnwo0BM6e1hy78qTPM=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=
