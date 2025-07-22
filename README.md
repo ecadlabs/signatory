@@ -58,6 +58,7 @@ Explore detailed documentation for various components of Signatory:
 - [Proof of Possession (POP)](https://signatory.io/docs/proof_of_possession)
 - [Remote Policy Configuration](https://signatory.io/docs/remote_policy)
 - [Signatory Architecture](https://signatory.io/docs/architecture)
+- [Etherlink Signer API](./docs/etherlink.md)
 - [Glossary](https://signatory.io/docs/glossary)
 
 ## Features
