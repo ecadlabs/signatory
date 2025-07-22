@@ -51,6 +51,7 @@ Explore detailed documentation for various components of Signatory:
 - [JWT Authentication](./docs/jwt_auth.md)
 - [Remote Policy Configuration](./docs/remote_policy.md)
 - [Signatory Architecture](./docs/signatory-architecture.md)
+- [Etherlink Signer API](./docs/etherlink.md)
 
 ## Features
 
