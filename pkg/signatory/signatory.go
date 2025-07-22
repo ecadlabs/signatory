@@ -15,11 +15,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ecadlabs/gotez/v2"
+	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
+	"github.com/ecadlabs/gotez/v2/protocol/smartrollups/etherlink"
+	"github.com/ecadlabs/gotez/v2/rlp"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -323,8 +325,7 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 	return nil
 }
 
-// Sign ask the vault to sign a message with the private key associated to keyHash
-func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
+func (s *Signatory) validateInput(ctx context.Context, req *SignRequest) (*PublicKeyPolicy, *log.Entry, error) {
 	l := s.logger().WithField(logPKH, req.PublicKeyHash)
 
 	if req.ClientPublicKeyHash != nil {
@@ -335,23 +336,20 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	if policy == nil {
 		err := fmt.Errorf("%s is not listed in config", strings.Replace(string(req.PublicKeyHash.ToBase58()), "\n", "", -1))
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
-		return nil, errors.Wrap(err, http.StatusForbidden)
+		return nil, nil, errors.Wrap(err, http.StatusForbidden)
 	}
 
 	u := ctx.Value("user")
 	if u != nil {
 		if err := jwtVerifyUser(u.(string), policy, req); err != nil {
 			l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(err)
-			return nil, errors.Wrap(err, http.StatusForbidden)
+			return nil, nil, errors.Wrap(err, http.StatusForbidden)
 		}
 	}
+	return policy, l, nil
+}
 
-	msg, err := getSignRequest(req)
-	if err != nil {
-		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
-		return nil, errors.Wrap(err, http.StatusBadRequest)
-	}
-
+func (s *Signatory) signRequest(ctx context.Context, req *SignRequest, msg core.SignRequest, policy *PublicKeyPolicy, l *log.Entry) (crypt.Signature, error) {
 	l = l.WithField(logReq, msg.SignRequestKind())
 
 	if m, ok := msg.(request.WithWatermark); ok {
@@ -366,13 +364,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
 	if err != nil {
-		l.Error(err)
 		return nil, err
 	}
 
 	l = l.WithField(logVault, p.key.Vault().Name())
 	if err = matchFilter(policy, req, msg); err != nil {
-		l.Error(err)
 		return nil, errors.Wrap(err, http.StatusForbidden)
 	}
 
@@ -437,6 +433,104 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l.Infof("Signed %s successfully", msg.SignRequestKind())
 
 	return sig, nil
+}
+
+// Sign ask the vault to sign a message with the private key associated to keyHash
+func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
+	policy, l, err := s.validateInput(ctx, req)
+	if err != nil {
+		l.Error(err)
+		return nil, err
+	}
+
+	msg, err := getSignRequest(req)
+	if err != nil {
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
+		return nil, errors.Wrap(err, http.StatusBadRequest)
+	}
+
+	sig, err := s.signRequest(ctx, req, msg, policy, l)
+	if err != nil {
+		l.Error(err)
+	}
+	return sig, err
+}
+
+func signatureBytes(sig crypt.Signature) (tz.AnySignature, error) {
+	switch s := sig.ToProtocol().(type) {
+	case tz.ConventionalSignature:
+		return s.Generic()[:], nil
+	case *tz.BLSSignature:
+		return s[:], nil
+	default:
+		return nil, errors.New("invalid signature type")
+	}
+}
+
+func (s *Signatory) SignSequencerBlueprint(ctx context.Context, req *SignRequest) (crypt.Signature, []byte, error) {
+	policy, l, err := s.validateInput(ctx, req)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	blueprint, err := rlp.Unmarshal[etherlink.UnsignedSequencerBlueprint](req.Message)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	sig, err := s.signRequest(ctx, req, blueprint, policy, l)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	sigBytes, err := signatureBytes(sig)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	signedBlueprint := etherlink.SequencerBlueprint{
+		UnsignedSequencerBlueprint: *blueprint,
+		Signature:                  sigBytes,
+	}
+	signed, err := rlp.Marshal(&signedBlueprint)
+	return sig, signed, err
+}
+
+func (s *Signatory) SignSequencerSignal(ctx context.Context, req *SignRequest) (crypt.Signature, []byte, error) {
+	policy, l, err := s.validateInput(ctx, req)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	signals, err := rlp.Unmarshal[etherlink.UnsignedDALSlotSignals](req.Message)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	sig, err := s.signRequest(ctx, req, *signals, policy, l)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	sigBytes, err := signatureBytes(sig)
+	if err != nil {
+		l.Error(err)
+		return nil, nil, err
+	}
+
+	signedSignals := etherlink.DALSlotImportSignals{
+		Signals:   *signals,
+		Signature: sigBytes,
+	}
+	signed, err := rlp.Marshal(&signedSignals)
+	return sig, signed, err
 }
 
 func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (crypt.Signature, error) {
@@ -816,7 +910,7 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 		}
 
 		if v.AllowProofOfPossession {
-			if _, ok := k.(*gotez.BLSPublicKeyHash); ok {
+			if _, ok := k.(*tz.BLSPublicKeyHash); ok {
 				pol.AllowProofOfPossession = true
 			} else {
 				log.Warnf("proof of possession is not supported for %s", k.String())
