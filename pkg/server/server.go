@@ -24,6 +24,8 @@ const defaultAddr = ":6732"
 // Signer interface representing a Signer (currently implemented by Signatory)
 type Signer interface {
 	Sign(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error)
+	SignSequencerBlueprint(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, []byte, error)
+	SignSequencerSignal(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, []byte, error)
 	ProvePossession(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error)
 	GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error)
 }
@@ -79,11 +81,10 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 	return errors.Wrap(stderr.New("invalid authentication signature"), http.StatusForbidden)
 }
 
-func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) processInput(r *http.Request) (*signatory.SignRequest, error) {
 	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
 	if err != nil {
-		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-		return
+		return nil, errors.Wrap(err, http.StatusBadRequest)
 	}
 	signRequest := signatory.SignRequest{
 		PublicKeyHash: pkh,
@@ -98,31 +99,37 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.logger().Errorf("Error reading POST content: %v", err)
-		tezosJSONError(w, err)
-		return
+		return nil, err
 	}
 
 	var req string
 	if err := json.Unmarshal(body, &req); err != nil {
-		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-		return
+		return nil, errors.Wrap(err, http.StatusBadRequest)
 	}
 
 	signRequest.Message, err = hex.DecodeString(req)
 	if err != nil {
-		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-		return
+		return nil, errors.Wrap(err, http.StatusBadRequest)
 	}
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
 			s.logger().Error(err)
-			tezosJSONError(w, err)
-			return
+			return nil, err
 		}
 	}
 
-	signature, err := s.Signer.Sign(r.Context(), &signRequest)
+	return &signRequest, nil
+}
+
+func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	signRequest, err := s.processInput(r)
+	if err != nil {
+		tezosJSONError(w, err)
+		return
+	}
+
+	signature, err := s.Signer.Sign(r.Context(), signRequest)
 	if err != nil {
 		s.logger().Errorf("Error signing request: %v", err)
 		tezosJSONError(w, err)
@@ -133,6 +140,54 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		Signature crypt.Signature `json:"signature"`
 	}{
 		Signature: signature,
+	}
+	jsonResponse(w, http.StatusOK, &resp)
+}
+
+func (s *Server) sequencerBlueprintHandler(w http.ResponseWriter, r *http.Request) {
+	signRequest, err := s.processInput(r)
+	if err != nil {
+		tezosJSONError(w, err)
+		return
+	}
+
+	signature, data, err := s.Signer.SignSequencerBlueprint(r.Context(), signRequest)
+	if err != nil {
+		s.logger().Errorf("Error signing request: %v", err)
+		tezosJSONError(w, err)
+		return
+	}
+
+	resp := struct {
+		Signature                crypt.Signature `json:"signature"`
+		SignedSequencerBlueprint string          `json:"signed_sequencer_blueprint"`
+	}{
+		Signature:                signature,
+		SignedSequencerBlueprint: hex.EncodeToString(data),
+	}
+	jsonResponse(w, http.StatusOK, &resp)
+}
+
+func (s *Server) sequencerSignalHandler(w http.ResponseWriter, r *http.Request) {
+	signRequest, err := s.processInput(r)
+	if err != nil {
+		tezosJSONError(w, err)
+		return
+	}
+
+	signature, data, err := s.Signer.SignSequencerSignal(r.Context(), signRequest)
+	if err != nil {
+		s.logger().Errorf("Error signing request: %v", err)
+		tezosJSONError(w, err)
+		return
+	}
+
+	resp := struct {
+		Signature             crypt.Signature `json:"signature"`
+		SignedSequencerSignal string          `json:"signed_sequencer_signal"`
+	}{
+		Signature:             signature,
+		SignedSequencerSignal: hex.EncodeToString(data),
 	}
 	jsonResponse(w, http.StatusOK, &resp)
 }
@@ -231,6 +286,8 @@ func (s *Server) Handler() (http.Handler, error) {
 
 	r.Methods("POST").Path("/login").HandlerFunc(s.MidWare.LoginHandler)
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
+	r.Methods("POST").Path("/keys/{key}/sequencer_blueprint").HandlerFunc(s.sequencerBlueprintHandler)
+	r.Methods("POST").Path("/keys/{key}/sequencer_signal").HandlerFunc(s.sequencerSignalHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/bls_prove_possession/{key}").HandlerFunc(s.blsProveHandler)
 	r.Methods("GET").Path("/authorized_keys").HandlerFunc(s.authorizedKeysHandler)
