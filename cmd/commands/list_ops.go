@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
+	"github.com/ecadlabs/gotez/v2/protocol/smartrollups/etherlink"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +33,11 @@ func NewListRequests(c *Context) *cobra.Command {
 		Short: "Print possible request types",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			kinds := proto.ListSignRequests()
+			kinds = append(kinds,
+				(&etherlink.UnsignedSequencerBlueprint{}).SignRequestKind(),
+				etherlink.UnsignedDALSlotSignals{}.SignRequestKind(),
+			)
+			slices.Sort(kinds)
 			return listReqTpl.Execute(os.Stdout, kinds)
 		},
 	}
