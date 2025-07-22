@@ -19,6 +19,7 @@ import (
 
 type signerMock struct {
 	SignResponse      crypt.Signature
+	SignedData        []byte
 	SignError         error
 	PublicKeyResponse *signatory.PublicKey
 	PublicKeyError    error
@@ -30,6 +31,15 @@ func (c *signerMock) Sign(ctx context.Context, req *signatory.SignRequest) (cryp
 
 func (c *signerMock) ProvePossession(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, error) {
 	return c.SignResponse, c.SignError
+}
+
+func (c *signerMock) SignSequencerBlueprint(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, []byte, error) {
+	return c.SignResponse, c.SignedData, c.SignError
+
+}
+
+func (c *signerMock) SignSequencerSignal(ctx context.Context, req *signatory.SignRequest) (crypt.Signature, []byte, error) {
+	return c.SignResponse, c.SignedData, c.SignError
 }
 
 func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHash) (*signatory.PublicKey, error) {
