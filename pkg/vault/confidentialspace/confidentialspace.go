@@ -267,6 +267,22 @@ func (r *confidentialKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt
 	return res, nil
 }
 
+func (r *confidentialKeyRef[C]) ProvePossession(ctx context.Context) (crypt.Signature, error) {
+	r.v.mtx.Lock()
+	defer r.v.mtx.Unlock()
+
+	sig, err := r.v.client.ProvePossession(ctx, r.handle)
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+
+	res, err := sig.Signature()
+	if err != nil {
+		return nil, fmt.Errorf("(Nitro): %w", err)
+	}
+	return res, nil
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 func New(ctx context.Context, config *Config, global config.GlobalContext) (*ConfidentialSpaceVault[rpc.ConfidentialSpaceCredentials], error) {
