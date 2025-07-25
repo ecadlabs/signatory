@@ -52,8 +52,8 @@ type keyBlobStorage interface {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 type Config struct {
-	ConfidentialSpaceHost string         `yaml:"confidential_space_host"`
-	ConfidentialSpacePort string         `yaml:"confidential_space_port"`
+	ConfidentialSpaceHost string         `yaml:"host"`
+	ConfidentialSpacePort string         `yaml:"port"`
 	WipPath               string         `yaml:"wip_path"`
 	EncryptionKeyPath     string         `yaml:"encryption_key_path"`
 	Storage               *StorageConfig `yaml:"storage"`
@@ -66,18 +66,6 @@ func resolve[T comparable](value T, ev string) T {
 			var tmp T
 			if _, err := fmt.Sscanf(env, "%v", &tmp); err == nil {
 				return tmp
-			}
-		}
-	}
-	return value
-}
-
-func resolvePtr[T any](value *T, ev string) *T {
-	if value == nil {
-		if env := os.Getenv(ev); env != "" {
-			var tmp T
-			if _, err := fmt.Sscanf(env, "%v", &tmp); err == nil {
-				return &tmp
 			}
 		}
 	}
@@ -284,7 +272,7 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 			}
 			return newFileStorage(path)
 		default:
-			return nil, fmt.Errorf("unknown key storage %s", conf.Driver)
+			return nil, fmt.Errorf("(ConfidentialSpace): unknown key storage %s", conf.Driver)
 		}
 	} else {
 		path := filepath.Join(global.GetBaseDir(), defaultFile)
@@ -295,16 +283,19 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage) (*ConfidentialSpaceVault[rpc.ConfidentialSpaceCredentials], error) {
 	conf := populateConfig(config)
 
+	if conf.ConfidentialSpaceHost == "" {
+		return nil, errors.New("(ConfidentialSpace): missing confidential space host")
+	}
+	if conf.EncryptionKeyPath == "" {
+		return nil, errors.New("(ConfidentialSpace): missing encryption key path")
+	}
+
 	rpcCred := rpc.ConfidentialSpaceCredentials{
 		WipPath:           conf.WipPath,
 		EncryptionKeyPath: conf.EncryptionKeyPath,
 	}
-
-	if conf.EncryptionKeyPath == "" {
-		return nil, errors.New("(ConfidentialSpace): missing encryption key id")
-	}
 	if !rpcCred.IsValid() {
-		return nil, errors.New("(ConfidentialSpace): missing credentials")
+		return nil, errors.New("(ConfidentialSpace): invalid credentials")
 	}
 
 	addr := net.JoinHostPort(conf.ConfidentialSpaceHost, conf.ConfidentialSpacePort)
