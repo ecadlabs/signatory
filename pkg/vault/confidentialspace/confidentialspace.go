@@ -2,6 +2,7 @@ package confidentialspace
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"iter"
@@ -11,6 +12,7 @@ import (
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
+	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/cryptoutils"
@@ -39,14 +41,35 @@ type result[T any] interface {
 	Err() error
 }
 
+type keyBlobStorage interface {
+	GetKeys(ctx context.Context) (result[*encryptedKey], error)
+	ImportKey(ctx context.Context, encryptedKey *encryptedKey) error
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
 type encryptedKey struct {
 	PublicKeyHash       tz.PublicKeyHash `json:"public_key_hash"`
 	EncryptedPrivateKey []byte           `json:"encrypted_private_key"`
 }
 
-type keyBlobStorage interface {
-	GetKeys(ctx context.Context) (result[*encryptedKey], error)
-	ImportKey(ctx context.Context, encryptedKey *encryptedKey) error
+func (e *encryptedKey) UnmarshalJSON(data []byte) error {
+	type Alias encryptedKey
+	aux := &struct {
+		PublicKeyHash string `json:"public_key_hash"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	pkh, err := b58.ParsePublicKeyHash([]byte(aux.PublicKeyHash))
+	if err != nil {
+		return err
+	}
+	e.PublicKeyHash = pkh
+	return nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
