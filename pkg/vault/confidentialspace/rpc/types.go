@@ -32,12 +32,12 @@ func (p Protected) GoString() string {
 }
 
 type ConfidentialSpaceCredentials struct {
-	WipPath           string `cbor:"wip_path"`
+	WipProviderPath   string `cbor:"wip_provider_path"`
 	EncryptionKeyPath string `cbor:"encryption_key_path"`
 }
 
 func (c *ConfidentialSpaceCredentials) IsValid() bool {
-	return c.WipPath != "" && c.EncryptionKeyPath != ""
+	return c.WipProviderPath != "" && c.EncryptionKeyPath != ""
 }
 
 type SignRequest struct {

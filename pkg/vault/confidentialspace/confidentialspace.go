@@ -77,7 +77,7 @@ func (e *encryptedKey) UnmarshalJSON(data []byte) error {
 type Config struct {
 	ConfidentialSpaceHost string         `yaml:"host"`
 	ConfidentialSpacePort string         `yaml:"port"`
-	WipPath               string         `yaml:"wip_path"`
+	WipProviderPath       string         `yaml:"wip_provider_path"`
 	EncryptionKeyPath     string         `yaml:"encryption_key_path"`
 	Storage               *StorageConfig `yaml:"storage"`
 }
@@ -103,7 +103,7 @@ func populateConfig(c *Config) *Config {
 	return &Config{
 		ConfidentialSpaceHost: resolve(c.ConfidentialSpaceHost, "CONFIDENTIAL_SPACE_HOST"),
 		ConfidentialSpacePort: resolve(c.ConfidentialSpacePort, "CONFIDENTIAL_SPACE_PORT"),
-		WipPath:               resolve(c.WipPath, "GCP_WIP_PATH"),
+		WipProviderPath:       resolve(c.WipProviderPath, "GCP_WIP_PROVIDER_PATH"),
 		EncryptionKeyPath:     resolve(c.EncryptionKeyPath, "GCP_KMS_ENCRYPTION_KEY_PATH"),
 		Storage:               c.Storage,
 	}
@@ -330,7 +330,7 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 	}
 
 	rpcCred := rpc.ConfidentialSpaceCredentials{
-		WipPath:           conf.WipPath,
+		WipProviderPath:   conf.WipProviderPath,
 		EncryptionKeyPath: conf.EncryptionKeyPath,
 	}
 	if !rpcCred.IsValid() {
