@@ -25,7 +25,7 @@ func LoadCredentials(ctx context.Context, conf interface{}) (*rpc.ConfidentialSp
 
 func rpcTool(ip string, port uint64, wipPath string, keyPath string) error {
 	cred := rpc.ConfidentialSpaceCredentials{
-		WipPath:           wipPath,
+		WipProviderPath:   wipPath,
 		EncryptionKeyPath: keyPath,
 	}
 	if !cred.IsValid() {
