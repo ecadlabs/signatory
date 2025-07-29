@@ -100,9 +100,9 @@ func (g *gcpStorage) GetKeys(ctx context.Context) (result[*encryptedKey], error)
 }
 
 func (g *gcpStorage) ImportKey(ctx context.Context, encryptedKey *encryptedKey) error {
-	_, _, err := g.col.Add(ctx, map[string]interface{}{
-		"pkh":   encryptedKey.PublicKeyHash.String(),
-		"value": encryptedKey.EncryptedPrivateKey,
+	_, err := g.col.Doc(encryptedKey.PublicKeyHash.String()).Set(ctx, &docItem{
+		PKH:   encryptedKey.PublicKeyHash.String(),
+		Value: encryptedKey.EncryptedPrivateKey,
 	})
 	return err
 }
