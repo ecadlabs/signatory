@@ -2,16 +2,14 @@ package watermark
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 
 	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core" // Import config directly
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
-	"google.golang.org/api/option"
+	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
@@ -24,37 +22,10 @@ const (
 )
 
 type GCPConfig struct {
-	CredentialsFile string `yaml:"file"`
-	Database        string `yaml:"database"`
-	ProjectID       string `yaml:"project_id"`
-	Collection      string `yaml:"collection"`
-}
-
-type GCPCredentials struct {
-	ProjectID string `json:"project_id"`
-}
-
-func extractProjectIDFromCredentials(credentialsFile string) (string, error) {
-	// reads the GCP credentials file and extracts the project_id
-	if credentialsFile == "" {
-		return "", fmt.Errorf("credentials file path is empty")
-	}
-
-	data, err := os.ReadFile(credentialsFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read credentials file: %w", err)
-	}
-
-	var creds GCPCredentials
-	if err := json.Unmarshal(data, &creds); err != nil {
-		return "", fmt.Errorf("failed to parse credentials JSON: %w", err)
-	}
-
-	if creds.ProjectID == "" {
-		return "", fmt.Errorf("project_id not found in credentials file")
-	}
-
-	return creds.ProjectID, nil
+	gcp.Config `yaml:",inline"`
+	Project    string `yaml:"project_id" validate:"required"`
+	Database   string `yaml:"database" validate:"required"`
+	Collection string `yaml:"collection"`
 }
 
 func (c *GCPConfig) collection() string {
@@ -73,23 +44,18 @@ func NewGCPWatermark(ctx context.Context, config *GCPConfig) (*GCP, error) {
 	var client *firestore.Client
 	var err error
 
-	projectID := config.ProjectID
-	if projectID == "" {
-		// Try to extract project ID from credentials file
-		projectID, err = extractProjectIDFromCredentials(config.CredentialsFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get project ID from credentials file: %w", err)
-		}
-	}
-
-	if config.Database != "" {
-		client, err = firestore.NewClientWithDatabase(ctx, projectID, config.Database, option.WithCredentialsFile(config.CredentialsFile))
-	} else {
-		client, err = firestore.NewClient(ctx, projectID, option.WithCredentialsFile(config.CredentialsFile))
-	}
-
+	opts, err := gcp.NewGCPOption(ctx, &config.Config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("(GCPWatermark) NewGCPWatermark: %w", err)
+	}
+
+	if config.Database == "" {
+		client, err = firestore.NewClient(ctx, config.Project, opts...)
+	} else {
+		client, err = firestore.NewClientWithDatabase(ctx, config.Project, config.Database, opts...)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("(GCPWatermark) NewGCPWatermark: %w", err)
 	}
 
 	col := client.Collection(config.collection())
@@ -133,17 +99,17 @@ func (f *GCP) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 		errCode := status.Code(err)
 		if errCode != codes.NotFound && errCode != codes.OK {
 			return err
-		}
+			}
 
 		if err == nil { // watermark exists
-			var oldWm GCPWatermark
+		var oldWm GCPWatermark
 			err := docSnap.DataTo(&oldWm)
 			if err != nil {
 				return err
-			}
+		}
 
-			if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
-				return ErrWatermark
+		if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
+			return ErrWatermark
 			}
 		}
 
