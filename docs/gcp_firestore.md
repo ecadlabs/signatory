@@ -29,31 +29,29 @@ Below is the minimum configuration required:
 watermark:
   driver: gcp
   config:
+    project: my-gcp-project
     database: my-gcp-database
-    file: /path/to/service-credentials-file.json
-    # Optional: in case no project id in credential file
-    project_id: my-gcp-project
+    application_credentials: /path/to/service-credentials-file.json
     # Optional: override default collection name
     collection: my_custom_watermark_collection
 ```
 
 ### Configuration Parameters
 
-| Name            | Type   | Required | Description                                                         |
-|-----------------|--------|:--------:|---------------------------------------------------------------------|
-| file            | string | ✅ | Path to GCP service account credentials JSON file                   |
-| database        | string | ✅ | Firestore database name            |
-| project_id      | string | OPTIONAL       | GCP project ID where Firestore is located (default: uses project id in credentials file)  |
-| collection      | string | OPTIONAL | Name of the Firestore collection (default: `watermark`)             |
-<!-- 
+| Name                        | Type   | Required | Description                                                         |
+|-----------------------------|--------|:--------:|---------------------------------------------------------------------|
+| project                     | string | ✅ | GCP project ID where Firestore is located                           |
+| database                    | string | ✅ | Firestore database name                                             |
+| application_credentials     | string | OPTIONAL | Path to GCP service account credentials JSON file                   |
+| application_credentials_data| string | OPTIONAL | GCP service account credentials JSON data (inline)                  |
+| collection                  | string | OPTIONAL | Name of the Firestore collection (default: `watermark`)             |
+
 ### Environment Variables Support
 
 The GCP credentials can also be provided through standard GCP environment variables:
 
 - `GOOGLE_APPLICATION_CREDENTIALS` - Path to service account key file
 - `GOOGLE_CLOUD_PROJECT` - GCP project ID
-
-This is the recommended approach for production deployments. -->
 
 ## Collection Design
 
@@ -87,6 +85,7 @@ This structure ensures that:
 - Each watermark check involves a transaction that reads the current watermark and conditionally updates it
 - The backend supports both the default Firestore database and named databases
 - Collection creation is automatic - Firestore creates collections when the first document is added
+- If no database is specified, the default Firestore database is used
 
 ## Troubleshooting
 
@@ -118,4 +117,8 @@ If you encounter issues with the Firestore watermark backend:
 **Transaction failures**:
 - These may indicate concurrent access issues
 - Check if multiple Signatory instances are properly configured
-- Verify network connectivity to Firestore 
+- Verify network connectivity to Firestore
+
+**"Project field is required" error**:
+- Ensure the `project` field is set in your configuration
+- Verify the project ID is correct and accessible with your credentials 
