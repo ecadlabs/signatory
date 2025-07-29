@@ -96,21 +96,23 @@ func (f *GCP) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 	return f.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		docSnap, err := tx.Get(docRef) // Read document
 
-		errCode := status.Code(err)
-		if errCode != codes.NotFound && errCode != codes.OK {
-			return err
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				// Document doesn't exist, safe to create
+				tx.Set(docRef, newWm)
+				return nil
 			}
+			return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
+		}
 
-		if err == nil { // watermark exists
+		// Document exists, check watermark
 		var oldWm GCPWatermark
-			err := docSnap.DataTo(&oldWm)
-			if err != nil {
-				return err
+		if err := docSnap.DataTo(&oldWm); err != nil {
+			return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
 		}
 
 		if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
 			return ErrWatermark
-			}
 		}
 
 		tx.Set(docRef, newWm)
