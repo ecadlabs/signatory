@@ -23,7 +23,7 @@ const (
 
 type GCPConfig struct {
 	gcp.Config `yaml:",inline"`
-	Project    string `yaml:"project_id" validate:"required"`
+	Project    string `yaml:"project" validate:"required"`
 	Database   string `yaml:"database" validate:"required"`
 	Collection string `yaml:"collection"`
 }
