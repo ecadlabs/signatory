@@ -310,6 +310,14 @@ func newStorage(ctx context.Context, conf *StorageConfig, global config.GlobalCo
 				return nil, err
 			}
 			return newFileStorage(path)
+		case "gcp", "firestore":
+			var cfg gcpStorageConfig
+			if !conf.Config.IsZero() {
+				if err := conf.Config.Decode(&cfg); err != nil {
+					return nil, err
+				}
+			}
+			return newGCPStorage(ctx, &cfg)
 		default:
 			return nil, fmt.Errorf("(ConfidentialSpace): unknown key storage %s", conf.Driver)
 		}
