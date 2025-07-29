@@ -25,18 +25,32 @@ You will need:
 
 ### StorageConfig
 
-Encrypted keys may be stored locally in a JSON file.
+Encrypted keys can be stored in different backends. The storage configuration is optional - if omitted, local file storage will be used by default.
 
 | Field  | Type            | Description                               |
 | ------ | --------------- | ----------------------------------------- |
-| driver | string          | "file" (currently the only supported option) |
-| config | string          | Full file path for key storage (optional) |
+| driver | string          | Storage driver: "file", "gcp", or "firestore" |
+| config | yaml.Node       | Storage-specific configuration            |
 
-This block is optional. Local file `${BASE_DIR}/confidential_space_keys.json` will be used if the block is omitted.
+#### Local File Storage
 
-#### Local storage
+For local file storage, the `config` field is expected to be a single string containing a full file path. Environment variables are allowed and will be expanded.
 
-If local storage is specified then the `config` field is expected to be a single string containing a full file path. Environment variables are allowed and will be expanded.
+If local storage is specified without a config, the default file `${BASE_DIR}/confidential_space_keys.json` will be used.
+
+#### Google Cloud Firestore Storage
+
+For Google Cloud Firestore storage, the `config` field should contain:
+
+| Field     | Type   | Required | Description                                    |
+| --------- | ------ | -------- | ---------------------------------------------- |
+|application_credentials|string|OPTIONAL|Path to the GCP application token JSON file (overrides GOOGLE_APPLICATION_CREDENTIALS environment variable)|
+|application_credentials_data|string|OPTIONAL|GCP application token JSON data (overrides application_credentials)|
+| project   | string | ✅        | GCP project ID                                 |
+| database  | string | ✅        | Firestore database name                        |
+| table     | string |          | Collection name (default: "encrypted_keys")    |
+
+The Firestore storage driver supports both `gcp` and `firestore` as driver names for compatibility.
 
 ## Example
 
@@ -91,31 +105,36 @@ Example:
 signatory-cli generate -v confidentialspace -t bls
 ```
 
-## Security Model
-
-The Confidential Space backend provides several security guarantees:
-
-1. **Hardware-based isolation**: Keys are processed within Google Cloud's Confidential Space environment
-2. **Memory encryption**: All memory accesses are encrypted and integrity-verified
-3. **No persistent storage**: The enclave has no persistent storage, requiring external encrypted storage
-4. **KMS integration**: Keys are encrypted using Google Cloud KMS before leaving the enclave
-5. **Workload Identity**: Authentication is handled through Google Cloud Workload Identity Pool Provider
-
 ## Network Communication
 
 The Confidential Space backend communicates with the enclave over TCP. The enclave must be accessible from the network where Signatory is running. The communication protocol is based on CBOR-encoded RPC messages for efficiency and security.
 
 ## Key Storage
 
+### Local File Storage
+
 Encrypted keys are stored in a JSON file with the following structure:
 
 ```json
 [
   {
-    "public_key_hash": "tz1...",
+    "public_key_hash": "tz4...",
     "encrypted_private_key": "..."
   }
 ]
 ```
 
-The `public_key_hash` field contains the Tezos address (Base58 encoded), and the `encrypted_private_key` field contains the KMS-encrypted private key data. 
+The `public_key_hash` field contains the Tezos address (Base58 encoded), and the `encrypted_private_key` field contains the KMS-encrypted private key data.
+
+### Firestore Storage
+
+When using Firestore storage, encrypted keys are stored as documents in a Firestore collection with the following structure:
+
+```json
+{
+  "pkh": "tz4...",
+  "value": "..."
+}
+```
+
+Where `pkh` contains the Tezos address (Base58 encoded) and `value` contains the KMS-encrypted private key data.
