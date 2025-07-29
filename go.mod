@@ -5,6 +5,7 @@ go 1.24
 toolchain go1.24.1
 
 require (
+	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/kms v1.21.2
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
