@@ -20,12 +20,12 @@ type gcpStorageConfig struct {
 	gcp.Config `yaml:",inline"`
 	Project    string `yaml:"project" validate:"required"`
 	Database   string `yaml:"database" validate:"required"`
-	Table      string `yaml:"table"`
+	Collection string `yaml:"collection"`
 }
 
-func (c *gcpStorageConfig) table() string {
-	if c.Table != "" {
-		return c.Table
+func (c *gcpStorageConfig) collection() string {
+	if c.Collection != "" {
+		return c.Collection
 	}
 	return defaultTable
 }
@@ -68,7 +68,7 @@ func newGCPStorage(ctx context.Context, config *gcpStorageConfig) (*gcpStorage, 
 	return &gcpStorage{
 		client: client,
 		cfg:    config,
-		col:    client.Collection(config.table()),
+		col:    client.Collection(config.collection()),
 	}, nil
 }
 
