@@ -1,11 +1,9 @@
-version: "3.9"
-
 networks:
   ecadnet: {}
 
 configs:
   accounts:
-    file: ./accounts.hjson
+    file: ./accounts.json
   sigy-config:
     file: ./signatory.yaml
   sigy-secret:
@@ -20,7 +18,7 @@ services:
   tezos-node:
     container_name: tezos-node
     hostname: tezos-node
-    image: tezos/tezos:master_5ab083be_20250704151130
+    image: tezos/tezos:$OCTEZ_VERSION
     ports:
       - 18731:18731
       - 19731:19731
@@ -28,6 +26,8 @@ services:
     volumes:
       - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
     command: -c "sudo apk add --no-cache bash && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    environment:
+      - PROTOCOL=$PROTOCOL    
     # depends_on:
     #   signatory:
     #     condition: service_healthy
@@ -39,20 +39,20 @@ services:
   tezos-client:
     container_name: tezos-client
     hostname: tezos-client
-    image: tezos/tezos:master_5ab083be_20250704151130
+    image: tezos/tezos:$OCTEZ_VERSION
     entrypoint: /bin/sh
     volumes:
       - ./tezos_scripts:/home/tezos/tezos_scripts
       # - ./.tezos-client:/home/tezos/.tezos-client
       # - ./contract.event.tz:/home/tezos/contract.event.tz
-    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/setup-client.sh PtSeouLo"
+    environment:
+      - PROTOCOL=$PROTOCOL
+    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/setup-client.sh $PROTOCOL"
     depends_on:
       signatory:
         condition: service_healthy
       tezos-node:
         condition: service_started
-      # speculos:
-      #   condition: service_healthy
     networks:
       - ecadnet
 
@@ -79,7 +79,7 @@ services:
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
       - GOCOVERDIR=/opt/coverage
-    command: serve
+    command: serve --log debug
     networks:
       - ecadnet
     healthcheck:
@@ -88,3 +88,41 @@ services:
       timeout: 1s
       retries: 10
       start_period: 1s
+    depends_on:
+      speculos:
+        condition: service_healthy      
+
+  hashi:
+    container_name: hashi
+    image: hashicorp/vault:1.14
+    ports:
+      - "8200:8200"
+    networks:
+      - ecadnet
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=root
+      - VAULT_TOKEN=root
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - VAULT_CACERT=/opt/signatory/certs/vault-ca.pem
+    command: server -dev-tls -dev-tls-cert-dir=/opt/signatory/certs
+    volumes:
+      - ./hashicerts:/opt/signatory/certs
+    cap_add:
+      - IPC_LOCK
+
+  speculos:
+    container_name: speculos
+    image: stephengaudet/tezoswalletemu:$ARCH
+    ports:
+      - "9999:9999"
+      - "41000:41000"
+      - "5001:5001"
+    networks:
+      - ecadnet
+    command: --display headless --vnc-port 41000 --api-port 5001 -m nanos apps/app_s.elf
+    healthcheck:
+      test: ["CMD","stat","/etc/passwd"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s

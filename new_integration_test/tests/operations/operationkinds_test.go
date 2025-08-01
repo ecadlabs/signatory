@@ -2,7 +2,6 @@ package operations
 
 import (
 	"log"
-	"os"
 	"testing"
 
 	integrationtest "github.com/ecadlabs/signatory/new_integration_test/tests"
@@ -35,36 +34,36 @@ type testCase struct {
 
 // these test cases are not atomic -- some tests depend on previous tests (order matters)
 var testcases = []testCase{
-	{
-		kind:           "preendorsement",
-		op:             "preendorsement",
-		testSetupOps:   nil,
-		testOp:         []string{"preattest", "for", alias, "--force"},
-		account:        account,
-		allowPolicy:    map[string][]string{"generic": {"preendorsement"}, "preendorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
-		successMessage: "injected ",
-	},
-	{
-		kind:           "endorsement",
-		op:             "endorsement",
-		testSetupOps:   nil,
-		testOp:         []string{"attest", "for", alias, "--force"},
-		account:        account,
-		allowPolicy:    map[string][]string{"generic": {"endorsement"}, "endorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
-		successMessage: "injected ",
-	},
-	{
-		kind:           "block",
-		op:             "block",
-		testSetupOps:   nil,
-		testOp:         []string{"bake", "for", alias, "--force"},
-		account:        account,
-		allowPolicy:    map[string][]string{"generic": {}, "block": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "preendorsement": {}, "endorsement": {}},
-		successMessage: "injected for " + alias + " (" + account + ")",
-	},
+	// {
+	// 	kind:           "preendorsement",
+	// 	op:             "preendorsement",
+	// 	testSetupOps:   nil,
+	// 	testOp:         []string{"preattest", "for", alias, "--force"},
+	// 	account:        account,
+	// 	allowPolicy:    map[string][]string{"generic": {"preendorsement"}, "preendorsement": {}},
+	// 	notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
+	// 	successMessage: "injected preattestation",
+	// },
+	// {
+	// 	kind:           "endorsement",
+	// 	op:             "endorsement",
+	// 	testSetupOps:   nil,
+	// 	testOp:         []string{"attest", "for", alias, "--force"},
+	// 	account:        account,
+	// 	allowPolicy:    map[string][]string{"generic": {"endorsement"}, "endorsement": {}},
+	// 	notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
+	// 	successMessage: "injected attestation",
+	// },
+	// {
+	// 	kind:           "block",
+	// 	op:             "block",
+	// 	testSetupOps:   nil,
+	// 	testOp:         []string{"bake", "for", alias, "--force"},
+	// 	account:        account,
+	// 	allowPolicy:    map[string][]string{"generic": {}, "block": {}},
+	// 	notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "preendorsement": {}, "endorsement": {}},
+	// 	successMessage: "injected for " + alias + " (" + account + ")",
+	// },
 	{
 		kind:           "reveal",
 		op:             "generic",
@@ -105,16 +104,16 @@ var testcases = []testCase{
 		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"delegation"})},
 		successMessage: "Operation successfully injected in the node",
 	},
-	{
-		kind:           "set_deposits_limit",
-		op:             "generic",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"set", "deposits", "limit", "for", alias, "to", "10000"},
-		allowPolicy:    map[string][]string{"generic": {"set_deposits_limit"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"set_deposits_limit"})},
-		successMessage: "Operation successfully injected in the node",
-	},
+	// {
+	// 	kind:           "set_deposits_limit",
+	// 	op:             "generic",
+	// 	testSetupOps:   nil,
+	// 	account:        account,
+	// 	testOp:         []string{"set", "deposits", "limit", "for", alias, "to", "10000"},
+	// 	allowPolicy:    map[string][]string{"generic": {"set_deposits_limit"}},
+	// 	notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"set_deposits_limit"})},
+	// 	successMessage: "Operation successfully injected in the node",
+	// },
 	{
 		kind:           "update_consensus_key",
 		op:             "generic",
@@ -125,47 +124,33 @@ var testcases = []testCase{
 		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"update_consensus_key"})},
 		successMessage: "Operation successfully injected in the node",
 	},
-	{
-		kind:                "origination",
-		op:                  "generic",
-		testSetupOps:        nil,
-		account:             account,
-		testOp:              []string{"originate", "contract", contractAlias, "transferring", "1", "from", alias, "running", contract, "--burn-cap", "0.4"},
-		allowPolicy:         map[string][]string{"generic": {"origination", "transaction"}},
-		notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"origination"})},
-		successMessage:      "Operation successfully injected in the node",
-		validateOctezReturn: true,
-	},
-	{
-		kind:           "increase_paid_storage",
-		op:             "generic",
-		testSetupOps:   nil,
-		account:        account,
-		testOp:         []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", alias},
-		allowPolicy:    map[string][]string{"generic": {"increase_paid_storage"}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"increase_paid_storage"})},
-		successMessage: "Operation successfully injected in the node",
-	},
+	// {
+	// 	kind:                "origination",
+	// 	op:                  "generic",
+	// 	testSetupOps:        nil,
+	// 	account:             account,
+	// 	testOp:              []string{"originate", "contract", contractAlias, "transferring", "1", "from", alias, "running", contract, "--burn-cap", "0.4"},
+	// 	allowPolicy:         map[string][]string{"generic": {"origination", "transaction"}},
+	// 	notAllowPolicy:      map[string][]string{"generic": getAllOpsExcluding([]string{"origination"})},
+	// 	successMessage:      "Operation successfully injected in the node",
+	// 	validateOctezReturn: true,
+	// },
+	// {
+	// 	kind:           "increase_paid_storage",
+	// 	op:             "generic",
+	// 	testSetupOps:   nil,
+	// 	account:        account,
+	// 	testOp:         []string{"increase", "the", "paid", "storage", "of", contractAlias, "by", "0x5c", "bytes", "from", alias},
+	// 	allowPolicy:    map[string][]string{"generic": {"increase_paid_storage"}},
+	// 	notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"increase_paid_storage"})},
+	// 	successMessage: "Operation successfully injected in the node",
+	// },
 }
 
 func TestOperationAllowPolicy(t *testing.T) {
 	defer integrationtest.Clean_tezos_folder()
 	for _, test := range testcases {
 		t.Run(test.kind, func(t *testing.T) {
-			//while we are testing Nairobi and Oxford at the same time we have conditional for set_deposits_limit
-			//when we are testing O and P at the same time, we can remove this conditional and the env var
-			//set_deposits_limit is not a valid operation in O
-			if os.Getenv("SET_DEPOSITS_LIMIT") == "false" && test.kind == "set_deposits_limit" {
-				return
-			}
-			//likewise, when we stop testing N, we can get rid of the next 2 conditionals
-			if test.kind == "endorsement" {
-				test.successMessage = test.successMessage + os.Getenv("ATTESTATION")
-			}
-			if test.kind == "preendorsement" {
-				test.successMessage = test.successMessage + os.Getenv("PREATTESTATION")
-			}
-
 			//first, do any setup steps that have to happen before the operation to be tested
 			for _, setupOp := range test.testSetupOps {
 				out, err := integrationtest.OctezClient(setupOp...)

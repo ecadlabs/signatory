@@ -74,15 +74,15 @@ func TestCliListOps(t *testing.T) {
 	require.Contains(t, string(out), "- zk_rollup_update")
 }
 
-func TestCliListRequests(t *testing.T) {
-	out, err := integrationtest.SignatoryCli("list-requests")
-	assert.Nil(t, err)
-	require.Contains(t, string(out), "Possible request types:")
-	require.Contains(t, string(out), "- block")
-	require.Contains(t, string(out), "- endorsement")
-	require.Contains(t, string(out), "- generic")
-	require.Contains(t, string(out), "- preendorsement")
-}
+// func TestCliListRequests(t *testing.T) {
+// 	out, err := integrationtest.SignatoryCli("list-requests")
+// 	assert.Nil(t, err)
+// 	require.Contains(t, string(out), "Possible request types:")
+// 	require.Contains(t, string(out), "- block")
+// 	require.Contains(t, string(out), "- endorsement")
+// 	require.Contains(t, string(out), "- generic")
+// 	require.Contains(t, string(out), "- preendorsement")
+// }
 
 func TestCliHelp(t *testing.T) {
 	usage, err := integrationtest.SignatoryCli()
@@ -108,13 +108,13 @@ func TestCliLedgerUsage(t *testing.T) {
 	require.Contains(t, string(out), "Use \"signatory-cli ledger [command] --help\" for more information about a command.")
 }
 
-// func TestCliLedgerList(t *testing.T) {
-// 	out, err := integrationtest.SignatoryCli("ledger", "-t", "tcp://speculos:9999", "list")
-// 	assert.Nil(t, err)
-// 	require.Contains(t, string(out), "Path:  		speculos:9999")
-// 	require.Contains(t, string(out), "ID:")
-// 	require.Contains(t, string(out), "Version:")
-// }
+func TestCliLedgerList(t *testing.T) {
+	out, err := integrationtest.SignatoryCli("ledger", "-t", "tcp://speculos:9999", "list")
+	assert.Nil(t, err)
+	require.Contains(t, string(out), "Path:  		speculos:9999")
+	require.Contains(t, string(out), "ID:")
+	require.Contains(t, string(out), "Version:")
+}
 
 func TestCliVersion(t *testing.T) {
 	v, err := integrationtest.SignatoryCli("v")

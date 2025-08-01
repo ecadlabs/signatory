@@ -114,6 +114,12 @@ $client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
 # bake for minimal timestamp
 $client bake for --minimal-timestamp
 
+# speculos
+$client import secret key speculos http://signatory:6732/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
+$client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
+# bake for minimal timestamp
+$client bake for --minimal-timestamp
+
 # # bake for minimal timestamp
 # $client bake for --minimal-timestamp
 
