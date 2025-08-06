@@ -18,7 +18,9 @@ import (
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
-	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
+	"github.com/ecadlabs/gotez/v2/protocol/latest"
+	proto_latest "github.com/ecadlabs/gotez/v2/protocol/latest"
+	proto_v1 "github.com/ecadlabs/gotez/v2/protocol/proto_022_PsRiotum"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -90,6 +92,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash crypt.PublicKeyHash // optional, see policy
 	PublicKeyHash       crypt.PublicKeyHash
+	SigningVersion      uint8
 	Source              net.IP // optional caller address
 	Message             []byte
 }
@@ -188,7 +191,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
+	if ops, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
 		for _, op := range ops.Contents {
 			allowed := false
 			var kind string
@@ -343,11 +346,31 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		}
 	}
 
-	var msg proto.SignRequest
-	_, err := encoding.Decode(req.Message, &msg)
-	if err != nil {
-		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
-		return nil, errors.Wrap(err, http.StatusBadRequest)
+	var msg core.SignRequest
+	var decodeErr error
+	switch req.SigningVersion {
+	case 0:
+		var msgV0 core.SignRequest
+		_, decodeErr = encoding.Decode(req.Message, &msgV0)
+		if decodeErr == nil {
+			msg = msgV0
+		}
+	case 1:
+		var msgV1 proto_v1.SignRequest
+		_, decodeErr = encoding.Decode(req.Message, &msgV1)
+		if decodeErr == nil {
+			msg = msgV1
+		}
+	default: // 2 is the latest version for now
+		var msgLatest proto_latest.SignRequest
+		_, decodeErr = encoding.Decode(req.Message, &msgLatest)
+		if decodeErr == nil {
+			msg = msgLatest
+		}
+	}
+	if decodeErr != nil {
+		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(decodeErr.Error(), "\n", "", -1))
+		return nil, errors.Wrap(decodeErr, http.StatusBadRequest)
 	}
 
 	l = l.WithField(logReq, msg.SignRequestKind())
@@ -357,7 +380,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var opStat operationsStat
-	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
+	if ops, ok := msg.(*latest.GenericOperationSignRequest); ok {
 		opStat = getOperationsStat(ops)
 		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
 	}

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
@@ -85,8 +86,22 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
+
+	version := r.URL.Query().Get("version")
+	versionInt := uint8(2)
+	if version != "" {
+		parsed, err := strconv.ParseUint(version, 10, 64)
+		if err != nil {
+			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
+			return
+		}
+		versionInt = uint8(parsed)
+	}
+	s.logger().Infof("versionInt: %d", versionInt)
+
 	signRequest := signatory.SignRequest{
-		PublicKeyHash: pkh,
+		PublicKeyHash:  pkh,
+		SigningVersion: versionInt,
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
