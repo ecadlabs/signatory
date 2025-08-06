@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
+	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/auth"
@@ -90,7 +91,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	version := r.URL.Query().Get("version")
 	versionInt := uint8(2)
 	if version != "" {
-		parsed, err := strconv.ParseUint(version, 10, 64)
+		parsed, err := strconv.ParseUint(version, 10, 8)
 		if err != nil {
 			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 			return
@@ -101,7 +102,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signRequest := signatory.SignRequest{
 		PublicKeyHash:  pkh,
-		SigningVersion: versionInt,
+		SigningVersion: tz.Some(versionInt),
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
