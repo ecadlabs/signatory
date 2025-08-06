@@ -21,23 +21,23 @@ func approve() {
 	var counter = 0
 	for {
 		counter++
-		if counter > 10 {
+		if counter > 100 {
 			panic("speculos approver: waiting for test pre-conditions. it's taking too long")
 		}
 		if strings.Contains(getScreenText(), "Operation") {
 			break
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 	}
 	//click right until it says APPROVE
 	counter = 0
 	for {
 		counter++
-		if counter > 20 {
+		if counter > 200 {
 			panic("speculos approver: did not find APPROVE in 20 clicks right")
 		}
 		click("right")
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 		if strings.Contains(getScreenText(), "APPROVE") {
 			break
 		}
