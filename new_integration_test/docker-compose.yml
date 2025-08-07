@@ -28,11 +28,9 @@ services:
     command: -c "sudo apk add --no-cache bash && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
     environment:
       - PROTOCOL=$PROTOCOL    
-    # depends_on:
-    #   signatory:
-    #     condition: service_healthy
-      # speculos:
-      #   condition: service_healthy
+    depends_on:
+      signatory:
+        condition: service_healthy
     networks:
       - ecadnet
 
@@ -59,7 +57,7 @@ services:
   signatory:
     container_name: signatory
     hostname: signatory
-    image: ghcr.io/ecadlabs/signatory:main-amd64
+    image: $IMAGE
     ports:
       - "6732:6732"
       - "9583:9583"

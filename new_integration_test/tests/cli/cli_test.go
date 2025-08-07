@@ -74,15 +74,16 @@ func TestCliListOps(t *testing.T) {
 	require.Contains(t, string(out), "- zk_rollup_update")
 }
 
-// func TestCliListRequests(t *testing.T) {
-// 	out, err := integrationtest.SignatoryCli("list-requests")
-// 	assert.Nil(t, err)
-// 	require.Contains(t, string(out), "Possible request types:")
-// 	require.Contains(t, string(out), "- block")
-// 	require.Contains(t, string(out), "- endorsement")
-// 	require.Contains(t, string(out), "- generic")
-// 	require.Contains(t, string(out), "- preendorsement")
-// }
+func TestCliListRequests(t *testing.T) {
+	out, err := integrationtest.SignatoryCli("list-requests")
+	assert.Nil(t, err)
+	require.Contains(t, string(out), "Possible request types:")
+	require.Contains(t, string(out), "- attestation")
+	require.Contains(t, string(out), "- attestation_with_dal")
+	require.Contains(t, string(out), "- block")
+	require.Contains(t, string(out), "- generic")
+	require.Contains(t, string(out), "- preattestation")
+}
 
 func TestCliHelp(t *testing.T) {
 	usage, err := integrationtest.SignatoryCli()
