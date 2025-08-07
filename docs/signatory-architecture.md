@@ -15,95 +15,55 @@ Using Signatory, users can securely store their secret keys and control which op
 The diagram demonstrated the overall high level Signatory system and includes the Signatory user, responsible for setting up the system's configuration, and the client software system, which submits requests to the Tezos API. The diagram also shows various vaults, such as AWS KMS and YubiHSM, which Signatory uses to store cryptographic keys, and the Prometheus service, which pulls and aggregates metrics data.
 ```mermaid
 flowchart TD
-User["Signatory User Setup
-[CONFIG]
-Bakers or Institutions looking\n to enforce signing policies"]
+User["Signatory User Setup<br>[CONFIG]<br>Bakers or Institutions looking<br>to enforce signing policies"]
 
-S["Signatory
-[Software System]
-Provides signing options for\n cloud-based or hardware-based HSMs"]
+S["Signatory<br>[Software System]<br>Provides signing options for<br>cloud-based or hardware-based HSMs"]
 
 User-- "Defines Vault and Policy" -->S
 
-OC["Client
-[Software System]
-submits requests to Tezos API"]
+OC["Client<br>[Software System]<br>submits requests to Tezos API"]
 
-V["Vaults
-[Software Systems]
- AWS KMS, Azure Key Vault, GCP Key Management,\n YubiHSM, local private key"]
+V["Vaults<br>[Software Systems]<br>AWS KMS, Azure Key Vault, GCP Key Management,<br>YubiHSM, local private key"]
 
-PS["Prometheus Service
-[Software System]
-Provides an API to store and track metrics"]
+PS["Prometheus Service<br>[Software System]<br>Provides an API to store and track metrics"]
 
 S-- "Listens for operations" -->OC
 S-- "Remote Signer for" -->V
 S-- "Exposes metric data to" -->PS
 
-classDef focusSystem fill:#1168bd,stroke:#0b4884,color:#ffffff
-classDef supportingSystem fill:#666,stroke:#0b4884,color:#ffffff
-classDef person fill:#08427b,stroke:#052e56,color:#ffffff
-class User person
-class S focusSystem
-class OC,V,PS supportingSystem
+
+
 
 ```
 ### 2. Signatory Container Model
 The Signatory container diagram shows the different elements of the Signatory system, including Signatory as the central container, with various supporting software systems surrounding it. These supporting systems include client software for submitting requests to the Tezos API, the Prometheus service for storing metrics data, and various hardware-based and cloud-based HSMs for protecting cryptographic keys. The diagram also shows Signatory's different vaults to store cryptographic keys, such as AWS KMS and YubiHSM. 
 ```mermaid
 flowchart TD
-User["Signatory User
-[Person]
-Baker or Institution operation requests with key security"]
+User["Signatory User<br>[Person]<br>Baker or Institution operation requests with key security"]
 
-CFG["Configuration File
-[File]
-select vault, keys and policy"]
+CFG["Configuration File<br>[File]<br>select vault, keys and policy"]
 
-OC["Client
-[Software System]
-submits requests to Tezos API"]
+OC["Client<br>[Software System]<br>submits requests to Tezos API"]
 
-P["Software Application
-[PROMETHEUS]
-Record and store metrics data"]
+P["Software Application<br>[PROMETHEUS]<br>Record and store metrics data"]
 
-SL["HTTP Service 
-[SIGNING LISTENER]
-captures operation signing requests"]
+SL["HTTP Service<br>[SIGNING LISTENER]<br>captures operation signing requests"]
 
-ML["HTTP Service 
-[METRICS LISTENER]
-captures metric data"]
+ML["HTTP Service<br>[METRICS LISTENER]<br>captures metric data"]
 
-SIG["Service 
-[SIGNATORY SERVICE]
-check policy and sign"]
+SIG["Service<br>[SIGNATORY SERVICE]<br>check policy and sign"]
 
-Y["Hardware Security Module
-[YUBIHSM]
-protect cryptographic keys"]
+Y["Hardware Security Module<br>[YUBIHSM]<br>protect cryptographic keys"]
 
-L["Hardware Wallet
-[LEDGER]
-stores user's private keys"]
+L["Hardware Wallet<br>[LEDGER]<br>stores user's private keys"]
 
-LS["File
-[LOCAL-SECRET]
-stores user's private keys on disk"]
+LS["File<br>[LOCAL-SECRET]<br>stores user's private keys on disk"]
 
-AWS["Cloud Service 
-[AWS]
-blockchain infrastructure"]
+AWS["Cloud Service<br>[AWS]<br>blockchain infrastructure"]
 
-G["Cloud Service
-[GOOGLECLOUD]
-blockchain infrastructure"]
+G["Cloud Service<br>[GOOGLECLOUD]<br>blockchain infrastructure"]
 
-A["Cloud Service
-[AZURE]
-blockchain infrastructure"]
+A["Cloud Service<br>[AZURE]<br>blockchain infrastructure"]
 
 
 User-- "Get Post <br>[HTTP]"-->OC
@@ -128,14 +88,8 @@ SIG-- "sign<br>[HTTP]" ---> A
 end
 
 
-classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
-classDef person fill:#08427b,stroke:#052e56,color:#ffffff
-classDef supportingSystem fill:#666,stroke:#0b4884,color:#ffffff
-classDef cloud fill:#089319,stroke:#089319,color:#ffffff
-class User person
-class SIG,POL,SL,ML,CFG container
-class C cloud
-class P,AWS,G,A,L,LS,Y,T,OC supportingSystem
+
+
 ```
 ### 3. Signatory Component Model 
 A sequence diagram is a way to express the behaviour of the underlying code in a software system. It shows the interactions between different system components over time, highlighting how the system behaves and responds to different inputs. Using a sequence diagram, developers can better understand the flow of data and control within the system and identify potential issues or areas for improvement.
@@ -192,38 +146,17 @@ Tezos uses elliptic curve cryptography to manage private/public key pairs, sign 
 
 ```mermaid
 flowchart TB
-TJ["Transfer operation
-[JSON]
-Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob"]
-TN["Tezos Node
-[Infrastructure]
-hosts RPC service"]
+TJ["Transfer operation<br>[JSON]<br>Transaction from Alice to Bob<br>./octez-client -l transfer 1 from alice to bob"]
+TN["Tezos Node<br>[Infrastructure]<br>hosts RPC service"]
 FT{First<br>Transaction?}
-Reveal["Reveal operation
-[Bytes]
-Declare Public Key "]
-TB["Transaction in Binary
-[Bytes]
-a transfer operation request"]
-W["Magic Byte 
-[Bytes]
-prefix the request with 0x03"]
-B["Blake2b Hash
-[Bytes]
-hash the operation request"]
-ED["Ed25519 Sign
-[Bytes]
-sign the operation request"]
-SK["Secret Key
-[Bytes]
-alice_sk.hex"]
-SIGNATORY["Signatory Signing Listener
-[HTTP Service]
-captures operation signing requests"]
-ST["Signed Transaction
-[Bytes]
-signed hashed prefixed operation
-signature.hex"]
+Reveal["Reveal operation<br>[Bytes]<br>Declare Public Key"]
+TB["Transaction in Binary<br>[Bytes]<br>a transfer operation request"]
+W["Magic Byte<br>[Bytes]<br>prefix the request with 0x03"]
+B["Blake2b Hash<br>[Bytes]<br>hash the operation request"]
+ED["Ed25519 Sign<br>[Bytes]<br>sign the operation request"]
+SK["Secret Key<br>[Bytes]<br>alice_sk.hex"]
+SIGNATORY["Signatory Signing Listener<br>[HTTP Service]<br>captures operation signing requests"]
+ST["Signed Transaction<br>[Bytes]<br>signed hashed prefixed operation<br>signature.hex"]
 TJ --> FT
 FT -- "No<br>operation.kind=transaction<br>Forge RPC" --> TN 
 FT -- "Yes" --> Reveal 
@@ -235,16 +168,8 @@ B-- "Send operation.hex" -->ED
 SK-- "from vault" -->SIGNATORY
 SIGNATORY-- "Send alice_sk.hex" -->ED
 ED--"Hash " -->ST
-ST-- "Injection RPC<br>
-../injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
-classDef node fill:#0C36F1,stroke:#0b4884,color:#ffffff
-classDef key fill:#F41F38,stroke:#0b4884,color:#ffffff
-classDef transaction fill:#2591BE,stroke:#0b4884,color:#ffffff
-classDef signature fill:#F1A40C,stroke:#0b4884,color:#000000
-class FT,Reveal,TJ,TB,W,B transaction
-class TN node
-class SK key
-class ED,SIG,ST signature
+ST-- "Injection RPC<br>../injection/operation?chain=main<br> --data $(cat operation.hex)$(cat signature.hex)" -->TN
+
 ```
 Diagram adapted from [An Introduction to Tezos RPCs: Signing Operations](https://ocamlpro.com/blog/2018_11_21_an_introduction_to_tezos_rpcs_signing_operations/)
 
@@ -276,6 +201,6 @@ sequenceDiagram
     Note over RS: b965f666f400c1889915a0c6f1a1092cd96c0814d1b<br>bb765678fcf2c86c5079ae1f3735878f8717c230859<br>85c7aa9536fcc9228f42c5d4b6160c2b52a010970b
     TR->>RS: operation.hex
 RS->>TR: Send to RPC for Injection
-    Note over RS,TR :  'http://127.0.0.1:8732/injection/<br>operation?chain=main' --data '"'$(<br>cat operation.hex)$(cat signature.hex)'"'
+    Note over RS,TR : 'http://127.0.0.1:8732/injection/<br>operation?chain=main' --data '"'$(<br>cat operation.hex)$(cat signature.hex)'"'
     
 ```

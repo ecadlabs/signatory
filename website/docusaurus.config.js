@@ -12,6 +12,9 @@ module.exports = {
 	},
 	themes: ['@docusaurus/theme-mermaid'],
 	themeConfig: {
+		mermaid: {
+			theme: {light: 'default', dark: 'dark'},
+		},
 		colorMode: {
 			defaultMode: 'light',
 			disableSwitch: true,
@@ -146,6 +149,7 @@ module.exports = {
 						require.resolve('./src/css/admonitions.scss'),
 						require.resolve('./src/css/codeBlock.scss'),
 						require.resolve('./src/css/tabs.scss'),
+						require.resolve('./src/css/mermaid.scss'),
 					],
 				},
 			},
