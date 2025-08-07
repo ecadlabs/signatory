@@ -18,7 +18,7 @@ Please refer to [kmstool](https://github.com/aws/aws-nitro-enclaves-sdk-c/blob/m
 | storage              |                      | StorageConfig |         |          | Key storage configuration                                    |
 | credentials          |                      | Credentials   |         |          | KMS credentials                                              |
 | proxy_local_port     | PROXY_LOCAL_PORT     | uint          | 8000    |          | Local VSock port for the built in VSock proxy                |
-| proxy_remote_address | PROXY_REMOTE_ADDRESS | host:port     |         |          | Setting this option enables the built in VSock proxy (see below). Usually it looks like "kms.${REGION}.amazonaws.com:443" |
+| proxy_remote_address | PROXY_REMOTE_ADDRESS | host:port     |         |          | Setting this option enables the built in VSock proxy (see below). Usually it looks like `kms.REGION.amazonaws.com:443` |
 
 ### Credentials
 
@@ -109,4 +109,4 @@ signatory-cli generate -v nitro
 
 ## VSock Proxy
 
-All requests to KMS from a signer are getting  tunneled over VSock link to the parent instance which forwards them to the cloud. The recommended way of doing so is to use [vsock_proxy](https://github.com/aws/aws-nitro-enclaves-cli/tree/main/vsock_proxy) supplied with `nitro-cli`. The alternative way is to employ a built in proxy which is getting enabled by setting `proxy_remote_address` configuration option (or alternatively `PROXY_REMOTE_ADDRESS` environment variable) which usually takes form of `kms.${REGION}.amazonaws.com:443`
+All requests to KMS from a signer are getting  tunneled over VSock link to the parent instance which forwards them to the cloud. The recommended way of doing so is to use [vsock_proxy](https://github.com/aws/aws-nitro-enclaves-cli/tree/main/vsock_proxy) supplied with `nitro-cli`. The alternative way is to employ a built in proxy which is getting enabled by setting `proxy_remote_address` configuration option (or alternatively `PROXY_REMOTE_ADDRESS` environment variable) which usually takes form of `kms.REGION.amazonaws.com:443`

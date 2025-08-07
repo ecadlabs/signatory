@@ -36,7 +36,7 @@ The fields `access_key_id` & `secret_access_key` can be set in the environment v
 
 ## Importing a key into AWS
 
-The Import command is not available for AWS as there is no support for asymmetric keys in AWS KMS. (Ref: <https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html>) 
+The Import command is not available for AWS as there is no support for asymmetric keys in AWS KMS. (Ref: https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html) 
 
 ## Key generation in AWS
 

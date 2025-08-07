@@ -2,10 +2,9 @@ package commands
 
 import (
 	"os"
-	"sort"
+	"slices"
 	"text/template"
 
-	"github.com/ecadlabs/gotez/v2/encoding"
 	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/spf13/cobra"
 )
@@ -32,11 +31,7 @@ func NewListRequests(c *Context) *cobra.Command {
 		Use:   "list-requests",
 		Short: "Print possible request types",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var kinds []string
-			for _, k := range encoding.ListVariants[proto.SignRequest]() {
-				kinds = append(kinds, k.SignRequestKind())
-			}
-			sort.Strings(kinds)
+			kinds := proto.ListSignRequests()
 			return listReqTpl.Execute(os.Stdout, kinds)
 		},
 	}
@@ -49,14 +44,9 @@ func NewListOps(c *Context) *cobra.Command {
 		Use:   "list-ops",
 		Short: "Print possible operation types inside the `generic` request",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var ops []string
-			for _, k := range proto.ListOperations() {
-				ops = append(ops, k.OperationKind())
-			}
-			for _, op := range proto.ListPseudoOperations() {
-				ops = append(ops, op.PseudoOperation())
-			}
-			sort.Strings(ops)
+			ops := proto.ListOperations()
+			ops = append(ops, proto.ListPseudoOperations()...)
+			slices.Sort(ops)
 			return listOpsTpl.Execute(os.Stdout, ops)
 		},
 	}
