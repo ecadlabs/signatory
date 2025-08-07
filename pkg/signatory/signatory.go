@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 
-	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
@@ -89,7 +88,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash crypt.PublicKeyHash // optional, see policy
 	PublicKeyHash       crypt.PublicKeyHash
-	SigningVersion      tz.Option[uint8]
+	SignOptions         vault.SignOptions
 	Source              net.IP // optional caller address
 	Message             []byte
 }
@@ -393,7 +392,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 			l.Error(err)
 			return nil, err
 		}
-		return key.Sign(ctx, message)
+		return key.Sign(ctx, message, &req.SignOptions)
 	}
 
 	var sig crypt.Signature

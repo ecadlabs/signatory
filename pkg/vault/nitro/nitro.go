@@ -145,11 +145,11 @@ type nitroKeyRef[C any] struct {
 func (r *nitroKeyRef[C]) PublicKey() crypt.PublicKey { return r.pub }
 func (r *nitroKeyRef[C]) Vault() vault.Vault         { return r.v }
 
-func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (r *nitroKeyRef[C]) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	r.v.mtx.Lock()
 	defer r.v.mtx.Unlock()
 
-	sig, err := r.v.client.Sign(ctx, r.handle, message)
+	sig, err := r.v.client.Sign(ctx, r.handle, message, opt)
 	if err != nil {
 		return nil, fmt.Errorf("(Nitro): %w", err)
 	}

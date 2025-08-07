@@ -27,30 +27,20 @@ type operationsStat map[string]int
 
 func getOperationsStat(req *SignRequest, msg core.SignRequest) (operationsStat, bool) {
 	ops := make(operationsStat)
-	// default to latest version
-	if req.SigningVersion.IsNone() {
-		if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
+	switch req.SignOptions.Version.ToUint8() {
+	case 1:
+		if msg, ok := msg.(*proto_v1.GenericOperationSignRequest); ok {
 			for _, o := range msg.Contents {
 				ops[core.GetOperationKind(o)]++
 			}
 			return ops, true
 		}
-	} else {
-		switch req.SigningVersion.Unwrap() {
-		case 0, 1:
-			if msg, ok := msg.(*proto_v1.GenericOperationSignRequest); ok {
-				for _, o := range msg.Contents {
-					ops[core.GetOperationKind(o)]++
-				}
-				return ops, true
+	default:
+		if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
+			for _, o := range msg.Contents {
+				ops[core.GetOperationKind(o)]++
 			}
-		case 2:
-			if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
-				for _, o := range msg.Contents {
-					ops[core.GetOperationKind(o)]++
-				}
-				return ops, true
-			}
+			return ops, true
 		}
 	}
 	return nil, false
@@ -58,27 +48,18 @@ func getOperationsStat(req *SignRequest, msg core.SignRequest) (operationsStat, 
 
 func getSignRequest(req *SignRequest) (core.SignRequest, error) {
 	var decodeErr error
-	// default to latest version
-	if req.SigningVersion.IsNone() {
+	switch req.SignOptions.Version.ToUint8() {
+	case 1:
+		var msgV1 proto_v1.SignRequest
+		_, decodeErr = encoding.Decode(req.Message, &msgV1)
+		if decodeErr == nil {
+			return msgV1, nil
+		}
+	default:
 		var msgLatest proto_latest.SignRequest
 		_, decodeErr = encoding.Decode(req.Message, &msgLatest)
 		if decodeErr == nil {
 			return msgLatest, nil
-		}
-	} else {
-		switch req.SigningVersion.Unwrap() {
-		case 0, 1:
-			var msgV1 proto_v1.SignRequest
-			_, decodeErr = encoding.Decode(req.Message, &msgV1)
-			if decodeErr == nil {
-				return msgV1, nil
-			}
-		case 2:
-			var msgLatest proto_latest.SignRequest
-			_, decodeErr = encoding.Decode(req.Message, &msgLatest)
-			if decodeErr == nil {
-				return msgLatest, nil
-			}
 		}
 	}
 	return nil, decodeErr
@@ -86,9 +67,9 @@ func getSignRequest(req *SignRequest) (core.SignRequest, error) {
 
 func getOperations(req *SignRequest, msg core.SignRequest) ([]core.OperationContents, bool) {
 	var operations []core.OperationContents
-	// default to latest version
-	if req.SigningVersion.IsNone() {
-		if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
+	switch req.SignOptions.Version.ToUint8() {
+	case 1:
+		if msg, ok := msg.(*proto_v1.GenericOperationSignRequest); ok {
 			contents := msg.Contents
 			operations = make([]core.OperationContents, len(contents))
 			for i, op := range contents {
@@ -96,26 +77,14 @@ func getOperations(req *SignRequest, msg core.SignRequest) ([]core.OperationCont
 			}
 			return operations, true
 		}
-	} else {
-		switch req.SigningVersion.Unwrap() {
-		case 0, 1:
-			if msg, ok := msg.(*proto_v1.GenericOperationSignRequest); ok {
-				contents := msg.Contents
-				operations = make([]core.OperationContents, len(contents))
-				for i, op := range contents {
-					operations[i] = op
-				}
-				return operations, true
+	default:
+		if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
+			contents := msg.Contents
+			operations = make([]core.OperationContents, len(contents))
+			for i, op := range contents {
+				operations[i] = op
 			}
-		case 2:
-			if msg, ok := msg.(*proto_latest.GenericOperationSignRequest); ok {
-				contents := msg.Contents
-				operations = make([]core.OperationContents, len(contents))
-				for i, op := range contents {
-					operations[i] = op
-				}
-				return operations, true
-			}
+			return operations, true
 		}
 	}
 	return nil, false

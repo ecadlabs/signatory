@@ -8,15 +8,15 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 
-	tz "github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -88,21 +88,15 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	version := r.URL.Query().Get("version")
-	versionInt := uint8(2)
-	if version != "" {
-		parsed, err := strconv.ParseUint(version, 10, 8)
-		if err != nil {
-			tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
-			return
-		}
-		versionInt = uint8(parsed)
-	}
-	s.logger().Infof("versionInt: %d", versionInt)
+	versionStr := r.URL.Query().Get("version")
+	version := utils.ParseVersionString(versionStr)
+	s.logger().Infof("version: %d", version)
 
 	signRequest := signatory.SignRequest{
-		PublicKeyHash:  pkh,
-		SigningVersion: tz.Some(versionInt),
+		PublicKeyHash: pkh,
+		SignOptions: vault.SignOptions{
+			Version: version,
+		},
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
