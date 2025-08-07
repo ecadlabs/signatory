@@ -14,7 +14,7 @@ import (
 )
 
 type SignOptions struct {
-	Version utils.BlsKeyVersion
+	Version utils.SigningVersion
 }
 
 // KeyReference represents a public key which has a private counterpart stored on the backend side

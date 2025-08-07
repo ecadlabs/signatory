@@ -90,7 +90,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	versionStr := r.URL.Query().Get("version")
 	version := utils.ParseVersionString(versionStr)
-	s.logger().Infof("version: %d", version)
+	s.logger().Infof("Signing version: %d", version)
 
 	signRequest := signatory.SignRequest{
 		PublicKeyHash: pkh,
