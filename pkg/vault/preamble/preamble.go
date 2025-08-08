@@ -5,6 +5,7 @@ import (
 	_ "github.com/ecadlabs/signatory/pkg/vault/aws"
 	_ "github.com/ecadlabs/signatory/pkg/vault/azure"
 	_ "github.com/ecadlabs/signatory/pkg/vault/cloudkms"
+	_ "github.com/ecadlabs/signatory/pkg/vault/confidentialspace"
 	_ "github.com/ecadlabs/signatory/pkg/vault/file"
 	_ "github.com/ecadlabs/signatory/pkg/vault/hashicorp"
 	_ "github.com/ecadlabs/signatory/pkg/vault/ledger"
