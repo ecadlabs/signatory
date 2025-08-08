@@ -52,7 +52,7 @@ func (h *hsmKey) ID() string                 { return fmt.Sprintf("%04x", h.id) 
 func (h *hsmKey) Vault() vault.Vault         { return h.hsm }
 
 // Sign performs signing operation
-func (key *hsmKey) Sign(ctx context.Context, message []byte) (sig crypt.Signature, err error) {
+func (key *hsmKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (sig crypt.Signature, err error) {
 	digest := crypt.DigestFunc(message)
 	switch k := key.pub.(type) {
 	case *crypt.ECDSAPublicKey:
