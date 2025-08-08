@@ -25,9 +25,15 @@ services:
     entrypoint: /bin/sh
     volumes:
       - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
-    command: -c "sudo apk add --no-cache bash && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    command: -c "sudo apk add --no-cache bash curl jq && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
     environment:
       - PROTOCOL=$PROTOCOL    
+    healthcheck:
+      test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
     depends_on:
       signatory:
         condition: service_healthy
@@ -50,7 +56,7 @@ services:
       signatory:
         condition: service_healthy
       tezos-node:
-        condition: service_started
+        condition: service_healthy
     networks:
       - ecadnet
 
