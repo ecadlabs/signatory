@@ -15,7 +15,7 @@ require (
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.1.0
-	github.com/ecadlabs/gotez/v2 v2.3.12
+	github.com/ecadlabs/gotez/v2 v2.3.13
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/google/tink/go v1.7.0

@@ -42,7 +42,7 @@ func (k *awsKMSKey) PublicKey() crypt.PublicKey { return k.pub }
 func (k *awsKMSKey) ID() string                 { return *k.key.KeyId }
 func (k *awsKMSKey) Vault() vault.Vault         { return k.v }
 
-func (k *awsKMSKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (k *awsKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	sout, err := k.v.client.Sign(ctx, &kms.SignInput{
 		KeyId:            k.key.KeyId,

@@ -142,7 +142,7 @@ type mockRef struct {
 func (k *mockRef) PublicKey() crypt.PublicKey { return k.key }
 func (k *mockRef) String() string             { return k.key.Hash().String() }
 func (k *mockRef) Vault() vault.Vault         { panic("not implemented") }
-func (k *mockRef) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (k *mockRef) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	panic("not implemented")
 }
 
