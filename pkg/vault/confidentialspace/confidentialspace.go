@@ -251,7 +251,7 @@ type confidentialKeyRef[C any] struct {
 func (r *confidentialKeyRef[C]) PublicKey() crypt.PublicKey { return r.pub }
 func (r *confidentialKeyRef[C]) Vault() vault.Vault         { return r.v }
 
-func (r *confidentialKeyRef[C]) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (r *confidentialKeyRef[C]) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	r.v.mtx.Lock()
 	defer r.v.mtx.Unlock()
 
