@@ -1,26 +1,23 @@
-package integrationtest
+package cli
 
 import (
 	"testing"
 
+	integrationtest "github.com/ecadlabs/signatory/new_integration_test/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCliList(t *testing.T) {
-	var c Config
-	c.Read()
-
-	out, err := SignatoryCli("list")
+	out, err := integrationtest.SignatoryCli("list")
 	assert.Nil(t, err)
-	require.Contains(t, string(out), "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb")
-	require.Contains(t, string(out), "tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN")
-	require.Contains(t, string(out), "tz3Y2TkhTYG6MfPsijGfHFqBYrLCfwYb6HRB")
-	require.Contains(t, string(out), "tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME")
+	for _, pkh := range integrationtest.GetAllTestPKHs() {
+		require.Contains(t, string(out), pkh)
+	}
 }
 
 func TestCliUsage(t *testing.T) {
-	out, err := SignatoryCli()
+	out, err := integrationtest.SignatoryCli()
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "Usage:")
 	require.Contains(t, string(out), "signatory-cli [command]")
@@ -36,7 +33,7 @@ func TestCliUsage(t *testing.T) {
 
 // If/when Issue #425 is fixed, this test will break.  to fix it, leverage the function in this package named "getAllOps"
 func TestCliListOps(t *testing.T) {
-	out, err := SignatoryCli("list-ops")
+	out, err := integrationtest.SignatoryCli("list-ops")
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "Possible operation types:")
 	require.Contains(t, string(out), "- activate_account")
@@ -78,25 +75,26 @@ func TestCliListOps(t *testing.T) {
 }
 
 func TestCliListRequests(t *testing.T) {
-	out, err := SignatoryCli("list-requests")
+	out, err := integrationtest.SignatoryCli("list-requests")
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "Possible request types:")
+	require.Contains(t, string(out), "- attestation")
+	require.Contains(t, string(out), "- attestation_with_dal")
 	require.Contains(t, string(out), "- block")
-	require.Contains(t, string(out), "- endorsement")
 	require.Contains(t, string(out), "- generic")
-	require.Contains(t, string(out), "- preendorsement")
+	require.Contains(t, string(out), "- preattestation")
 }
 
 func TestCliHelp(t *testing.T) {
-	usage, err := SignatoryCli()
+	usage, err := integrationtest.SignatoryCli()
 	assert.Nil(t, err)
-	help, err := SignatoryCli("help")
+	help, err := integrationtest.SignatoryCli("help")
 	assert.Nil(t, err)
 	require.Contains(t, string(help), string(usage))
 }
 
 func TestCliLedgerUsage(t *testing.T) {
-	out, err := SignatoryCli("ledger")
+	out, err := integrationtest.SignatoryCli("ledger")
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "Ledger specific operations")
 	require.Contains(t, string(out), "Usage:")
@@ -112,7 +110,7 @@ func TestCliLedgerUsage(t *testing.T) {
 }
 
 func TestCliLedgerList(t *testing.T) {
-	out, err := SignatoryCli("ledger", "-t", "tcp://speculos:9999", "list")
+	out, err := integrationtest.SignatoryCli("ledger", "-t", "tcp://speculos:9999", "list")
 	assert.Nil(t, err)
 	require.Contains(t, string(out), "Path:  		speculos:9999")
 	require.Contains(t, string(out), "ID:")
@@ -120,11 +118,11 @@ func TestCliLedgerList(t *testing.T) {
 }
 
 func TestCliVersion(t *testing.T) {
-	v, err := SignatoryCli("v")
+	v, err := integrationtest.SignatoryCli("v")
 	assert.Nil(t, err)
 	require.Contains(t, string(v), "Release Version: ")
 	require.Greater(t, len(v), len("Release Version: ")+4)
-	version, err := SignatoryCli("version")
+	version, err := integrationtest.SignatoryCli("version")
 	assert.Nil(t, err)
 	require.Equal(t, v, version)
 }
