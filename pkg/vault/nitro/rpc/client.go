@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/kr/pretty"
 )
@@ -156,9 +157,9 @@ func (c *Client[C]) GenerateAndImport(ctx context.Context, keyType KeyType) (*Ge
 	return res.Ok, nil
 }
 
-func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte) (sig *Signature, err error) {
+func (c *Client[C]) Sign(ctx context.Context, handle uint64, message []byte, opt *vault.SignOptions) (sig *Signature, err error) {
 	res, err := RoundTrip[Signature](ctx, c.conn, &Request[C]{
-		Sign: &SignRequest{Handle: handle, Message: message},
+		Sign: &SignRequest{Handle: handle, Message: message, Version: opt.Version.ToUint8()},
 	}, c.Logger)
 	if err == nil && res.Error() != nil {
 		err = res.Error()

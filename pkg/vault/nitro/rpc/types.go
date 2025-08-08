@@ -68,6 +68,7 @@ func (c *AWSCredentials) IsValid() bool {
 type SignRequest struct {
 	Handle  uint64 `cbor:"handle"`
 	Message []byte `cbor:"message"`
+	Version uint8  `cbor:"version"`
 }
 
 type SignWithRequest struct {

@@ -16,9 +16,7 @@ import (
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
-	"github.com/ecadlabs/gotez/v2/encoding"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
-	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -90,6 +88,7 @@ type Signatory struct {
 type SignRequest struct {
 	ClientPublicKeyHash crypt.PublicKeyHash // optional, see policy
 	PublicKeyHash       crypt.PublicKeyHash
+	SignOptions         vault.SignOptions
 	Source              net.IP // optional caller address
 	Message             []byte
 }
@@ -188,21 +187,21 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
-	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
-		for _, op := range ops.Contents {
+	if ops, ok := getOperations(req, msg); ok {
+		for _, op := range ops {
 			allowed := false
-			var kind string
+			var opKind string
 			if ballot, ok := op.(core.Ballot); ok {
 				ballotKind := ballot.BallotKind().String()
-				kind = "ballot:" + ballotKind
+				opKind = "ballot:" + ballotKind
 				allowed = strInSlice(policy.AllowedOps, "ballot") ||
-					strInSlice(policy.AllowedOps, kind)
+					strInSlice(policy.AllowedOps, opKind)
 			} else {
-				kind = core.GetOperationKind(op)
-				allowed = strInSlice(policy.AllowedOps, kind)
+				opKind = core.GetOperationKind(op)
+				allowed = strInSlice(policy.AllowedOps, opKind)
 			}
 			if !allowed {
-				return fmt.Errorf("operation `%s' is not allowed", kind)
+				return fmt.Errorf("operation `%s' is not allowed", opKind)
 			}
 		}
 	}
@@ -343,8 +342,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		}
 	}
 
-	var msg proto.SignRequest
-	_, err := encoding.Decode(req.Message, &msg)
+	msg, err := getSignRequest(req)
 	if err != nil {
 		l.WithField(logRaw, hex.EncodeToString(req.Message)).Error(strings.Replace(err.Error(), "\n", "", -1))
 		return nil, errors.Wrap(err, http.StatusBadRequest)
@@ -357,9 +355,9 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var opStat operationsStat
-	if ops, ok := msg.(*proto.GenericOperationSignRequest); ok {
-		opStat = getOperationsStat(ops)
-		l = l.WithFields(log.Fields{logOps: opStat, logTotalOps: len(ops.Contents)})
+	if ops, ok := getOperationsStat(req, msg); ok {
+		opStat = ops
+		l = l.WithFields(log.Fields{logOps: ops, logTotalOps: len(ops)})
 	}
 
 	p, err := s.getPublicKey(ctx, req.PublicKeyHash)
@@ -394,7 +392,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 			l.Error(err)
 			return nil, err
 		}
-		return key.Sign(ctx, message)
+		return key.Sign(ctx, message, &req.SignOptions)
 	}
 
 	var sig crypt.Signature

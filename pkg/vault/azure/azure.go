@@ -64,7 +64,7 @@ func (k *azureKey) PublicKey() crypt.PublicKey { return k.pub }
 func (k *azureKey) ID() string                 { return k.bundle.Key.KeyID }
 func (k *azureKey) Vault() vault.Vault         { return k.v }
 
-func (key *azureKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (key *azureKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	var req signRequest
 	if req.Algorithm = algByCurve(key.pub.Curve); req.Algorithm == "" {
