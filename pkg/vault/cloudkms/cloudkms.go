@@ -55,7 +55,7 @@ func (k *cloudKMSKey) PublicKey() crypt.PublicKey { return k.pub }      // Publi
 func (k *cloudKMSKey) ID() string                 { return k.key.Name } // ID returnd a unique key ID
 func (k *cloudKMSKey) Vault() vault.Vault         { return k.v }
 
-func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte) (crypt.Signature, error) {
+func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	req := kmspb.AsymmetricSignRequest{
 		Name: kmsKey.key.Name,

@@ -86,7 +86,7 @@ func (p *keyPair) PublicKey() crypt.PublicKey {
 
 func (p *keyPair) Vault() vault.Vault { return p.v }
 
-func (kp *keyPair) Sign(ctx context.Context, msg []byte) (crypt.Signature, error) {
+func (kp *keyPair) Sign(ctx context.Context, msg []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(msg)
 	sig, err := kp.kp.Sign(nil, digest[:], nil)
 	if err != nil {

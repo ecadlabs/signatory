@@ -33,8 +33,29 @@ type popKeyRef struct {
 
 func (k *keyRef) PublicKey() crypt.PublicKey { return k.Key.Public() }
 func (k *keyRef) Vault() vault.Vault         { return k.v }
-func (k *keyRef) Sign(ctx context.Context, message []byte) (sig crypt.Signature, err error) {
-	signature, err := k.Key.Sign(message)
+func (k *keyRef) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (sig crypt.Signature, err error) {
+	var signature crypt.Signature
+
+	ver := utils.SigningVersionLatest
+	if opt != nil {
+		ver = opt.Version
+	}
+	switch ver {
+	case utils.SigningVersion0:
+		if _, ok := k.Key.(*crypt.BLSPrivateKey); ok {
+			return nil, fmt.Errorf("(%s): SigningVersion0 is not supported for BLS keys", k.v.name)
+		}
+	case utils.SigningVersion1:
+		if blsKey, ok := k.Key.(*crypt.BLSPrivateKey); ok {
+			signature, err = blsKey.SignAugmented(message)
+			if err != nil {
+				return nil, fmt.Errorf("(%s): %w", k.v.name, err)
+			}
+			return signature, nil
+		}
+	}
+
+	signature, err = k.Key.Sign(message)
 	if err != nil {
 		return nil, fmt.Errorf("(%s): %w", k.v.name, err)
 	}

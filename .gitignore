@@ -30,3 +30,6 @@ dist
 /integration_test/gcp-token.json
 /integration_test/.env.vaults.cicd
 /integration_test/service-principal.key
+/new_integration_test/gcp-token.json
+/new_integration_test/.env.vaults.cicd
+/new_integration_test/service-principal.key
