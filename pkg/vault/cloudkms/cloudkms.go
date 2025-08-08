@@ -17,21 +17,20 @@ import (
 	"github.com/ecadlabs/signatory/pkg/cryptoutils/x509"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	kwp "github.com/google/tink/go/kwp/subtle"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 	"gopkg.in/yaml.v3"
 )
 
 // Config contains Google Cloud KMS backend configuration
 type Config struct {
-	ApplicationCredentialsData string `yaml:"application_credentials_data"`
-	ApplicationCredentials     string `yaml:"application_credentials"`
-	Project                    string `yaml:"project" validate:"required"`
-	Location                   string `yaml:"location" validate:"required"`
-	KeyRing                    string `yaml:"key_ring" validate:"required"`
+	gcp.Config `yaml:",inline"`
+	Project    string `yaml:"project" validate:"required"`
+	Location   string `yaml:"location" validate:"required"`
+	KeyRing    string `yaml:"key_ring" validate:"required"`
 }
 
 // keyRingName returns full Google Cloud KMS key ring path
@@ -335,12 +334,9 @@ func (c *Vault) Close(context.Context) error { return nil }
 
 // New creates new Google Cloud KMS backend
 func New(ctx context.Context, config *Config) (*Vault, error) {
-	var opts []option.ClientOption
-
-	if config.ApplicationCredentialsData != "" {
-		opts = []option.ClientOption{option.WithCredentialsJSON([]byte(config.ApplicationCredentialsData))}
-	} else if config.ApplicationCredentials != "" {
-		opts = []option.ClientOption{option.WithCredentialsFile(config.ApplicationCredentials)}
+	opts, err := gcp.NewGCPOption(ctx, &config.Config)
+	if err != nil {
+		return nil, fmt.Errorf("(CloudKMS/%s): %w", config.keyRingName(), err)
 	}
 
 	client, err := kms.NewKeyManagementClient(ctx, opts...)
