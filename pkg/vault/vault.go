@@ -13,10 +13,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type SignOptions struct {
+	Version utils.SigningVersion
+}
+
 // KeyReference represents a public key which has a private counterpart stored on the backend side
 type KeyReference interface {
 	PublicKey() crypt.PublicKey
-	Sign(ctx context.Context, message []byte) (crypt.Signature, error)
+	Sign(ctx context.Context, message []byte, opt *SignOptions) (crypt.Signature, error)
 	Vault() Vault
 }
 

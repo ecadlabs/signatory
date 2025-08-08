@@ -15,6 +15,8 @@ import (
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
+	"github.com/ecadlabs/signatory/pkg/utils"
+	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -85,8 +87,16 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
+
+	versionStr := r.URL.Query().Get("version")
+	version := utils.ParseVersionString(versionStr)
+	s.logger().Infof("Signing version: %d", version)
+
 	signRequest := signatory.SignRequest{
 		PublicKeyHash: pkh,
+		SignOptions: vault.SignOptions{
+			Version: version,
+		},
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

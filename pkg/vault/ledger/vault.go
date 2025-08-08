@@ -72,7 +72,7 @@ func (l *ledgerKey) PublicKey() crypt.PublicKey { return l.pub }
 func (l *ledgerKey) ID() string                 { return l.id.String() }
 func (l *ledgerKey) Vault() vault.Vault         { return l.v }
 
-func (key *ledgerKey) Sign(ctx context.Context, digest []byte) (crypt.Signature, error) {
+func (key *ledgerKey) Sign(ctx context.Context, digest []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	res := make(chan crypt.Signature, 1)
 	errCh := make(chan error, 1)
 
