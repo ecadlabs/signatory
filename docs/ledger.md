@@ -5,6 +5,8 @@ title: Ledger
 
 # Ledger vault
 
+Ledger devices are well suited for home baking and hobbyists. They are consumer‑oriented devices that provide secure key storage at low cost and make Tezos baking accessible. For larger or production bakers, consider server‑grade HSMs such as YubiHSM 2 or cloud KMS solutions (for example, AWS KMS or Google Cloud KMS). See [YubiHSM 2](./yubihsm.md), [AWS KMS](./aws_kms.md), and [GCP KMS](./gcp_kms.md) for details.
+
 Connect the Ledger device to the system where Signatory is running.
 Install the Tezos Wallet and Tezos Baking apps from [Ledger Live](https://www.ledger.com/ledger-live/download).
 
@@ -14,7 +16,7 @@ Note: Developer mode might be required to install the Baking app. See [Ledger De
 Ledger has discontinued support for the Ledger Nano S. If you are using a Nano S with Signatory for baking or signing, you should upgrade to a supported device:
 
 - Ledger Nano S+ or Ledger Nano X (see product pages for current availability)
-- A server-grade HSM such as YubiHSM 2 (see `docs/yubihsm.md`)
+- A server-grade HSM such as [YubiHSM 2](./yubihsm.md)
 
 References: [Ledger Nano S limitations/support](https://support.ledger.com/article/Ledger-Nano-S-Limitations), [Ledger hardware wallets](https://shop.ledger.com/pages/hardware-wallet), [Ledger Nano S Plus](https://shop.ledger.com/products/ledger-nano-s-plus).
 :::
@@ -144,6 +146,10 @@ signatory-cli ledger setup-baking -d 3944f7a0 "bip32-ed25519/44'/1729'/0'/0'"
 ```
 
 ### Reset High Watermarks
+
+Signatory maintains per-key high watermarks to prevent replay and double signing. For details on behavior, reset, and migration, see [Watermarks](./watermarks.md).
+
+Note: The Ledger Tezos Baking app also tracks a high watermark internally on the device. When using Ledger with Signatory, both watermarks exist: the device-level HWM and Signatory’s server-side watermark. Ensure they are aligned, especially after reinstalling the Ledger app or migrating setups. You can initialize or update the device HWM with the commands below; Signatory’s watermark is maintained by the service according to its [watermark policy](./watermarks.md).
 
 ```sh
 signatory-cli ledger set-high-watermark [-d <device>] <hwm>
