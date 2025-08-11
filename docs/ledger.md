@@ -11,6 +11,21 @@ Install tezos-wallet and tezos-baker apps from [ledger live](https://www.ledger.
 Note: Developer mode might be needed to install baker app.
 [Ledger Developer mode](https://developers.ledger.com/docs/live-app/developer-mode/#:~:text=To%20activate%20the%20Developer%20mode,Live%20version%202.32%20and%20above.)
 
+:::caution Ledger Nano S end-of-support
+Ledger has discontinued support for the Ledger Nano S. If you are using a Nano S with Signatory for baking or signing, you should upgrade to a supported device:
+
+- Ledger Nano S+ or Ledger Nano X (see product pages for current availability)
+- A server‑grade HSM such as YubiHSM 2 (see `docs/yubihsm.md`)
+
+References: [Ledger Nano S limitations/support](https://support.ledger.com/article/Ledger-Nano-S-Limitations), [Ledger hardware wallets](https://shop.ledger.com/pages/hardware-wallet), [Ledger Nano S Plus](https://shop.ledger.com/products/ledger-nano-s-plus).
+:::
+
+:::info Flash/NVRAM duty cycle and proactive replacement for bakers
+- The ST secure elements used in Ledger devices specify about 500,000 erase/write cycles per flash page (64‑byte pages) and ~30‑year data retention. See [BOLOS memory](https://github.com/LedgerHQ/ledger-dev-doc/blob/master/source/userspace/memory.rst), [ST31G480](https://www.st.com/en/secure-mcus/st31g480.html), and [ST31G256 datasheet](https://www.st.com/resource/en/data_brief/st31g256.pdf).
+- Older versions of the Tezos Baking app persisted the High Watermark (HWM) to NVRAM after each signed operation, which could accelerate wear. In March–April 2024 the app added a setting to disable HWM persistence and moved HWM tracking to RAM, significantly reducing writes; writes to NVRAM now occur only in limited cases (e.g., clean exit). See the app documentation/readme: [LedgerHQ/app-tezos-baking](https://github.com/LedgerHQ/app-tezos-baking).
+- Recommendation: Bakers using older Ledger devices (especially those used for baking prior to the 2024 improvements) should proactively upgrade hardware. If you continue to use a Ledger for baking, install the latest Tezos Baking app and consider disabling HWM persistence to minimize flash wear.
+:::
+
 ## Configuration
 
 | Name        | Type         | Required | Description                                                   |
