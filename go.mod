@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/kms v1.22.0
-	github.com/aws/aws-sdk-go-v2 v1.37.2
+	github.com/aws/aws-sdk-go-v2 v1.38.0
 	github.com/aws/aws-sdk-go-v2/config v1.30.3
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.2
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.46.0
