@@ -7,7 +7,6 @@ import (
 
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
-	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	log "github.com/sirupsen/logrus"
@@ -85,11 +84,10 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			}
 
 			sigConf := signatory.Config{
-				Policy:      pol,
-				Vaults:      conf.Vaults,
-				Interceptor: metrics.Interceptor,
-				Watermark:   watermark,
-				BaseDir:     conf.BaseDir,
+				Policy:    pol,
+				Vaults:    conf.Vaults,
+				Watermark: watermark,
+				BaseDir:   conf.BaseDir,
 			}
 
 			if conf.PolicyHook != nil && conf.PolicyHook.Address != "" {

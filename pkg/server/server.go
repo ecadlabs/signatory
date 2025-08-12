@@ -8,11 +8,13 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/utils"
@@ -126,6 +128,13 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
+			var status string
+			if val, ok := err.(errors.HTTPError); ok {
+				status = strconv.Itoa(val.HTTPStatus())
+			} else {
+				status = "n/a"
+			}
+			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
 			tezosJSONError(w, err)
 			return
@@ -202,6 +211,13 @@ func (s *Server) blsProveHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
+			var status string
+			if val, ok := err.(errors.HTTPError); ok {
+				status = strconv.Itoa(val.HTTPStatus())
+			} else {
+				status = "n/a"
+			}
+			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
 			tezosJSONError(w, err)
 			return

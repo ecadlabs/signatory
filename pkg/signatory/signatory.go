@@ -21,6 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
@@ -48,17 +49,6 @@ const (
 	logClient    = "client_pkh"
 	logRaw       = "raw"
 )
-
-// SignInterceptor is an observer function for signing request
-type SignInterceptor func(opt *SignInterceptorOptions, sing func() error) error
-
-// SignInterceptorOptions contains SignInterceptor arguments to avoid confusion
-type SignInterceptorOptions struct {
-	Address crypt.PublicKeyHash
-	Vault   string
-	Req     string
-	Stat    operationsStat
-}
 
 // PublicKeyPolicy contains policy data related to the key
 type PublicKeyPolicy struct {
@@ -165,6 +155,7 @@ func strInSlice(slice []string, s string) bool {
 func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest) error {
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == nil {
+			metrics.PolicyViolation("authentication", string(req.PublicKeyHash.String()), "request")
 			return errors.New("authentication required")
 		}
 
@@ -178,12 +169,14 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 		}
 
 		if !allowed {
+			metrics.PolicyViolation("authentication", string(req.PublicKeyHash.String()), "request")
 			return fmt.Errorf("client `%s' is not allowed", req.ClientPublicKeyHash)
 		}
 	}
 
 	kind := msg.SignRequestKind()
 	if !strInSlice(policy.AllowedRequests, kind) {
+		metrics.PolicyViolation(kind, req.PublicKeyHash.String(), "request")
 		return fmt.Errorf("request kind `%s' is not allowed", kind)
 	}
 
@@ -201,6 +194,7 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 				allowed = strInSlice(policy.AllowedOps, opKind)
 			}
 			if !allowed {
+				metrics.PolicyViolation(opKind, req.PublicKeyHash.String(), "request")
 				return fmt.Errorf("operation `%s' is not allowed", opKind)
 			}
 		}
@@ -373,6 +367,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	if err = s.callPolicyHook(ctx, req); err != nil {
+		metrics.PolicyViolation("policy_hook", req.PublicKeyHash.String(), "request")
 		l.Error(err)
 		return nil, err
 	}
@@ -389,6 +384,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	signFunc := func(ctx context.Context, message []byte, key vault.KeyReference) (crypt.Signature, error) {
 		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
 			err = errors.Wrap(err, http.StatusConflict)
+			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), msg.(request.WithWatermark).GetChainID().String(), err.Error())
 			l.Error(err)
 			return nil, err
 		}
@@ -396,19 +392,16 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var sig crypt.Signature
-	if s.config.Interceptor != nil {
-		err = s.config.Interceptor(&SignInterceptorOptions{
-			Address: req.PublicKeyHash,
-			Vault:   p.key.Vault().Name(),
-			Req:     msg.SignRequestKind(),
-			Stat:    opStat,
-		}, func() (err error) {
-			sig, err = signFunc(ctx, req.Message, p.key)
-			return err
-		})
-	} else {
-		sig, err = signFunc(ctx, req.Message, p.key)
+	interceptor_options := metrics.SignInterceptorOptions{
+		Address: req.PublicKeyHash,
+		Vault:   p.key.Vault().Name(),
+		Req:     msg.SignRequestKind(),
+		Stat:    opStat,
+		TargetFunc: func() (crypt.Signature, error) {
+			return signFunc(ctx, req.Message, p.key)
+		},
 	}
+	sig, err = metrics.SignInterceptor(interceptor_options)
 	if err != nil {
 		return nil, err
 	}
@@ -455,6 +448,7 @@ func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (cryp
 	}
 
 	if err = s.callPolicyHook(ctx, req); err != nil {
+		metrics.PolicyViolation("policy_hook", req.PublicKeyHash.String(), "request")
 		l.Error(err)
 		return nil, err
 	}
@@ -585,7 +579,6 @@ type Policy = hashmap.PublicKeyHashMap[*PublicKeyPolicy]
 type Config struct {
 	Policy       Policy
 	Vaults       map[string]*config.VaultConfig
-	Interceptor  SignInterceptor
 	Watermark    watermark.Watermark
 	Logger       log.FieldLogger
 	VaultFactory vault.Factory
