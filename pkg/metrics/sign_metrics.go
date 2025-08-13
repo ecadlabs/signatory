@@ -42,14 +42,14 @@ var (
 	}, []string{"vault", "code"})
 
 	SignInterceptor = InterceptorFactory(
-		func(opt SignInterceptorOptions) *prometheus.Timer {
+		func(opt *SignInterceptorOptions) *prometheus.Timer {
 			return prometheus.NewTimer(
 				prometheus.ObserverFunc(
 					func(seconds float64) {
 						vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.ToBase58()), opt.Req).Observe(seconds * 1000)
 					}))
 		},
-		func(opt SignInterceptorOptions, state *prometheus.Timer, err error) {
+		func(opt *SignInterceptorOptions, state *prometheus.Timer, err error) {
 			if state != nil {
 				state.ObserveDuration()
 			}

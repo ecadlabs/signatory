@@ -401,7 +401,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 			return signFunc(ctx, req.Message, p.key)
 		},
 	}
-	sig, err = metrics.SignInterceptor(interceptor_options)
+	sig, err = metrics.SignInterceptor(&interceptor_options)
 	if err != nil {
 		return nil, err
 	}

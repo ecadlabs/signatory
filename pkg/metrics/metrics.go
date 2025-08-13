@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"errors"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -11,16 +13,25 @@ type InterceptorOptions[R any] interface {
 	GetTargetFunc() func() (R, error)
 }
 
-func InterceptorFactory[O InterceptorOptions[R], R, S any](preExec func(O) S, postExec func(O, S, error)) func(O) (R, error) {
-	return func(opt O) (R, error) {
+func InterceptorFactory[O InterceptorOptions[R], R, S any](preExec func(*O) S, postExec func(*O, S, error)) func(*O) (R, error) {
+	return func(opt *O) (R, error) {
 		var state S
+		var result R
+
+		if opt == nil {
+			return result, errors.New("nil options")
+		}
+
 		if preExec != nil {
 			state = preExec(opt)
 		}
-		result, err := opt.GetTargetFunc()()
+
+		result, err := (*opt).GetTargetFunc()()
+
 		if postExec != nil {
 			postExec(opt, state, err)
 		}
+
 		return result, err
 	}
 }
