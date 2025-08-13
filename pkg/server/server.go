@@ -186,6 +186,15 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
 		if err != nil {
+			source, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				panic(err) // shouldn't happen with Go standard library
+			}
+			metrics.AuthenticationFailure(
+				"n/a",
+				"authorized_keys",
+				source,
+			)
 			tezosJSONError(w, err)
 			return
 		}
