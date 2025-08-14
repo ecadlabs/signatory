@@ -42,3 +42,11 @@ func Rstart_stack() {
 		panic("failed to up stack")
 	}
 }
+
+func Clear_watermarks() {
+	out, err := exec.Command("docker", "exec", "signatory", "rm", "-rf", "/var/lib/signatory/watermark_v2/").CombinedOutput()
+	if err != nil {
+		panic("failed to remove watermark files: " + err.Error() + " " + string(out))
+	}
+	Restart_signatory()
+}

@@ -13,6 +13,8 @@ const (
 
 	// Baker account for watermark tests
 	BakerPKH = "tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf"
+	// Baker account for operation kinds tests
+	Baker1PKH = "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
 
 	// Authorized keys test account
 	AuthTestPKH = "tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp"
@@ -80,15 +82,16 @@ const (
 // Account aliases used in tests
 const (
 	AliceAlias    = "alice"
+	AuthAlias     = "auth"
+	BakerAlias    = "baker"
+	Baker1Alias   = "baker1"
 	BobAlias      = "bob"
 	OpstestAlias  = "opstest"
 	Opstest1Alias = "opstest1"
-	BakerAlias    = "baker"
 	Tz1Alias      = "tz1alias"
 	Tz2Alias      = "tz2alias"
 	Tz3Alias      = "tz3alias"
 	Tz4Alias      = "tz4alias"
-	AuthAlias     = "auth"
 )
 
 // Structured access to keys using structs
@@ -99,6 +102,7 @@ func (PublicKeyHash) Bob() string      { return BobPKH }
 func (PublicKeyHash) Opstest() string  { return OpstestPKH }
 func (PublicKeyHash) Opstest1() string { return Opstest1PKH }
 func (PublicKeyHash) Baker() string    { return BakerPKH }
+func (PublicKeyHash) Baker1() string   { return Baker1PKH }
 func (PublicKeyHash) AuthTest() string { return AuthTestPKH }
 func (PublicKeyHash) Tz1Alias() string { return Tz1AliasPKH }
 func (PublicKeyHash) Tz2Alias() string { return Tz2AliasPKH }
@@ -161,6 +165,8 @@ func GetPKHByAlias(alias string) string {
 		return Opstest1PKH
 	case BakerAlias:
 		return BakerPKH
+	case Baker1Alias:
+		return Baker1PKH
 	case Tz1Alias:
 		return Tz1AliasPKH
 	case Tz2Alias:
