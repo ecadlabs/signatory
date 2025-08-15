@@ -18,6 +18,12 @@ const FeatureList = [
 					'Set explicit Tezos policies (kinds, requests, JWT, remote policy). Signatory validates requests and watermarks before delegating to your HSM/KMS/TEE.',
 			},
 			{
+				icon: require('../../../static/img/work-briefcase.svg').default,
+				title: 'For bakers, validators, and apps',
+				description:
+					'Use Signatory for baking/validator infrastructure and application workflows alike—such as exchanges, custodians, or oracles. A single signer enforces policy and watermarks while keys remain in your HSM/KMS/TEE.',
+			},
+			{
 				icon: require('../../../static/img/systems.svg').default,
 				title: 'Modular external policy (callback)',
 				description: (

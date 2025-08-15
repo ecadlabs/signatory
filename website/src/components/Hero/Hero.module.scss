@@ -11,7 +11,7 @@
 	width: 100%;
 	height: 100%;
 	@media (min-width: 1144px) {
-		max-height: 668px;
+		max-height: 580px;
 	}
 	// background: transparent;
 	// background-size: 100% 95%;
@@ -38,12 +38,12 @@
 	justify-content: space-evenly;
 	flex-wrap: wrap;
 	width: 90%;
-	padding-top: 50px;
+	padding-top: 30px;
 	margin-left: 5%;
 	margin-right: 5%;
 	height: 100%;
-	padding-bottom: 150px;
-	padding-top: 150px;
+	padding-bottom: 120px;
+	padding-top: 120px;
 	position: relative;
 	z-index: 1;
 }
