@@ -6,7 +6,7 @@ import (
 
 func OctezClient(arg ...string) ([]byte, error) {
 	var cmd = "docker"
-	var args = []string{"exec", "tezos-client", "octez-client", "-E", "http://tezos-node:18731"}
+	var args = []string{"exec", "tezos-client", "octez-client"}
 	args = append(args, arg...)
 	return exec.Command(cmd, args...).CombinedOutput()
 }
