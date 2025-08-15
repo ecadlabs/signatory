@@ -33,8 +33,9 @@ start_sandboxed_node() {
   if ! [ -f "$sandbox_file" ]; then
     cat > "$sandbox_file" << EOF
 {
-    "genesis_pubkey":
-      "edpkuSLWfVU1Vq7Jg9FucPyKmma6otcMHac9zG4oU1KMHSTBpJuGQ2"
+    "genesis_pubkey": "edpkuSLWfVU1Vq7Jg9FucPyKmma6otcMHac9zG4oU1KMHSTBpJuGQ2",
+    "chain_name": "$CHAIN_NAME",
+    "genesis_block": "$GENESIS_BLOCK"
 }
 EOF
   fi
