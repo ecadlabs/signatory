@@ -27,7 +27,36 @@ services:
       - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
     command: -c "sudo apk add --no-cache bash curl jq && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
     environment:
-      - PROTOCOL=$PROTOCOL    
+      - PROTOCOL=$PROTOCOL
+      - CHAIN_NAME=default-chain
+      - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisDefaultChai
+    healthcheck:
+      test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+    depends_on:
+      signatory:
+        condition: service_healthy
+    networks:
+      - ecadnet
+
+  tezos-node-manual-bake:
+    container_name: tezos-node-manual-bake
+    hostname: tezos-node-manual-bake
+    image: tezos/tezos:$OCTEZ_VERSION
+    ports:
+      - 18732:18731
+      - 19732:19731
+    entrypoint: /bin/sh
+    volumes:
+      - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
+    command: -c "sudo apk add --no-cache bash curl jq && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    environment:
+      - PROTOCOL=$PROTOCOL
+      - CHAIN_NAME=manual-bake-chain
+      - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisNoBakingChain
     healthcheck:
       test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
       interval: 1s
@@ -47,11 +76,10 @@ services:
     entrypoint: /bin/sh
     volumes:
       - ./tezos_scripts:/home/tezos/tezos_scripts
-      # - ./.tezos-client:/home/tezos/.tezos-client
-      # - ./contract.event.tz:/home/tezos/contract.event.tz
+      - ./contract.event.tz:/home/tezos/contract.event.tz
     environment:
       - PROTOCOL=$PROTOCOL
-    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/setup-client.sh $PROTOCOL"
+    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/init.sh $PROTOCOL"
     depends_on:
       signatory:
         condition: service_healthy
