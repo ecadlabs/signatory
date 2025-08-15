@@ -1,3 +1,9 @@
+---
+id: confidential_space_setup
+title: Setup
+sidebar_label: Setup
+---
+
 # Google Cloud Platform Setup for Confidential Space
 
 This guide provides step-by-step instructions for setting up Google Cloud Platform (GCP) resources required to use the Confidential Space backend with Signatory.
@@ -174,3 +180,5 @@ vaults:
    - Verify the Workload Identity Provider path is correct
    - Check that the enclave-signer is properly configured with the WIP provider path
    - Ensure the image digest in the KMS policy binding matches the actual container image digest
+
+

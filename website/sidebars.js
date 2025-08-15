@@ -41,6 +41,7 @@ const sidebars = {
           items: [
             `watermarks`,
             `aws_dynamodb`,
+            `gcp_firestore`,
           ],
         },
         {
@@ -56,6 +57,13 @@ const sidebars = {
             `ledger`,
             `pkcs11`,
             `file_based`,
+            `nitro`,
+            {
+              type: "category",
+              label: "Confidential Space (GCP)",
+              collapsed: false,
+              items: [`confidential_space`, `confidential_space_setup`],
+            },
           ],
         },
       ],

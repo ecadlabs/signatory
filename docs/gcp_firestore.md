@@ -5,6 +5,11 @@ title: GCP Firestore Watermark Backend
 
 # GCP Firestore Watermark Backend
 
+:::info Beta
+This watermark backend is in beta and is expected to ship in Signatory v1.3.0 prior to the Tezos Seoul protocol activation. See [Protocol Seoul](https://octez.tezos.com/docs/protocols/023_seoul.html).
+:::
+
+
 ## Overview
 
 The GCP Firestore watermark backend provides a distributed, highly available solution for tracking watermarks in Signatory. This backend is ideal for environments where multiple Signatory instances need to coordinate to prevent double-signing operations.

@@ -6,7 +6,7 @@ sidebar_label: Signatory Architecture
 
 # Signatory Architecture  
 
-Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory also supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/), to protect cryptographic keys.
+Signatory is an excellent solution for secure and reliable remote signing in Tezos Blockchain cases. With easy-to-use configuration options, users can set up vaults and policies to ensure that only authorized operations are signed. Signatory supports a variety of hardware-based and cloud-based HSMs, such as [AWS KMS](https://aws.amazon.com/kms/) and [YubiHSM](https://www.yubico.com/), as well as Trusted Execution Environments (TEEs) like AWS Nitro Enclaves and Google Confidential Space to protect cryptographic keys and execution.
 
 Using Signatory, users can securely store their secret keys and control which operations can be signed, reducing the risk of losing or having their keys stolen. Signatory also allows users to sign transactions on hardware not connected to the internet, providing an additional layer of security.
 
@@ -23,7 +23,7 @@ User-- "Defines Vault and Policy" -->S
 
 OC["Client<br>[Software System]<br>submits requests to Tezos API"]
 
-V["Vaults<br>[Software Systems]<br>AWS KMS, Azure Key Vault, GCP Key Management,<br>YubiHSM, local private key"]
+V["Vaults<br>[Software Systems]<br>AWS KMS, Azure Key Vault, GCP Key Management,<br>YubiHSM, TEEs (AWS Nitro Enclaves, Google Confidential Space),<br>local private key"]
 
 PS["Prometheus Service<br>[Software System]<br>Provides an API to store and track metrics"]
 
