@@ -5,7 +5,7 @@ const FeatureList = [
 	{
 		title: 'A Tezos Remote Signer',
 		description: (
-			<>Signatory signs your Tezos Ops while protecting your private keys</>
+			<>Signatory signs your Tezos Ops while protecting your private keys in HSMs, Cloud KMS, or TEEs</>
 		),
 		link: {
 			title: 'Get Started',

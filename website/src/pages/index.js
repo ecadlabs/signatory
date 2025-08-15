@@ -16,7 +16,7 @@ function Home() {
 	return (
 		<Layout
 			title={`${siteConfig.title}`}
-			description='A Remote Signer for Tezos that keeps your keys in an HSM (Yubi, Azure KMS, Google KMS)<head />'
+			description='Protocol‑aware remote signer for Tezos. Signatory acts as a security boundary, enforcing Tezos policy and watermarks before delegating signing to your HSM, KMS, or TEE (YubiHSM, Azure KMS, Google KMS, AWS Nitro Enclaves, Google Confidential Space).'
 		>
 			<main>
 				<Hero />

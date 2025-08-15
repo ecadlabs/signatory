@@ -9,13 +9,28 @@ const FeatureList = [
 				icon: require('../../../static/img/hand.svg').default,
 				title: 'Easy to start, trivial to secure',
 				description:
-					'Start by prototyping your infrastructure with an on-disk key, switch to an HSM when it makes sense.',
+					'Start by prototyping with an on-disk key; move to HSMs, Cloud KMS, or TEEs when ready.',
 			},
 			{
 				icon: require('../../../static/img/book.svg').default,
-				title: 'Signatory signs only the operations you want',
+				title: 'Protocol‑aware policy enforcement',
 				description:
-					'Set policy on the type of Tezos Operations you want to allow signing. Are you running a baker? Limit it to blocks and endorsements. Institution? Signatory can enforce policies.',
+					'Set explicit Tezos policies (kinds, requests, JWT, remote policy). Signatory validates requests and watermarks before delegating to your HSM/KMS/TEE.',
+			},
+			{
+				icon: require('../../../static/img/work-briefcase.svg').default,
+				title: 'For bakers, validators, and apps',
+				description:
+					'Use Signatory for baking/validator infrastructure and application workflows alike—such as exchanges, custodians, or oracles. A single signer enforces policy and watermarks while keys remain in your HSM/KMS/TEE.',
+			},
+			{
+				icon: require('../../../static/img/systems.svg').default,
+				title: 'Modular external policy (callback)',
+				description: (
+					<>
+						Integrate bespoke controls without forking Signatory using the remote policy hook. Signatory POSTs operation + metadata; your service returns allow/deny (optionally signed). See <a href="https://signatory.io/docs/remote_policy">Remote Policy</a>.
+					</>
+				),
 			},
 			{
 				icon: require('../../../static/img/lenz.svg').default,

@@ -16,7 +16,7 @@ The goal of the Signatory service is to make key management as secure as possibl
 
 ## Why Use Signatory?
 
-Security and convenience are typically at odds with each other. Signatory makes it easier for Tezos teams to manage their keys securely by offering several well-tested & supported signing options for cloud-based or hardware-based HSMs.
+Security and convenience are typically at odds with each other. Signatory makes it easier for Tezos teams to manage their keys securely by offering several well-tested & supported signing options for cloud-based or hardware-based HSMs, as well as Trusted Execution Environments (TEEs).
 
 ## Quick Start
 
@@ -29,28 +29,33 @@ Security and convenience are typically at odds with each other. Signatory makes 
 Explore detailed documentation for various components of Signatory:
 
 ### Introduction
-- [Getting Started](./docs/start.md)
-- [Authorized Keys](./docs/authorized_keys.md)
-- [Command-Line Interface (CLI)](./docs/cli.md)
-- [Bakers](./docs/bakers.md)
+- [Getting Started](https://signatory.io/docs/start)
+- [Authorized Keys](https://signatory.io/docs/authorized_keys)
+- [Command-Line Interface (CLI)](https://signatory.io/docs/cli)
+- [Bakers](https://signatory.io/docs/bakers)
 
 ### Vault Backends
-- [Azure KMS](./docs/azure_kms.md)
-- [AWS KMS](./docs/aws_kms.md)
-- [Google Cloud KMS](./docs/gcp_kms.md)
-- [Hashicorp Vault](./docs/hashicorp_vault.md)
-- [Ledger Integration](./docs/ledger.md)
-- [Local Secret Storage](./docs/localsecret.md)
-- [PKCS#11 (AWS CloudHSM compatible)](./docs/pkcs11.md)
-- [YubiHSM](./docs/yubihsm.md)
+- [Azure KMS](https://signatory.io/docs/azure_kms)
+- [AWS KMS](https://signatory.io/docs/aws_kms)
+- [AWS Nitro Enclave](https://signatory.io/docs/nitro) (in progress; coming in v1.3.0)
+- [Google Cloud KMS](https://signatory.io/docs/gcp_kms)
+- [Google Confidential Space](https://signatory.io/docs/confidential_space) (in progress)
+- [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault)
+- [Ledger Integration](https://signatory.io/docs/ledger)
+- [Local Secret Storage](https://signatory.io/docs/file_based)
+- [PKCS#11 (AWS CloudHSM compatible)](https://signatory.io/docs/pkcs11)
+- [YubiHSM](https://signatory.io/docs/yubihsm)
 
-### Watermark backends 
-- [AWS (DynamoDB)](./docs/aws_dynamodb.md)
+### Watermark / Signing Tracking
+- Memory
+- File
+- [AWS DynamoDB](https://signatory.io/docs/aws_dynamodb)
+- [Google Cloud Firestore](https://signatory.io/docs/gcp_firestore) (in progress; expected in v1.3.0)
 
 ### Other
-- [JWT Authentication](./docs/jwt_auth.md)
-- [Remote Policy Configuration](./docs/remote_policy.md)
-- [Signatory Architecture](./docs/signatory-architecture.md)
+- [JWT Authentication](https://signatory.io/docs/jwt)
+- [Remote Policy Configuration](https://signatory.io/docs/remote_policy)
+- [Signatory Architecture](https://signatory.io/docs/architecture)
 
 ## Features
 
@@ -60,7 +65,7 @@ Signatory receives requests to sign Tezos operations. These operations may be co
 
 Signatory will inspect the operations and assert that the operation request is in line with Signatory's policy. If the operation passes the policy rules, Signatory will then have a signature produced using the appropriate backend system. 
 
-Signatory operators can choose from AWS, Azure or Google Cloud KMS systems, or self-hosted solutions such as the YubiHSM2, Hashicorp Vault or Ledger Hardware wallet.
+Signatory operators can choose from AWS, Azure or Google Cloud KMS systems, self-hosted solutions such as the YubiHSM2, Hashicorp Vault or Ledger hardware wallet, and Confidential Computing TEEs such as AWS Nitro Enclaves and Google Confidential Space.
 
 ### Observability
 
@@ -83,9 +88,9 @@ Private-key import is an important security consideration when choosing a Cloud 
 
 ## Why
 
-Our goal in supporting multiple Cloud KMS/HSM services is to help prevent centralization on the _network_ or _infrastructure_ level. A goal of Tezos is to have a highly decentralized network of bakers. That goal is not fully realized if, of those bakers, a large majority operate on a single infrastructure provider.
+Our goal in supporting multiple Cloud KMS/HSM/TEE services is to help prevent centralization on the _network_ or _infrastructure_ level. A goal of Tezos is to have a highly decentralized network of bakers. That goal is not fully realized if, of those bakers, a large majority operate on a single infrastructure provider.
 
-In the first year of the Tezos network operation, there was anecdotal evidence that many bakers ran on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable. By supporting multiple Cloud KMS/HSM systems, we hope to prevent the network from centralization on a particular Cloud offering.
+In the first year of the Tezos network operation, there was anecdotal evidence that many bakers ran on AWS. AWS is a superb provider, but having a concentration of nodes on one cloud vendor centralizes the underlying infrastructure of the network, which is not desirable. By supporting multiple Cloud KMS/HSM/TEE systems, we hope to prevent the network from centralization on a particular Cloud offering.
 
 ## Supported Signing Backends
 
@@ -93,18 +98,19 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 
 |                                | Status |
 | ------------------------------ | ------ |
-| YubiHSM2                       | ✅     |
-| Azure KMS                      | ✅     |
-| Google Cloud KMS               | ✅     |
-| AWS KMS                        | ✅     |
-| Ledger Nano S/S+ (Baking only) | ✅     |
-| Hashicorp Vault                | ✅     |
-| PKCS#11                        | ✅     |
-| Nitro Enclave                  | ✅     |
+| [YubiHSM2](https://signatory.io/docs/yubihsm) | ✅     |
+| [Azure KMS](https://signatory.io/docs/azure_kms) | ✅     |
+| [Google Cloud KMS](https://signatory.io/docs/gcp_kms) | ✅     |
+| [AWS KMS](https://signatory.io/docs/aws_kms) | ✅     |
+| [Ledger Nano S/S+ (Baking only)](https://signatory.io/docs/ledger) | ✅     |
+| [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault) | ✅     |
+| [PKCS#11](https://signatory.io/docs/pkcs11) | ✅     |
+| [AWS Nitro Enclave](https://signatory.io/docs/nitro) | 🚧 In progress (v1.3.0) |
+| [Google Confidential Space](https://signatory.io/docs/confidential_space) | 🚧 In progress (v1.3.0) |
 
 ### Tezos Address Types
 
-In Tezos, you can infer the signing algorithm from the first three characters of an address. For example, an address beginning with `tz3` uses the P-256 algorithm. HSMs and Cloud-based HSMs have support for a subset of the three algorithms supported by Tezos.
+In Tezos, you can infer the signing algorithm from the first three characters of an address. For example, an address beginning with `tz3` uses the P-256 algorithm. HSMs, Cloud KMS, and TEEs have support for a subset of the three algorithms supported by Tezos.
 
 * `tz1` - [Ed25519](https://ed25519.cr.yp.to/)
 * `tz2` - [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1) __aka: P256K__
@@ -115,13 +121,13 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 
 |                  | tz1 | tz2 | tz3 | tz4 |
 | ---------------- | --- | --- | --- | --- |
-| Hashicorp Vault  | ✅   | ❌   | ❌   | ❌   |
-| Google Cloud KMS | ❌   | ❌   | ✅   | ❌   |
-| AWS KMS          | ❌   | ✅   | ✅   | ❌   |
-| Azure KMS        | ❌   | ✅   | ✅   | ❌   |
-| YubiHSM2         | ✅   | ✅   | ✅   | ❌   |
-| PKCS#11          | ✅   | ✅   | ✅   | ❌   |
-| Nitro            | ✅   | ✅   | ✅   | ✅   |
+| [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault)  | ✅   | ❌   | ❌   | ❌   |
+| [Google Cloud KMS](https://signatory.io/docs/gcp_kms) | ❌   | ❌   | ✅   | ❌   |
+| [AWS KMS](https://signatory.io/docs/aws_kms)          | ❌   | ✅   | ✅   | ❌   |
+| [Azure KMS](https://signatory.io/docs/azure_kms)        | ❌   | ✅   | ✅   | ❌   |
+| [YubiHSM2](https://signatory.io/docs/yubihsm)         | ✅   | ✅   | ✅   | ❌   |
+| [PKCS#11](https://signatory.io/docs/pkcs11)          | ✅   | ✅   | ✅   | ❌   |
+| [AWS Nitro Enclave](https://signatory.io/docs/nitro)            | ✅   | ✅   | ✅   | ✅   |
 
 ---
 

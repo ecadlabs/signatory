@@ -2,8 +2,11 @@
 	width: 100%;
 	height: 100%;
 	position: relative;
-	margin-top: -250px;
+	margin-top: -100px;
 	z-index: 0;
+	@media (max-width: 996px) {
+		margin-top: 0;
+	}
 }
 // .features:before {
 // 	content: ' ';
@@ -52,7 +55,7 @@
 	justify-content: center;
 	flex-direction: column;
 	width: 90%;
-	padding-top: 150px;
+	padding-top: 140px;
 	margin-left: auto;
 	margin-right: auto;
 	height: 100%;
@@ -60,7 +63,7 @@
 	z-index: 2;
 	position: relative;
 	@media (max-width: 640px) {
-		padding-top: 250px;
+		padding-top: 140px;
 	}
 }
 
@@ -136,12 +139,19 @@
 }
 
 .steps {
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 48px;
+	row-gap: 24px;
 	width: 100%;
-	min-width: 90vw;
+	max-width: 1200px;
+	margin: 0 auto;
 	position: relative;
 	z-index: 3;
+
+	@media (max-width: 900px) {
+		grid-template-columns: 1fr;
+	}
 
 	@media (max-width: 380px) {
 		padding-bottom: 0px;
@@ -152,7 +162,14 @@
 	display: flex;
 	justify-content: flex-end;
 	text-align: left;
-	margin-left: 5%;
+	margin-left: 0;
+	margin-right: 0;
+	margin-bottom: 0;
+	width: 100%;
+	grid-column: 2;
+	@media (max-width: 900px) {
+		grid-column: auto;
+	}
 
 	@media (max-width: 640px) {
 		justify-content: center;
@@ -163,20 +180,26 @@
 
 .stepContainerRight .stepBox {
 	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
+	flex-direction: row;
+	align-items: center;
+	width: 100%;
+	max-width: none;
+	gap: 16px;
 
 	@media (max-width: 640px) {
 		flex-direction: column;
 		align-items: center;
 		margin-bottom: 20px;
+		width: 100%;
 	}
 	.textContainer {
-		padding-right: 40px;
+		padding-right: 0px;
+		padding-left: 0px;
 		text-align: left;
-		padding-top: 30px;
+		padding-top: 0px;
 		@media (max-width: 640px) {
 			padding-right: 0px;
+			padding-left: 0px;
 			text-align: center;
 		}
 
@@ -245,7 +268,14 @@
 	display: flex;
 	justify-content: flex-start;
 	text-align: left;
-	margin-left: 5%;
+	margin-left: 0;
+	margin-right: 0;
+	margin-bottom: 0;
+	width: 100%;
+	grid-column: 1;
+	@media (max-width: 900px) {
+		grid-column: auto;
+	}
 
 	@media (max-width: 640px) {
 		justify-content: center;
@@ -312,12 +342,16 @@
 
 .stepContainerLeft .stepBox {
 	display: flex;
-	align-items: flex-start;
-	flex-direction: column;
+	align-items: center;
+	flex-direction: row;
+	width: 100%;
+	max-width: none;
+	gap: 16px;
 	@media (max-width: 640px) {
 		flex-direction: column;
 		align-items: center;
 		margin-bottom: 20px;
+		width: 100%;
 	}
 
 	.stepTitle {
@@ -335,14 +369,16 @@
 }
 
 .stepContainerLeft .stepBox .textContainer {
-	padding-right: 40px;
+	padding-right: 0px;
+	padding-left: 24px;
 	text-align: left;
-	padding-top: 30px;
+	padding-top: 0px;
 
 	@media (max-width: 640px) {
 		flex-direction: column;
 		text-align: center;
 		padding-right: 0px;
+		padding-left: 0px;
 	}
 }
 
@@ -370,4 +406,12 @@
 	align-items: center;
 	background: var(--brown);
 	border-radius: 50%;
+}
+
+/* Normalize SVG icon size and spacing for a more compact layout */
+.stepContainerLeft .stepBox > svg,
+.stepContainerRight .stepBox > svg {
+	width: 56px;
+	height: 56px;
+	flex-shrink: 0;
 }
