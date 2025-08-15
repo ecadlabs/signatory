@@ -140,7 +140,8 @@ module.exports = {
 				docs: {
 					path: '../docs',
 					sidebarPath: require.resolve('./sidebars.js'),
-					editUrl: 'https://github.com/ecadlabs/signatory/edit/master/website/',
+					// Use the 'main' branch for "Edit this page" links
+					editUrl: 'https://github.com/ecadlabs/signatory/edit/main/docs/',
 				},
 				theme: {
 					customCss: [

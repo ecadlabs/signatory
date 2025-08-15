@@ -4,7 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import { useThemeConfig } from '@docusaurus/theme-common';
@@ -67,7 +67,6 @@ const FooterLogo = ({ sources, alt, width, height }) => (
 
 function Footer() {
 	const footerContainer = useRef(null);
-	const [isActive, setIsActive] = useState(false);
 	const { footer } = useThemeConfig();
 	const { copyright, links = [], logo = {} } = footer || {};
 	const sources = {
@@ -98,21 +97,10 @@ function Footer() {
 	//   };
 	// }, []);
 
-	const [bg, setBg] = useState(
-		'linear-gradient(132.76deg, #a13455 -80.79%, #1a1e44 54.08%)'
-	);
-
-	useEffect(() => {
-		if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-			setBg('#1A1E44');
-		}
-	}, []);
+	// Use CSS-defined gradient background for footer on all pages.
 
 	return (
 		<footer
-			style={{
-				background: `${bg}`,
-			}}
 			className={clsx('footer', {
 				'footer--dark': footer.style === 'dark',
 			})}
