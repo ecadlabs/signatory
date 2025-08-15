@@ -8,11 +8,13 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/middlewares"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/utils"
@@ -126,6 +128,13 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
+			var status string
+			if val, ok := err.(errors.HTTPError); ok {
+				status = strconv.Itoa(val.HTTPStatus())
+			} else {
+				status = "n/a"
+			}
+			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
 			tezosJSONError(w, err)
 			return
@@ -177,6 +186,15 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
 		if err != nil {
+			source, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				panic(err) // shouldn't happen with Go standard library
+			}
+			metrics.AuthenticationFailure(
+				"n/a",
+				"authorized_keys",
+				source,
+			)
 			tezosJSONError(w, err)
 			return
 		}
@@ -202,6 +220,13 @@ func (s *Server) blsProveHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
+			var status string
+			if val, ok := err.(errors.HTTPError); ok {
+				status = strconv.Itoa(val.HTTPStatus())
+			} else {
+				status = "n/a"
+			}
+			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
 			tezosJSONError(w, err)
 			return
