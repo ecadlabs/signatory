@@ -7,8 +7,6 @@ title: Tezos Bakers
 
 A Tezos baker can use Signatory as a remote signer with keys stored in a local file (dev only), a Ledger device, or enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.). This guide shows practical setups for **Local Secret** and **Ledger**; other vaults follow the same pattern.
 
-> **Versions & naming.** Octez daemons (baker/accuser) are suffixed by the protocol's short hash, e.g. `octez-baker-PsQuebec`. Use the suffix that matches the network's current protocol; don't use `-alpha` unless you're on the dev protocol.
-
 ## Bakers on Tezos Networks
 
 **Prerequisites**
