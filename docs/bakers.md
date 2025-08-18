@@ -35,7 +35,7 @@ octez-client list known addresses
 **Show the baker address**
 
 ```bash
-octez-client show address alice
+octez-client show address baking_key
 ```
 
 **Fund and register the delegate**
@@ -43,17 +43,17 @@ octez-client show address alice
 Wait until the node is bootstrapped, then fund the implicit account (use a faucet on testnets). Check balance:
 
 ```bash
-octez-client get balance for alice
+octez-client get balance for baking_key
 ```
 
 Register as a delegate (optionally set a consensus key):
 
 ```bash
 # register the implicit account as a delegate
-octez-client register key alice as delegate
+octez-client register key baking_key as delegate
 
-# OR register alice as a delegate but use a separate consensus key
-octez-client register alice as delegate with consensus key bob
+# OR register baking_key as a delegate but use a separate consensus key
+octez-client register baking_key as delegate with consensus key bob
 ```
 
 **Check rights**
@@ -149,9 +149,9 @@ curl -s localhost:6732/keys/tz1YourBakerAddress
 Point `octez-client` at Signatory (remote signer):
 
 ```bash
-octez-client import secret key alice http://localhost:6732/tz1YourBakerAddress --force
+octez-client import secret key baking_key http://localhost:6732/tz1YourBakerAddress --force
 cat ~/.tezos-client/secret_keys
-# [{"name":"alice","value":"http://localhost:6732/tz1YourBakerAddress"}]
+# [{"name":"baking_key","value":"http://localhost:6732/tz1YourBakerAddress"}]
 ```
 
 (Octez's remote signer uses HTTP endpoints like `GET/POST /keys/<pkh>` under the hood.)
@@ -159,7 +159,7 @@ cat ~/.tezos-client/secret_keys
 Try an operation and observe Signatory logs:
 
 ```bash
-octez-client transfer 10 from alice to bob
+octez-client transfer 10 from baking_key to bob
 ```
 
 ### 2) Ledger Devices
