@@ -72,8 +72,8 @@ octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?cycle=
 **Start the baker**
 
 ```bash
-# Use the correct protocol suffix (example placeholder <PROTO_HASH>)
-octez-baker-<PROTO_HASH> run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
+# Modern agnostic baker (automatically detects protocol)
+octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
 ```
 
 ---
@@ -277,7 +277,7 @@ octez-dal-node run --data-dir ~/.tezos-dal-node
 2. Start the baker and point it at the DAL node:
 
 ```bash
-octez-baker-<PROTO_HASH> run with local node ~/.tezos-node \
+octez-baker run with local node ~/.tezos-node \
   --dal-node http://127.0.0.1:10732 \
   --liquidity-baking-toggle-vote pass
 ```
@@ -314,35 +314,40 @@ tezos:
 
 ---
 
-## Vault-Agnostic Signatory CLI
+## Protocol-Agnostic Baker Commands
 
-Useful commands that work across vaults (where supported):
+Recent Octez versions include protocol-agnostic baker commands that automatically detect the current network protocol, eliminating the need to specify protocol-specific binary names.
 
-```bash
-# List all keys Signatory can see (and whether each is Active in config)
-signatory-cli list -c signatory.yaml
-
-# Validate configuration without starting the server
-signatory serve -c signatory.yaml --dry-run
-```
-
-
-
-**Remote signer health & introspection**
+**Modern Agnostic Commands:**
 
 ```bash
-# Public key for a PKH
-curl localhost:6732/keys/tz1...
+# Use the agnostic baker (automatically detects protocol)
+octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
 
-# Health endpoint
-curl localhost:9583/healthz
-
-# Authorized client keys (if you enable client auth)
-curl localhost:6732/authorized_keys
+# The agnostic baker replaces protocol-specific commands like:
+# octez-baker-PsQuebec, octez-baker-PsNairob, octez-baker-alpha, etc.
 ```
 
+**Agnostic Accuser:**
 
+```bash
+# Use the agnostic accuser 
+octez-accuser run
 
+# No need for protocol-specific accusers anymore
 ```
+
+**Benefits:**
+
+- **Automatic protocol detection**: No need to know current protocol hash
+- **Seamless upgrades**: Works across protocol transitions
+- **Simplified operations**: One command works on any network
+- **Future-proof**: Commands remain valid as protocols evolve
+
+**Migration Note:**
+
+If you're using older protocol-specific commands, you can migrate to agnostic ones without changing your Signatory configuration. The remote signer interface remains the same.
+
+For more details, see the [Tezos agnostic baker documentation](https://gitlab.com/tezos/tezos/-/blob/master/src/bin_agnostic_baker/README.md).
 
 
