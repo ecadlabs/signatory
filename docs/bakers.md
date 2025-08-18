@@ -36,7 +36,6 @@ octez-client list known addresses
 
 ```bash
 octez-client show address alice
-# (Avoid -S here in docs; it prints the secret key.)
 ```
 
 **Fund and register the delegate**
