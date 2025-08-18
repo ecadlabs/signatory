@@ -13,7 +13,7 @@ A Tezos baker can use Signatory as a remote signer with keys stored in a local f
 
 - A working `octez-client`
 - A Tezos node RPC endpoint (e.g. `http://localhost:8732`)
-- The baker’s public key hash (PKH), e.g. `tz1...`
+- The baker's public key hash (PKH), e.g. `tz1...` (we use `baking_key` as the alias in examples)
 - The network’s current protocol (for selecting the correct baker binary)
 
 **Verify the node is ready**
