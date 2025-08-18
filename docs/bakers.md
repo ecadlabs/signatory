@@ -53,7 +53,7 @@ Register as a delegate (optionally set a consensus key):
 octez-client register key baking_key as delegate
 
 # OR register baking_key as a delegate but use a separate consensus key
-octez-client register baking_key as delegate with consensus key bob
+octez-client register baking_key as delegate with consensus key consensus_key
 ```
 
 **Check rights**
@@ -159,7 +159,7 @@ cat ~/.tezos-client/secret_keys
 Try an operation and observe Signatory logs:
 
 ```bash
-octez-client transfer 10 from baking_key to bob
+octez-client transfer 10 from baking_key to tz1RecipientAddress
 ```
 
 ### 2) Ledger Devices
