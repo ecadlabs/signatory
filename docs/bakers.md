@@ -291,6 +291,13 @@ To participate in DAL attestations:
 
 > **Important:** Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
 
+**Further Reading**
+
+The details of running DAL nodes and collecting DAL attestation rewards are outside the scope of this Signatory guide. For comprehensive information:
+
+- **[Tezos DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer)** - explains what the DAL is, how bakers run with a DAL attester node, and how DAL rewards work (10% of participation rewards starting in Rio; you must attest ≥64% of assigned shards; "trap shard" denouncements can forfeit the cycle's DAL rewards)
+- **[DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html)** - step-by-step setup guide for the DAL attester node
+
 ---
 
 ## Protocol-Agnostic Baker Commands
