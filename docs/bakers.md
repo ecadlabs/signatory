@@ -262,55 +262,34 @@ See the official [Signatory documentation](https://signatory.io/docs/) for AWS/G
 
 ## Baking with DAL (Data Availability Layer)
 
-To attest DAL data, run a DAL node alongside your L1 node and tell the baker to use it.
+**Critical Signatory Configuration for DAL**
 
-1. Initialize and run a DAL node:
-
-```bash
-# Initialize (use your baker PKH for --attester-profiles)
-octez-dal-node config init --endpoint http://127.0.0.1:8732 --attester-profiles="$MY_ADDRESS" --data-dir ~/.tezos-dal-node
-
-# Run
-octez-dal-node run --data-dir ~/.tezos-dal-node
-```
-
-2. Start the baker and point it at the DAL node:
-
-```bash
-octez-baker run with local node ~/.tezos-node \
-  --dal-node http://127.0.0.1:10732 \
-  --liquidity-baking-toggle-vote pass
-```
-
-
-
-3. Rights & monitoring:
-
-```bash
-# Check attestation rights
-octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?delegate=$MY_ADDRESS&cycle=<current-cycle>"
-```
-
-> **Operation names.** In modern Octez, "endorsements" are "attestations" and there is a dedicated **`attestation_with_dal`** operation for DAL data. Make sure your Signatory version supports these newer kinds.
-
-**Signatory allow-list example with DAL:**
+If your baker participates in DAL attestations, you **must** add `attestation_with_dal` to your Signatory policy. This is a separate operation type from regular attestations.
 
 ```yaml
 tezos:
   tz1YourBakerAddress:
     log_payloads: true
     allow:
-      block:
-      attestation:
-      preattestation:
-      attestation_with_dal:
+      block:              # Standard block baking
+      attestation:        # Standard attestations  
+      preattestation:     # Pre-attestations
+      attestation_with_dal: # ✨ Required for DAL attestations
       generic:
         - transaction
         - reveal
         - delegation
 ```
 
-> If you're on an older Signatory config/example that still uses `endorsement`/`preendorsement`, keep those; newer releases recognize `attestation`/`preattestation` and `attestation_with_dal`.
+**DAL Setup Overview**
+
+To participate in DAL attestations:
+
+1. **Run a DAL node** alongside your Tezos node
+2. **Configure your baker** to use the DAL node (`--dal-node` flag)
+3. **Update Signatory policy** to allow `attestation_with_dal` operations
+
+> **Important:** Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
 
 ---
 
