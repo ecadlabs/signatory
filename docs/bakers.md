@@ -7,50 +7,6 @@ title: Tezos Bakers
 
 A Tezos node can be installed from binaries, or run with docker, or built from sources (for details see [here](https://teztnets.xyz/)). In each case a baker is set up with a network and a vault. This guide focuses on practical baking configurations using Signatory's two most commonly used vault types, from which other vault configurations can be inferred.
 
-```mermaid
-flowchart TD
-    START([Start Tezos Baking<br/>with Signatory]) --> INSTALL{Installation Method}
-    
-    INSTALL -->|Simple| BIN[Binary Installation]
-    INSTALL -->|Containerized| DOCKER[Docker Installation]
-    INSTALL -->|Custom| SOURCES[Build from Sources]
-    
-    BIN --> SETUP[Setup Tezos Node]
-    DOCKER --> SETUP
-    SOURCES --> SETUP
-    
-    SETUP --> NET{Choose Network}
-    NET -->|Production| MAIN[Mainnet]
-    NET -->|Testing| TEST[Testnet<br/>Ghostnet/Mumbainet]
-    
-    MAIN --> VAULT{Select Vault Type}
-    TEST --> VAULT
-    
-    VAULT -->|Development<br/>Testing| LOCAL[Local Secret Vault<br/>⚠️ Not for Production]
-    VAULT -->|Production<br/>Hardware Security| LEDGER[Ledger Hardware Vault<br/>✅ Recommended]
-    VAULT -->|Enterprise| OTHER[Other Vault Types<br/>AWS KMS, Azure, GCP, YubiHSM<br/>Similar to Local/Ledger patterns]
-    
-    LOCAL --> CONFIG1[Configure signatory.yaml<br/>with file driver]
-    LEDGER --> CONFIG2[Configure signatory.yaml<br/>with ledger driver]
-    OTHER --> CONFIG3[Configure signatory.yaml<br/>with respective driver]
-    
-    CONFIG1 --> BAKER[Start Baker with<br/>Agnostic Commands]
-    CONFIG2 --> BAKER
-    CONFIG3 --> BAKER
-    
-    BAKER --> FEATURES{Enable Advanced Features?}
-    FEATURES -->|Standard| STANDARD[Standard Baking<br/>block, attestation, preattastation]
-    FEATURES -->|Data Availability| DAL[DAL Baking<br/>attestation_with_dal]
-    
-    STANDARD --> MONITOR[Monitor & Maintain]
-    DAL --> MONITOR
-    
-    style LOCAL fill:#fff2cc,stroke:#d6b656
-    style LEDGER fill:#d5e8d4,stroke:#82b366
-    style OTHER fill:#e1d5e7,stroke:#9673a6
-    style DAL fill:#dae8fc,stroke:#6c8ebf
-```
-
 ## Bakers on Tezos Networks
 
 Things you will need to know:
@@ -113,172 +69,6 @@ To start the baker :
 ```bash!
 ./octez-baker-alpha run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
 ```
-
-## Agnostic Baker Commands
-
-Signatory provides vault-agnostic commands that work consistently across all supported vault types. These commands provide a unified interface for managing keys and baking operations regardless of the underlying vault implementation.
-
-### Core Agnostic Commands
-
-The `signatory-cli` tool provides several commands that work with any configured vault:
-
-#### Key Management
-```bash
-# List all available keys across all configured vaults
-./signatory-cli list -c signatory.yaml
-
-# Import a key (for vaults that support key import)
-./signatory-cli import -c signatory.yaml
-
-# Generate a new key (for vaults that support key generation)
-./signatory-cli generate -c signatory.yaml
-```
-
-#### Vault-Specific Operations
-While the interface is consistent, some commands are vault-specific:
-
-```bash
-# Ledger-specific commands
-./signatory-cli ledger list -c signatory.yaml
-./signatory-cli ledger setup-baking <key_id> -c signatory.yaml
-./signatory-cli ledger deauthorize-baking <key_id> -c signatory.yaml
-
-# HSM-specific commands (for YubiHSM and other HSMs)
-./signatory-cli hsm list -c signatory.yaml
-```
-
-#### Configuration Validation
-```bash
-# Test vault connectivity and configuration
-./signatory-cli list -c signatory.yaml
-
-# Validate configuration file
-./signatory serve -c signatory.yaml --dry-run
-```
-
-### Standard Baking Operations
-
-Regardless of the vault type, all baking operations use the same HTTP API endpoints:
-
-```bash
-# Get public key (works with any vault)
-curl localhost:6732/keys/tz1...
-
-# Health check
-curl localhost:9583/healthz
-
-# List authorized keys
-curl localhost:6732/authorized_keys
-```
-
-### High Water Mark Management
-
-Signatory automatically manages high water marks to prevent double signing, but you can also manage them manually:
-
-```bash
-# For Ledger devices
-./signatory-cli ledger get-high-watermark -d <device_id> -c signatory.yaml
-./signatory-cli ledger set-high-watermark <level> -d <device_id> -c signatory.yaml
-```
-
-This agnostic approach means you can switch between vault types with minimal changes to your baking infrastructure.
-
-## Baking with DAL (Data Availability Layer)
-
-The Data Availability Layer (DAL) is a feature in Tezos that enhances the network's data availability and scalability. When baking with DAL enabled, bakers can participate in data availability operations in addition to standard block production and attestation.
-
-### What is DAL?
-
-DAL provides a mechanism for publishing data in a way that ensures availability without requiring all nodes to store all data permanently. This is particularly important for scaling solutions and rollups that need to publish data to the Tezos network.
-
-### Configuring DAL Baking
-
-To enable DAL baking, you need to add the `attestation_with_dal` operation to your Signatory configuration:
-
-```yaml
-tezos:
-  tz1YourBakerAddress:
-    log_payloads: true
-    allow:
-      block:              # Standard block baking
-      attestation:        # Standard attestations  
-      preattestation:     # Pre-attestations
-      attestation_with_dal: # DAL attestations ✨ NEW
-      generic:
-        - transaction
-        - reveal
-        - delegation
-```
-
-### DAL Node Setup
-
-To participate in DAL, you need to run a DAL node alongside your regular Tezos node:
-
-```bash
-# Start DAL node
-./octez-dal-node run --data-dir ~/.tezos-dal-node
-
-# Start baker with DAL support
-./octez-baker-alpha run with local node ~/.tezos-node \
-  --dal-node http://localhost:10732 \
-  --liquidity-baking-toggle-vote pass
-```
-
-### DAL Operations
-
-When DAL is enabled, Signatory will handle additional operation types:
-
-1. **Standard attestations**: Regular network consensus operations
-2. **DAL attestations**: Data availability confirmations
-3. **Combined operations**: Operations that include both consensus and DAL data
-
-### Monitoring DAL Baking
-
-Monitor DAL operations in Signatory logs:
-
-```bash
-# Look for DAL-specific log entries
-INFO[0000] Requesting signing operation    ops="map[attestation_with_dal:1]" request=attestation_with_dal
-INFO[0000] Signed attestation_with_dal successfully      request=attestation_with_dal
-```
-
-### DAL Configuration Example
-
-Here's a complete configuration example with DAL enabled:
-
-```yaml
-server:
-  address: :6732
-  utility_address: :9583
-
-vaults:
-  ledger:
-    driver: ledger
-    config:
-      id: your-ledger-id
-
-tezos:
-  tz1YourBakerAddress:
-    log_payloads: true
-    allow:
-      block:
-      attestation:
-      preattestation: 
-      attestation_with_dal:  # Enable DAL attestations
-      generic:
-        - transaction
-        - reveal
-        - delegation
-```
-
-### Prerequisites for DAL Baking
-
-- Tezos node with DAL support (recent Octez version)
-- DAL node running and synchronized
-- Sufficient bandwidth for DAL data operations
-- Updated Signatory configuration with `attestation_with_dal` permissions
-
-DAL baking is optional and can be enabled incrementally without affecting standard baking operations.
 
 ## Signatory
 
@@ -520,4 +310,170 @@ For detailed configuration examples and setup instructions for these vault types
 - **YubiHSM**: High-security environments requiring dedicated HSM hardware
 
 All vault types provide the same baking functionality and use identical baker commands once configured.
+
+## Agnostic Baker Commands
+
+Signatory provides vault-agnostic commands that work consistently across all supported vault types. These commands provide a unified interface for managing keys and baking operations regardless of the underlying vault implementation.
+
+### Core Agnostic Commands
+
+The `signatory-cli` tool provides several commands that work with any configured vault:
+
+#### Key Management
+```bash
+# List all available keys across all configured vaults
+./signatory-cli list -c signatory.yaml
+
+# Import a key (for vaults that support key import)
+./signatory-cli import -c signatory.yaml
+
+# Generate a new key (for vaults that support key generation)
+./signatory-cli generate -c signatory.yaml
+```
+
+#### Vault-Specific Operations
+While the interface is consistent, some commands are vault-specific:
+
+```bash
+# Ledger-specific commands
+./signatory-cli ledger list -c signatory.yaml
+./signatory-cli ledger setup-baking <key_id> -c signatory.yaml
+./signatory-cli ledger deauthorize-baking <key_id> -c signatory.yaml
+
+# HSM-specific commands (for YubiHSM and other HSMs)
+./signatory-cli hsm list -c signatory.yaml
+```
+
+#### Configuration Validation
+```bash
+# Test vault connectivity and configuration
+./signatory-cli list -c signatory.yaml
+
+# Validate configuration file
+./signatory serve -c signatory.yaml --dry-run
+```
+
+### Standard Baking Operations
+
+Regardless of the vault type, all baking operations use the same HTTP API endpoints:
+
+```bash
+# Get public key (works with any vault)
+curl localhost:6732/keys/tz1...
+
+# Health check
+curl localhost:9583/healthz
+
+# List authorized keys
+curl localhost:6732/authorized_keys
+```
+
+### High Water Mark Management
+
+Signatory automatically manages high water marks to prevent double signing, but you can also manage them manually:
+
+```bash
+# For Ledger devices
+./signatory-cli ledger get-high-watermark -d <device_id> -c signatory.yaml
+./signatory-cli ledger set-high-watermark <level> -d <device_id> -c signatory.yaml
+```
+
+This agnostic approach means you can switch between vault types with minimal changes to your baking infrastructure.
+
+## Baking with DAL (Data Availability Layer)
+
+The Data Availability Layer (DAL) is a feature in Tezos that enhances the network's data availability and scalability. When baking with DAL enabled, bakers can participate in data availability operations in addition to standard block production and attestation.
+
+### What is DAL?
+
+DAL provides a mechanism for publishing data in a way that ensures availability without requiring all nodes to store all data permanently. This is particularly important for scaling solutions and rollups that need to publish data to the Tezos network.
+
+### Configuring DAL Baking
+
+To enable DAL baking, you need to add the `attestation_with_dal` operation to your Signatory configuration:
+
+```yaml
+tezos:
+  tz1YourBakerAddress:
+    log_payloads: true
+    allow:
+      block:              # Standard block baking
+      attestation:        # Standard attestations  
+      preattestation:     # Pre-attestations
+      attestation_with_dal: # DAL attestations ✨ NEW
+      generic:
+        - transaction
+        - reveal
+        - delegation
+```
+
+### DAL Node Setup
+
+To participate in DAL, you need to run a DAL node alongside your regular Tezos node:
+
+```bash
+# Start DAL node
+./octez-dal-node run --data-dir ~/.tezos-dal-node
+
+# Start baker with DAL support
+./octez-baker-alpha run with local node ~/.tezos-node \
+  --dal-node http://localhost:10732 \
+  --liquidity-baking-toggle-vote pass
+```
+
+### DAL Operations
+
+When DAL is enabled, Signatory will handle additional operation types:
+
+1. **Standard attestations**: Regular network consensus operations
+2. **DAL attestations**: Data availability confirmations
+3. **Combined operations**: Operations that include both consensus and DAL data
+
+### Monitoring DAL Baking
+
+Monitor DAL operations in Signatory logs:
+
+```bash
+# Look for DAL-specific log entries
+INFO[0000] Requesting signing operation    ops="map[attestation_with_dal:1]" request=attestation_with_dal
+INFO[0000] Signed attestation_with_dal successfully      request=attestation_with_dal
+```
+
+### DAL Configuration Example
+
+Here's a complete configuration example with DAL enabled:
+
+```yaml
+server:
+  address: :6732
+  utility_address: :9583
+
+vaults:
+  ledger:
+    driver: ledger
+    config:
+      id: your-ledger-id
+
+tezos:
+  tz1YourBakerAddress:
+    log_payloads: true
+    allow:
+      block:
+      attestation:
+      preattestation: 
+      attestation_with_dal:  # Enable DAL attestations
+      generic:
+        - transaction
+        - reveal
+        - delegation
+```
+
+### Prerequisites for DAL Baking
+
+- Tezos node with DAL support (recent Octez version)
+- DAL node running and synchronized
+- Sufficient bandwidth for DAL data operations
+- Updated Signatory configuration with `attestation_with_dal` permissions
+
+DAL baking is optional and can be enabled incrementally without affecting standard baking operations.
 
