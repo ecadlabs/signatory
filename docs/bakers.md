@@ -53,6 +53,7 @@ Register as a delegate (optionally set a consensus key):
 octez-client register key baking_key as delegate
 
 # OR register baking_key as a delegate but use a separate consensus key
+# (first create the consensus key if it doesn't exist)
 octez-client register key baking_key as delegate with consensus key consensus_key
 ```
 
