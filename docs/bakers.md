@@ -5,82 +5,87 @@ title: Tezos Bakers
 
 # How to use Signatory with a Tezos Baker
 
-A Tezos node can be installed from binaries, or run with docker, or built from sources (for details see [here](https://teztnets.xyz/)). In each case a baker is set up with a network and a vault. This guide focuses on practical baking configurations using Signatory's two most commonly used vault types, from which other vault configurations can be inferred.
+A Tezos baker can use Signatory as a remote signer with keys stored in a local file (dev only), a Ledger device, or enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.). This guide shows practical setups for **Local Secret** and **Ledger**; other vaults follow the same pattern.
+
+> **Versions & naming.** Octez daemons (baker/accuser) are suffixed by the protocol's short hash, e.g. `octez-baker-PsQuebec`. Use the suffix that matches the network's current protocol; don't use `-alpha` unless you're on the dev protocol.
 
 ## Bakers on Tezos Networks
 
-Things you will need to know:
-- A working octez-client instance
-- The host_address for a Tezos Node
-    - In this example, we will host a node locally at `http://localhost:8732`
-- A public_key_hash to be the baker
-    - e.g. `tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU`
-- The protocol running on the network used
-    - e.g. `PtMumbai`
+**Prerequisites**
 
-Verify the node:
+- A working `octez-client`
+- A Tezos node RPC endpoint (e.g. `http://localhost:8732`)
+- The baker’s public key hash (PKH), e.g. `tz1...`
+- The network’s current protocol (for selecting the correct baker binary)
 
-```
-curl ${host_address}/chains/main/is_bootstrapped
-```
+**Verify the node is ready**
 
-List known addresses :
+```bash
+# Node bootstrap status
+curl -s http://localhost:8732/chains/main/is_bootstrapped
 
-```
-./octez-client list known addresses
+# Or via the client (also ensures your client points at the right node)
+octez-client --endpoint http://localhost:8732 bootstrapped
+````
 
-alice: tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU (unencrypted sk known)
+**List known addresses**
 
-```
-
-
-
-Show the baker address and secret key:
-
-```
-./octez-client show address -S alice
-
-Hash: tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU
-Public Key: edpktmKfj5reMbPmgwh2BNw5EHYpHEZZceMWfffcEpfPTn6pXgoRwF
-Secret Key: unencrypted:edsk2hf8Y9oYMQ9MiEAH9pbs3H7tpcBbyxjcWuRjJCrGPB81bDHC7s
+```bash
+octez-client list known addresses
 ```
 
-Ensure minimum required balance for baking rights. To get funds, use the [faucets](https://teztnets.xyz/). This has to wait util bootstrapping is complete.
+**Show the baker address**
 
-```
-./octez-client get balance for alice
-```
-
-Register the implict account as a delegate. We can use a consensus key as well:
-
-```
-./octez-client register key alice as delegate
-
-./octez-client register alice as delegate with consensus key bob
+```bash
+octez-client show address alice
+# (Avoid -S here in docs; it prints the secret key.)
 ```
 
-Check for baking rights. Depending on the network used this can take days. You will need to guess at the cycle parameter.
+**Fund and register the delegate**
 
-```bash!
-./octez-client rpc get /chains/main/blocks/head/helpers/baking_rights?cycle=<cycle>&delegate=${public_key_hash}
+Wait until the node is bootstrapped, then fund the implicit account (use a faucet on testnets). Check balance:
 
+```bash
+octez-client get balance for alice
 ```
-To start the baker :
-```bash!
-./octez-baker-alpha run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
+
+Register as a delegate (optionally set a consensus key):
+
+```bash
+# register the implicit account as a delegate
+octez-client register key alice as delegate
+
+# OR register alice as a delegate but use a separate consensus key
+octez-client register alice as delegate with consensus key bob
 ```
+
+**Check rights**
+
+Modern terminology uses **baking** and **attesting** (formerly "endorsing"). The RPC to query attesting rights is `attestation_rights`. (The older `endorsing_rights` was deprecated.)
+
+```bash
+# Baking rights (you may need to provide a future cycle)
+octez-client rpc get /chains/main/blocks/head/helpers/baking_rights?cycle=<cycle>\&delegate=<pkh>
+
+# Attestation rights (preferred modern name)
+octez-client rpc get /chains/main/blocks/head/helpers/attestation_rights?cycle=<cycle>\&delegate=<pkh>
+```
+
+**Start the baker**
+
+```bash
+# Use the correct protocol suffix (example placeholder <PROTO_HASH>)
+octez-baker-<PROTO_HASH> run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
+```
+
+---
 
 ## Signatory
 
-Clone Signatory from its Github repository or run with docker .
+Clone and build Signatory (or use Docker):
 
-```
-git clone <https://github.com/daily-co/signatory.git>
-```
-
-Build Signatory:
-
-```
+```bash
+git clone https://github.com/ecadlabs/signatory.git
 cd signatory
 make signatory
 make signatory-cli
@@ -88,20 +93,24 @@ make signatory-cli
 
 
 
-### 1. Local Secret
-This is not a secure method of key storage, but it is the simplest example.
-Create a file `/etc/secret.json` and populate it with the PKH and secret key for the baker:
-```json!
+### 1) Local Secret (dev/test only)
+
+> **Warning:** File-based secrets are for development/prototyping only. Don't use in production.
+
+Create `/etc/secret.json` with the baker’s secret **(example only; never publish real keys):**
+
+```json
 [
   {
-    "name": "tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU",
-    "value": "unencrypted:edsk2hf8Y9oYMQ9MiEAH9pbs3H7tpcBbyxjcWuRjJCrGPB81bDHC7s"
+    "name": "tz1YourBakerAddress",
+    "value": "unencrypted:edskYourDevOnlySecretKey"
   }
 ]
 ```
-Create a `local_secret.yaml` file with the following content. 
 
-```
+Create `local_secret.yaml`:
+
+```yaml
 server:
   address: :6732
   utility_address: :9583
@@ -111,124 +120,90 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
-      
-  tezos:
-    tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU:
-      log_payloads: true
-      allowed_operations:
-      - generic
-      - block
-      - endorsement
-      - preendorsement
-      allowed_kinds:
-      - reveal
-      - delegation
+
+tezos:
+  tz1YourBakerAddress:
+    log_payloads: true
+    allow:
+      block:
+      # For Tenderbake-era naming; Signatory also supports newer terms (see notes below)
+      endorsement:
+      preendorsement:
+      generic:
+        - reveal
+        - delegation
+        - transaction
 ```
 
-Start Signatory :
+Start Signatory:
 
+```bash
+signatory serve -c local_secret.yaml
 ```
-./signatory serve -c ./signatory.yaml
+
+Test it:
+
+```bash
+# Get public key via remote signer HTTP interface
+curl -s localhost:6732/keys/tz1YourBakerAddress
+# -> {"public_key":"edpk..."}
 ```
 
-Test that Signatory is working :
+Point `octez-client` at Signatory (remote signer):
 
-```bash!
-curl localhost:6732/keys/tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU
-
-{"public_key":"edpktmKfj5reMbPmgwh2BNw5EHYpHEZZceMWfffcEpfPTn6pXgoRwF"}
-
-
-./signatory-cli list -c local_secret.yaml
-
-INFO[0000] Initializing vault                            vault=file vault_name=local_secret
-Public Key Hash:    tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU
-Vault:              File
-ID:                 tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU
-Active:             false
-```
-Import the key Signatory provides into octez-client, overriding the key alice created earlier.
-
-```bash!
-./octez-client import secret key alice http://localhost:6732/tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU --force
-```
-Check the tezos node secret key file:
-```bash!
+```bash
+octez-client import secret key alice http://localhost:6732/tz1YourBakerAddress --force
 cat ~/.tezos-client/secret_keys
-[{ "name": "alice",
-    "value": "http://localhost:6732/tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU"
-}]
+# [{"name":"alice","value":"http://localhost:6732/tz1YourBakerAddress"}]
 ```
 
-Do a tezos transfer operation:
-```bash!
-./octez-client transfer 10 from alice to bob
-```
-and check the signatory logs
-```go!
-INFO[0006] Requesting signing operation                  ops="map[transaction:1]" ops_total=1 pkh=tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU request=generic vault=File vault_name=local_secret
-INFO[0006] About to sign raw bytes                       ops="map[transaction:1]" ops_total=1 pkh=tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU raw=034266bedbf77c4e104790c8c3e7ca81cef9aa2f63770ae27d9032c670902f03e76c00fa8d929d0a3eb3a509e16bd6aec74e6c18783432e102fd13e9070080ade20400005cf5b8fb0209b20765b88233de1700896d4d084a00 request=generic vault=File vault_name=local_secret
-INFO[0006] Signed generic successfully                   ops="map[transaction:1]" ops_total=1 pkh=tz1iUqDimrzPmYuWbmLgWwX73YF7dBcaJryU request=generic vault=File vault_name=local_secret
+(Octez's remote signer uses HTTP endpoints like `GET/POST /keys/<pkh>` under the hood.)
+
+Try an operation and observe Signatory logs:
+
+```bash
+octez-client transfer 10 from alice to bob
 ```
 
+### 2) Ledger Devices
 
-### 2. Ledger Devices
+1. Ensure your OS can access the Ledger (udev rules etc.).
+2. Confirm the Ledger Tezos Baking app is running; list connected devices:
 
-Make sure that the ledger device is able to work with your linux system and is enabled through udev rules. Some examples can be found [here](https://github.com/LedgerHQ/udev-rules)
-
-Make sure that tezos client can access the ledger:
-```bash!
-./octez-client list connected ledgers
-
-## Ledger `elated-beaver-unusual-nightingale`
-Found a Tezos Baking 2.3.2 (git-description: "") application running on
-Ledger Nano S at [0001:0029:00].
-
-To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one
-of:
-  octez-client import secret key ledger_michael "ledger://elated-beaver-unusual-nightingale/bip25519/0h/0h"
-  octez-client import secret key ledger_michael "ledger://elated-beaver-unusual-nightingale/ed25519/0h/0h"
-  octez-client import secret key ledger_michael "ledger://elated-beaver-unusual-nightingale/secp256k1/0h/0h"
-  octez-client import secret key ledger_michael "ledger://elated-beaver-unusual-nightingale/P-256/0h/0h"
+```bash
+octez-client list connected ledgers
 ```
 
-Use the appropriate import command for the elliptic curve you plan to use to get the ledger keys into octez-client
+Import the key from Ledger to `octez-client` with your chosen curve/path (examples):
 
-```bash!
-./octez-client import secret key ledger_michael "ledger://elated-beaver-unusual-nightingale/bip25519/0h/0h"
-
-Please validate (and write down) the public key hash displayed on the Ledger,
-it should be equal
-to `tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt`:
-Tezos address added: tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt
-```
-Review the Request on the ledger device and approve it.
-
-
-Ensure the implicit account used has funds for a baking stake. (Use the [faucet](https://teztnets.xyz/))
-
-Set up ledger for baking 
-```
-./signatory-cli ledger setup-baking bip25519/0h/0h -c signatory.yaml 
-
-INFO[0000] Initializing vault    
-vault=ledger vault_name=ledger
-Authorized baking for address: tz1Kiak7gwhv6fvcpq9Q9ghjKNuFNYDtUJUG
+```bash
+# Choose one path/curve:
+octez-client import secret key ledger_michael "ledger://<ledger-id>/bip25519/0h/0h"
+# or
+octez-client import secret key ledger_michael "ledger://<ledger-id>/ed25519/0h/0h"
+# or
+octez-client import secret key ledger_michael "ledger://<ledger-id>/secp256k1/0h/0h"
+# or
+octez-client import secret key ledger_michael "ledger://<ledger-id>/P-256/0h/0h"
 ```
 
-Determine the ID of the ledger device. 
-```bash!
-./signatory-cli ledger list -c signatory.yaml
-  
-Path:           0001:0029:00
-ID:             elated-beaver-unusual-nightingale / 00f24232
-Version:        TezBake 2.3.2
+
+
+Authorize baking on the Ledger and set up baking HWMs in Signatory:
+
+```bash
+# Find your device id
+signatory-cli ledger list -c ledger.yaml
+
+# Set up baking for a bip32-ed25519 path (Tezos purpose 44', coin 1729')
+signatory-cli ledger setup-baking -c ledger.yaml -d <device_id> "bip32-ed25519/44'/1729'/0'/0'"
 ```
 
-The ID is used by the signatory.yaml file to identify the ledger
-Set up the Signatory configuration file like this, and save it a `ledger.yaml`:
 
-```bash!
+
+Create `ledger.yaml`:
+
+```yaml
 server:
   address: :6732
   utility_address: :9583
@@ -237,243 +212,139 @@ vaults:
   ledger:
     driver: ledger
     config:
-      id: 00f24232
+      id: <device_hex_id>
       keys:
-        - "bip32-ed25519/0'/0'"
-        - "secp256k1/0'/1'"
-      close_after: 600800s
+        - "bip32-ed25519/44'/1729'/0'/0'"
+      close_after: 600s  # optional: close device after inactivity
 
 tezos:
-  tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt:
+  tz1LedgerBakerAddress:
     log_payloads: true
     allow:
-      generic:
-        - transaction
-        - endorsement
-        - proposals
       block:
       endorsement:
       preendorsement:
-```
-where we have added the Ledger ID and the ledger's public key hash that we imported to octez-client.
-
-Start signatory from the CLI or with Docker:
-```
-./signatory-cli ledger setup-baking ed25519/0h/0h -c sig-ledger.yaml --base-dir .
-```
-Review and permit the request on the ledger device.
-```
-
-Get the public key hash from the ledger device
-
-```bash!
-./signatory-cli list -c ledger.yaml 
-
-INFO[0000] Initializing vault                            vault=ledger vault_name=ledger
-Public Key Hash:    tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt
-Vault:              Ledger
-ID:                 bip32-ed25519/44'/1729'/0'/0'
-Active:             true
-Allowed Requests:   [block endorsement generic preendorsement]
-Allowed Operations: [endorsement proposals transaction]
-```
-Check the logs for the baker to see that endorsing is working
-```bash!
-Mar 22 12:09:44.815 - 016-PtMumbai.baker.actions: injected preendorsement op8Pj4ot1oZ3YmmUhxeTKiH83SUazCVDVgZzqgKb1DKj68vr8a1
-Mar 22 12:09:44.815 - 016-PtMumbai.baker.actions:   for blueledger (tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt)
-Mar 22 12:09:46.596 - 016-PtMumbai.baker.actions: injected endorsement ooee4W7k4oNSLRZu62aZQwhkahmWRngbEnJZ5CopsXGantGemzd for
-Mar 22 12:09:46.596 - 016-PtMumbai.baker.actions:   blueledger (tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt)
-```
-See the endorsing in the Signatory logs:
-```go!
-INFO[1910525] Requesting signing operation                  chain_id=NetXQw6nWSnrJ5t lvl=457542 pkh=tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt request=preendorsement vault=Ledger vault_name=00f24232
-INFO[1910525] About to sign raw bytes                       chain_id=NetXQw6nWSnrJ5t lvl=457542 pkh=tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt raw=122f6cbd6119f3a10704d101a5d13334809adce2e9d3011c6cead4b975a8d39f91c87273e714001e0006fb4600000082c6194912098ea5a9a7d52a593e4783afb36f3965780b242eb1e271c1159cc946 request=preendorsement vault=Ledger vault_name=00f24232
-INFO[1910527] Signed preendorsement successfully            chain_id=NetXQw6nWSnrJ5t lvl=457542 pkh=tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt request=preendorsement vault=Ledger vault_name=00f24232
-INFO[1910527] POST /keys/tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt  duration=1.772184564s hostname="localhost:6732" method=POST path=/keys/tz1bQYMFieZHomNPjJvpp2g7PuhxRPDxpnFt start_time="2023-03-08T10:26:30-08:00" status=200
-```
-## Other Vault Types
-
-Signatory supports additional enterprise-grade vault types including YubiHSM, AWS KMS, Google Cloud KMS, and Azure Key Vault. These follow the same pattern as the Local Secret and Ledger examples above:
-
-1. **Configure the vault driver** in the `vaults` section with the appropriate driver name and connection parameters
-2. **Set up the Tezos key configuration** with the public key hash returned by `./signatory-cli list`
-3. **Import the key into octez-client** using the Signatory HTTP endpoint
-4. **Start baking** with the same commands and monitoring
-
-For detailed configuration examples and setup instructions for these vault types, refer to the [Signatory documentation](https://signatory.io/docs/).
-
-### Vault Selection Guidelines
-
-- **Local Secret**: Development and testing only (⚠️ not secure for production)
-- **Ledger**: Recommended for individual bakers and small operations (✅ good security)
-- **Cloud KMS** (AWS/GCP/Azure): Enterprise deployments with cloud infrastructure
-- **YubiHSM**: High-security environments requiring dedicated HSM hardware
-
-All vault types provide the same baking functionality and use identical baker commands once configured.
-
-## Agnostic Baker Commands
-
-Signatory provides vault-agnostic commands that work consistently across all supported vault types. These commands provide a unified interface for managing keys and baking operations regardless of the underlying vault implementation.
-
-### Core Agnostic Commands
-
-The `signatory-cli` tool provides several commands that work with any configured vault:
-
-#### Key Management
-```bash
-# List all available keys across all configured vaults
-./signatory-cli list -c signatory.yaml
-
-# Import a key (for vaults that support key import)
-./signatory-cli import -c signatory.yaml
-
-# Generate a new key (for vaults that support key generation)
-./signatory-cli generate -c signatory.yaml
-```
-
-#### Vault-Specific Operations
-While the interface is consistent, some commands are vault-specific:
-
-```bash
-# Ledger-specific commands
-./signatory-cli ledger list -c signatory.yaml
-./signatory-cli ledger setup-baking <key_id> -c signatory.yaml
-./signatory-cli ledger deauthorize-baking <key_id> -c signatory.yaml
-
-# HSM-specific commands (for YubiHSM and other HSMs)
-./signatory-cli hsm list -c signatory.yaml
-```
-
-#### Configuration Validation
-```bash
-# Test vault connectivity and configuration
-./signatory-cli list -c signatory.yaml
-
-# Validate configuration file
-./signatory serve -c signatory.yaml --dry-run
-```
-
-### Standard Baking Operations
-
-Regardless of the vault type, all baking operations use the same HTTP API endpoints:
-
-```bash
-# Get public key (works with any vault)
-curl localhost:6732/keys/tz1...
-
-# Health check
-curl localhost:9583/healthz
-
-# List authorized keys
-curl localhost:6732/authorized_keys
-```
-
-### High Water Mark Management
-
-Signatory automatically manages high water marks to prevent double signing, but you can also manage them manually:
-
-```bash
-# For Ledger devices
-./signatory-cli ledger get-high-watermark -d <device_id> -c signatory.yaml
-./signatory-cli ledger set-high-watermark <level> -d <device_id> -c signatory.yaml
-```
-
-This agnostic approach means you can switch between vault types with minimal changes to your baking infrastructure.
-
-## Baking with DAL (Data Availability Layer)
-
-The Data Availability Layer (DAL) is a feature in Tezos that enhances the network's data availability and scalability. When baking with DAL enabled, bakers can participate in data availability operations in addition to standard block production and attestation.
-
-### What is DAL?
-
-DAL provides a mechanism for publishing data in a way that ensures availability without requiring all nodes to store all data permanently. This is particularly important for scaling solutions and rollups that need to publish data to the Tezos network.
-
-### Configuring DAL Baking
-
-To enable DAL baking, you need to add the `attestation_with_dal` operation to your Signatory configuration:
-
-```yaml
-tezos:
-  tz1YourBakerAddress:
-    log_payloads: true
-    allow:
-      block:              # Standard block baking
-      attestation:        # Standard attestations  
-      preattestation:     # Pre-attestations
-      attestation_with_dal: # DAL attestations ✨ NEW
       generic:
         - transaction
         - reveal
         - delegation
 ```
 
-### DAL Node Setup
-
-To participate in DAL, you need to run a DAL node alongside your regular Tezos node:
+Verify the key is active:
 
 ```bash
-# Start DAL node
-./octez-dal-node run --data-dir ~/.tezos-dal-node
+signatory-cli list -c ledger.yaml
+# Shows PKH, Vault: Ledger, Active: true, Allowed Operations...
+```
 
-# Start baker with DAL support
-./octez-baker-alpha run with local node ~/.tezos-node \
-  --dal-node http://localhost:10732 \
+
+
+Start your baker normally. You should see (pre)attestations in baker logs and the corresponding signing requests in Signatory.
+
+---
+
+## Other Vault Types
+
+All enterprise vaults follow the same pattern:
+
+1. **Configure the vault driver** under `vaults:` (KMS/HSM connection settings)
+2. **List/activate keys** and copy the PKH from `signatory-cli list` into the `tezos:` section
+3. **Import the key endpoint** into `octez-client` via `http://<signatory>:6732/<pkh>`
+4. **Bake** as usual
+
+See the official [Signatory documentation](https://signatory.io/docs/) for AWS/GCP/Azure/YubiHSM examples.
+
+### Vault Selection Guidelines
+
+* **Local Secret:** dev & testing only
+* **Ledger:** individuals/small ops; good security
+* **Cloud KMS / YubiHSM:** enterprise setups & HSM-backed keys
+
+---
+
+## Baking with DAL (Data Availability Layer)
+
+To attest DAL data, run a DAL node alongside your L1 node and tell the baker to use it.
+
+1. Initialize and run a DAL node:
+
+```bash
+# Initialize (use your baker PKH for --attester-profiles)
+octez-dal-node config init --endpoint http://127.0.0.1:8732 --attester-profiles="$MY_ADDRESS" --data-dir ~/.tezos-dal-node
+
+# Run
+octez-dal-node run --data-dir ~/.tezos-dal-node
+```
+
+2. Start the baker and point it at the DAL node:
+
+```bash
+octez-baker-<PROTO_HASH> run with local node ~/.tezos-node \
+  --dal-node http://127.0.0.1:10732 \
   --liquidity-baking-toggle-vote pass
 ```
 
-### DAL Operations
 
-When DAL is enabled, Signatory will handle additional operation types:
 
-1. **Standard attestations**: Regular network consensus operations
-2. **DAL attestations**: Data availability confirmations
-3. **Combined operations**: Operations that include both consensus and DAL data
-
-### Monitoring DAL Baking
-
-Monitor DAL operations in Signatory logs:
+3. Rights & monitoring:
 
 ```bash
-# Look for DAL-specific log entries
-INFO[0000] Requesting signing operation    ops="map[attestation_with_dal:1]" request=attestation_with_dal
-INFO[0000] Signed attestation_with_dal successfully      request=attestation_with_dal
+# Check attestation rights
+octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?delegate=$MY_ADDRESS&cycle=<current-cycle>"
 ```
 
-### DAL Configuration Example
+> **Operation names.** In modern Octez, "endorsements" are "attestations" and there is a dedicated **`attestation_with_dal`** operation for DAL data. Make sure your Signatory version supports these newer kinds.
 
-Here's a complete configuration example with DAL enabled:
+**Signatory allow-list example with DAL:**
 
 ```yaml
-server:
-  address: :6732
-  utility_address: :9583
-
-vaults:
-  ledger:
-    driver: ledger
-    config:
-      id: your-ledger-id
-
 tezos:
   tz1YourBakerAddress:
     log_payloads: true
     allow:
       block:
       attestation:
-      preattestation: 
-      attestation_with_dal:  # Enable DAL attestations
+      preattestation:
+      attestation_with_dal:
       generic:
         - transaction
         - reveal
         - delegation
 ```
 
-### Prerequisites for DAL Baking
+> If you're on an older Signatory config/example that still uses `endorsement`/`preendorsement`, keep those; newer releases recognize `attestation`/`preattestation` and `attestation_with_dal`.
 
-- Tezos node with DAL support (recent Octez version)
-- DAL node running and synchronized
-- Sufficient bandwidth for DAL data operations
-- Updated Signatory configuration with `attestation_with_dal` permissions
+---
 
-DAL baking is optional and can be enabled incrementally without affecting standard baking operations.
+## Vault-Agnostic Signatory CLI
+
+Useful commands that work across vaults (where supported):
+
+```bash
+# List all keys Signatory can see (and whether each is Active in config)
+signatory-cli list -c signatory.yaml
+
+# Validate configuration without starting the server
+signatory serve -c signatory.yaml --dry-run
+```
+
+
+
+**Remote signer health & introspection**
+
+```bash
+# Public key for a PKH
+curl localhost:6732/keys/tz1...
+
+# Health endpoint
+curl localhost:9583/healthz
+
+# Authorized client keys (if you enable client auth)
+curl localhost:6732/authorized_keys
+```
+
+
+
+```
+
 
