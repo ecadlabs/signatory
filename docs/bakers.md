@@ -63,10 +63,10 @@ Modern terminology uses **baking** and **attesting** (formerly "endorsing"). The
 
 ```bash
 # Baking rights (you may need to provide a future cycle)
-octez-client rpc get /chains/main/blocks/head/helpers/baking_rights?cycle=<cycle>\&delegate=<pkh>
+octez-client rpc get "/chains/main/blocks/head/helpers/baking_rights?cycle=<cycle>&delegate=<pkh>"
 
 # Attestation rights (preferred modern name)
-octez-client rpc get /chains/main/blocks/head/helpers/attestation_rights?cycle=<cycle>\&delegate=<pkh>
+octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?cycle=<cycle>&delegate=<pkh>"
 ```
 
 **Start the baker**
