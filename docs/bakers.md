@@ -5,7 +5,7 @@ title: Tezos Bakers
 
 # How to use Signatory with a Tezos Baker
 
-A Tezos baker can use Signatory as a remote signer with keys stored in a local file (dev only), a Ledger device, or enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.). This guide shows practical setups for **Local Secret** and **Ledger**; other vaults follow the same pattern.
+A Tezos baker can use Signatory as a remote signer with keys stored securely in enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.) or locally in files for development purposes only. This guide shows a **Local Secret** setup for development; production deployments should use proper vault implementations.
 
 ## Bakers on Tezos Networks
 
@@ -91,19 +91,32 @@ octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pas
 
 ## Signatory
 
-Clone and build Signatory (or use Docker):
+**Get Signatory using Docker (recommended):**
 
 ```bash
-git clone https://github.com/ecadlabs/signatory.git
-cd signatory
-make all
+# Pull the latest Signatory Docker image
+docker pull ecadlabs/signatory
+
+# Or use a specific version
+docker pull ecadlabs/signatory:v1.2.3
+```
+
+**Or download prebuilt binaries:**
+
+Download the latest release binaries from the [Signatory GitHub Releases page](https://github.com/ecadlabs/signatory/releases). Extract and install:
+
+```bash
+# Example for Linux x64 (check releases page for your platform)
+wget https://github.com/ecadlabs/signatory/releases/download/v1.2.3/signatory_1.2.3_linux_amd64.tar.gz
+tar -xzf signatory_1.2.3_linux_amd64.tar.gz
+sudo mv signatory* /usr/local/bin/
 ```
 
 
 
-### 1) Local Secret (dev/test only)
+### Local Secret Vault (Development Only)
 
-> **Warning:** File-based secrets are for development/prototyping only. Don't use in production.
+> **⚠️ Development Only Warning:** File-based secrets are **ONLY** for development and testing. **Never use in production.** For production deployments, use proper vault solutions like AWS KMS, Azure Key Vault, GCP Key Management Service, or YubiHSM for secure key storage and management.
 
 Create `/etc/secret.json` with the baker’s secret **(example only; never publish real keys):**
 
@@ -128,8 +141,8 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
-
-tezos:
+      
+  tezos:
   tz1YourBakerAddress:
     log_payloads: true
     allow:
@@ -146,6 +159,14 @@ tezos:
 Start Signatory:
 
 ```bash
+# Using Docker (recommended)
+docker run -d --name signatory \
+  -p 6732:6732 -p 9583:9583 \
+  -v $(pwd)/local_secret.yaml:/local_secret.yaml \
+  -v /etc/secret.json:/etc/secret.json \
+  ecadlabs/signatory serve -c /local_secret.yaml
+
+# Or if using prebuilt binary
 signatory serve -c local_secret.yaml
 ```
 
@@ -173,83 +194,6 @@ Try an operation and observe Signatory logs:
 octez-client transfer 10 from baking_key to tz1RecipientAddress
 ```
 
-### 2) Ledger Devices
-
-1. Ensure your OS can access the Ledger (udev rules etc.).
-2. Confirm the Ledger Tezos Baking app is running; list connected devices:
-
-```bash
-octez-client list connected ledgers
-```
-
-Import the key from Ledger to `octez-client` with your chosen curve/path (examples):
-
-```bash
-# Choose one path/curve:
-octez-client import secret key ledger_michael "ledger://<ledger-id>/bip25519/0h/0h"
-# or
-octez-client import secret key ledger_michael "ledger://<ledger-id>/ed25519/0h/0h"
-# or
-octez-client import secret key ledger_michael "ledger://<ledger-id>/secp256k1/0h/0h"
-# or
-octez-client import secret key ledger_michael "ledger://<ledger-id>/P-256/0h/0h"
-```
-
-
-
-Authorize baking on the Ledger and set up baking HWMs in Signatory:
-
-```bash
-# Find your device id
-signatory-cli ledger list -c ledger.yaml
-
-# Set up baking for a bip32-ed25519 path (Tezos purpose 44', coin 1729')
-signatory-cli ledger setup-baking -c ledger.yaml -d <device_id> "bip32-ed25519/44'/1729'/0'/0'"
-```
-
-
-
-Create `ledger.yaml`:
-
-```yaml
-server:
-  address: :6732
-  utility_address: :9583
-
-vaults:
-  ledger:
-    driver: ledger
-    config:
-      id: <device_hex_id>
-      keys:
-        - "bip32-ed25519/44'/1729'/0'/0'"
-      close_after: 600s  # optional: close device after inactivity
-
-tezos:
-  tz1LedgerBakerAddress:
-    log_payloads: true
-    allow:
-      block:
-      attestation:        # Modern terminology (was "endorsement")
-      preattestation:     # Modern terminology (was "preendorsement") 
-      generic:
-        - transaction
-        - reveal
-        - delegation
-        - stake
-```
-
-Verify the key is active:
-
-```bash
-signatory-cli list -c ledger.yaml
-# Shows PKH, Vault: Ledger, Active: true, Allowed Operations...
-```
-
-
-
-Start your baker normally. You should see (pre)attestations in baker logs and the corresponding signing requests in Signatory.
-
 ---
 
 ## Other Vault Types
@@ -265,9 +209,10 @@ See the official [Signatory documentation](https://signatory.io/docs/) for AWS/G
 
 ### Vault Selection Guidelines
 
-* **Local Secret:** dev & testing only
-* **Ledger:** individuals/small ops; good security
-* **Cloud KMS / YubiHSM:** enterprise setups & HSM-backed keys
+* **Local Secret:** Development and testing only - **never for production**
+* **Cloud KMS (AWS/GCP/Azure):** Enterprise production deployments with cloud HSM backing
+* **YubiHSM:** On-premises hardware security module for enterprise setups
+* **Other options:** See [Signatory vault documentation](https://signatory.io/docs/) for additional vault types
 
 ---
 
@@ -304,6 +249,10 @@ To participate in DAL attestations:
 3. **Update Signatory policy** to allow `attestation_with_dal` operations
 
 > **Important:** Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
+
+**Consensus Keys and DAL**
+
+While consensus keys are not strictly required for DAL operations, **using consensus keys is considered current best practice** for production baking setups. Consensus keys provide operational flexibility and security benefits by separating the baker's identity (manager key) from the key used for consensus operations (baking, attesting).
 
 **Further Reading**
 
