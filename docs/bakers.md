@@ -57,6 +57,15 @@ octez-client register key baking_key as delegate
 octez-client register key baking_key as delegate with consensus key consensus_key
 ```
 
+**Stake funds for baking:**
+
+After registration, you must stake funds to participate in baking:
+
+```bash
+# Stake tez for baking (adjust amount as needed)
+octez-client stake 10000 for baking_key
+```
+
 **Check rights**
 
 Modern terminology uses **baking** and **attesting** (formerly "endorsing"). The RPC to query attesting rights is `attestation_rights`. (The older `endorsing_rights` was deprecated.)
@@ -85,8 +94,7 @@ Clone and build Signatory (or use Docker):
 ```bash
 git clone https://github.com/ecadlabs/signatory.git
 cd signatory
-make signatory
-make signatory-cli
+make all
 ```
 
 
@@ -124,13 +132,13 @@ tezos:
     log_payloads: true
     allow:
       block:
-      # For Tenderbake-era naming; Signatory also supports newer terms (see notes below)
       endorsement:
       preendorsement:
       generic:
         - reveal
         - delegation
         - transaction
+        - stake
 ```
 
 Start Signatory:
@@ -226,6 +234,7 @@ tezos:
         - transaction
         - reveal
         - delegation
+        - stake
 ```
 
 Verify the key is active:
@@ -272,13 +281,14 @@ tezos:
     log_payloads: true
     allow:
       block:              # Standard block baking
-      attestation:        # Standard attestations  
-      preattestation:     # Pre-attestations
+      endorsement:        # Standard endorsements (Signatory uses this terminology)
+      preendorsement:     # Pre-endorsements
       attestation_with_dal: # ✨ Required for DAL attestations
       generic:
         - transaction
         - reveal
         - delegation
+        - stake
 ```
 
 **DAL Setup Overview**
