@@ -116,7 +116,9 @@ sudo mv signatory* /usr/local/bin/
 
 ### Local Secret Vault (Development Only)
 
-> **⚠️ Development Only Warning:** File-based secrets are **ONLY** for development and testing. **Never use in production.** For production deployments, use proper vault solutions like AWS KMS, Azure Key Vault, GCP Key Management Service, or YubiHSM for secure key storage and management.
+:::caution Development Only Warning
+File-based secrets are **ONLY** for development and testing. **Never use in production.** For production deployments, use proper vault solutions like AWS KMS, Azure Key Vault, GCP Key Management Service, or YubiHSM for secure key storage and management.
+:::
 
 Create `/etc/secret.json` with the baker’s secret **(example only; never publish real keys):**
 
@@ -238,7 +240,9 @@ tezos:
         - stake
 ```
 
-> **Note on Terminology:** Signatory supports both old (`endorsement`/`preendorsement`) and modern (`attestation`/`preattestation`) terminology in policy configuration. Both work identically, but we recommend using the modern terms to match current Tezos protocol terminology.
+:::note Terminology
+Signatory supports both old (`endorsement`/`preendorsement`) and modern (`attestation`/`preattestation`) terminology in policy configuration. Both work identically, but we recommend using the modern terms to match current Tezos protocol terminology.
+:::
 
 **DAL Setup Overview**
 
@@ -248,7 +252,9 @@ To participate in DAL attestations:
 2. **Configure your baker** to use the DAL node (`--dal-node` flag)
 3. **Update Signatory policy** to allow `attestation_with_dal` operations
 
-> **Important:** Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
+:::warning Important
+Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
+:::
 
 **Consensus Keys and DAL**
 
