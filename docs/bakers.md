@@ -78,6 +78,8 @@ octez-client rpc get "/chains/main/blocks/head/helpers/baking_rights?cycle=<cycl
 octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?cycle=<cycle>&delegate=<pkh>"
 ```
 
+**Terminology Note:** Tezos protocol terminology evolved from "endorsement" to "attestation" (and "preendorsement" to "preattestation"). Signatory policy configuration supports both terminologies, but this guide uses the modern terms to stay current with protocol naming.
+
 **Start the baker**
 
 ```bash
@@ -132,8 +134,8 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement") 
+      preattestation:     # Modern terminology (was "preendorsement")
       generic:
         - reveal
         - delegation
@@ -228,8 +230,8 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement") 
       generic:
         - transaction
         - reveal
@@ -281,8 +283,8 @@ tezos:
     log_payloads: true
     allow:
       block:              # Standard block baking
-      endorsement:        # Standard endorsements (Signatory uses this terminology)
-      preendorsement:     # Pre-endorsements
+      attestation:        # Standard attestations
+      preattestation:     # Pre-attestations  
       attestation_with_dal: # ✨ Required for DAL attestations
       generic:
         - transaction
@@ -290,6 +292,8 @@ tezos:
         - delegation
         - stake
 ```
+
+> **Note on Terminology:** Signatory supports both old (`endorsement`/`preendorsement`) and modern (`attestation`/`preattestation`) terminology in policy configuration. Both work identically, but we recommend using the modern terms to match current Tezos protocol terminology.
 
 **DAL Setup Overview**
 
