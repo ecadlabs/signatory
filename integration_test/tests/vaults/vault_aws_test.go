@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	integrationtest "github.com/ecadlabs/signatory/new_integration_test/tests"
+	integrationtest "github.com/ecadlabs/signatory/integration_test/tests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
