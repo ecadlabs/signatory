@@ -1,0 +1,123 @@
+server:
+  address: :6732
+  utility_address: :9583
+
+watermark:
+  # Default
+  driver: file
+  
+vaults:
+  local_secret:
+    driver: file
+    config:
+      file: /etc/secret.json
+  ledger:
+    driver: ledger
+    config:
+      transport: tcp://speculos:9999
+      keys:
+        - "bip25519/0'/0'"
+        - "ed25519/0'/0'"
+        - "secp256k1/0'/0'"
+        - "P-256/0'/0'"
+      close_after: 3600s
+tezos:
+  #alice
+  tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+      
+  #bob
+  tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6:
+    log_payloads: true
+    allow:
+      generic:
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
+      block:
+
+  #opstest is not bootstrapped in flextesa, as is used for reveal test
+  tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B:
+    allow:
+    log_payloads: true
+
+  #opstest1 is used as consensus key for opstest in update_consensus_key test
+  tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi:
+    allow:
+    log_payloads: true
+
+  #baker used for watermark tests
+  tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
+    log_payloads: true
+    allow:
+      generic:
+        - endorsement
+        - preendorsement
+      block:
+      endorsement:
+      preendorsement:
+
+  #used for authorized_key tests
+  tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp: 
+    log_payloads: true
+    allow:
+      generic:
+        - set_deposits_limit
+        - reveal
+        - delegation
+        - transaction
+      block:
+      endorsement:
+      preendorsement:
+
+  #tz1
+  tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+        - delegation
+        - stake
+
+  #tz2
+  tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
+  #tz3
+  tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
+  #tz4
+  tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
+  #speculos
+  tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
+  #baker1
+  tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx:
+    log_payloads: true
+    allow:
