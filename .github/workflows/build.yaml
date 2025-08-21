@@ -165,7 +165,7 @@ jobs:
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
           VAULT_GCP_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3_PK }}
         run: >
-         cd new_integration_test;
+         cd integration_test;
          export ARCH=amd64;
          . ./.env.${{ matrix.testenvs }};
          envsubst < gcp-token-template.json > gcp-token.json;
@@ -181,7 +181,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: integration-test-coverage-env${{ matrix.testenvs }}
-          path: ./new_integration_test/coverage/
+          path: ./integration_test/coverage/
 
   report-coverage:
     needs: integration-tests
