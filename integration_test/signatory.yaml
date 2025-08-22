@@ -1,6 +1,11 @@
 server:
   address: :6732
   utility_address: :9583
+
+watermark:
+  # Default
+  driver: file
+  
 vaults:
   local_secret:
     driver: file
@@ -23,6 +28,7 @@ tezos:
     allow:
       generic:
         - transaction
+        - reveal
       
   #bob
   tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6:
@@ -69,12 +75,15 @@ tezos:
       endorsement:
       preendorsement:
 
-  #speculos
-  tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
+  #tz1
+  tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR:
     log_payloads: true
     allow:
       generic:
         - transaction
+        - reveal
+        - delegation
+        - stake
 
   #tz2
   tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN:
@@ -82,6 +91,15 @@ tezos:
     allow:
       generic:
         - transaction
+        - reveal
+
+  #tz3
+  tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
 
   #tz4
   tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME:
@@ -90,3 +108,16 @@ tezos:
       generic:
         - transaction
         - reveal
+
+  #speculos
+  tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
+    log_payloads: true
+    allow:
+      generic:
+        - transaction
+        - reveal
+
+  #baker1
+  tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx:
+    log_payloads: true
+    allow:

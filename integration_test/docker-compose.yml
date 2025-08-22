@@ -1,78 +1,100 @@
-version: "3.9"
 networks:
   ecadnet: {}
 
+configs:
+  accounts:
+    file: ./accounts.json
+  sigy-config:
+    file: ./signatory.yaml
+  sigy-secret:
+    file: ./signatory-local-secret.json
+  gcp-token:
+    file: ./gcp-token.json
+  az-sp-key:
+    file: ./service-principal.key
+
 services:
 
-  flextesa:
-    container_name: flextesa
-    image: oxheadalpha/flextesa:latest
-    ports:
-      - "20000:20000"
-      - "20001:20001"
-    networks:
-      - ecadnet
-    volumes:
-      - ./flextesa.sh:/usr/bin/sigybox
-    environment:
-      - block_time=3
-    command: sigybox $PROTOCOL
-    healthcheck:
-      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
-      interval: 10s
-      timeout: 10s
-      retries: 20
-      start_period: 10s
-
-  flextesanobaking:
-    container_name: flextesanobaking
-    image: oxheadalpha/flextesa:latest
-    ports:
-      - "30000:20000"
-      - "30001:20001"
-    networks:
-      - ecadnet
-    volumes:
-      - ./flextesanobaking.sh:/usr/bin/sigybox
-    environment:
-      - block_time=3
-    command: sigybox $PROTOCOL
-    healthcheck:
-      test: "curl --fail http://localhost:20000/chains/main/blocks/head/header || exit 1"
-      interval: 10s
-      timeout: 10s
-      retries: 20
-      start_period: 10s
-
-  octez:
-    container_name: octez
+  tezos-node:
+    container_name: tezos-node
+    hostname: tezos-node
     image: tezos/tezos:$OCTEZ_VERSION
-    networks:
-      - ecadnet
-    entrypoint: tail -f /dev/null
+    ports:
+      - 18731:18731
+      - 19731:19731
+    entrypoint: /bin/sh
     volumes:
-      - ./.tezos-client:/home/tezos/.tezos-client
-      - ./contract.event.tz:/home/tezos/contract.event.tz
-    depends_on:
-      flextesa:
-        condition: service_healthy
-      signatory:
-        condition: service_healthy
+      - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
+    command: -c "sudo apk add --no-cache bash curl jq && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    environment:
+      - PROTOCOL=$PROTOCOL
+      - CHAIN_NAME=default-chain
+      - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisDefaultChai
     healthcheck:
-      test: ["CMD", "octez-client", "list", "known", "addresses"]
+      test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
       interval: 1s
       timeout: 1s
       retries: 10
       start_period: 1s
-    
+    depends_on:
+      signatory:
+        condition: service_healthy
+    networks:
+      - ecadnet
+
+  tezos-node-manual-bake:
+    container_name: tezos-node-manual-bake
+    hostname: tezos-node-manual-bake
+    image: tezos/tezos:$OCTEZ_VERSION
+    ports:
+      - 18732:18731
+      - 19732:19731
+    entrypoint: /bin/sh
+    volumes:
+      - ./tezos_scripts/octez-sandboxed-node.sh:/home/tezos/octez-sandboxed-node.sh
+    command: -c "sudo apk add --no-cache bash curl jq && /home/tezos/octez-sandboxed-node.sh 1 --connection 0"
+    environment:
+      - PROTOCOL=$PROTOCOL
+      - CHAIN_NAME=manual-bake-chain
+      - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisNoBakingChain
+    healthcheck:
+      test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 1s
+    depends_on:
+      signatory:
+        condition: service_healthy
+    networks:
+      - ecadnet
+
+  tezos-client:
+    container_name: tezos-client
+    hostname: tezos-client
+    image: tezos/tezos:$OCTEZ_VERSION
+    entrypoint: /bin/sh
+    volumes:
+      - ./tezos_scripts:/home/tezos/tezos_scripts
+      - ./contract.event.tz:/home/tezos/contract.event.tz
+    environment:
+      - PROTOCOL=$PROTOCOL
+    command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/init.sh $PROTOCOL"
+    depends_on:
+      signatory:
+        condition: service_healthy
+      tezos-node:
+        condition: service_healthy
+    networks:
+      - ecadnet
+
   signatory:
     container_name: signatory
+    hostname: signatory
     image: $IMAGE
     ports:
       - "6732:6732"
       - "9583:9583"
-    networks:
-      - ecadnet
     volumes:
       - ./.watermarks:/var/lib/signatory
       - ./coverage:/opt/coverage
@@ -89,33 +111,18 @@ services:
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp-token.json
       - GOCOVERDIR=/opt/coverage
-    depends_on:
-      speculos:
-        condition: service_healthy
-    command: serve
+    command: serve --log debug
+    networks:
+      - ecadnet
     healthcheck:
       test: "curl --fail http://localhost:9583/healthz || exit 1"
       interval: 1s
       timeout: 1s
       retries: 10
       start_period: 1s
-
-  speculos:
-    container_name: speculos
-    image: stephengaudet/tezoswalletemu:$ARCH
-    ports:
-      - "9999:9999"
-      - "41000:41000"
-      - "5001:5001"
-    networks:
-      - ecadnet
-    command: --display headless --vnc-port 41000 --api-port 5001 -m nanos apps/app_s.elf
-    healthcheck:
-      test: ["CMD","stat","/etc/passwd"]
-      interval: 1s
-      timeout: 1s
-      retries: 10
-      start_period: 10s
+    depends_on:
+      speculos:
+        condition: service_healthy      
 
   hashi:
     container_name: hashi
@@ -133,14 +140,21 @@ services:
     volumes:
       - ./hashicerts:/opt/signatory/certs
     cap_add:
-      - IPC_LOCK      
+      - IPC_LOCK
 
-configs:
-  sigy-config:
-    file: ./signatory.yaml
-  sigy-secret:
-    file: ./signatory-local-secret.json
-  gcp-token:
-    file: ./gcp-token.json
-  az-sp-key:
-    file: ./service-principal.key
+  speculos:
+    container_name: speculos
+    image: stephengaudet/tezoswalletemu:$ARCH
+    ports:
+      - "9999:9999"
+      - "41000:41000"
+      - "5001:5001"
+    networks:
+      - ecadnet
+    command: --display headless --vnc-port 41000 --api-port 5001 -m nanos apps/app_s.elf
+    healthcheck:
+      test: ["CMD","stat","/etc/passwd"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
