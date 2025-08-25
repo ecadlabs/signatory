@@ -216,3 +216,4 @@ jobs:
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
           files: c.out
+          strip-prefix: github.com/ecadlabs/signatory/
