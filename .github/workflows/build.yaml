@@ -16,7 +16,6 @@ permissions:
   packages: write
 
 env:
-  CC_BINARY_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
   GO_VERSION: '1.21'
 
 jobs:
@@ -191,10 +190,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "${{ env.GO_VERSION }}"
-      - name: Setup Code Climate test-reporter
-        run: |
-          curl -L "$CC_BINARY_URL" > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
       - uses: actions/download-artifact@v5
         with:
           name: unit-test-coverage
@@ -207,19 +202,18 @@ jobs:
         with:
           name: integration-test-coverage-envnext
           path: integration-test-coverage-envnext
-      - name: Report Coverage
+      - name: Combine Coverages
         run: |
-         export CC_TEST_REPORTER_ID='${{ secrets.CC_TEST_REPORTER_ID }}'
-         if [[ ! -z "$CC_TEST_REPORTER_ID" ]]; then
           echo "Generating coverage report..."
           export GIT_COMMIT_SHA='${{ github.sha }}'
           export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"          
-          ./cc-test-reporter before-build
           go tool covdata textfmt -i=./unit-test-coverage,./integration-test-coverage-envcurrent,./integration-test-coverage-envnext -o ./c.out
           rm -rf ./unit-test-coverage
           rm -rf ./integration-test-coverage-envcurrent
           rm -rf ./integration-test-coverage-envnext
           sed -i 's/\/go\/src\/github.com/github.com/g' ./c.out
-          mod="$(cat go.mod | awk '/^module/ {print $2}')"
-          ./cc-test-reporter after-build -p "${mod}/" -t gocov
-         fi
+      - uses: qltysh/qlty-action/coverage@v2
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: c.out
+          strip-prefix: github.com/ecadlabs/signatory/
