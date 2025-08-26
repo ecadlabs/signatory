@@ -70,10 +70,11 @@ tezos:
   {public_key_hash}:
     log_payloads: true
     allowed_operations:
-      # List of [generic, block, attestation]
+      # List of [generic, block, attestation, preattestation]
       - generic
       - block
       - attestation
+      - preattestation
     allowed_kinds:
       - transaction
       - attestation
