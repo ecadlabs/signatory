@@ -66,17 +66,17 @@ vaults:
       region: {AWS_Region}
 # This section is for public key hashes to define what is activated IRL
 tezos:
-  # Default policy allows "block" and "endorsement" operations
+  # Default policy allows "block" and "attestation" operations
   {public_key_hash}:
     log_payloads: true
     allowed_operations:
-      # List of [generic, block, endorsement]
+      # List of [generic, block, attestation]
       - generic
       - block
-      - endorsement
+      - attestation
     allowed_kinds:
       - transaction
-      - endorsement
+      - attestation
       - reveal
       - delegation
     authorized_keys:
@@ -104,8 +104,8 @@ Public Key Hash:    tz3WxgnteyTpM5YzJSTFFtnNYB8Du31gf3bQ
 Vault:              AWSKMS
 ID:                 arn:aws:kms:us-east-2:461830523399:key/038ec90c-1809-4320-9dc8-9cb05a8ef5bb
 Active:             true
-Allowed Operations: [block endorsement generic]
-Allowed Kinds:      [delegation endorsement reveal transaction]
+Allowed Operations: [block attestation generic]
+Allowed Kinds:      [delegation attestation reveal transaction]
 ```
 
 ### Final Signatory Verification Test

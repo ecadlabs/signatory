@@ -74,7 +74,7 @@ This hierarchical structure ensures that:
 ### Data Structure
 
 Each watermark document contains:
-- `request`: The type of request (block, endorsement, etc.)
+- `request`: The type of request (block, attestation, etc.)
 - `lvl`: The block level
 - `round`: The round number
 - `digest`: The operation digest hash

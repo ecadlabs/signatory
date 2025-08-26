@@ -57,7 +57,7 @@ This is the recommended approach for production deployments.
 When Signatory initializes the AWS backend, it automatically creates the DynamoDB table if it doesn't already exist. The table is created with:
 
 - Partition key: `idx` (combination of chain ID and public key hash)
-- Sort key: `request` (type of request: block, endorsement, etc.)
+- Sort key: `request` (type of request: block, attestation, etc.)
 - Provisioned capacity: 5 read and 5 write capacity units
 
 When Signatory starts up, it will log one of these messages to confirm which table is being used:

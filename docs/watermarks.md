@@ -25,7 +25,7 @@ Watermarks provide three critical benefits:
 
 Here's the basic flow of how watermarks operate:
 
-1. When Signatory receives a signing request (block, endorsement, etc.), it extracts the operation's level and round number
+1. When Signatory receives a signing request (block, attestation, etc.), it extracts the operation's level and round number
 2. Signatory checks the stored watermark for the corresponding key and operation type
 3. If the new operation has a higher level or round, it's allowed to proceed
 4. After successful signing, the watermark is updated to the new level/round
