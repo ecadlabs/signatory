@@ -640,8 +640,12 @@ func fixupRequests(req []string) {
 	for i := range req {
 		switch req[i] {
 		case "endorsement":
+			log.Warnln(
+				"Deprecated configuration detected: 'endorsement' should be replaced with 'attestation'")
 			req[i] = "attestation"
 		case "preendorsement":
+			log.Warnln(
+				"Deprecated configuration detected: 'preendorsement' should be replaced with 'preattestation'")
 			req[i] = "preattestation"
 		}
 	}
