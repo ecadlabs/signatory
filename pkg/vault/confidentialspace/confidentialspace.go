@@ -255,7 +255,7 @@ func (r *confidentialKeyRef[C]) Sign(ctx context.Context, message []byte, opt *v
 	r.v.mtx.Lock()
 	defer r.v.mtx.Unlock()
 
-	sig, err := r.v.client.Sign(ctx, r.handle, message)
+	sig, err := r.v.client.Sign(ctx, r.handle, message, opt)
 	if err != nil {
 		return nil, fmt.Errorf("(ConfidentialSpace): %w", err)
 	}
