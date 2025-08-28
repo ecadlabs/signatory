@@ -14,7 +14,7 @@ Confidential Space is Google Cloud's confidential computing solution that provid
 
 1. **Workload Identity Pool and Provider** - For secure authentication
 2. **Cloud KMS Key** - For encrypting/decrypting private keys
-3. **Confidential Space Environment** - Where the enclave-signer runs
+3. **Confidential Space Environment** - Where the tee-signer runs
 4. **Network Configuration** - For communication between Signatory and the enclave
 
 ## Prerequisites
@@ -109,7 +109,7 @@ gcloud kms keys add-iam-policy-binding \
 
 ## Step 5: Deploy Confidential Space Environment
 
-Deploy the enclave-signer in a Confidential Space environment. 
+Deploy the tee-signer in a Confidential Space environment. 
 
 ### Release
 ```bash
@@ -193,7 +193,7 @@ vaults:
 
 3. **Authentication Failures**
    - Verify the Workload Identity Provider path is correct
-   - Check that the enclave-signer is properly configured with the WIP provider path
+   - Check that the tee-signer is properly configured with the WIP provider path
    - Ensure the image digest in the KMS policy binding matches the actual container image digest
 
 
