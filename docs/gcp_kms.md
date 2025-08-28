@@ -112,8 +112,9 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement")
+      attestation_with_dal: # Required for DAL participation
       generic:
         - transaction
 ```

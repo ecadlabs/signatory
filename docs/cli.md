@@ -79,8 +79,8 @@ Public Key Hash:    tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo
 Vault:              Azure
 ID:                 https://forimport.vault.azure.net/keys/signatory-imported-2Csev40hxBXjwo5wVVnRbonNaDl/ce48c88caf744549b638e97bf89acb1b
 Active:             true
-Allowed Operations: [block endorsement generic preendorsement]
-Allowed Kinds:      [endorsement transaction]
+Allowed Operations: [block attestation generic preattestation]
+Allowed Kinds:      [attestation transaction]
 ```
 
 **Note:** `--base-dir` can be provided in the config.yaml file itself. Below is a sample layout of a config file.
@@ -98,8 +98,9 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement")
+      attestation_with_dal: # Required for DAL participation
       generic:
         - transaction
   tz3***:

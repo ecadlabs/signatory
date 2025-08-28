@@ -13,7 +13,7 @@ sidebar_label: Getting Started
 
 ## What is Signatory
 
-Signatory is a remote signing daemon that allows Tezos bakers to sign endorsement and baking operations with various key-management systems.
+Signatory is a remote signing daemon that allows Tezos bakers to sign attestation and baking operations with various key-management systems.
 
 Signatory currently supports [AWS KMS][aws], [Azure Key Vault][azure], [GCP Key Management][gcp], [YubiHSM][yubi], [Hashicorp Vault][hashicorp], and Confidential Computing TEEs such as [AWS Nitro Enclaves](nitro.md) and [Google Confidential Space](confidential_space.md). For development/prototyping purposes, Signatory can also sign with a [local private key](localsecret.md).
 
@@ -25,8 +25,6 @@ By supporting multiple Cloud KMS/HSM systems, we hope to help the network from c
 
 Observability is a first-class concern. Signatory allows for rich reporting and alerting capabilities. It exposes metrics about its operation via Prometheus metrics, enabling teams to set up robust monitoring of their critical infrastructure and allowing operators to see historical trends, signing volumes, errors and latencies. Users can report feature requests, security issues, or bug reports can via the Github project page: 
 github.com/ecadlabs/signatory or via email to security@ecadlabs.com
-
-Security issues can be encrypted using the keys available at https://keybase.io/jevonearth
 
 ## How Signatory Works
 
@@ -52,6 +50,10 @@ Signatory configuration is specified in a YAML file. Use the `signatory.yaml` fi
 You can configure multiple `vault`s. Each `vault` should be configured to use a backend. Same backend can be used in more than one `vault`.
 
 The configuration file is shared between `signatory` and `signatory-cli`.
+
+:::note Baker Operations
+For bakers, ensure your configuration includes `attestation` and `preattestation` operations. If you're running a DAL node, also add `attestation_with_dal` to participate in DAL attestations and earn additional rewards. See the [Bakers guide](bakers.md) for detailed configuration examples.
+:::
 
 ### Configuration Example - File-based Vault
 
@@ -80,7 +82,7 @@ watermark:
 
 # List enabled public keys hashes here
 tezos:
-  # Default policy allows "block" and "endorsement" operations
+  # Default policy allows "block" and "attestation" operations
   tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
 
   # Explicit policy
@@ -91,8 +93,9 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement")
+      attestation_with_dal: # Required for DAL participation
       failing_noop:
       generic:
         - transaction
@@ -140,8 +143,9 @@ tezos:
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement")
+      attestation_with_dal: # Required for DAL participation
       failing_noop:
       generic:
         - delegation
@@ -225,7 +229,7 @@ This endpoint is useful for monitoring, or declarative tests as part of deployme
 
 ### Testing
 
-To test the signing operation, you can send a post to Signatory. In this example, we are sending a dummy operation of type `02`, which is an `endorsement` operation type.
+To test the signing operation, you can send a post to Signatory. In this example, we are sending a dummy operation of type `02`, which is an `attestation` operation type.
 
 ```sh
 curl -XPOST \
@@ -296,7 +300,7 @@ INFO[0000] Initializing vault                            vault=azure vault_name=
 Public Key Hash:    tz3VfoCwiQyMNYnaseFLFAjN9AQJQnhvddjG
 Vault:              CloudKMS
 ID:                 projects/signatory-testing/locations/europe-north1/keyRings/hsm-ring/cryptoKeys/hsm-key/cryptoKeyVersions/1
-Allowed Operations: [block endorsement]
+Allowed Operations: [block attestation]
 Allowed Kinds:      []
 
 Public Key Hash:    tz3ZqyLdKy2doLbw7yghLPz2TWWZdxeLGKVx
@@ -307,8 +311,8 @@ ID:                 projects/signatory-testing/locations/europe-north1/keyRings/
 Public Key Hash:    tz3aTwpna6m9qsw4YZVFad1nsm5cGgWHVQ8R
 Vault:              CloudKMS
 ID:                 projects/signatory-testing/locations/europe-north1/keyRings/hsm-ring/cryptoKeys/signatory-imported-1RG8mJUH8P5ncMEMypfkno98Gpq/cryptoKeyVersions/1
-Allowed Operations: [block endorsement generic]
-Allowed Kinds:      [endorsement transaction]
+Allowed Operations: [block attestation generic]
+Allowed Kinds:      [attestation transaction]
 
 Public Key Hash:    tz3VkMSRVjLwEoUgZNJwjoD6YHeBDXyWiBaY
 Vault:              Azure

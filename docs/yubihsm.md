@@ -178,6 +178,10 @@ tezos:
   tz1SBhzLDp9Jvg98ztMZMstaKbAENmzRd4Y7:
     log_payloads: true
     allow:
+      block:
+      attestation:        # Modern terminology (was "endorsement")
+      preattestation:     # Modern terminology (was "preendorsement")
+      attestation_with_dal: # Required for DAL participation
       generic:
         - origination
 ```

@@ -110,8 +110,8 @@ During every wallet transaction, provide Accept/Reject input on the Ledger devic
     Vault:              Ledger
     ID:                 bip32-ed25519/44'/1729'/0'/0'
     Active:             true
-    Allowed Operations: [block endorsement generic]
-    Allowed Kinds:      [delegation endorsement origination reveal transaction]
+    Allowed Operations: [block attestation generic]
+    Allowed Kinds:      [delegation attestation origination reveal transaction]
     Public Key Hash:    tz2ByDXtXn3Wj4k6DoJnyKHMA68xJvL1nBmV
     Vault:              Ledger
     ID:                 secp256k1/44'/1729'/0'/1'

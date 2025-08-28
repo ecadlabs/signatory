@@ -1,20 +1,19 @@
 ---
 id: bakers
-title: Tezos Bakers
+title: Signatory Baking Setup
 ---
 
 # How to use Signatory with a Tezos Baker
 
-A Tezos baker can use Signatory as a remote signer with keys stored securely in enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.) or locally in files for development purposes only. This guide shows a **Local Secret** setup for development; production deployments should use proper vault implementations.
+A Tezos baker can use Signatory as a remote signer with keys stored securely in enterprise vaults (AWS KMS, GCP KMS, Azure Key Vault, YubiHSM, etc.) or locally in files for evaluation purposes only. This guide shows a **Local Secret** setup for evaluation; production deployments should use proper vault implementations.
 
 ## Bakers on Tezos Networks
 
 **Prerequisites**
 
-- A working `octez-client`
-- A Tezos node RPC endpoint (e.g. `http://localhost:8732`)
+- A working `octez-client` and `octez-baker` ([installation guide](https://octez.tezos.com/docs/introduction/howtoget.html))
+- A local Tezos node with accessible RPC (e.g. `http://localhost:8732`) - see [Octez baker setup](https://octez.tezos.com/docs/introduction/howtorun.html#baker) for installation
 - The baker's public key hash (PKH), e.g. `tz1...` (we use `baking_key` as the alias in examples)
-- The network’s current protocol (for selecting the correct baker binary)
 
 **Verify the node is ready**
 
@@ -84,7 +83,13 @@ octez-client rpc get "/chains/main/blocks/head/helpers/attestation_rights?cycle=
 
 ```bash
 # Modern agnostic baker (automatically detects protocol)
-octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
+octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass consensus_key
+
+# For DAL participation, include companion key:
+octez-baker run with local node ~/.tezos-node \
+  --liquidity-baking-toggle-vote pass \
+  --dal-node http://localhost:10732 \
+  consensus_key companion_key
 ```
 
 ---
@@ -220,9 +225,18 @@ See the official [Signatory documentation](https://signatory.io/docs/) for AWS/G
 
 ## Baking with DAL (Data Availability Layer)
 
-**Critical Signatory Configuration for DAL**
+The Data Availability Layer (DAL) enables data publication outside of Layer 1 blocks while maintaining decentralization. DAL participation **earns additional incentives** from the network protocol and **supports the Tezos X roadmap** by providing high-bandwidth data distribution for smart rollups.
 
-If your baker participates in DAL attestations, you **must** add `attestation_with_dal` to your Signatory policy. This is a separate operation type from regular attestations.
+### Why Run a DAL Node?
+
+- **Additional Rewards**: Earn extra incentives for DAL attestations (10% of participation rewards)
+- **Network Support**: Help scale Tezos by supporting smart rollup data distribution
+- **Tezos X Roadmap**: Contribute to the future of Tezos scaling infrastructure
+- **Competitive Advantage**: Stay ahead as DAL becomes increasingly important
+
+### Critical Signatory Configuration
+
+If your baker participates in DAL attestations, you **must** add `attestation_with_dal` to your Signatory policy:
 
 ```yaml
 tezos:
@@ -232,7 +246,7 @@ tezos:
       block:              # Standard block baking
       attestation:        # Standard attestations
       preattestation:     # Pre-attestations  
-      attestation_with_dal: # ✨ Required for DAL attestations
+      attestation_with_dal: # Required for DAL attestations
       generic:
         - transaction
         - reveal
@@ -240,32 +254,56 @@ tezos:
         - stake
 ```
 
-:::note Terminology
-Signatory supports both old (`endorsement`/`preendorsement`) and modern (`attestation`/`preattestation`) terminology in policy configuration. Both work identically, but we recommend using the modern terms to match current Tezos protocol terminology.
-:::
-
-**DAL Setup Overview**
-
-To participate in DAL attestations:
-
-1. **Run a DAL node** alongside your Tezos node
-2. **Configure your baker** to use the DAL node (`--dal-node` flag)
-3. **Update Signatory policy** to allow `attestation_with_dal` operations
-
 :::warning Important
 Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
 :::
 
-**Consensus Keys and DAL**
+### Key Requirements
 
-While consensus keys are not strictly required for DAL operations, **using consensus keys is considered current best practice** for production baking setups. Consensus keys provide operational flexibility and security benefits by separating the baker's identity (manager key) from the key used for consensus operations (baking, attesting).
+**BLS Consensus Keys (tz4)**: A **companion key is mandatory** for DAL attestations. Without it, tz4 bakers cannot produce DAL attestations.
 
-**Further Reading**
+```bash
+# Register companion key for existing delegate
+octez-client set companion key for <manager_key> to <companion_key>
+```
 
-The details of running DAL nodes and collecting DAL attestation rewards are outside the scope of this Signatory guide. For comprehensive information:
+**Baker Command Requirements:**
 
-- **[Tezos DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer)** - explains what the DAL is, how bakers run with a DAL attester node, and how DAL rewards work (10% of participation rewards starting in Rio; you must attest ≥64% of assigned shards; "trap shard" denouncements can forfeit the cycle's DAL rewards)
-- **[DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html)** - step-by-step setup guide for the DAL attester node
+For DAL participation, your baker command must include:
+- **Consensus key**: Required for all attestation operations
+- **Companion key**: Required for DAL attestations (especially for tz4 consensus keys)
+- **DAL node endpoint**: `--dal-node` parameter pointing to your DAL node
+
+```bash
+# Example baker command for DAL participation
+octez-baker run with local node ~/.tezos-node \
+  --liquidity-baking-toggle-vote pass \
+  --dal-node http://localhost:10732 \
+  consensus_key companion_key
+```
+
+**DAL Operations**:
+- **`attestation_with_dal`**: Required for DAL participation
+  - Standard keys (tz1, tz2, tz3): Single consensus key signature
+  - BLS keys (tz4): Requires both consensus key AND companion key signatures
+- **`dal_entrapment_evidence`**: **DO NOT ALLOW** - Anonymous operation, no signature needed
+- **`dal_publish_commitment`**: **DO NOT ALLOW** - Only needed if publishing data to DAL
+
+### Setup Overview
+
+1. **Run a DAL node** alongside your Tezos node (see [DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html))
+2. **Configure your baker** to use the DAL node (`--dal-node` flag)
+3. **Update Signatory policy** to allow `attestation_with_dal` operations
+
+```bash
+# Start baker with DAL integration
+octez-baker run with local node ~/.tezos-node \
+  --liquidity-baking-toggle-vote pass \
+  --dal-node http://127.0.0.1:10732 \
+  consensus_key companion_key
+```
+
+**Further Reading**: [Tezos DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer) | [DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html)
 
 ---
 
@@ -277,7 +315,13 @@ Recent Octez versions include protocol-agnostic baker commands that automaticall
 
 ```bash
 # Use the agnostic baker (automatically detects protocol)
-octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass
+octez-baker run with local node ~/.tezos-node --liquidity-baking-toggle-vote pass consensus_key
+
+# For DAL participation, include companion key:
+octez-baker run with local node ~/.tezos-node \
+  --liquidity-baking-toggle-vote pass \
+  --dal-node http://localhost:10732 \
+  consensus_key companion_key
 
 # The agnostic baker replaces protocol-specific commands like:
 # octez-baker-PsQuebec, octez-baker-PsNairob, octez-baker-alpha, etc.
