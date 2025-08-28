@@ -111,6 +111,7 @@ gcloud kms keys add-iam-policy-binding \
 
 Deploy the enclave-signer in a Confidential Space environment. 
 
+### Release
 ```bash
 # Create a Confidential Space VM instance
 gcloud compute instances create confidential-signer-instance \
@@ -123,6 +124,20 @@ gcloud compute instances create confidential-signer-instance \
     --image-family=confidential-space \
     --service-account=$SERVICE_ACCOUNT \
     --metadata="^~^tee-restart-policy=Always~tee-image-reference=${ARTIFACT_REGISTRY_IMAGE}"
+```
+### Debug
+```bash
+# Use debug mode to see detailed logs in Logs Explorer
+gcloud compute instances create confidential-signer-instance \
+    --confidential-compute-type=SEV \
+    --shielded-secure-boot \
+    --scopes=cloud-platform \
+    --zone=us-west1-b \
+    --maintenance-policy=MIGRATE \
+    --image-project=confidential-space-images \
+    --image-family=confidential-space-debug \
+    --service-account=$SERVICE_ACCOUNT \
+    --metadata="^~^tee-restart-policy=Always~tee-image-reference=${ARTIFACT_REGISTRY_IMAGE}~tee-container-log-redirect=true"
 ```
 
 ## Step 6: Get Configuration Values
