@@ -62,8 +62,7 @@ gcloud iam workload-identity-pools providers create-oidc $WIP_PROVIDER_NAME \
     --issuer-uri="https://confidentialcomputing.googleapis.com/" \
     --allowed-audiences="https://sts.googleapis.com" \
     --attribute-mapping="google.subject=\"gcpcs::\"+assertion.submods.container.image_digest+\"::\"+assertion.submods.gce.project_number+\"::\"+assertion.submods.gce.instance_id,attribute.image_digest=assertion.submods.container.image_digest" \
-    --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE' \
-        && 'STABLE' in assertion.submods.confidential_space.support_attributes"
+    --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE'"
 
 # Grant Artifact Registry permissions to the service account
 gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAME \
@@ -71,6 +70,8 @@ gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAM
     --member=serviceAccount:$SERVICE_ACCOUNT \
     --role=roles/artifactregistry.reader
 ```
+> **⚠️ Caution:**  
+> Ensure you review and restrict the `--attribute-condition` and `--attribute-mapping` parameters to match your security requirements. Overly broad settings may introduce security risks.
 
 ## Step 3: Create Cloud KMS Key
 
