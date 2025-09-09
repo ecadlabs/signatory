@@ -44,6 +44,7 @@ Workload Identity allows workloads running outside of Google Cloud to access Goo
 # Set up variables (replace with your actual values)
 WIP_NAME=signatory-pool
 WIP_PROVIDER_NAME=signatory-provider
+PROJECT_ID=<YOUR_PROJECT_ID>
 ARTIFACT_REGISTRY_REPO_NAME=<from Artifact Registry>
 ARTIFACT_REGISTRY_IMAGE=<from Artifact Registry>
 ARTIFACT_REGISTRY_IMAGE_DIGEST=<from Artifact Registry>
@@ -62,7 +63,8 @@ gcloud iam workload-identity-pools providers create-oidc $WIP_PROVIDER_NAME \
     --issuer-uri="https://confidentialcomputing.googleapis.com/" \
     --allowed-audiences="https://sts.googleapis.com" \
     --attribute-mapping="google.subject=\"gcpcs::\"+assertion.submods.container.image_digest+\"::\"+assertion.submods.gce.project_number+\"::\"+assertion.submods.gce.instance_id,attribute.image_digest=assertion.submods.container.image_digest" \
-    --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE'"
+    --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE' \
+        && assertion.google.compute_engine.project_id == '${PROJECT_ID}$'"
 
 # Grant Artifact Registry permissions to the service account
 gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAME \
