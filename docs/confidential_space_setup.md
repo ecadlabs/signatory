@@ -175,7 +175,7 @@ vaults:
   confidentialspace:
     driver: confidentialspace
     config:
-      host: "YOUR_ENCLAVE_IP_ADDRESS"  # Replace with the IP from the previous step
+      host: "<YOUR_ENCLAVE_IP_ADDRESS>"  # Replace with the IP from the previous step
       port: "2000"
       wip_provider_path: "<WIP_PROVIDER_PATH_FROM_ABOVE_COMMAND>"           # Replace with the output from the gcloud command above
       encryption_key_path: "<KMS_KEY_PATH_FROM_ABOVE_COMMAND>"              # Replace with the output from the gcloud command above
@@ -199,4 +199,7 @@ vaults:
    - Check that the tee-signer is properly configured with the WIP provider path
    - Ensure the image digest in the KMS policy binding matches the actual container image digest
 
-
+4. **TEE Instance Immediate Termination**
+   - Ensure the Workload Identity Provider attribute condition matches the actual TEE attestation claims.
+   - For debug images, do not use `support_attributes` in the attribute condition.
+   - Check Cloud Logging for attestation failure messages if the instance terminates shortly after startup.
