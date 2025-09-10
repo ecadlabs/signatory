@@ -64,7 +64,8 @@ gcloud iam workload-identity-pools providers create-oidc $WIP_PROVIDER_NAME \
     --allowed-audiences="https://sts.googleapis.com" \
     --attribute-mapping="google.subject=\"gcpcs::\"+assertion.submods.container.image_digest+\"::\"+assertion.submods.gce.project_number+\"::\"+assertion.submods.gce.instance_id,attribute.image_digest=assertion.submods.container.image_digest" \
     --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE' \
-        && assertion.google.compute_engine.project_id == '${PROJECT_ID}'"
+        && assertion.submods.confidential_space.support_attributes.stable == true \
+        && assertion.google.compute_engine.project_id == \"${PROJECT_ID}\""
 
 # Grant Artifact Registry permissions to the service account
 gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAME \
@@ -201,5 +202,5 @@ vaults:
 
 4. **TEE Instance Immediate Termination**
    - Ensure the Workload Identity Provider attribute condition matches the actual TEE attestation claims.
-   - For debug images, do not use `support_attributes` in the attribute condition.
+   - For debug images, remove the `assertion.submods.confidential_space.support_attributes.stable == true` condition as debug images do not provide stability attributes.
    - Check Cloud Logging for attestation failure messages if the instance terminates shortly after startup.
