@@ -44,6 +44,7 @@ Workload Identity allows workloads running outside of Google Cloud to access Goo
 # Set up variables (replace with your actual values)
 WIP_NAME=signatory-pool
 WIP_PROVIDER_NAME=signatory-provider
+PROJECT_ID=<YOUR_PROJECT_ID>
 ARTIFACT_REGISTRY_REPO_NAME=<from Artifact Registry>
 ARTIFACT_REGISTRY_IMAGE=<from Artifact Registry>
 ARTIFACT_REGISTRY_IMAGE_DIGEST=<from Artifact Registry>
@@ -63,7 +64,8 @@ gcloud iam workload-identity-pools providers create-oidc $WIP_PROVIDER_NAME \
     --allowed-audiences="https://sts.googleapis.com" \
     --attribute-mapping="google.subject=\"gcpcs::\"+assertion.submods.container.image_digest+\"::\"+assertion.submods.gce.project_number+\"::\"+assertion.submods.gce.instance_id,attribute.image_digest=assertion.submods.container.image_digest" \
     --attribute-condition="assertion.swname == 'CONFIDENTIAL_SPACE' \
-        && 'STABLE' in assertion.submods.confidential_space.support_attributes"
+        && assertion.submods.confidential_space.support_attributes.stable == true \
+        && assertion.google.compute_engine.project_id == \"${PROJECT_ID}\""
 
 # Grant Artifact Registry permissions to the service account
 gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAME \
@@ -71,6 +73,8 @@ gcloud artifacts repositories add-iam-policy-binding $ARTIFACT_REGISTRY_REPO_NAM
     --member=serviceAccount:$SERVICE_ACCOUNT \
     --role=roles/artifactregistry.reader
 ```
+> **⚠️ Caution:**  
+> Ensure you review and restrict the `--attribute-condition` and `--attribute-mapping` parameters to match your security requirements. Overly broad settings may introduce security risks.
 
 ## Step 3: Create Cloud KMS Key
 
@@ -172,7 +176,7 @@ vaults:
   confidentialspace:
     driver: confidentialspace
     config:
-      host: "YOUR_ENCLAVE_IP_ADDRESS"  # Replace with the IP from the previous step
+      host: "<YOUR_ENCLAVE_IP_ADDRESS>"  # Replace with the IP from the previous step
       port: "2000"
       wip_provider_path: "<WIP_PROVIDER_PATH_FROM_ABOVE_COMMAND>"           # Replace with the output from the gcloud command above
       encryption_key_path: "<KMS_KEY_PATH_FROM_ABOVE_COMMAND>"              # Replace with the output from the gcloud command above
@@ -196,4 +200,7 @@ vaults:
    - Check that the tee-signer is properly configured with the WIP provider path
    - Ensure the image digest in the KMS policy binding matches the actual container image digest
 
-
+4. **TEE Instance Immediate Termination**
+   - Ensure the Workload Identity Provider attribute condition matches the actual TEE attestation claims.
+   - For debug images, remove the `assertion.submods.confidential_space.support_attributes.stable == true` condition as debug images do not provide stability attributes.
+   - Check Cloud Logging for attestation failure messages if the instance terminates shortly after startup.
