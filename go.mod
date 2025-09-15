@@ -22,7 +22,7 @@ require (
 	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
-	github.com/hashicorp/vault/api v1.20.0
+	github.com/hashicorp/vault/api v1.21.0
 	github.com/hashicorp/vault/api/auth/approle v0.10.0
 	github.com/karalabe/hid v1.0.0
 	github.com/kr/pretty v0.3.1
