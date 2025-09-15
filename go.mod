@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.7
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.10
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.50.2
-	github.com/aws/aws-sdk-go-v2/service/kms v1.45.2
+	github.com/aws/aws-sdk-go-v2/service/kms v1.45.3
 	github.com/aws/smithy-go v1.23.0
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
