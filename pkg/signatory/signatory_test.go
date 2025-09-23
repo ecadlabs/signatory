@@ -516,3 +516,87 @@ func TestListPublicKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestKindCheck(t *testing.T) {
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	tezosCfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"block": nil,
+					"foo":   nil, // invalid request kind
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfg)
+	require.EqualError(t, err, "invalid request kind `foo` in `allow` list")
+
+	tezosCfgValid := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"attestation":          nil,
+					"generic":              nil,
+					"block":                nil,
+					"preendorsement":       nil,
+					"attestation_with_dal": nil,
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfgValid)
+	require.NoError(t, err)
+}
+
+func TestOperationKindCheck(t *testing.T) {
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	tezosCfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"generic": {"transaction", "invalid_op"}, // invalid operation kind included
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfg)
+	require.EqualError(t, err, "invalid operation kind `invalid_op` in `allow.generic` list")
+
+	tezosCfgValid := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"generic": {
+						"transaction",
+						"delegation",
+						"origination",
+						"reveal",
+						"stake",
+						"unstake",
+						"finalize_unstake",
+						"attestation",
+						"preendorsement",
+						"ballot",
+					},
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfgValid)
+	require.NoError(t, err)
+}
