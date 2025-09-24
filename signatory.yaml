@@ -64,17 +64,18 @@ tezos:
     # purposes.
     log_payloads: true
     allow:
-      # List of [block, endorsement, failing_noop, generic, preendorsement]
+      # List of [attestation, attestation_with_dal, block, generic, preattestation]
       generic:
         # List of
-        # [activate_account, attestation, attestation_with_dal, ballot, dal_publish_commitment, delegation, double_attestation_evidence,
-        # double_baking_evidence, double_preattestation_evidence, drain_delegate, failing_noop, finalize_unstake, increase_paid_storage,
-        # origination, preattestation, proposals, register_global_constant, reveal, seed_nonce_revelation, set_delegate_parameters,
-        # set_deposits_limit, signature_prefix, smart_rollup_add_messages, smart_rollup_cement, smart_rollup_execute_outbox_message,
-        # smart_rollup_originate, smart_rollup_publish, smart_rollup_recover_bond, smart_rollup_refute, smart_rollup_timeout, stake,
-        # transaction, transfer_ticket, unstake, update_consensus_key, vdf_revelation, zk_rollup_origination, zk_rollup_publish,
-        # zk_rollup_update]
+        # [activate_account, attestation, attestation_with_dal, attestations_aggregate, ballot, dal_entrapment_evidence,
+        # dal_publish_commitment, delegation, double_baking_evidence, double_consensus_operation_evidence, drain_delegate,
+        # failing_noop, finalize_unstake, increase_paid_storage, origination, preattestation, preattestations_aggregate,
+        # proposals, register_global_constant, reveal, seed_nonce_revelation, set_delegate_parameters,
+        # set_deposits_limit, signature_prefix, smart_rollup_add_messages, smart_rollup_cement, 
+        # smart_rollup_execute_outbox_message, smart_rollup_originate, smart_rollup_publish, smart_rollup_recover_bond, 
+        # smart_rollup_refute, smart_rollup_timeout, stake, transaction, transfer_ticket, unstake, update_companion_key, 
+        # update_consensus_key, vdf_revelation, zk_rollup_origination, zk_rollup_publish, zk_rollup_update]
         - transaction
-        - endorsement
+        - attestation
       block:
-      endorsement:
+      attestation:
