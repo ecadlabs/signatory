@@ -60,7 +60,7 @@ $client import secret key bootstrap4 $BOOTSTRAP4_SECRET || exit 1
 $client import secret key bootstrap5 $BOOTSTRAP5_SECRET || exit 1
 $client import secret key activator $ACTIVATOR_SECRET || exit 1
 #baker1 is used on the manual bake chain for operation kinds test of baking operations. it is an alias for the bootstrap1 account on the manual bake chain
-$client -d $manual_baking_client_config import secret key baker1 http://$default_signatory/tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx || exit 1
+$client -d $manual_baking_client_config import secret key baker1 $default_signatory/tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx || exit 1
 
 protocol_hash=$(grep "^$protocol_name" $script_dir/protocol_hash)
 protocol_full_name=$(cat $tezos_script_dir/active_protocol_versions | grep -E '^[0-9]{3}-[A-Za-z]+$' | grep "$protocol_name$")
