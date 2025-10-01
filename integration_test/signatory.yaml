@@ -108,6 +108,7 @@ tezos:
       generic:
         - transaction
         - reveal
+    allow_proof_of_possession: true
 
   #speculos
   tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
