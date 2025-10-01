@@ -22,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -430,6 +431,80 @@ func TestPolicy(t *testing.T) {
 				require.EqualError(t, err, c.expected)
 			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestProofOfPossession(t *testing.T) {
+	type testCase struct {
+		title    string
+		privKey  string
+		allowPop bool
+		warning  string
+		expected string
+	}
+
+	const blsPrivKey = "BLsk2ae63m4ooimmTy1B5wjriwPMtCLdiyNpetFiQMBovRm6ks6rSW"
+
+	var cases = []testCase{
+		{
+			title:    "Proof of possession allowed",
+			privKey:  blsPrivKey,
+			allowPop: true,
+		},
+		{
+			title:    "Proof of possession not allowed",
+			privKey:  blsPrivKey,
+			allowPop: false,
+			warning:  "level=warning msg=\"Proof of possession is not allowed. Proof of possession is required for key reveals, consensus key updates, and companion key registration. To enable, set 'allow_proof_of_possession: true' in the config for this key.\"",
+			expected: "proof of possession is not allowed",
+		},
+		{
+			title:    "Proof of possession not supported",
+			privKey:  privateKey,
+			allowPop: true,
+			expected: "proof of possession is not supported",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			var logs bytes.Buffer
+			testLogger := log.New()
+			testLogger.SetOutput(&logs)
+
+			priv, err := crypt.ParsePrivateKey([]byte(c.privKey))
+			require.NoError(t, err)
+			pk := priv.Public()
+
+			conf := signatory.Config{
+				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+				Watermark: watermark.Ignore{},
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: priv.String()}}, "Mock"), nil
+				}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &signatory.PublicKeyPolicy{
+					AllowedRequests:        []string{},
+					AllowedOps:             []string{},
+					AllowProofOfPossession: c.allowPop,
+					LogPayloads:            true,
+				}}}),
+				Logger: testLogger,
+			}
+
+			s, err := signatory.New(context.Background(), &conf)
+			require.NoError(t, err)
+			require.NoError(t, s.Unlock(context.Background()))
+
+			_, err = s.ProvePossession(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: []byte{}})
+			if c.warning != "" {
+				require.Contains(t, logs.String(), c.warning)
+			}
+			if c.expected == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, c.expected)
 			}
 		})
 	}
