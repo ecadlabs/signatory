@@ -734,7 +734,6 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 		sort.Strings(pol.AllowedOps)
 
 		if v.AllowProofOfPossession {
-			pol.AllowProofOfPossession = true
 			if _, ok := k.(*gotez.BLSPublicKeyHash); ok {
 				pol.AllowProofOfPossession = true
 			} else {
