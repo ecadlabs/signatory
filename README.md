@@ -54,6 +54,7 @@ Explore detailed documentation for various components of Signatory:
 
 ### Other
 - [JWT Authentication](https://signatory.io/docs/jwt)
+- [Proof of Possession (POP)](https://signatory.io/docs/proof_of_possession)
 - [Remote Policy Configuration](https://signatory.io/docs/remote_policy)
 - [Signatory Architecture](https://signatory.io/docs/architecture)
 
