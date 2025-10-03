@@ -105,8 +105,9 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | [Ledger Nano S/S+ (Baking only)](https://signatory.io/docs/ledger) | ✅     |
 | [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault) | ✅     |
 | [PKCS#11](https://signatory.io/docs/pkcs11) | ✅     |
-| [AWS Nitro Enclave](https://signatory.io/docs/nitro) | 🚧 In progress (v1.3.0) |
-| [Google Confidential Space](https://signatory.io/docs/confidential_space) | 🚧 In progress (v1.3.0) |
+| [AWS Nitro Enclave](https://signatory.io/docs/nitro) | ✅     |
+| [Google Confidential Space](https://signatory.io/docs/confidential_space) | ✅     |
+| Intel SGX | 🚧 In progress |
 
 ### Tezos Address Types
 
