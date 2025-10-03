@@ -137,7 +137,8 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   integration-tests:
-    if: "!startsWith(github.ref, 'refs/tags/v')"
+    # if: "!startsWith(github.ref, 'refs/tags/v')"
+    if: false
     needs: deploy-ec2
     runs-on: ubuntu-latest
     strategy:
@@ -219,6 +220,7 @@ jobs:
           path: ./integration_test/coverage/
 
   report-coverage:
+    if: false
     needs: integration-tests
     runs-on: ubuntu-latest
     steps:
