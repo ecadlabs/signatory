@@ -137,8 +137,8 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   integration-tests:
-    # if: "!startsWith(github.ref, 'refs/tags/v')"
-    if: false
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    # if: false
     needs: deploy-ec2
     runs-on: ubuntu-latest
     strategy:
