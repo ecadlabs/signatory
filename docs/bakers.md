@@ -246,7 +246,7 @@ tezos:
       block:              # Standard block baking
       attestation:        # Standard attestations
       preattestation:     # Pre-attestations  
-      attestation_with_dal: # Required for DAL attestations
+      attestation_with_dal: # Required for ALL key types when DAL node is connected
       generic:
         - transaction
         - reveal
@@ -255,12 +255,20 @@ tezos:
 ```
 
 :::warning Important
-Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
+The `attestation_with_dal` policy applies to **all key types** (tz1, tz2, tz3, tz4) when a DAL node is connected to the baker. This is an encoding/policy distinction triggered by DAL node connectivity, not a key type requirement.
+
+* **tz1/tz2/tz3 keys**: Sign `attestation_with_dal` operations with empty DAL content (bitset 0)
+* **tz4 keys**: Can attest actual DAL shards (bitset > 0) when consensus + companion keys are properly configured
+* **Both trigger the same signatory policy check** for `attestation_with_dal`
+
+Even if your baker uses only tz1 keys, you **must** include `attestation_with_dal` in your signatory policy when running with a DAL node, otherwise attestation requests will be rejected and you'll miss those rewards.
 :::
 
 ### Key Requirements
 
-**BLS Consensus Keys (tz4)**: A **companion key is mandatory** for DAL attestations. Without it, tz4 bakers cannot produce DAL attestations.
+**Standard Keys (tz1/tz2/tz3)**: Can participate in DAL attestations without companion keys. When a DAL node is connected, the baker will sign `attestation_with_dal` operations with the consensus key (or manager key if no separate consensus key is configured). However, these attestations will have bitset 0 (no shard attestation capability) since DAL shard attestation requires BLS signature aggregation.
+
+**BLS Consensus Keys (tz4)**: A **companion key is mandatory** for DAL attestations with tz4 keys. Without it, tz4 bakers cannot produce DAL attestations with shard attestation capability.
 
 ```bash
 # Register companion key for existing delegate
@@ -271,15 +279,21 @@ octez-client set companion key for <manager_key> to <companion_key>
 
 For DAL participation, your baker command must include:
 - **Consensus key**: Required for all attestation operations
-- **Companion key**: Required for DAL attestations (especially for tz4 consensus keys)
+- **Companion key**: Required for tz4 keys to enable DAL shard attestation (optional for tz1/tz2/tz3)
 - **DAL node endpoint**: `--dal-node` parameter pointing to your DAL node
 
 ```bash
-# Example baker command for DAL participation
+# Example baker command for DAL participation (tz4 with companion)
 octez-baker run with local node ~/.tezos-node \
   --liquidity-baking-toggle-vote pass \
   --dal-node http://localhost:10732 \
   consensus_key companion_key
+
+# Example baker command for DAL participation (tz1 without companion)
+octez-baker run with local node ~/.tezos-node \
+  --liquidity-baking-toggle-vote pass \
+  --dal-node http://localhost:10732 \
+  manager_or_consensus_key
 ```
 
 **DAL Operations**:
@@ -304,6 +318,62 @@ octez-baker run with local node ~/.tezos-node \
 ```
 
 **Further Reading**: [Tezos DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer) | [DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html)
+
+### DAL Behavior by Key Type
+
+Understanding how different key types interact with DAL attestations:
+
+#### tz1/tz2/tz3 Keys with DAL Node
+
+**What Happens:**
+- Baker sends `attestation_with_dal` requests to Signatory
+- Signatory logs show: `"request=attestation_with_dal"`
+- Attestations have bitset 0 (no shard attestation)
+- Baker logs show: `"injected attestation (without DAL)"`
+- DAL rewards can still be earned
+
+**Signatory Logs Example:**
+```
+msg="Requesting signing operation" request=attestation_with_dal pkh=tz1YourKey
+msg="Signed attestation_with_dal successfully" pkh=tz1YourKey
+```
+
+**Baker Logs Example:**
+```
+tz1YourKey has no assigned DAL shards at level 1234567
+injected attestation (without DAL) for level 1234567
+```
+
+**Configuration Required:**
+```yaml
+tezos:
+  tz1YourKey:
+    allow:
+      attestation_with_dal:  # REQUIRED even for tz1 keys with DAL node
+```
+
+#### tz4 Keys with DAL Node and Companion Key
+
+**What Happens:**
+- Baker sends `attestation_with_dal` requests for both consensus and companion keys
+- Attestations can have bitset > 0 when assigned DAL shards
+- Full shard attestation capability with BLS aggregation
+- Higher DAL rewards potential
+
+**Configuration Required:**
+```yaml
+tezos:
+  tz4ConsensusKey:
+    allow:
+      attestation_with_dal:  # REQUIRED
+  tz4CompanionKey:
+    allow:
+      attestation_with_dal:  # REQUIRED
+```
+
+#### Key Takeaway
+
+**The `attestation_with_dal` encoding is triggered by DAL node connectivity, not key type.** All keys signing through a baker with `--dal-node` configured will use the `attestation_with_dal` request type, regardless of whether they can actually attest DAL shards.
 
 ---
 
