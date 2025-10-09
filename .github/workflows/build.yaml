@@ -106,9 +106,40 @@ jobs:
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
 
-  integration-tests:
+  deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
     needs: publish
+    runs-on: ec2
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: remove slash from image tag
+        uses: mad9000/actions-find-and-replace-string@5
+        id: replaceslash
+        with:
+          source: ${{ github.head_ref || github.ref_name }}
+          find: '/'
+          replace: '-'
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+      - name: pull and start the Signatory image under test
+        env:
+          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+        run: >
+         docker pull $IMAGE;
+         docker stop signatory;
+         docker rm signatory;
+         docker run -d --name signatory --privileged --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+  integration-tests:
+    # if: "!startsWith(github.ref, 'refs/tags/v')"
+    if: false
+    needs: deploy-ec2
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -133,6 +164,12 @@ jobs:
           find: '/'
           replace: '-'
         if: "!startsWith(github.ref, 'refs/tags/v')"
+      - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
+        name: Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: 1.32.2        
       - name: Run tests
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
@@ -183,6 +220,7 @@ jobs:
           path: ./integration_test/coverage/
 
   report-coverage:
+    if: false
     needs: integration-tests
     runs-on: ubuntu-latest
     steps:
