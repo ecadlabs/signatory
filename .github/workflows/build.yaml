@@ -14,6 +14,8 @@ permissions:
   deployments: write
   issues: write
   packages: write
+  id-token: write
+  actions: read
 
 env:
   GO_VERSION: '1.21'
@@ -43,6 +45,8 @@ jobs:
     name: Goreleaser
     runs-on: ubuntu-latest
     needs: test
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -105,6 +109,107 @@ jobs:
       - name: goreleaser release
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
+
+      - name: Fix dist directory permissions
+        run: sudo chown -R $(id -u):$(id -g) dist/
+      
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Generate subject for provenance and sign binaries
+        id: hash
+        env:
+          COSIGN_YES: "true"
+        run: |
+          set -euo pipefail
+          cd dist
+          echo "hashes=$(sha256sum $(find . -maxdepth 2 -type f \( -name "signatory*" -o -name "signatory-cli*" \) -print) | base64 -w0)" >> "$GITHUB_OUTPUT"
+          for file in signatory* signatory-cli* checksums.txt; do
+            if [ -f "$file" ]; then
+              echo "Signing $file..."
+              cosign sign-blob --yes "$file" --bundle "${file}.cosign.bundle"
+            fi
+          done
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Upload signatures
+        uses: actions/upload-artifact@v4
+        with:
+          name: signatures
+          path: dist/*.cosign.bundle
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Sign branch-tagged images
+        env:
+          COSIGN_YES: "true"
+        run: |
+          mkdir -p image-signatures
+          cosign sign --yes \
+            --registry-referrers-mode=oci-1-1 \
+            --output-signature=image-signatures/signatory-amd64.sig \
+            --output-certificate=image-signatures/signatory-amd64.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          cosign sign --yes \
+            --registry-referrers-mode=oci-1-1 \
+            --output-signature=image-signatures/signatory-arm64.sig \
+            --output-certificate=image-signatures/signatory-arm64.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
+          cosign sign --yes \
+            --registry-referrers-mode=oci-1-1 \
+            --output-signature=image-signatures/signatory-armv7.sig \
+            --output-certificate=image-signatures/signatory-armv7.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Upload image signatures
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-signatures
+          path: image-signatures/
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+  generate-provenance:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for binaries
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: "${{ needs.publish.outputs.hashes }}"
+      upload-assets: false
+
+  verify-slsa:
+    name: Verify signed container images
+    runs-on: ubuntu-latest
+    needs: [publish]
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Remove slash from branch name
+        uses: mad9000/actions-find-and-replace-string@5
+        id: replaceslash
+        with:
+          source: ${{ github.head_ref || github.ref_name }}
+          find: '/'
+          replace: '-'
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Verify branch-name tagged images
+        run: |
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
