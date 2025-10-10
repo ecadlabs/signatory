@@ -144,9 +144,26 @@ jobs:
         env:
           COSIGN_YES: "true"
         run: |
-          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
-          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
-          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+          mkdir -p image-signatures
+          cosign sign --yes \
+            --output-signature=image-signatures/signatory-amd64.sig \
+            --output-certificate=image-signatures/signatory-amd64.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          cosign sign --yes \
+            --output-signature=image-signatures/signatory-arm64.sig \
+            --output-certificate=image-signatures/signatory-arm64.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
+          cosign sign --yes \
+            --output-signature=image-signatures/signatory-armv7.sig \
+            --output-certificate=image-signatures/signatory-armv7.crt \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Upload image signatures
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-signatures
+          path: image-signatures/
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   generate-provenance:
