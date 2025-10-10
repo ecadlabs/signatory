@@ -14,6 +14,8 @@ permissions:
   deployments: write
   issues: write
   packages: write
+  id-token: write
+  actions: read
 
 env:
   GO_VERSION: '1.21'
@@ -43,6 +45,8 @@ jobs:
     name: Goreleaser
     runs-on: ubuntu-latest
     needs: test
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -105,9 +109,10 @@ jobs:
       - name: goreleaser release
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
-        
+      
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: Generate subject for provenance and sign binaries
         id: hash
@@ -123,12 +128,14 @@ jobs:
               cosign sign-blob --yes "$file" --bundle "${file}.cosign.bundle"
             fi
           done
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: Upload signatures
         uses: actions/upload-artifact@v4
         with:
           name: signatures
           path: dist/*.cosign.bundle
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: Sign branch-tagged images
         env:
@@ -140,12 +147,9 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   generate-provenance:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
     name: Generate SLSA provenance for binaries
     needs: [publish]
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
       base64-subjects: "${{ needs.publish.outputs.hashes }}"
@@ -155,9 +159,6 @@ jobs:
     name: Verify signed container images
     runs-on: ubuntu-latest
     needs: [publish]
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
