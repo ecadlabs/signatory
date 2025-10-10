@@ -105,6 +105,87 @@ jobs:
       - name: goreleaser release
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
+        
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Generate subject for provenance and sign binaries
+        id: hash
+        env:
+          COSIGN_YES: "true"
+        run: |
+          set -euo pipefail
+          cd dist
+          echo "hashes=$(sha256sum $(find . -maxdepth 2 -type f \( -name "signatory*" -o -name "signatory-cli*" \) -print) | base64 -w0)" >> "$GITHUB_OUTPUT"
+          for file in signatory* signatory-cli* checksums.txt; do
+            if [ -f "$file" ]; then
+              echo "Signing $file..."
+              cosign sign-blob --yes "$file" --bundle "${file}.cosign.bundle"
+            fi
+          done
+
+      - name: Upload signatures
+        uses: actions/upload-artifact@v4
+        with:
+          name: signatures
+          path: dist/*.cosign.bundle
+
+      - name: Sign branch-tagged images
+        env:
+          COSIGN_YES: "true"
+        run: |
+          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
+          cosign sign --yes ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+  generate-provenance:
+    name: Generate SLSA provenance for binaries
+    needs: [publish]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: "${{ needs.publish.outputs.hashes }}"
+      upload-assets: false
+
+  verify-slsa:
+    name: Verify signed container images
+    runs-on: ubuntu-latest
+    needs: [publish]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Remove slash from branch name
+        uses: mad9000/actions-find-and-replace-string@5
+        id: replaceslash
+        with:
+          source: ${{ github.head_ref || github.ref_name }}
+          find: '/'
+          replace: '-'
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+      - name: Verify branch-name tagged images
+        run: |
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7
+        if: "!startsWith(github.ref, 'refs/tags/v')"
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
