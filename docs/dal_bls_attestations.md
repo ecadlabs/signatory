@@ -87,11 +87,10 @@ tezos:
   tz4YourCompanionKey:
     log_payloads: true
     allow:
-      attestation:     # Tag 41 - SAME as consensus key
-      preattestation:  # Tag 40 - SAME as consensus key
+      attestation:     # Tag 41 - only permission needed
 ```
 
-**Important:** BLS keys use tag 41 encoding which **does not include** `attestation_with_dal`. Both consensus and companion keys receive identical tag 41 bytes and require the same permissions.
+**Important:** BLS keys use tag 41 encoding which **does not include** `attestation_with_dal`. Both consensus and companion keys receive identical tag 41 bytes. Companion keys only sign attestations (when DAL content is available), never preattestations.
 
 ### Non-BLS Keys (tz1/tz2/tz3) - With DAL
 
@@ -208,15 +207,24 @@ Look for `dal_attested_slots` > 0. If zero, verify DAL node sync and baker `--da
 
 ### BLS Keys (tz4)
 
-**Signatory permissions for ANY tz4 key (consensus or companion):**
+**Signatory permissions:**
 ```yaml
-tz4AnyKey:
+# Consensus key (tz4)
+tz4ConsensusKey:
   allow:
     attestation:     # Tag 41 encoding
     preattestation:  # Tag 40 encoding
+    block:           # If used for baking
+
+# Companion key (tz4)
+tz4CompanionKey:
+  allow:
+    attestation:     # Tag 41 encoding - ONLY permission needed
 ```
 
 **Do NOT use `attestation_with_dal` for tz4 keys** - it has no effect.
+
+**Note:** Companion keys never sign preattestations or blocks - only attestations when DAL content is available.
 
 ### Non-BLS Keys (tz1/tz2/tz3) with DAL
 

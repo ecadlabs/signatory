@@ -253,8 +253,7 @@ tezos:
   tz4YourCompanionKey:
     log_payloads: true
     allow:
-      attestation:       # Tag 41 - SAME as consensus
-      preattestation:    # Tag 40
+      attestation:       # Tag 41 - only permission needed
 ```
 
 **2. Set Keys**
@@ -277,7 +276,7 @@ octez-baker run with local node ~/.tezos-node \
 ### Key Requirements
 
 - **BLS consensus key (tz4)** - Needs `attestation` and `preattestation` permissions
-- **BLS companion key (tz4)** - Needs `attestation` and `preattestation` permissions (SAME as consensus)
+- **BLS companion key (tz4)** - Needs `attestation` permission only (never signs preattestations)
 - **DAL node** - Must be running and synced
 - **Baker command** - Must include `--dal-node` flag and both key aliases
 

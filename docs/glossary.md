@@ -14,7 +14,7 @@ Optimized operation encoding for BLS keys (tz4). Uses tag 41 (attestation) or ta
 
 ### Companion Key
 
-A secondary BLS key (tz4) used for DAL participation. Signs only when baker has attestation rights AND DAL content is available. Receives identical bytes as consensus key (tag 41).
+A secondary BLS key (tz4) used for DAL participation. Signs attestations only (never preattestations or blocks) when baker has attestation rights AND DAL content is available. Receives identical bytes as consensus key (tag 41).
 
 ### Consensus Key
 
