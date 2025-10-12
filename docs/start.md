@@ -52,7 +52,13 @@ You can configure multiple `vault`s. Each `vault` should be configured to use a 
 The configuration file is shared between `signatory` and `signatory-cli`.
 
 :::note Baker Operations
-For bakers, ensure your configuration includes `attestation` and `preattestation` operations. If you're running a DAL node, also add `attestation_with_dal` to participate in DAL attestations and earn additional rewards. See the [Bakers guide](bakers.md) for detailed configuration examples.
+For bakers, ensure your configuration includes `attestation` and `preattestation` operations. 
+
+**BLS keys (tz4):** Use `attestation` and `preattestation` only - even with DAL. The `attestation_with_dal` permission does not apply to tz4 keys.
+
+**Non-BLS keys (tz1/tz2/tz3) with DAL:** Also add `attestation_with_dal` to participate in DAL attestations.
+
+See [DAL & BLS Attestations](dal_bls_attestations.md) for details on the encoding differences.
 :::
 
 ### Configuration Example - File-based Vault
@@ -85,7 +91,7 @@ tezos:
   # Default policy allows "block" and "attestation" operations
   tz1Wz4ZabKRsz842Xuzy4a7CcWADfPVsPKus:
 
-  # Explicit policy
+  # Explicit policy (tz3 key example)
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     # Setting `log_payloads` to `true` will cause Signatory to log operation
     # payloads to `stdout`. This may be desirable for audit and investigative
@@ -93,9 +99,9 @@ tezos:
     log_payloads: true
     allow:
       block:
-      attestation:        # Modern terminology (was "endorsement")
-      preattestation:     # Modern terminology (was "preendorsement")
-      attestation_with_dal: # Required for DAL participation
+      attestation:          # Tag 21 (when DAL unavailable: node offline, syncing, or no shards)
+      preattestation:       # Tag 20 (always needed)
+      attestation_with_dal: # Tag 23 (when DAL content present and node operational) - tz1/tz2/tz3 only, NOT tz4
       failing_noop:
       generic:
         - transaction
@@ -140,12 +146,13 @@ vaults:
       region: us-west-2 
 
 tezos:
+  # tz3 key example
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     allow:
       block:
-      attestation:        # Modern terminology (was "endorsement")
-      preattestation:     # Modern terminology (was "preendorsement")
-      attestation_with_dal: # Required for DAL participation
+      attestation:          # Tag 21 (when DAL unavailable: node offline, syncing, or no shards)
+      preattestation:       # Tag 20 (always needed)
+      attestation_with_dal: # Tag 23 (when DAL content present and node operational) - tz1/tz2/tz3 only, NOT tz4
       failing_noop:
       generic:
         - delegation
