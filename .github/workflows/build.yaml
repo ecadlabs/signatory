@@ -161,7 +161,7 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/v')"
     name: Generate SLSA provenance for arm64 image
     needs: [publish]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ${{ needs.publish.outputs.image-arm64 }}
       digest: ${{ needs.publish.outputs.digest-arm64 }}
@@ -173,7 +173,7 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/v')"
     name: Generate SLSA provenance for armv7 image
     needs: [publish]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ${{ needs.publish.outputs.image-armv7 }}
       digest: ${{ needs.publish.outputs.digest-armv7 }}
