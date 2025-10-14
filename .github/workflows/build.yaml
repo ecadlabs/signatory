@@ -47,6 +47,12 @@ jobs:
     needs: test
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
+      image-amd64: ${{ steps.hash.outputs.image-amd64 }}
+      digest-amd64: ${{ steps.hash.outputs.digest-amd64 }}
+      image-arm64: ${{ steps.hash.outputs.image-arm64 }}
+      digest-arm64: ${{ steps.hash.outputs.digest-arm64 }}
+      image-armv7: ${{ steps.hash.outputs.image-armv7 }}
+      digest-armv7: ${{ steps.hash.outputs.digest-armv7 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -113,48 +119,72 @@ jobs:
       - name: Fix dist directory permissions
         run: sudo chown -R $(id -u):$(id -g) dist/
       
-      - name: Generate subject for SLSA provenance from Docker images
+      - name: Generate outputs for SLSA provenance from Docker images
         id: hash
         run: |
           set -euo pipefail
           
           # Get image digests from local Docker after push
-          AMD64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
-          ARM64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
-          ARMV7_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
+          AMD64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+          ARM64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+          ARMV7_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
           
           echo "Image digests:"
           echo "  amd64: ${AMD64_DIGEST}"
           echo "  arm64: ${ARM64_DIGEST}"
           echo "  armv7: ${ARMV7_DIGEST}"
           
-          # Generate base64-encoded hashes for SLSA (format: "name sha256hash" per line)
-          cat > subjects.txt <<EOF
-          ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64 ${AMD64_DIGEST}
-          ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64 ${ARM64_DIGEST}
-          ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7 ${ARMV7_DIGEST}
-          EOF
+          # Output individual image names and digests
+          echo "image-amd64=ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64" >> "$GITHUB_OUTPUT"
+          echo "digest-amd64=${AMD64_DIGEST}" >> "$GITHUB_OUTPUT"
           
-          echo "Subjects file content:"
-          cat subjects.txt
+          echo "image-arm64=ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64" >> "$GITHUB_OUTPUT"
+          echo "digest-arm64=${ARM64_DIGEST}" >> "$GITHUB_OUTPUT"
           
-          hashes=$(cat subjects.txt | base64 -w0)
-          echo "hashes=${hashes}" >> "$GITHUB_OUTPUT"
+          echo "image-armv7=ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7" >> "$GITHUB_OUTPUT"
+          echo "digest-armv7=${ARMV7_DIGEST}" >> "$GITHUB_OUTPUT"
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
-  generate-provenance:
+  generate-provenance-amd64:
     if: "!startsWith(github.ref, 'refs/tags/v')"
-    name: Generate SLSA provenance for Docker images
+    name: Generate SLSA provenance for amd64 image
     needs: [publish]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
-      base64-subjects: "${{ needs.publish.outputs.hashes }}"
-      upload-assets: false
+      image: ${{ needs.publish.outputs.image-amd64 }}
+      digest: ${{ needs.publish.outputs.digest-amd64 }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-provenance-arm64:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for arm64 image
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.publish.outputs.image-arm64 }}
+      digest: ${{ needs.publish.outputs.digest-arm64 }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-provenance-armv7:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for armv7 image
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.publish.outputs.image-armv7 }}
+      digest: ${{ needs.publish.outputs.digest-armv7 }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   verify-slsa:
     name: Verify SLSA provenance for Docker images
     runs-on: ubuntu-latest
-    needs: [publish, generate-provenance]
+    needs: [publish, generate-provenance-amd64, generate-provenance-arm64, generate-provenance-armv7]
     if: "!startsWith(github.ref, 'refs/tags/v')"
     permissions:
       actions: read
@@ -169,39 +199,48 @@ jobs:
           find: '/'
           replace: '-'
 
-      - name: Download provenance
+      - name: Download provenance for amd64
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.generate-provenance.outputs.provenance-name }}
-          path: .
+          name: ${{ needs.generate-provenance-amd64.outputs.provenance-name }}
+          path: ./provenance-amd64
+
+      - name: Download provenance for arm64
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.generate-provenance-arm64.outputs.provenance-name }}
+          path: ./provenance-arm64
+
+      - name: Download provenance for armv7
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.generate-provenance-armv7.outputs.provenance-name }}
+          path: ./provenance-armv7
 
       - name: Install SLSA verifier
         uses: slsa-framework/slsa-verifier/actions/installer@v2.5.1
 
       - name: Verify Docker image provenance
         run: |
-          # Get image digests
-          AMD64_DIGEST=$(docker pull ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64 2>&1 | grep Digest | cut -d' ' -f2)
-          ARM64_DIGEST=$(docker pull ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64 2>&1 | grep Digest | cut -d' ' -f2)
-          ARMV7_DIGEST=$(docker pull ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7 2>&1 | grep Digest | cut -d' ' -f2)
-          
-          # Verify each image
+          # Verify amd64 image
           echo "Verifying amd64 image..."
           slsa-verifier verify-image \
-            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64@${AMD64_DIGEST} \
-            --provenance-path multiple.intoto.jsonl \
+            ${{ needs.publish.outputs.image-amd64 }}@${{ needs.publish.outputs.digest-amd64 }} \
+            --provenance-path ./provenance-amd64/*.intoto.jsonl \
             --source-uri github.com/${{ github.repository }}
           
+          # Verify arm64 image
           echo "Verifying arm64 image..."
           slsa-verifier verify-image \
-            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64@${ARM64_DIGEST} \
-            --provenance-path multiple.intoto.jsonl \
+            ${{ needs.publish.outputs.image-arm64 }}@${{ needs.publish.outputs.digest-arm64 }} \
+            --provenance-path ./provenance-arm64/*.intoto.jsonl \
             --source-uri github.com/${{ github.repository }}
           
+          # Verify armv7 image
           echo "Verifying armv7 image..."
           slsa-verifier verify-image \
-            ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7@${ARMV7_DIGEST} \
-            --provenance-path multiple.intoto.jsonl \
+            ${{ needs.publish.outputs.image-armv7 }}@${{ needs.publish.outputs.digest-armv7 }} \
+            --provenance-path ./provenance-armv7/*.intoto.jsonl \
             --source-uri github.com/${{ github.repository }}
 
   deploy-ec2:
