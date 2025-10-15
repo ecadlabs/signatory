@@ -128,7 +128,7 @@ jobs:
           ARM64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-arm64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
           ARMV7_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-armv7 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
 
-          # Write all digests and hashes to a single file
+          # Write all digests in SLSA generic builder format: <digest-hex> <image-name>
           DIGESTS_FILE="/tmp/image-digests.txt"
           echo "${AMD64_DIGEST} ghcr.io/ecadlabs/signatory:${VERSION}-amd64" >> "$DIGESTS_FILE"
           echo "${ARM64_DIGEST} ghcr.io/ecadlabs/signatory:${VERSION}-arm64" >> "$DIGESTS_FILE"
