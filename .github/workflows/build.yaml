@@ -120,11 +120,6 @@ jobs:
           echo "GCP Token file created from secret"
           echo "Verifying file contents:"
           cat gcp-token.json | jq -r '.project_id, .client_email'
-      - name: Upload GCP Token as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: gcp-token-verification
-          path: integration_test/gcp-token.json
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
