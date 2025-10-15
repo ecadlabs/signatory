@@ -106,21 +106,6 @@ jobs:
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
 
-  verify-gcp-account:
-    name: Verify GCP Service Account
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Create GCP Token File from Secret
-        env:
-          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-        run: |
-          cd integration_test
-          echo "$GCP_SERVICE_ACCOUNT_KEY" > gcp-token.json
-          echo "GCP Token file created from secret"
-          echo "Verifying file contents:"
-          cat gcp-token.json | jq -r '.project_id, .client_email'
-
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
     needs: publish
@@ -206,8 +191,6 @@ jobs:
           VAULT_AZ_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3 }}
           VAULT_AZ_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3_PK }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
-          VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
           VAULT_GCP_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3_PK }}
         run: >
@@ -215,6 +198,9 @@ jobs:
          export ARCH=amd64;
          . ./.env.${{ matrix.testenvs }};
          echo "$GCP_SERVICE_ACCOUNT_KEY" > gcp-token.json;
+         export VAULT_GCP_PROJECTID="signatory-testing";
+         export VAULT_GCP_LOCATION="us-west1";
+         export VAULT_GCP_KEYRING="signatory-integration-test";
          echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
          chmod 777 ./hashicerts;
          docker compose up -d --wait --pull always;
