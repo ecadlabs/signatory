@@ -111,21 +111,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Generate GCP Token File
+      - name: Create GCP Token File from Secret
         env:
-          VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
-          VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
-          VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
-          VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
-          VAULT_GCP_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTID }}
-          VAULT_GCP_X509_URL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_X509_URL }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
           cd integration_test
-          envsubst < gcp-token-template.json > gcp-token.json
-          echo "GCP Token file generated"
-          echo "Checking variable lengths:"
-          echo "VAULT_GCP_PROJECTID length: ${#VAULT_GCP_PROJECTID}"
-          echo "VAULT_GCP_CLIENTEMAIL length: ${#VAULT_GCP_CLIENTEMAIL}"
+          echo "$GCP_SERVICE_ACCOUNT_KEY" > gcp-token.json
+          echo "GCP Token file created from secret"
+          echo "Verifying file contents:"
+          cat gcp-token.json | jq -r '.project_id, .client_email'
       - name: Upload GCP Token as Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -216,12 +210,7 @@ jobs:
           VAULT_AZ_TZ2: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ2 }}
           VAULT_AZ_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3 }}
           VAULT_AZ_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3_PK }}
-          VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
-          VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
-          VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
-          VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
-          VAULT_GCP_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTID }}
-          VAULT_GCP_X509_URL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_X509_URL }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
           VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
@@ -230,7 +219,7 @@ jobs:
          cd integration_test;
          export ARCH=amd64;
          . ./.env.${{ matrix.testenvs }};
-         envsubst < gcp-token-template.json > gcp-token.json;
+         echo "$GCP_SERVICE_ACCOUNT_KEY" > gcp-token.json;
          echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
          chmod 777 ./hashicerts;
          docker compose up -d --wait --pull always;
