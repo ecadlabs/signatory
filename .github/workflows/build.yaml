@@ -110,20 +110,27 @@ jobs:
     name: Verify GCP Service Account
     runs-on: ubuntu-latest
     steps:
-      - name: Display GCP Service Account Info
+      - uses: actions/checkout@v5
+      - name: Generate GCP Token File
         env:
           VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
+          VAULT_GCP_PRIVATEKEYID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEYID }}
+          VAULT_GCP_PRIVATEKEY: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PRIVATEKEY }}
           VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
+          VAULT_GCP_CLIENTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTID }}
+          VAULT_GCP_X509_URL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_X509_URL }}
         run: |
-          echo "Writing GCP credentials to file..."
-          echo "GCP Project ID: $VAULT_GCP_PROJECTID" > gcp-info.txt
-          echo "GCP Client Email: $VAULT_GCP_CLIENTEMAIL" >> gcp-info.txt
-          echo "Contents of gcp-info.txt:"
-          cat gcp-info.txt
-          echo ""
-          echo "Checking if variables are set:"
+          cd integration_test
+          envsubst < gcp-token-template.json > gcp-token.json
+          echo "GCP Token file generated"
+          echo "Checking variable lengths:"
           echo "VAULT_GCP_PROJECTID length: ${#VAULT_GCP_PROJECTID}"
           echo "VAULT_GCP_CLIENTEMAIL length: ${#VAULT_GCP_CLIENTEMAIL}"
+      - name: Upload GCP Token as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcp-token-verification
+          path: integration_test/gcp-token.json
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
