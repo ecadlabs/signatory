@@ -46,10 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     outputs:
-      hash-amd64: ${{ steps.hash.outputs.hash-amd64 }}
-      hash-arm64: ${{ steps.hash.outputs.hash-arm64 }}
-      hash-armv7: ${{ steps.hash.outputs.hash-armv7 }}
       version: ${{ steps.hash.outputs.version }}
+      hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -129,69 +127,37 @@ jobs:
           AMD64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-amd64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
           ARM64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-arm64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
           ARMV7_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-armv7 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2 | sed 's/sha256://')
-          
-          echo "Image digests:"
-          echo "  amd64: sha256:${AMD64_DIGEST}"
-          echo "  arm64: sha256:${ARM64_DIGEST}"
-          echo "  armv7: sha256:${ARMV7_DIGEST}"
-          
-          # Store digests for verification step
-          echo "${AMD64_DIGEST}" > /tmp/digest-amd64.txt
-          echo "${ARM64_DIGEST}" > /tmp/digest-arm64.txt
-          echo "${ARMV7_DIGEST}" > /tmp/digest-armv7.txt
-          
-          # Create base64-encoded subjects for each architecture
-          echo "ghcr.io/ecadlabs/signatory:${VERSION}-amd64 ${AMD64_DIGEST}" | base64 -w0 > /tmp/hash-amd64.txt
-          echo "ghcr.io/ecadlabs/signatory:${VERSION}-arm64 ${ARM64_DIGEST}" | base64 -w0 > /tmp/hash-arm64.txt
-          echo "ghcr.io/ecadlabs/signatory:${VERSION}-armv7 ${ARMV7_DIGEST}" | base64 -w0 > /tmp/hash-armv7.txt
-          
-          # Output hashes for each architecture
-          echo "hash-amd64=$(cat /tmp/hash-amd64.txt)" >> "$GITHUB_OUTPUT"
-          echo "hash-arm64=$(cat /tmp/hash-arm64.txt)" >> "$GITHUB_OUTPUT"
-          echo "hash-armv7=$(cat /tmp/hash-armv7.txt)" >> "$GITHUB_OUTPUT"
+
+          # Write all digests and hashes to a single file
+          DIGESTS_FILE="/tmp/image-digests.txt"
+          echo "${AMD64_DIGEST} ghcr.io/ecadlabs/signatory:${VERSION}-amd64" >> "$DIGESTS_FILE"
+          echo "${ARM64_DIGEST} ghcr.io/ecadlabs/signatory:${VERSION}-arm64" >> "$DIGESTS_FILE"
+          echo "${ARMV7_DIGEST} ghcr.io/ecadlabs/signatory:${VERSION}-armv7" >> "$DIGESTS_FILE"
+
+          echo "hashes=$(cat $DIGESTS_FILE | base64 -w0)" >> $GITHUB_OUTPUT
         if: "!startsWith(github.ref, 'refs/tags/v')"
       
       - name: Upload digests as artifacts
         uses: actions/upload-artifact@v4
         with:
           name: image-digests
-          path: /tmp/digest-*.txt
+          path: /tmp/image-digests.txt
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
-  generate-provenance-amd64:
+  generate-provenance:
     if: "!startsWith(github.ref, 'refs/tags/v')"
-    name: Generate SLSA provenance for amd64 image
+    name: Generate SLSA provenance for all images
     needs: [publish]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
-      base64-subjects: "${{ needs.publish.outputs.hash-amd64 }}"
+      base64-subjects: "${{ needs.publish.outputs.hashes }}"
       upload-assets: true
-      provenance-name: "signatory-${{ needs.publish.outputs.version }}-amd64.intoto.jsonl"
-
-  generate-provenance-arm64:
-    if: "!startsWith(github.ref, 'refs/tags/v')"
-    name: Generate SLSA provenance for arm64 image
-    needs: [publish]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    with:
-      base64-subjects: "${{ needs.publish.outputs.hash-arm64 }}"
-      upload-assets: true
-      provenance-name: "signatory-${{ needs.publish.outputs.version }}-arm64.intoto.jsonl"
-
-  generate-provenance-armv7:
-    if: "!startsWith(github.ref, 'refs/tags/v')"
-    name: Generate SLSA provenance for armv7 image
-    needs: [publish]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    with:
-      base64-subjects: "${{ needs.publish.outputs.hash-armv7 }}"
-      upload-assets: true
-      provenance-name: "signatory-${{ needs.publish.outputs.version }}-armv7.intoto.jsonl"
+      provenance-name: "signatory-${{ needs.publish.outputs.version }}.intoto.jsonl"
 
   verify-slsa:
     name: Verify SLSA provenance for Docker images
     runs-on: ubuntu-latest
-    needs: [publish, generate-provenance-amd64, generate-provenance-arm64, generate-provenance-armv7]
+    needs: [publish, generate-provenance]
     if: "!startsWith(github.ref, 'refs/tags/v')"
     permissions:
       actions: read
@@ -204,43 +170,23 @@ jobs:
           name: image-digests
           path: ./digests
 
-      - name: Download provenance for amd64
+      - name: Download provenance
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.generate-provenance-amd64.outputs.provenance-name }}
-          path: ./provenance-amd64
-
-      - name: Download provenance for arm64
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.generate-provenance-arm64.outputs.provenance-name }}
-          path: ./provenance-arm64
-
-      - name: Download provenance for armv7
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.generate-provenance-armv7.outputs.provenance-name }}
-          path: ./provenance-armv7
+          name: ${{ needs.generate-provenance.outputs.provenance-name }}
+          path: ./provenance
 
       - name: List downloaded files
         run: |
           echo "=== Downloaded Digests ==="
           ls -lR ./digests/
-          cat ./digests/digest-*.txt
+          cat ./digests/image-digests.txt
           echo ""
-          echo "=== Downloaded Provenance Files ==="
-          ls -lR ./provenance-*
-
-      - name: Display provenance contents
-        run: |
-          echo "=== amd64 provenance content ==="
-          cat ./provenance-amd64/signatory-${{ needs.publish.outputs.version }}-amd64.intoto.jsonl | jq .
+          echo "=== Downloaded Provenance File ==="
+          ls -lR ./provenance/
           echo ""
-          echo "=== arm64 provenance content ==="
-          cat ./provenance-arm64/signatory-${{ needs.publish.outputs.version }}-arm64.intoto.jsonl | jq .
-          echo ""
-          echo "=== armv7 provenance content ==="
-          cat ./provenance-armv7/signatory-${{ needs.publish.outputs.version }}-armv7.intoto.jsonl | jq .
+          echo "=== Provenance content ==="
+          cat ./provenance/signatory-${{ needs.publish.outputs.version }}.intoto.jsonl | jq .
 
       - name: Install SLSA verifier
         uses: slsa-framework/slsa-verifier/actions/installer@v2.5.1
@@ -248,25 +194,26 @@ jobs:
       - name: Verify provenance attestations
         run: |
           VERSION="${{ needs.publish.outputs.version }}"
+          PROVENANCE_FILE="./provenance/signatory-${VERSION}.intoto.jsonl"
           
-          echo "Verifying amd64 provenance..."
-          AMD64_DIGEST=$(cat ./digests/digest-amd64.txt)
+          echo "Verifying amd64 image..."
+          AMD64_DIGEST=$(cat ./digests/image-digests.txt | grep "ghcr.io/ecadlabs/signatory:${VERSION}-amd64" | cut -d' ' -f1)
           slsa-verifier verify-image \
-            --provenance-path ./provenance-amd64/signatory-${VERSION}-amd64.intoto.jsonl \
+            --provenance-path "${PROVENANCE_FILE}" \
             --source-uri github.com/${{ github.repository }} \
             ghcr.io/ecadlabs/signatory:${VERSION}-amd64@sha256:${AMD64_DIGEST}
           
-          echo "Verifying arm64 provenance..."
-          ARM64_DIGEST=$(cat ./digests/digest-arm64.txt)
+          echo "Verifying arm64 image..."
+          ARM64_DIGEST=$(cat ./digests/image-digests.txt | grep "ghcr.io/ecadlabs/signatory:${VERSION}-arm64" | cut -d' ' -f1)
           slsa-verifier verify-image \
-            --provenance-path ./provenance-arm64/signatory-${VERSION}-arm64.intoto.jsonl \
+            --provenance-path "${PROVENANCE_FILE}" \
             --source-uri github.com/${{ github.repository }} \
             ghcr.io/ecadlabs/signatory:${VERSION}-arm64@sha256:${ARM64_DIGEST}
           
-          echo "Verifying armv7 provenance..."
-          ARMV7_DIGEST=$(cat ./digests/digest-armv7.txt)
+          echo "Verifying armv7 image..."
+          ARMV7_DIGEST=$(cat ./digests/image-digests.txt | grep "ghcr.io/ecadlabs/signatory:${VERSION}-armv7" | cut -d' ' -f1)
           slsa-verifier verify-image \
-            --provenance-path ./provenance-armv7/signatory-${VERSION}-armv7.intoto.jsonl \
+            --provenance-path "${PROVENANCE_FILE}" \
             --source-uri github.com/${{ github.repository }} \
             ghcr.io/ecadlabs/signatory:${VERSION}-armv7@sha256:${ARMV7_DIGEST}
 
