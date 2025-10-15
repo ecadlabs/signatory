@@ -115,8 +115,15 @@ jobs:
           VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
           VAULT_GCP_CLIENTEMAIL: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_CLIENTEMAIL }}
         run: |
-          echo "GCP Project ID: $VAULT_GCP_PROJECTID"
-          echo "GCP Client Email: $VAULT_GCP_CLIENTEMAIL"
+          echo "Writing GCP credentials to file..."
+          echo "GCP Project ID: $VAULT_GCP_PROJECTID" > gcp-info.txt
+          echo "GCP Client Email: $VAULT_GCP_CLIENTEMAIL" >> gcp-info.txt
+          echo "Contents of gcp-info.txt:"
+          cat gcp-info.txt
+          echo ""
+          echo "Checking if variables are set:"
+          echo "VAULT_GCP_PROJECTID length: ${#VAULT_GCP_PROJECTID}"
+          echo "VAULT_GCP_CLIENTEMAIL length: ${#VAULT_GCP_CLIENTEMAIL}"
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
