@@ -191,6 +191,9 @@ jobs:
           VAULT_AZ_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3 }}
           VAULT_AZ_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_AZ_TZ3_PK }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          VAULT_GCP_PROJECTID: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_PROJECTID }}
+          VAULT_GCP_LOCATION: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_LOCATION }}
+          VAULT_GCP_KEYRING: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_KEYRING }}
           VAULT_GCP_TZ3: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3 }}
           VAULT_GCP_TZ3_PK: ${{ secrets.INTEGRATIONTEST_VAULT_GCP_TZ3_PK }}
         run: >
@@ -198,9 +201,6 @@ jobs:
          export ARCH=amd64;
          . ./.env.${{ matrix.testenvs }};
          echo "$GCP_SERVICE_ACCOUNT_KEY" > gcp-token.json;
-         export VAULT_GCP_PROJECTID="signatory-testing";
-         export VAULT_GCP_LOCATION="us-west1";
-         export VAULT_GCP_KEYRING="signatory-integration-test";
          echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
          chmod 777 ./hashicerts;
          docker compose up -d --wait --pull always;
