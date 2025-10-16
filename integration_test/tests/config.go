@@ -45,9 +45,10 @@ type ServerConfig struct {
 type TezosConfig = map[string]*TezosPolicy
 
 type TezosPolicy struct {
-	Allow       map[string][]string `yaml:"allow"`
-	LogPayloads bool                `yaml:"log_payloads"`
-	JwtUsers    []string            `yaml:"jwt_users,omitempty"`
+	Allow                  map[string][]string `yaml:"allow"`
+	LogPayloads            bool                `yaml:"log_payloads"`
+	JwtUsers               []string            `yaml:"jwt_users,omitempty"`
+	AllowProofOfPossession bool                `yaml:"allow_proof_of_possession,omitempty"`
 }
 
 type VaultConfig struct {

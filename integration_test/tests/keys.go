@@ -24,6 +24,8 @@ const (
 	Tz2AliasPKH = "tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN"
 	Tz3AliasPKH = "tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK"
 	Tz4AliasPKH = "tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME"
+
+	Tz4PopPKH = "tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz"
 )
 
 // Public keys corresponding to the public key hashes
@@ -39,6 +41,8 @@ const (
 	Tz2AliasPK = "sppk7cvVVMRRtYTdriTB6KQqpXZt9TUwSTcpMWq4FwpvG2eVZ56UuHP"
 	Tz3AliasPK = "p2pk67wmwXhknDMAtjFJCh1Z65wCemXchB3KYQfDFp2HvDT1S2Z" // Placeholder - needs actual value
 	Tz4AliasPK = "BLpk1nRV5SBB2QCxsiem5Neoywcizr3mkdp167HL1iKFgFvzPhKo4RSy7J8JBh2BgGgVYjNsRGwU"
+
+	Tz4PopPK = "BLpk1w7hcraa8qBo8f7sNBteUVoSejrS779YUra1deGqZgWSw8xUVYrNSMkxWrDAAwTtFtJxvMbK"
 )
 
 // Secret keys (for reference - these are used in signatory-local-secret.json)
@@ -55,6 +59,8 @@ const (
 	Tz2AliasSK = "unencrypted:spsk1XYsTqUsd7LaLs9a8qpmCvLVJeLEZEXkeAZS5dwcKgUZhv3cYw"
 	Tz3AliasSK = "unencrypted:p2sk2rUMnnnFPQCB7DBozkCZrFhiZ87ddrpAHbRcww7dwU2WHYUbci"
 	Tz4AliasSK = "unencrypted:BLsk1XMDG3iepYGj15mBWc7dYjrkpVVM4VH3y5DyBCN9iAGrELwRbY"
+
+	Tz4PopSK = "unencrypted:BLsk1d6zjtYgWxyZwdnCsQpwYcs3cJRFTMwJ1CWCgjFu4zpaZp9nL6"
 )
 
 // Authorized keys for authentication tests
@@ -77,6 +83,8 @@ const (
 	Tz2AliasSignatoryURL = "http://signatory:6732/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN"
 	Tz3AliasSignatoryURL = "http://signatory:6732/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK"
 	Tz4AliasSignatoryURL = "http://signatory:6732/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME"
+
+	Tz4PopSignatoryURL = "http://signatory:6732/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz"
 )
 
 // Account aliases used in tests
@@ -92,6 +100,7 @@ const (
 	Tz2Alias      = "tz2alias"
 	Tz3Alias      = "tz3alias"
 	Tz4Alias      = "tz4alias"
+	Tz4PopAlias   = "tz4pop"
 )
 
 // Structured access to keys using structs
@@ -108,6 +117,7 @@ func (PublicKeyHash) Tz1Alias() string { return Tz1AliasPKH }
 func (PublicKeyHash) Tz2Alias() string { return Tz2AliasPKH }
 func (PublicKeyHash) Tz3Alias() string { return Tz3AliasPKH }
 func (PublicKeyHash) Tz4Alias() string { return Tz4AliasPKH }
+func (PublicKeyHash) Tz4Pop() string   { return Tz4PopPKH }
 
 type PublicKey struct{}
 
@@ -119,6 +129,7 @@ func (PublicKey) Tz1Alias() string { return Tz1AliasPK }
 func (PublicKey) Tz2Alias() string { return Tz2AliasPK }
 func (PublicKey) Tz3Alias() string { return Tz3AliasPK }
 func (PublicKey) Tz4Alias() string { return Tz4AliasPK }
+func (PublicKey) Tz4Pop() string   { return Tz4PopPK }
 
 type SecretKey struct{}
 
@@ -131,6 +142,7 @@ func (SecretKey) Tz1Alias() string { return Tz1AliasSK }
 func (SecretKey) Tz2Alias() string { return Tz2AliasSK }
 func (SecretKey) Tz3Alias() string { return Tz3AliasSK }
 func (SecretKey) Tz4Alias() string { return Tz4AliasSK }
+func (SecretKey) Tz4Pop() string   { return Tz4PopSK }
 func (SecretKey) Auth() string     { return AuthKeySK }
 
 type SignatoryURL struct{}
@@ -143,6 +155,7 @@ func (SignatoryURL) Tz1Alias() string { return Tz1AliasSignatoryURL }
 func (SignatoryURL) Tz2Alias() string { return Tz2AliasSignatoryURL }
 func (SignatoryURL) Tz3Alias() string { return Tz3AliasSignatoryURL }
 func (SignatoryURL) Tz4Alias() string { return Tz4AliasSignatoryURL }
+func (SignatoryURL) Tz4Pop() string   { return Tz4PopSignatoryURL }
 
 // Global instances for easy access
 var (
@@ -175,6 +188,8 @@ func GetPKHByAlias(alias string) string {
 		return Tz3AliasPKH
 	case Tz4Alias:
 		return Tz4AliasPKH
+	case Tz4PopAlias:
+		return Tz4PopPKH
 	default:
 		return ""
 	}
@@ -199,6 +214,8 @@ func GetPKByAlias(alias string) string {
 		return Tz3AliasPK
 	case Tz4Alias:
 		return Tz4AliasPK
+	case Tz4PopAlias:
+		return Tz4PopPK
 	default:
 		return ""
 	}
@@ -223,6 +240,8 @@ func GetSignatoryURLByAlias(alias string) string {
 		return Tz3AliasSignatoryURL
 	case Tz4Alias:
 		return Tz4AliasSignatoryURL
+	case Tz4PopAlias:
+		return Tz4PopSignatoryURL
 	default:
 		return ""
 	}
@@ -239,6 +258,7 @@ func GetAllTestPKHs() []string {
 		Tz2AliasPKH,
 		Tz3AliasPKH,
 		Tz4AliasPKH,
+		Tz4PopPKH,
 	}
 }
 
@@ -253,5 +273,6 @@ func GetAllTestAliases() []string {
 		Tz2Alias,
 		Tz3Alias,
 		Tz4Alias,
+		Tz4PopAlias,
 	}
 }

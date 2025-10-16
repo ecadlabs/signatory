@@ -72,7 +72,7 @@ func setupJWTConfig(users map[string]*integrationtest.JwtUserData) integrationte
 // setupAndRestart configures JWT and restarts the signatory service
 func setupAndRestart(users map[string]*integrationtest.JwtUserData) {
 	config := setupJWTConfig(users)
-	integrationtest.Backup_then_update_config(config)
+	integrationtest.Update_config(config)
 	integrationtest.Restart_signatory()
 }
 
@@ -429,7 +429,7 @@ func TestPerPkh(t *testing.T) {
 	config.Tezos[pkh3].Allow = map[string][]string{"generic": {"transaction"}}
 	config.Tezos[pkh4].Allow = map[string][]string{"generic": {"transaction"}}
 
-	integrationtest.Backup_then_update_config(config)
+	integrationtest.Update_config(config)
 	defer cleanup()
 	integrationtest.Restart_signatory()
 
