@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"strings"
 	"testing"
 
 	integrationtest "github.com/ecadlabs/signatory/integration_test/tests"
@@ -17,7 +18,10 @@ func TestProofOfPossessionAllowPolicy(t *testing.T) {
 
 	defer integrationtest.Restore_config()
 
-	{
+	protocol, err := integrationtest.GetCurrentProtocol()
+	assert.NoError(t, err)
+
+	if strings.Compare(protocol, "PtSeouL") >= 0 { // only test this for protocols >= PtSeouL
 		// Test with allow_proof_of_possession = false (not allowed)
 		c.Tezos[pkh] = &integrationtest.TezosPolicy{
 			Allow: map[string][]string{
