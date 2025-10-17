@@ -30,7 +30,7 @@ func TestHashiVault(t *testing.T) {
 	v.Driver = "hashicorpvault"
 	v.Conf = map[string]interface{}{"address": &address, "roleID": &roleid, "secretID": &secretid, "transitConfig": map[string]string{"mountPoint": mountPoint}, "tlsCaCert": "/opt/hashicerts/vault-ca.pem"}
 	c.Vaults["hashicorp"] = &v
-	integrationtest.Backup_then_update_config(c)
+	integrationtest.Update_config(c)
 	defer integrationtest.Restore_config()
 
 	pkh := hashiGetTz1()
