@@ -225,85 +225,83 @@ See the official [Signatory documentation](https://signatory.io/docs/) for AWS/G
 
 ## Baking with DAL (Data Availability Layer)
 
-The Data Availability Layer (DAL) enables data publication outside of Layer 1 blocks while maintaining decentralization. DAL participation **earns additional incentives** from the network protocol and **supports the Tezos X roadmap** by providing high-bandwidth data distribution for smart rollups.
+The Data Availability Layer (DAL) enables data publication outside of Layer 1 blocks while maintaining decentralization. DAL participation **earns additional incentives** (10% of participation rewards) and **supports the Tezos X roadmap**.
 
-### Why Run a DAL Node?
+:::danger Critical: BLS Keys Use Different Encoding
+**BLS keys (tz4) use tag 41 encoding for ALL attestations.** Both consensus and companion keys receive identical bytes and decode to `request=attestation` in Signatory logs. **Do NOT configure `attestation_with_dal` for tz4 keys** - it has no effect and will cause confusion.
 
-- **Additional Rewards**: Earn extra incentives for DAL attestations (10% of participation rewards)
-- **Network Support**: Help scale Tezos by supporting smart rollup data distribution
-- **Tezos X Roadmap**: Contribute to the future of Tezos scaling infrastructure
-- **Competitive Advantage**: Stay ahead as DAL becomes increasingly important
+**Non-BLS keys (tz1/tz2/tz3) with DAL node:** Use `attestation_with_dal` permission (tag 23). These keys can participate in DAL but typically attest with bitset 0.
 
-### Critical Signatory Configuration
+**See [DAL & BLS Attestations guide](dal_bls_attestations.md) for detailed explanation.**
+:::
 
-If your baker participates in DAL attestations, you **must** add `attestation_with_dal` to your Signatory policy:
+### Quick Setup
+
+**1. Configure Signatory Policy**
 
 ```yaml
 tezos:
-  tz1YourBakerAddress:
+  # Consensus key (tz4)
+  tz4YourConsensusKey:
     log_payloads: true
     allow:
-      block:              # Standard block baking
-      attestation:        # Standard attestations
-      preattestation:     # Pre-attestations  
-      attestation_with_dal: # Required for DAL attestations
-      generic:
-        - transaction
-        - reveal
-        - delegation
-        - stake
+      block:
+      attestation:       # Tag 41 - all attestations
+      preattestation:    # Tag 40
+
+  # Companion key (tz4) 
+  tz4YourCompanionKey:
+    log_payloads: true
+    allow:
+      attestation:       # Tag 41 - only permission needed
 ```
 
-:::warning Important
-Without `attestation_with_dal` in your Signatory policy, DAL attestation requests will be rejected, and you'll miss those rewards.
-:::
-
-### Key Requirements
-
-**BLS Consensus Keys (tz4)**: A **companion key is mandatory** for DAL attestations. Without it, tz4 bakers cannot produce DAL attestations.
+**2. Set Keys**
 
 ```bash
-# Register companion key for existing delegate
+# Set consensus and companion keys for your delegate
+octez-client set consensus key for <manager_key> to <consensus_key>
 octez-client set companion key for <manager_key> to <companion_key>
 ```
 
-**Baker Command Requirements:**
-
-For DAL participation, your baker command must include:
-- **Consensus key**: Required for all attestation operations
-- **Companion key**: Required for DAL attestations (especially for tz4 consensus keys)
-- **DAL node endpoint**: `--dal-node` parameter pointing to your DAL node
+**3. Start Baker with DAL**
 
 ```bash
-# Example baker command for DAL participation
 octez-baker run with local node ~/.tezos-node \
   --liquidity-baking-toggle-vote pass \
   --dal-node http://localhost:10732 \
   consensus_key companion_key
 ```
 
-**DAL Operations**:
-- **`attestation_with_dal`**: Required for DAL participation
-  - Standard keys (tz1, tz2, tz3): Single consensus key signature
-  - BLS keys (tz4): Requires both consensus key AND companion key signatures
-- **`dal_entrapment_evidence`**: **DO NOT ALLOW** - Anonymous operation, no signature needed
-- **`dal_publish_commitment`**: **DO NOT ALLOW** - Only needed if publishing data to DAL
+### Key Requirements
 
-### Setup Overview
+- **BLS consensus key (tz4)** - Needs `attestation` and `preattestation` permissions
+- **BLS companion key (tz4)** - Needs `attestation` permission only (never signs preattestations)
+- **DAL node** - Must be running and synced
+- **Baker command** - Must include `--dal-node` flag and both key aliases
 
-1. **Run a DAL node** alongside your Tezos node (see [DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html))
-2. **Configure your baker** to use the DAL node (`--dal-node` flag)
-3. **Update Signatory policy** to allow `attestation_with_dal` operations
+### What to Expect
 
-```bash
-# Start baker with DAL integration
-octez-baker run with local node ~/.tezos-node \
-  --liquidity-baking-toggle-vote pass \
-  --dal-node http://127.0.0.1:10732 \
-  consensus_key companion_key
-```
+**Consensus key** signs whenever baker has attestation rights (regardless of DAL).  
+**Companion key** signs only when baker has attestation rights **AND** DAL content is available.
 
-**Further Reading**: [Tezos DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer) | [DAL Node Setup Guide](https://octez.tezos.com/docs/shell/dal_run.html)
+Both keys receive **identical tag 41 bytes** and decode to `request=attestation` in Signatory logs. DAL participation happens through weighted BLS aggregation after signing, not through different operation types.
+
+### Troubleshooting
+
+**"Companion tz4 key never signs"**
+- Check DAL node is synced: `curl http://localhost:10732/level`
+- Verify baker has `--dal-node` flag
+- Confirm `attestation` permission in companion key policy (NOT `attestation_with_dal`)
+
+**"Two tz4 signatures with same magic byte"**
+- **This is correct for BLS DAL.** Baker sends identical tag 41 bytes to both keys. Both decode to `attestation`. See [DAL & BLS Attestations](dal_bls_attestations.md)
+
+**"Not earning DAL rewards"**
+- Check participation: `octez-client rpc get "/chains/main/blocks/head/context/delegates/YOUR_PKH/participation"`
+- Look for `dal_attested_slots` > 0
+
+**Further Reading**: [DAL & BLS Attestations Guide](dal_bls_attestations.md) | [DAL Node Setup](https://octez.tezos.com/docs/shell/dal_run.html) | [DAL Architecture](https://docs.tezos.com/architecture/data-availability-layer)
 
 ---
 

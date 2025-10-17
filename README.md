@@ -33,6 +33,7 @@ Explore detailed documentation for various components of Signatory:
 - [Authorized Keys](https://signatory.io/docs/authorized_keys)
 - [Command-Line Interface (CLI)](https://signatory.io/docs/cli)
 - [Bakers](https://signatory.io/docs/bakers)
+- [DAL & BLS Attestations](https://signatory.io/docs/dal_bls_attestations)
 
 ### Vault Backends
 - [Azure KMS](https://signatory.io/docs/azure_kms)
@@ -57,6 +58,7 @@ Explore detailed documentation for various components of Signatory:
 - [Proof of Possession (POP)](https://signatory.io/docs/proof_of_possession)
 - [Remote Policy Configuration](https://signatory.io/docs/remote_policy)
 - [Signatory Architecture](https://signatory.io/docs/architecture)
+- [Glossary](https://signatory.io/docs/glossary)
 
 ## Features
 
