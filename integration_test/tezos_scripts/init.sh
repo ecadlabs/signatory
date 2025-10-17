@@ -123,7 +123,7 @@ $client bake for --minimal-timestamp
 
 # tz4pop
 $client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz
-$client --wait none transfer 1 from bootstrap2 to tz4pop --burn-cap 0.07
+$client --wait none transfer 100000 from bootstrap2 to tz4pop --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # speculos

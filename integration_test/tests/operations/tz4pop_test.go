@@ -29,7 +29,7 @@ func TestProofOfPossessionAllowPolicy(t *testing.T) {
 		integrationtest.Restart_signatory()
 
 		out, err := integrationtest.OctezClient("reveal", "key", "for", "tz4pop")
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		require.Contains(t, string(out), "proof of possession is not allowed")
 	}
 
