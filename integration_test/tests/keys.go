@@ -1,4 +1,4 @@
-package new_integration_test
+package tests
 
 // Keys defines all the public key hashes and other keys used in integration tests
 // This file serves as a centralized reference for all keys used across test files
