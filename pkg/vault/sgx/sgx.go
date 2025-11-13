@@ -2,6 +2,9 @@ package sgx
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
@@ -78,13 +82,15 @@ func (e *encryptedKey) UnmarshalJSON(data []byte) error {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 type Config struct {
-	SGXHost            string         `yaml:"host"`
-	SGXPort            string         `yaml:"port"`
-	EncryptionKeyID    string         `yaml:"encryption_key_id"`
-	ProxyPort          *uint32        `yaml:"proxy_local_port"`
-	ProxyRemoteAddress string         `yaml:"proxy_remote_address"`
-	Storage            *StorageConfig `yaml:"storage"`
-	Credentials        *Credentials   `yaml:"credentials"`
+	SGXHost              string         `yaml:"host"`
+	SGXPort              string         `yaml:"port"`
+	ServerPublicKey      string         `yaml:"server_public_key"`       // Ed25519 public key (hex or base64)
+	ClientPrivateKeyPath string         `yaml:"client_private_key_path"` // Path to identity file containing Ed25519 private key
+	EncryptionKeyID      string         `yaml:"encryption_key_id"`
+	ProxyPort            *uint32        `yaml:"proxy_local_port"`
+	ProxyRemoteAddress   string         `yaml:"proxy_remote_address"`
+	Storage              *StorageConfig `yaml:"storage"`
+	Credentials          *Credentials   `yaml:"credentials"`
 }
 
 func resolve[T comparable](value T, ev string) T {
@@ -118,17 +124,63 @@ func populateConfig(c *Config) *Config {
 		c = &zero
 	}
 	return &Config{
-		SGXHost:            resolve(c.SGXHost, "SGX_HOST"),
-		SGXPort:            resolve(c.SGXPort, "SGX_PORT"),
-		EncryptionKeyID:    resolve(c.EncryptionKeyID, "ENCRYPTION_KEY_ID"),
-		ProxyPort:          resolvePtr(c.ProxyPort, "PROXY_LOCAL_PORT"),
-		ProxyRemoteAddress: resolve(c.ProxyRemoteAddress, "PROXY_REMOTE_ADDRESS"),
-		Storage:            c.Storage,
-		Credentials:        c.Credentials,
+		SGXHost:              resolve(c.SGXHost, "SGX_HOST"),
+		SGXPort:              resolve(c.SGXPort, "SGX_PORT"),
+		ServerPublicKey:      resolve(c.ServerPublicKey, "SGX_SERVER_PUBLIC_KEY"),
+		ClientPrivateKeyPath: resolve(c.ClientPrivateKeyPath, "SGX_CLIENT_PRIVATE_KEY_PATH"),
+		EncryptionKeyID:      resolve(c.EncryptionKeyID, "ENCRYPTION_KEY_ID"),
+		ProxyPort:            resolvePtr(c.ProxyPort, "PROXY_LOCAL_PORT"),
+		ProxyRemoteAddress:   resolve(c.ProxyRemoteAddress, "PROXY_REMOTE_ADDRESS"),
+		Storage:              c.Storage,
+		Credentials:          c.Credentials,
 	}
 }
 
 type Credentials = awsutils.Config
+
+func parseEd25519PublicKey(keyStr string) (ed25519.PublicKey, error) {
+	if keyStr == "" {
+		return nil, errors.New("empty public key")
+	}
+	data, err := hex.DecodeString(keyStr)
+	if err != nil {
+		data, err = base64.StdEncoding.DecodeString(keyStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode public key as hex or base64: %w", err)
+		}
+	}
+	if len(data) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("invalid public key size: expected %d, got %d", ed25519.PublicKeySize, len(data))
+	}
+	return ed25519.PublicKey(data), nil
+}
+
+func loadClientPrivateKeyFromFile(path string) (ed25519.PrivateKey, error) {
+	if path == "" {
+		return nil, errors.New("empty identity file path")
+	}
+	path = os.ExpandEnv(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read identity file: %w", err)
+	}
+	hexStr := string(data)
+	hexStr = strings.TrimSpace(hexStr)
+	if hexStr == "" {
+		return nil, errors.New("identity file is empty")
+	}
+	keyData, err := hex.DecodeString(hexStr)
+	if err != nil {
+		keyData, err = base64.StdEncoding.DecodeString(hexStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode private key as hex or base64: %w", err)
+		}
+	}
+	if len(keyData) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("invalid private key size: expected %d, got %d", ed25519.PrivateKeySize, len(keyData))
+	}
+	return ed25519.PrivateKey(keyData), nil
+}
 
 type SgxVault[C any] struct {
 	client  *rpc.Client[C]
@@ -222,6 +274,24 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 		return nil, errors.New("(SGX): missing SGX port")
 	}
 
+	var serverPublicKey ed25519.PublicKey
+	var clientPrivateKey ed25519.PrivateKey
+	if conf.ServerPublicKey != "" {
+		serverPublicKey, err = parseEd25519PublicKey(conf.ServerPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("(SGX): invalid server public key: %w", err)
+		}
+
+		if conf.ClientPrivateKeyPath == "" {
+			return nil, errors.New("(SGX): client private key file path required when server public key is provided")
+		}
+
+		clientPrivateKey, err = loadClientPrivateKeyFromFile(conf.ClientPrivateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("(SGX): failed to load client private key from file: %w", err)
+		}
+	}
+
 	addr := net.JoinHostPort(conf.SGXHost, conf.SGXPort)
 	log.Infof("(SGX): connecting to the enclave signer on %v...", addr)
 	conn, err := net.Dial("tcp", addr)
@@ -229,15 +299,27 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 		return nil, fmt.Errorf("(SGX): %w", err)
 	}
 
-	v, err := newWithConn(ctx, conn, rpcCred, storage)
+	v, err := newWithConn(ctx, conn, rpcCred, storage, serverPublicKey, clientPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 	return v, nil
 }
 
-func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*SgxVault[C], error) {
-	client := rpc.NewClient[C](conn)
+func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage, serverPublicKey ed25519.PublicKey, clientPrivateKey ed25519.PrivateKey) (*SgxVault[C], error) {
+	var client *rpc.Client[C]
+	var err error
+
+	if serverPublicKey != nil {
+		client, err = rpc.NewSecureClient[C](conn, serverPublicKey, clientPrivateKey)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("(SGX): failed to establish secure connection: %w", err)
+		}
+	} else {
+		client = rpc.NewClient[C](conn)
+	}
+
 	client.Logger = log.StandardLogger()
 
 	if err := client.Initialize(ctx, credentials); err != nil {
