@@ -155,12 +155,10 @@ func strInSlice(slice []string, s string) bool {
 
 func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest) error {
 	if policy.AllowedChains != nil {
-		m, ok := msg.(request.WithWatermark)
-		if !ok {
-			return fmt.Errorf("request does not support watermark")
-		}
-		if !strInSlice(policy.AllowedChains, string(m.GetChainID().ToBase58())) {
-			return fmt.Errorf("chain `%s' is not allowed", m.GetChainID())
+		if m, ok := msg.(request.WithWatermark); ok {
+			if !strInSlice(policy.AllowedChains, string(m.GetChainID().ToBase58())) {
+				return fmt.Errorf("chain `%s' is not allowed", m.GetChainID())
+			}
 		}
 	}
 
