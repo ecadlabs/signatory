@@ -1,6 +1,9 @@
-package new_integration_test
+package tests
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"os/exec"
 )
 
@@ -42,4 +45,34 @@ func delete_watermark_files() {
 	if err != nil {
 		panic("Clean tezos: Failed to delete watermarks: " + string(out))
 	}
+}
+
+func GetCurrentProtocol() (string, error) {
+	out, err := OctezClient("rpc", "get", "/chains/main/blocks/head/metadata")
+	if err != nil {
+		return "", err
+	}
+	var metadata struct {
+		Protocol string `json:"protocol"`
+	}
+	// Find the line that starts with '{' and parse JSON from that line (Skip warnings)
+	lines := bytes.Split(out, []byte("\n"))
+	start := -1
+	for i, line := range lines {
+		line = bytes.TrimSpace(line)
+		if len(line) > 0 && line[0] == '{' {
+			start = i
+			break
+		}
+	}
+	if start == -1 {
+		return "", fmt.Errorf("no JSON object found in output: %s", string(out))
+	}
+	out = bytes.Join(lines[start:], []byte("\n"))
+
+	if err := json.Unmarshal(out, &metadata); err != nil {
+		return "", err
+	}
+
+	return metadata.Protocol, nil
 }

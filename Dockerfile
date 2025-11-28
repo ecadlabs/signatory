@@ -1,4 +1,4 @@
-FROM golang:1.21-bullseye AS builder
+FROM golang:1.24-bullseye AS builder
 RUN apt-get update && apt-get install
 ADD . /signatory
 WORKDIR /signatory

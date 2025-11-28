@@ -34,13 +34,14 @@ type TezosConfig = hashmap.PublicKeyHashMap[*TezosPolicy]
 
 // TezosPolicy contains policy definition for a specific address
 type TezosPolicy struct {
-	Allow             map[string][]string `yaml:"allow"`
-	AllowedOperations []string            `yaml:"allowed_operations"`
-	AllowedKinds      []string            `yaml:"allowed_kinds"`
-	AllowedChains     []string            `yaml:"allowed_chains"`
-	LogPayloads       bool                `yaml:"log_payloads"`
-	AuthorizedKeys    *AuthorizedKeys     `yaml:"authorized_keys"`
-	JwtUsers          []string            `yaml:"jwt_users"`
+	Allow                  map[string][]string `yaml:"allow"`
+	AllowedOperations      []string            `yaml:"allowed_operations"`
+	AllowedKinds           []string            `yaml:"allowed_kinds"`
+	AllowedChains          []string            `yaml:"allowed_chains"`
+	AllowProofOfPossession bool                `yaml:"allow_proof_of_possession"`
+	LogPayloads            bool                `yaml:"log_payloads"`
+	AuthorizedKeys         *AuthorizedKeys     `yaml:"authorized_keys"`
+	JwtUsers               []string            `yaml:"jwt_users"`
 }
 
 // VaultConfig represents single vault instance

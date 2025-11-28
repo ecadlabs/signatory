@@ -1,4 +1,4 @@
-package new_integration_test
+package tests
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func Restart_signatory() {
 	}
 }
 
-func Backup_then_update_config(c Config) {
+func Update_config(c Config) {
 	err := c.Write()
 	if err != nil {
 		panic("failed to write new config")

@@ -12,7 +12,7 @@ func TestAuthorizedKeys(t *testing.T) {
 	var c integrationtest.Config
 	c.Read()
 	c.Server.Keys = []string{integrationtest.AuthKeyPK}
-	integrationtest.Backup_then_update_config(c)
+	integrationtest.Update_config(c)
 	defer integrationtest.Restore_config()
 	integrationtest.Restart_signatory()
 

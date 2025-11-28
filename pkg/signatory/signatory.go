@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
@@ -52,12 +53,13 @@ const (
 
 // PublicKeyPolicy contains policy data related to the key
 type PublicKeyPolicy struct {
-	AllowedRequests     []string
-	AllowedOps          []string
-	AllowedChains       []string
-	LogPayloads         bool
-	AuthorizedKeyHashes []crypt.PublicKeyHash
-	AuthorizedJwtUsers  []string
+	AllowedRequests        []string
+	AllowedOps             []string
+	AllowedChains          []string
+	AllowProofOfPossession bool
+	LogPayloads            bool
+	AuthorizedKeyHashes    []crypt.PublicKeyHash
+	AuthorizedJwtUsers     []string
 }
 
 // PublicKey contains public key with its hash
@@ -452,8 +454,14 @@ func (s *Signatory) ProvePossession(ctx context.Context, req *SignRequest) (cryp
 
 	prover, ok := p.key.(vault.PossessionProver)
 	if !ok {
-		l.Error("Proof of possession is not supported")
-		return nil, errors.Wrap(errors.New("proof of possession is not supported"), http.StatusBadRequest)
+		err = errors.Wrap(errors.New("proof of possession is not supported"), http.StatusBadRequest)
+		l.Error(err)
+		return nil, err
+	}
+
+	if !policy.AllowProofOfPossession {
+		l.Warn("Proof of possession is not allowed. Proof of possession is required for key reveals, consensus key updates, and companion key registration. To enable, set 'allow_proof_of_possession: true' in the config for this key.")
+		return nil, errors.Wrap(errors.New("proof of possession is not allowed"), http.StatusBadRequest)
 	}
 
 	if err = s.callPolicyHook(ctx, req); err != nil {
@@ -671,8 +679,9 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 		}
 
 		pol := PublicKeyPolicy{
-			LogPayloads:   v.LogPayloads,
-			AllowedChains: v.AllowedChains,
+			LogPayloads:            v.LogPayloads,
+			AllowedChains:          v.AllowedChains,
+			AllowProofOfPossession: false,
 		}
 
 		if v.Allow != nil {
@@ -733,6 +742,14 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			}
 		}
 		sort.Strings(pol.AllowedOps)
+
+		if v.AllowProofOfPossession {
+			if _, ok := k.(*gotez.BLSPublicKeyHash); ok {
+				pol.AllowProofOfPossession = true
+			} else {
+				log.Warnf("proof of possession is not supported for %s", k.String())
+			}
+		}
 
 		if v.AuthorizedKeys != nil {
 			keys := v.AuthorizedKeys.List()

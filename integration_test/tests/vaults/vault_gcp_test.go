@@ -29,7 +29,7 @@ func TestGCPVault(t *testing.T) {
 	p.LogPayloads = true
 	p.Allow = map[string][]string{"generic": {"reveal", "transaction"}}
 	c.Tezos[tz3] = &p
-	integrationtest.Backup_then_update_config(c)
+	integrationtest.Update_config(c)
 	defer integrationtest.Restore_config()
 	integrationtest.Restart_signatory()
 
