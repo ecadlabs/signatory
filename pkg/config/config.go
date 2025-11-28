@@ -37,6 +37,7 @@ type TezosPolicy struct {
 	Allow                  map[string][]string `yaml:"allow"`
 	AllowedOperations      []string            `yaml:"allowed_operations"`
 	AllowedKinds           []string            `yaml:"allowed_kinds"`
+	AllowedChains          []string            `yaml:"allowed_chains"`
 	AllowProofOfPossession bool                `yaml:"allow_proof_of_possession"`
 	LogPayloads            bool                `yaml:"log_payloads"`
 	AuthorizedKeys         *AuthorizedKeys     `yaml:"authorized_keys"`
