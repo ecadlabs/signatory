@@ -54,6 +54,7 @@ const (
 type PublicKeyPolicy struct {
 	AllowedRequests     []string
 	AllowedOps          []string
+	AllowedChains       []string
 	LogPayloads         bool
 	AuthorizedKeyHashes []crypt.PublicKeyHash
 	AuthorizedJwtUsers  []string
@@ -153,6 +154,14 @@ func strInSlice(slice []string, s string) bool {
 }
 
 func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest) error {
+	if policy.AllowedChains != nil {
+		if m, ok := msg.(request.WithWatermark); ok {
+			if !strInSlice(policy.AllowedChains, string(m.GetChainID().ToBase58())) {
+				return fmt.Errorf("chain `%s' is not allowed", m.GetChainID())
+			}
+		}
+	}
+
 	if policy.AuthorizedKeyHashes != nil {
 		if req.ClientPublicKeyHash == nil {
 			metrics.PolicyViolation("authentication", string(req.PublicKeyHash.String()), "request")
@@ -662,7 +671,8 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 		}
 
 		pol := PublicKeyPolicy{
-			LogPayloads: v.LogPayloads,
+			LogPayloads:   v.LogPayloads,
+			AllowedChains: v.AllowedChains,
 		}
 
 		if v.Allow != nil {
