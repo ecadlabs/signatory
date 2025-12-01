@@ -121,6 +121,11 @@ $client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8
 $client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
+# tz4pop
+$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz
+$client --wait none transfer 100000 from bootstrap2 to tz4pop --burn-cap 0.07
+$client bake for --minimal-timestamp
+
 # speculos
 $client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
 $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07

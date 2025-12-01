@@ -159,6 +159,12 @@ tezos:
         - transaction
 ```
 
+### Proof of Possession (POP) for BLS Keys
+
+BLS keys (tz4 addresses) require a Proof of Possession during initial reveal and certain key management operations. POP is disabled by default and must be explicitly enabled per-key when needed.
+
+For complete information about when POP is required, how to configure it, and security best practices, see the [Proof of Possession](proof_of_possession.md) documentation.
+
 ### Watermark Backend
 
 Watermarks are a critical safety feature in Signatory that prevent double-signing operations at the same block level or round. They track the highest level/round that has been signed for each key and operation type, rejecting any requests to sign at or below that level.

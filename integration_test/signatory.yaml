@@ -108,6 +108,14 @@ tezos:
       generic:
         - transaction
         - reveal
+    allow_proof_of_possession: true
+
+  #tz4pop
+  tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz:
+    log_payloads: true
+    allow:
+      generic:
+        - reveal
 
   #speculos
   tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA:
