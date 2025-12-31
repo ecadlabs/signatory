@@ -19,6 +19,8 @@ script_dir="/home/tezos/tezos_scripts"
 default_endpoint="http://tezos-node:18731"
 manual_baking_endpoint="http://tezos-node-manual-bake:18731"
 manual_baking_client_config="/home/tezos/manual-bake-client"
+default_signatory="http://signatory:6732"
+ec2_signatory="http://10.0.3.122:6732"
 
 client="octez-client"
 $client -E $default_endpoint config update
@@ -58,7 +60,7 @@ $client import secret key bootstrap4 $BOOTSTRAP4_SECRET || exit 1
 $client import secret key bootstrap5 $BOOTSTRAP5_SECRET || exit 1
 $client import secret key activator $ACTIVATOR_SECRET || exit 1
 #baker1 is used on the manual bake chain for operation kinds test of baking operations. it is an alias for the bootstrap1 account on the manual bake chain
-$client -d $manual_baking_client_config import secret key baker1 http://signatory:6732/tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx || exit 1
+$client -d $manual_baking_client_config import secret key baker1 $default_signatory/tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx || exit 1
 
 protocol_hash=$(grep "^$protocol_name" $script_dir/protocol_hash)
 protocol_full_name=$(cat $tezos_script_dir/active_protocol_versions | grep -E '^[0-9]{3}-[A-Za-z]+$' | grep "$protocol_name$")
@@ -80,48 +82,57 @@ $client -E $manual_baking_endpoint -block genesis activate protocol $protocol_ha
 # These keys are used in the integration tests and should be imported after the protocol activation.
 
 # alice
-$client import secret key alice http://signatory:6732/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
+$client import secret key alice $default_signatory/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
 $client --wait none transfer 100000 from bootstrap2 to alice --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # bob
-$client import secret key bob http://signatory:6732/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6
+$client import secret key bob $default_signatory/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6
 $client --wait none transfer 100000 from bootstrap2 to bob --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest
-$client import secret key opstest http://signatory:6732/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B
+$client import secret key opstest $default_signatory/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B
 $client --wait none transfer 100000 from bootstrap2 to opstest --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest1
-$client import secret key opstest1 http://signatory:6732/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi
+$client import secret key opstest1 $default_signatory/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi
 $client --wait none transfer 100000 from bootstrap2 to opstest1 --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz1alias
-$client import secret key tz1alias http://signatory:6732/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR
+$client import secret key tz1alias $default_signatory/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR
 $client --wait none transfer 100000 from bootstrap2 to tz1alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz2alias
-$client import secret key tz2alias http://signatory:6732/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
+$client import secret key tz2alias $default_signatory/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
 $client --wait none transfer 100000 from bootstrap2 to tz2alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz3alias
-$client import secret key tz3alias http://signatory:6732/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK
+$client import secret key tz3alias $default_signatory/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK
 $client --wait none transfer 100000 from bootstrap2 to tz3alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz4alias
-$client import secret key tz4alias http://signatory:6732/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME
+$client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME
 $client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
+# tz4pop
+$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz
+$client --wait none transfer 100000 from bootstrap2 to tz4pop --burn-cap 0.07
+$client bake for --minimal-timestamp
+
 # speculos
-$client import secret key speculos http://signatory:6732/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
+$client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
 $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
+$client bake for --minimal-timestamp
+
+$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk
+$client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 echo "All keys imported successfully!"

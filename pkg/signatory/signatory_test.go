@@ -22,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -433,6 +434,229 @@ func TestPolicy(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProofOfPossession(t *testing.T) {
+	type testCase struct {
+		title    string
+		privKey  string
+		allowPop bool
+		warning  string
+		expected string
+	}
+
+	const blsPrivKey = "BLsk2ae63m4ooimmTy1B5wjriwPMtCLdiyNpetFiQMBovRm6ks6rSW"
+
+	var cases = []testCase{
+		{
+			title:    "Proof of possession allowed",
+			privKey:  blsPrivKey,
+			allowPop: true,
+		},
+		{
+			title:    "Proof of possession not allowed",
+			privKey:  blsPrivKey,
+			allowPop: false,
+			warning:  "level=warning msg=\"Proof of possession is not allowed. Proof of possession is required for key reveals, consensus key updates, and companion key registration. To enable, set 'allow_proof_of_possession: true' in the config for this key.\"",
+			expected: "proof of possession is not allowed",
+		},
+		{
+			title:    "Proof of possession not supported",
+			privKey:  privateKey,
+			allowPop: true,
+			expected: "proof of possession is not supported",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			var logs bytes.Buffer
+			testLogger := log.New()
+			testLogger.SetOutput(&logs)
+
+			priv, err := crypt.ParsePrivateKey([]byte(c.privKey))
+			require.NoError(t, err)
+			pk := priv.Public()
+
+			conf := signatory.Config{
+				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+				Watermark: watermark.Ignore{},
+				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: priv.String()}}, "Mock"), nil
+				}),
+				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &signatory.PublicKeyPolicy{
+					AllowedRequests:        []string{},
+					AllowedOps:             []string{},
+					AllowProofOfPossession: c.allowPop,
+					LogPayloads:            true,
+				}}}),
+				Logger: testLogger,
+			}
+
+			s, err := signatory.New(context.Background(), &conf)
+			require.NoError(t, err)
+			require.NoError(t, s.Unlock(context.Background()))
+
+			_, err = s.ProvePossession(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: []byte{}})
+			if c.warning != "" {
+				require.Contains(t, logs.String(), c.warning)
+			}
+			if c.expected == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, c.expected)
+			}
+		})
+	}
+}
+
+func TestAllowedChains(t *testing.T) {
+	// Block message with chain ID ed9d217c (NetXxkAx4woPLyu)
+	blockMsg := mustHex("11ed9d217c0000518e0118425847ac255b6d7c30ce8fec23b8eaf13b741de7d18509ac2ef83c741209630000000061947af504805682ea5d089837764b3efcc90b91db24294ff9ddb66019f332ccba17cc4741000000210000000102000000040000518e0000000000000004ffffffff0000000400000000eb1320a71e8bf8b0162a3ec315461e9153a38b70d00d5dde2df85eb92748f8d068d776e356683a9e23c186ccfb72ddc6c9857bb1704487972922e7c89a7121f800000000a8e1dd3c000000000000")
+
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	t.Run("allowed chain", func(t *testing.T) {
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"block"},
+			AllowedChains:   []string{"NetXxkAx4woPLyu"},
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: blockMsg})
+		require.NoError(t, err)
+	})
+
+	t.Run("disallowed chain", func(t *testing.T) {
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"block"},
+			AllowedChains:   []string{"NetXH12Aer3be93"},
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: blockMsg})
+		require.EqualError(t, err, "chain `NetXxkAx4woPLyu' is not allowed")
+	})
+
+	t.Run("generic request with AllowedChains succeeds - no watermark support", func(t *testing.T) {
+		// Generic transaction message
+		genericMsg := mustHex("03573a2d2d49a3b9634d1605c3aa48ebdd5d21a5885ad17aa44c2b1d0dbcbcac686c004b415314d2b56b0481a3ae8c992ce8bb8dba0369d086039ecb2dc35000c0843d000076b2f1ea1cf6753888ac5488693977446652d79e00")
+
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"generic"},
+			AllowedOps:      []string{"transaction"},
+			AllowedChains:   []string{"NetXxkAx4woPLyu"}, // Setting chain filter on generic request
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: genericMsg})
+		require.NoError(t, err)
+	})
+
+	t.Run("generic request without AllowedChains succeeds", func(t *testing.T) {
+		// Generic transaction message
+		genericMsg := mustHex("03573a2d2d49a3b9634d1605c3aa48ebdd5d21a5885ad17aa44c2b1d0dbcbcac686c004b415314d2b56b0481a3ae8c992ce8bb8dba0369d086039ecb2dc35000c0843d000076b2f1ea1cf6753888ac5488693977446652d79e00")
+
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"generic"},
+			AllowedOps:      []string{"transaction"},
+			// No AllowedChains set
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: genericMsg})
+		require.NoError(t, err)
+	})
+
+	t.Run("attestation allowed chain", func(t *testing.T) {
+		// Attestation message with chain ID ed9d217c (NetXxkAx4woPLyu)
+		attestationMsg := mustHex("13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d")
+
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"endorsement", "attestation"},
+			AllowedChains:   []string{"NetXxkAx4woPLyu"},
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: attestationMsg})
+		require.NoError(t, err)
+	})
+
+	t.Run("attestation disallowed chain", func(t *testing.T) {
+		// Attestation message with chain ID ed9d217c (NetXxkAx4woPLyu)
+		attestationMsg := mustHex("13ed9d217cfc81eee810737b04018acef4db74d056b79edc43e6be46cae7e4c217c22a82f01500120000518d0000000003e7ea1f67dbb0bb6cfa372cb092cd9cf786b4f1b5e5139da95b915fb95e698d")
+
+		policy := signatory.PublicKeyPolicy{
+			AllowedRequests: []string{"endorsement", "attestation"},
+			AllowedChains:   []string{"NetXH12Aer3be93"}, // Different chain
+		}
+		conf := signatory.Config{
+			Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+			Watermark: watermark.Ignore{},
+			VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+				return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+			}),
+			Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &policy}}),
+		}
+		s, err := signatory.New(context.Background(), &conf)
+		require.NoError(t, err)
+		require.NoError(t, s.Unlock(context.Background()))
+
+		_, err = s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: attestationMsg})
+		require.EqualError(t, err, "chain `NetXxkAx4woPLyu' is not allowed")
+	})
 }
 
 func TestListPublicKeys(t *testing.T) {

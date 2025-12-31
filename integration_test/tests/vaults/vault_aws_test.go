@@ -35,7 +35,7 @@ func TestAWSVault(t *testing.T) {
 	p.Allow = map[string][]string{"generic": {"reveal", "transaction"}}
 	//c.Tezos[tz2] = &p
 	c.Tezos[tz3] = &p
-	integrationtest.Backup_then_update_config(c)
+	integrationtest.Update_config(c)
 	//os.Exit(0)
 	defer integrationtest.Restore_config()
 	integrationtest.Restart_signatory()

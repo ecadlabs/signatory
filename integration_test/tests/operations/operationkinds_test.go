@@ -176,7 +176,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 			var c integrationtest.Config
 			c.Read()
 			c.Tezos[test.account].Allow = test.notAllowPolicy
-			integrationtest.Backup_then_update_config(c)
+			integrationtest.Update_config(c)
 			defer integrationtest.Restore_config()
 			integrationtest.Restart_signatory()
 			out, err := integrationtest.OctezClient(test.testOp...)

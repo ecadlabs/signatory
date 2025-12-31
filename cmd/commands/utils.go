@@ -10,13 +10,14 @@ import (
 )
 
 const listTemplateSrc = `{{range . -}}
-Public Key Hash:    {{.Hash}}
-Reference:          {{keyRef .KeyReference}}
-Vault:              {{.Vault.Name}}
-Active:             {{.Active}}
+Public Key Hash:           {{.Hash}}
+Reference:                 {{keyRef .KeyReference}}
+Vault:                     {{.Vault.Name}}
+Active:                    {{.Active}}
 {{with .Policy -}}
-Allowed Requests:   {{.AllowedRequests}}
-Allowed Operations: {{.AllowedOps}}
+Allowed Requests:          {{.AllowedRequests}}
+Allowed Operations:        {{.AllowedOps}}
+Allow Proof of Possession: {{.AllowProofOfPossession}}
 {{end}}
 {{end -}}
 `

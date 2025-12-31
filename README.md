@@ -33,6 +33,7 @@ Explore detailed documentation for various components of Signatory:
 - [Authorized Keys](https://signatory.io/docs/authorized_keys)
 - [Command-Line Interface (CLI)](https://signatory.io/docs/cli)
 - [Bakers](https://signatory.io/docs/bakers)
+- [DAL & BLS Attestations](https://signatory.io/docs/dal_bls_attestations)
 
 ### Vault Backends
 - [Azure KMS](https://signatory.io/docs/azure_kms)
@@ -54,8 +55,10 @@ Explore detailed documentation for various components of Signatory:
 
 ### Other
 - [JWT Authentication](https://signatory.io/docs/jwt)
+- [Proof of Possession (POP)](https://signatory.io/docs/proof_of_possession)
 - [Remote Policy Configuration](https://signatory.io/docs/remote_policy)
 - [Signatory Architecture](https://signatory.io/docs/architecture)
+- [Glossary](https://signatory.io/docs/glossary)
 
 ## Features
 
@@ -105,8 +108,9 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | [Ledger Nano S/S+ (Baking only)](https://signatory.io/docs/ledger) | ✅     |
 | [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault) | ✅     |
 | [PKCS#11](https://signatory.io/docs/pkcs11) | ✅     |
-| [AWS Nitro Enclave](https://signatory.io/docs/nitro) | 🚧 In progress (v1.3.0) |
-| [Google Confidential Space](https://signatory.io/docs/confidential_space) | 🚧 In progress (v1.3.0) |
+| [AWS Nitro Enclave](https://signatory.io/docs/nitro) | ✅     |
+| [Google Confidential Space](https://signatory.io/docs/confidential_space) | ✅     |
+| Intel SGX | 🚧 In progress |
 
 ### Tezos Address Types
 
