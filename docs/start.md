@@ -125,7 +125,7 @@ tezos:
 ```
 
 ### Configuration Example - AWS KMS Vault
-This configuration example uses AWS KMS as  
+This configuration example uses AWS KMS as the vault backend for secure key management.
 
 ```yaml
 server:
@@ -228,7 +228,7 @@ Signatory exposes Prometheus metrics and health status on the address specified 
 
 Metrics include counters and histograms that track signing operations and errors.
 
-The metrics are intended to be scraped using the Prometheus time series database. We also publish a ready-made Grafana dashboard that users can use to visualize the operation of their signing operations. (TODO: publish Grafana dashboard)
+The metrics are intended to be scraped using the Prometheus time series database.
 
 `localhost:9583/metrics`
 

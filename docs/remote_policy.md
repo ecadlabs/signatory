@@ -80,7 +80,7 @@ policy_hook:
 }
 ```
 
-The signature is calculated from the `payload` JSON object **as it present in the request**.
+The signature is calculated from the `payload` JSON object **as it is present in the request**.
 
 ### Non authenticated reply
 
