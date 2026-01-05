@@ -52,8 +52,8 @@ var testcases = []testCase{
 		testSetupOps:   nil,
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "attest", "for", aliasbaker1, "--force"},
 		account:        accountbaker1,
-		allowPolicy:    map[string][]string{"endorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
+		allowPolicy:    map[string][]string{"attestation": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "preattestation": {}, "block": {}},
 		successMessage: "injected",
 	},
 	{
@@ -62,8 +62,8 @@ var testcases = []testCase{
 		testSetupOps:   nil,
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "preattest", "for", aliasbaker1, "--force"},
 		account:        accountbaker1,
-		allowPolicy:    map[string][]string{"preendorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
+		allowPolicy:    map[string][]string{"preattestation": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "preattestation": {}, "block": {}},
 		successMessage: "injected",
 	},
 	{
@@ -73,7 +73,7 @@ var testcases = []testCase{
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "bake", "for", aliasbaker1, "--force", "--minimal-timestamp"},
 		account:        accountbaker1,
 		allowPolicy:    map[string][]string{"block": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "endorsement": {}, "preendorsement": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "preattestation": {}},
 		successMessage: "injected",
 	},
 	{
@@ -210,10 +210,10 @@ func TestOperationAllowPolicy(t *testing.T) {
 
 func getAllOps() []string {
 	return []string{ // operations available in both proto_022_PsRiotum and proto_023_PtSeouLo
-		"activate_account", "attestation", "attestation_with_dal", "attestations_aggregate",
+		"activate_account", "attestations_aggregate",
 		"ballot", "dal_entrapment_evidence", "dal_publish_commitment", "delegation",
 		"double_baking_evidence", "drain_delegate", "failing_noop", "increase_paid_storage",
-		"origination", "preattestation", "proposals", "register_global_constant", "reveal",
+		"origination", "proposals", "register_global_constant", "reveal",
 		"seed_nonce_revelation", "set_deposits_limit", "signature_prefix",
 		"smart_rollup_add_messages", "smart_rollup_cement",
 		"smart_rollup_execute_outbox_message", "smart_rollup_originate",
