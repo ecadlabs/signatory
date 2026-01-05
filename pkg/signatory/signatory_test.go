@@ -785,42 +785,60 @@ func TestOperationKindCheck(t *testing.T) {
 	require.NoError(t, err)
 	pk := priv.Public()
 
-	tezosCfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+	cases := []struct {
+		name    string
+		ops     []string
+		wantErr string
+	}{
 		{
-			Key: pk.Hash(),
-			Val: &config.TezosPolicy{
-				Allow: map[string][]string{
-					"generic": {"transaction", "invalid_op"}, // invalid operation kind included
-				},
+			name:    "invalid_op rejected",
+			ops:     []string{"transaction", "invalid_op"},
+			wantErr: "invalid operation kind `invalid_op` in `allow.generic` list",
+		},
+		{
+			name: "valid ops accepted",
+			ops: []string{
+				"transaction",
+				"delegation",
+				"origination",
+				"reveal",
+				"stake",
+				"unstake",
+				"finalize_unstake",
+				"ballot",
 			},
 		},
-	})
+	}
 
-	_, err = signatory.PreparePolicy(tezosCfg)
-	require.EqualError(t, err, "invalid operation kind `invalid_op` in `allow.generic` list")
+	invalidOps := []string{"attestation", "attestation_with_dal", "preattestation"}
+	for _, op := range invalidOps {
+		cases = append(cases, struct {
+			name    string
+			ops     []string
+			wantErr string
+		}{
+			name:    op + " rejected in generic",
+			ops:     []string{op},
+			wantErr: fmt.Sprintf("invalid operation kind `%s` in `allow.generic` list", op),
+		})
+	}
 
-	tezosCfgValid := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
-		{
-			Key: pk.Hash(),
-			Val: &config.TezosPolicy{
-				Allow: map[string][]string{
-					"generic": {
-						"transaction",
-						"delegation",
-						"origination",
-						"reveal",
-						"stake",
-						"unstake",
-						"finalize_unstake",
-						"attestation",
-						"preendorsement",
-						"ballot",
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+				{
+					Key: pk.Hash(),
+					Val: &config.TezosPolicy{
+						Allow: map[string][]string{"generic": tc.ops},
 					},
 				},
-			},
-		},
-	})
-
-	_, err = signatory.PreparePolicy(tezosCfgValid)
-	require.NoError(t, err)
+			})
+			_, err := signatory.PreparePolicy(cfg)
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
