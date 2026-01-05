@@ -139,20 +139,20 @@ When registering a tz4 companion key for DAL:
 
 ```yaml
 tezos:
-  # Main baker key
+  # Main baker key (tz1/tz2/tz3)
   tz1BakerAddress:
     allow:
       block:
       attestation:
-      attestation_with_dal:
+      attestation_with_dal:  # tz1/tz2/tz3 keys use this for DAL
       generic:
-        - register_dal_companion
-  
+        - set_companion_key
+
   # DAL companion key (tz4)
   tz4CompanionKeyHash:
     allow_proof_of_possession: true  # Enable for registration
     allow:
-      attestation_with_dal:
+      attestation:  # tz4 keys use 'attestation' only, NOT 'attestation_with_dal'
 ```
 
 After successful registration, disable POP:
@@ -161,7 +161,7 @@ After successful registration, disable POP:
   tz4CompanionKeyHash:
     allow_proof_of_possession: false
     allow:
-      attestation_with_dal:
+      attestation:  # tz4 keys use 'attestation' only, NOT 'attestation_with_dal'
 ```
 
 ### Pattern 4: Multisig Setup

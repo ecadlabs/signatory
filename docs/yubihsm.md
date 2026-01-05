@@ -21,7 +21,7 @@ This documentation assumes that you will be running Signatory and the YubiHSM2 d
 
 * A Linux system operably configured with:
   * Docker
-  * The [yubihsm2 sdk][yubisdk] version 2012.12 or later installed. This documentation assumes you are using Docker on Debian.
+  * The [yubihsm2 sdk][yubisdk] version 2021.12 or later installed. This documentation assumes you are using Docker on Debian.
 * A YubiHSM device connected to your server. (See the output of `lsusb` to verify)
 
 ### Installing and using the YubiHSM Connector and Shell
@@ -34,7 +34,7 @@ The connector requires you to have the libusb package installed on your system.
 apt-get install libusb-1.0-0
 ```
 
-To install the connector, find and install the 
+To install the connector, download the package from the Yubico releases page and install it:
 
 ```bash
 dpkg -i yubihsm-connector_2.1.0-1_amd64.deb
