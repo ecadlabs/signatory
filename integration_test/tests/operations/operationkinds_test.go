@@ -63,7 +63,7 @@ var testcases = []testCase{
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "preattest", "for", aliasbaker1, "--force"},
 		account:        accountbaker1,
 		allowPolicy:    map[string][]string{"preattestation": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOps(), "preattestation": {}, "block": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "block": {}},
 		successMessage: "injected",
 	},
 	{
