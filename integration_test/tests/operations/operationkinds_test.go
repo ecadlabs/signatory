@@ -52,8 +52,8 @@ var testcases = []testCase{
 		testSetupOps:   nil,
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "attest", "for", aliasbaker1, "--force"},
 		account:        accountbaker1,
-		allowPolicy:    map[string][]string{"endorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"endorsement"}), "preendorsement": {}, "block": {}},
+		allowPolicy:    map[string][]string{"attestation": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "preattestation": {}, "block": {}},
 		successMessage: "injected",
 	},
 	{
@@ -62,8 +62,8 @@ var testcases = []testCase{
 		testSetupOps:   nil,
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "preattest", "for", aliasbaker1, "--force"},
 		account:        accountbaker1,
-		allowPolicy:    map[string][]string{"preendorsement": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"preendorsement"}), "endorsement": {}, "block": {}},
+		allowPolicy:    map[string][]string{"preattestation": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "block": {}},
 		successMessage: "injected",
 	},
 	{
@@ -73,7 +73,7 @@ var testcases = []testCase{
 		testOp:         []string{"-d", "/home/tezos/manual-bake-client", "-w", "none", "bake", "for", aliasbaker1, "--force", "--minimal-timestamp"},
 		account:        accountbaker1,
 		allowPolicy:    map[string][]string{"block": {}},
-		notAllowPolicy: map[string][]string{"generic": getAllOpsExcluding([]string{"block"}), "endorsement": {}, "preendorsement": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "preattestation": {}},
 		successMessage: "injected",
 	},
 	{
@@ -209,13 +209,19 @@ func TestOperationAllowPolicy(t *testing.T) {
 }
 
 func getAllOps() []string {
-	return []string{"activate_account", "ballot", "dal_attestation", "dal_publish_slot_header", "delegation",
-		"double_baking_evidence", "double_endorsement_evidence", "double_preendorsement_evidence", "drain_delegate",
-		"endorsement", "event", "failing_noop", "increase_paid_storage", "origination", "preendorsement", "proposals",
-		"register_global_constant", "reveal", "sc_rollup_add_messages", "sc_rollup_cement",
-		"sc_rollup_execute_outbox_message", "sc_rollup_originate", "sc_rollup_publish", "sc_rollup_recover_bond",
-		"sc_rollup_refute", "sc_rollup_timeout", "seed_nonce_revelation", "set_deposits_limit", "transaction",
-		"transfer_ticket", "update_consensus_key", "vdf_revelation", "zk_rollup_origination", "zk_rollup_publish", "zk_rollup_update"}
+	return []string{ // operations available in both proto_022_PsRiotum and proto_023_PtSeouLo
+		"activate_account", "attestations_aggregate",
+		"ballot", "dal_entrapment_evidence", "dal_publish_commitment", "delegation",
+		"double_baking_evidence", "drain_delegate", "failing_noop", "increase_paid_storage",
+		"origination", "proposals", "register_global_constant", "reveal",
+		"seed_nonce_revelation", "set_deposits_limit", "signature_prefix",
+		"smart_rollup_add_messages", "smart_rollup_cement",
+		"smart_rollup_execute_outbox_message", "smart_rollup_originate",
+		"smart_rollup_publish", "smart_rollup_recover_bond", "smart_rollup_refute",
+		"smart_rollup_timeout", "transaction", "transfer_ticket", "update_consensus_key",
+		"vdf_revelation", "zk_rollup_origination", "zk_rollup_publish", "zk_rollup_update",
+		"finalize_unstake", "set_delegate_parameters", "stake", "unstake",
+	}
 }
 
 func getAllOpsExcluding(exclude []string) []string {

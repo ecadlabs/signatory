@@ -5,7 +5,7 @@ server:
 watermark:
   # Default
   driver: file
-  
+
 vaults:
   local_secret:
     driver: file
@@ -29,7 +29,7 @@ tezos:
       generic:
         - transaction
         - reveal
-      
+
   #bob
   tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6:
     log_payloads: true
@@ -55,15 +55,12 @@ tezos:
   tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf:
     log_payloads: true
     allow:
-      generic:
-        - endorsement
-        - preendorsement
       block:
       endorsement:
       preendorsement:
 
   #used for authorized_key tests
-  tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp: 
+  tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp:
     log_payloads: true
     allow:
       generic:
