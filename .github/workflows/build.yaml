@@ -169,6 +169,11 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           version: 1.92.3
+      - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
+        name: Test EC2 signatory connectivity
+        run: |
+          echo "Testing connectivity to EC2 signatory..."
+          curl -s --fail http://10.0.3.122:9583/healthz | jq -e '.ready == true'
       - name: Run tests
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64

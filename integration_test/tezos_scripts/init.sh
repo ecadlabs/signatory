@@ -132,7 +132,7 @@ $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # nitro (requires EC2 signatory via Tailscale)
-$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk || exit 1
+$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk
 $client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
 $client bake for --minimal-timestamp
 
