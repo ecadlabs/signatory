@@ -7,10 +7,10 @@ if [ -z "$protocol_name" ]; then
 fi
 
 # This script:
-# - initializes 2 Tezos client configuration 
+# - initializes 2 Tezos client configuration
 # - activates 2 sandboxed chains
 # - starts a baker on one of the chains. the default chain has a baker running, the second chain is used for manual baking operations
-# - initializes some accounts for testing by transferring them balance and configuring the remote signer 
+# - initializes some accounts for testing by transferring them balance and configuring the remote signer
 
 tezos_bin_dir="/usr/local/bin/"
 tezos_script_dir="/usr/local/share/tezos"
@@ -82,56 +82,57 @@ $client -E $manual_baking_endpoint -block genesis activate protocol $protocol_ha
 # These keys are used in the integration tests and should be imported after the protocol activation.
 
 # alice
-$client import secret key alice $default_signatory/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
+$client import secret key alice $default_signatory/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb || exit 1
 $client --wait none transfer 100000 from bootstrap2 to alice --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # bob
-$client import secret key bob $default_signatory/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6
+$client import secret key bob $default_signatory/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6 || exit 1
 $client --wait none transfer 100000 from bootstrap2 to bob --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest
-$client import secret key opstest $default_signatory/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B
+$client import secret key opstest $default_signatory/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B || exit 1
 $client --wait none transfer 100000 from bootstrap2 to opstest --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest1
-$client import secret key opstest1 $default_signatory/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi
+$client import secret key opstest1 $default_signatory/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi || exit 1
 $client --wait none transfer 100000 from bootstrap2 to opstest1 --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz1alias
-$client import secret key tz1alias $default_signatory/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR
+$client import secret key tz1alias $default_signatory/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR || exit 1
 $client --wait none transfer 100000 from bootstrap2 to tz1alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz2alias
-$client import secret key tz2alias $default_signatory/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
+$client import secret key tz2alias $default_signatory/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN || exit 1
 $client --wait none transfer 100000 from bootstrap2 to tz2alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz3alias
-$client import secret key tz3alias $default_signatory/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK
+$client import secret key tz3alias $default_signatory/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK || exit 1
 $client --wait none transfer 100000 from bootstrap2 to tz3alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz4alias
-$client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME
+$client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME || exit 1
 $client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz4pop
-$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz
+$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz || exit 1
 $client --wait none transfer 100000 from bootstrap2 to tz4pop --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # speculos
-$client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
+$client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA || exit 1
 $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
 $client bake for --minimal-timestamp
 
-$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk
+# nitro (requires EC2 signatory via Tailscale)
+$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk || exit 1
 $client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
 $client bake for --minimal-timestamp
 
