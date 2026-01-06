@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -18,6 +19,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
+	proto "github.com/ecadlabs/gotez/v2/protocol/latest"
 	"github.com/ecadlabs/signatory/pkg/auth"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -669,6 +671,42 @@ func fixupRequests(req []string) {
 	sort.Strings(req)
 }
 
+func fixupOperations(ops []string) {
+	for i, o := range ops {
+		switch o {
+		case "endorsement":
+			ops[i] = "attestation"
+		case "preendorsement":
+			ops[i] = "preattestation"
+		case "double_endorsement_evidence":
+			ops[i] = "double_attestation_evidence"
+		case "double_preendorsement_evidence":
+			ops[i] = "double_preattestation_evidence"
+		}
+	}
+	sort.Strings(ops)
+}
+
+func checkRequestKind(allowedKinds []string) error {
+	avilKinds := proto.ListSignRequests()
+	for _, kind := range allowedKinds {
+		if !slices.Contains(avilKinds, kind) {
+			return fmt.Errorf("invalid request kind `%s` in `allow` list", kind)
+		}
+	}
+	return nil
+}
+
+func checkOperationKind(allowedKinds []string) error {
+	avilKinds := append(proto.ListOperations(), proto.ListPseudoOperations()...)
+	for _, kind := range allowedKinds {
+		if !slices.Contains(avilKinds, kind) {
+			return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
+		}
+	}
+	return nil
+}
+
 // PreparePolicy prepares policy data by hashing keys etc
 func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 	policy := make(Policy, len(src))
@@ -690,6 +728,9 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 				pol.AllowedRequests = append(pol.AllowedRequests, req)
 			}
 			fixupRequests(pol.AllowedRequests)
+			if err = checkRequestKind(pol.AllowedRequests); err != nil {
+				return false
+			}
 
 			if ops, ok := v.Allow["generic"]; ok {
 				pol.AllowedOps = make([]string, len(ops))
@@ -701,6 +742,9 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 				pol.AllowedRequests = make([]string, len(v.AllowedOperations))
 				copy(pol.AllowedRequests, v.AllowedOperations)
 				fixupRequests(pol.AllowedRequests)
+				if err = checkRequestKind(pol.AllowedRequests); err != nil {
+					return false
+				}
 			}
 			if v.AllowedKinds != nil {
 				pol.AllowedOps = make([]string, len(v.AllowedKinds))
@@ -729,19 +773,10 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			pipe.Close()
 		}
 
-		for i, o := range pol.AllowedOps {
-			switch o {
-			case "endorsement":
-				pol.AllowedOps[i] = "attestation"
-			case "preendorsement":
-				pol.AllowedOps[i] = "preattestation"
-			case "double_endorsement_evidence":
-				pol.AllowedOps[i] = "double_attestation_evidence"
-			case "double_preendorsement_evidence":
-				pol.AllowedOps[i] = "double_preattestation_evidence"
-			}
+		fixupOperations(pol.AllowedOps)
+		if err = checkOperationKind(pol.AllowedOps); err != nil {
+			return false
 		}
-		sort.Strings(pol.AllowedOps)
 
 		if v.AllowProofOfPossession {
 			if _, ok := k.(*gotez.BLSPublicKeyHash); ok {

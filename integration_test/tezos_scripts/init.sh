@@ -7,10 +7,10 @@ if [ -z "$protocol_name" ]; then
 fi
 
 # This script:
-# - initializes 2 Tezos client configuration 
+# - initializes 2 Tezos client configuration
 # - activates 2 sandboxed chains
 # - starts a baker on one of the chains. the default chain has a baker running, the second chain is used for manual baking operations
-# - initializes some accounts for testing by transferring them balance and configuring the remote signer 
+# - initializes some accounts for testing by transferring them balance and configuring the remote signer
 
 tezos_bin_dir="/usr/local/bin/"
 tezos_script_dir="/usr/local/share/tezos"
@@ -131,6 +131,7 @@ $client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5
 $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
 $client bake for --minimal-timestamp
 
+# nitro (requires EC2 signatory via Tailscale)
 $client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk
 $client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
 $client bake for --minimal-timestamp

@@ -131,8 +131,7 @@ jobs:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
         run: >
          docker pull $IMAGE;
-         docker stop signatory;
-         docker rm signatory;
+         docker rm -f signatory || true;
          docker run -d --name signatory --privileged --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
@@ -168,7 +167,12 @@ jobs:
         uses: tailscale/github-action@v1
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: 1.32.2        
+          version: 1.92.3
+      - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
+        name: Test EC2 signatory connectivity
+        run: |
+          echo "Testing connectivity to EC2 signatory..."
+          curl -s --fail http://10.0.3.122:9583/healthz | jq -e '.ready == true'
       - name: Run tests
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
@@ -242,7 +246,7 @@ jobs:
         run: |
           echo "Generating coverage report..."
           export GIT_COMMIT_SHA='${{ github.sha }}'
-          export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"          
+          export GIT_BRANCH="$(echo '${{ github.ref }}' | sed -E -e 's/.*\/(.*)/\1/')"
           go tool covdata textfmt -i=./unit-test-coverage,./integration-test-coverage-envcurrent,./integration-test-coverage-envnext -o ./c.out
           rm -rf ./unit-test-coverage
           rm -rf ./integration-test-coverage-envcurrent

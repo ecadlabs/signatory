@@ -740,3 +740,105 @@ func TestListPublicKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestKindCheck(t *testing.T) {
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	tezosCfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"block": nil,
+					"foo":   nil, // invalid request kind
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfg)
+	require.EqualError(t, err, "invalid request kind `foo` in `allow` list")
+
+	tezosCfgValid := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow: map[string][]string{
+					"attestation":          nil,
+					"generic":              nil,
+					"block":                nil,
+					"preendorsement":       nil,
+					"attestation_with_dal": nil,
+				},
+			},
+		},
+	})
+
+	_, err = signatory.PreparePolicy(tezosCfgValid)
+	require.NoError(t, err)
+}
+
+func TestOperationKindCheck(t *testing.T) {
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	cases := []struct {
+		name    string
+		ops     []string
+		wantErr string
+	}{
+		{
+			name:    "invalid_op rejected",
+			ops:     []string{"transaction", "invalid_op"},
+			wantErr: "invalid operation kind `invalid_op` in `allow.generic` list",
+		},
+		{
+			name: "valid ops accepted",
+			ops: []string{
+				"transaction",
+				"delegation",
+				"origination",
+				"reveal",
+				"stake",
+				"unstake",
+				"finalize_unstake",
+				"ballot",
+			},
+		},
+	}
+
+	invalidOps := []string{"attestation", "attestation_with_dal", "preattestation"}
+	for _, op := range invalidOps {
+		cases = append(cases, struct {
+			name    string
+			ops     []string
+			wantErr string
+		}{
+			name:    op + " rejected in generic",
+			ops:     []string{op},
+			wantErr: fmt.Sprintf("invalid operation kind `%s` in `allow.generic` list", op),
+		})
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+				{
+					Key: pk.Hash(),
+					Val: &config.TezosPolicy{
+						Allow: map[string][]string{"generic": tc.ops},
+					},
+				},
+			})
+			_, err := signatory.PreparePolicy(cfg)
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
