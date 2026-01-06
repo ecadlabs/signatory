@@ -168,7 +168,7 @@ jobs:
         uses: tailscale/github-action@v1
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: 1.92.2
+          version: 1.92.3
       - name: Run tests
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
