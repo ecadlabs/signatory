@@ -82,52 +82,52 @@ $client -E $manual_baking_endpoint -block genesis activate protocol $protocol_ha
 # These keys are used in the integration tests and should be imported after the protocol activation.
 
 # alice
-$client import secret key alice $default_signatory/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb || exit 1
+$client import secret key alice $default_signatory/tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
 $client --wait none transfer 100000 from bootstrap2 to alice --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # bob
-$client import secret key bob $default_signatory/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6 || exit 1
+$client import secret key bob $default_signatory/tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6
 $client --wait none transfer 100000 from bootstrap2 to bob --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest
-$client import secret key opstest $default_signatory/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B || exit 1
+$client import secret key opstest $default_signatory/tz1RKGhRF4TZNCXEfwyqZshGsVfrZeVU446B
 $client --wait none transfer 100000 from bootstrap2 to opstest --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # opstest1
-$client import secret key opstest1 $default_signatory/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi || exit 1
+$client import secret key opstest1 $default_signatory/tz1R8HJMzVdZ9RqLCknxeq9w5rSbiqJ41szi
 $client --wait none transfer 100000 from bootstrap2 to opstest1 --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz1alias
-$client import secret key tz1alias $default_signatory/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR || exit 1
+$client import secret key tz1alias $default_signatory/tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR
 $client --wait none transfer 100000 from bootstrap2 to tz1alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz2alias
-$client import secret key tz2alias $default_signatory/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN || exit 1
+$client import secret key tz2alias $default_signatory/tz2QPsZoZse4eeahhg5DdfnBDB4VbU1PwgxN
 $client --wait none transfer 100000 from bootstrap2 to tz2alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz3alias
-$client import secret key tz3alias $default_signatory/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK || exit 1
+$client import secret key tz3alias $default_signatory/tz3ZbCsUveF3Q6WUNkThT1wyJyhPunanaAXK
 $client --wait none transfer 100000 from bootstrap2 to tz3alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz4alias
-$client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME || exit 1
+$client import secret key tz4alias $default_signatory/tz4XXtsYav3fZz2FSDa7hcx4F8sh8SaDWNME
 $client --wait none transfer 100000 from bootstrap2 to tz4alias --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # tz4pop
-$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz || exit 1
+$client import secret key tz4pop $default_signatory/tz4Eb1d5L4njHViVgDDkas7qNgoZgDw6VYPz
 $client --wait none transfer 100000 from bootstrap2 to tz4pop --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # speculos
-$client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA || exit 1
+$client import secret key speculos $default_signatory/tz1RVYaHiobUKXMfJ47F7Rjxx5tu3LC35WSA
 $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
 $client bake for --minimal-timestamp
 
