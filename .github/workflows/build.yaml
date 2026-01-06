@@ -131,8 +131,7 @@ jobs:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
         run: >
          docker pull $IMAGE;
-         docker stop signatory;
-         docker rm signatory;
+         docker rm -f signatory || true;
          docker run -d --name signatory --privileged --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
