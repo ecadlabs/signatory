@@ -12,7 +12,7 @@ import (
 
 func TestAWSVault(t *testing.T) {
 
-	//tz2 := os.Getenv("VAULT_AWS_TZ2")
+	tz2 := os.Getenv("VAULT_AWS_TZ2")
 	tz3 := os.Getenv("VAULT_AWS_TZ3")
 	tz3pk := os.Getenv("VAULT_AWS_TZ3_PK")
 	user := os.Getenv("VAULT_AWS_USER")
@@ -20,7 +20,7 @@ func TestAWSVault(t *testing.T) {
 	secret := os.Getenv("VAULT_AWS_SECRET")
 	region := os.Getenv("VAULT_AWS_REGION")
 
-	//tz2alias := "awstz2"
+	tz2alias := "awstz2"
 	tz3alias := "awstz3"
 
 	//config
@@ -33,7 +33,7 @@ func TestAWSVault(t *testing.T) {
 	var p integrationtest.TezosPolicy
 	p.LogPayloads = true
 	p.Allow = map[string][]string{"generic": {"reveal", "transaction"}}
-	//c.Tezos[tz2] = &p
+	c.Tezos[tz2] = &p
 	c.Tezos[tz3] = &p
 	integrationtest.Update_config(c)
 	//os.Exit(0)
@@ -41,33 +41,36 @@ func TestAWSVault(t *testing.T) {
 	integrationtest.Restart_signatory()
 
 	//setup
-	// out, err := integrationtest.OctezClient("import", "secret", "key", tz2alias, "http://signatory:6732/"+tz2)
-	// assert.NoError(t, err)
-	// assert.Contains(t, string(out), "Tezos address added: "+tz2)
-	// defer integrationtest.OctezClient("forget", "address", tz2alias, "--force")
+	out, err := integrationtest.OctezClient("import", "secret", "key", tz2alias, "http://signatory:6732/"+tz2)
+	assert.NoError(t, err)
+	assert.Contains(t, string(out), "Tezos address added: "+tz2)
+	defer integrationtest.OctezClient("forget", "address", tz2alias, "--force")
 
-	out, err := integrationtest.OctezClient("import", "secret", "key", tz3alias, "http://signatory:6732/"+tz3)
+	out, err = integrationtest.OctezClient("import", "secret", "key", tz3alias, "http://signatory:6732/"+tz3)
 	assert.NoError(t, err)
 	assert.Contains(t, string(out), "Tezos address added: "+tz3)
 	defer integrationtest.OctezClient("forget", "address", tz3alias, "--force")
 
-	// out, err = integrationtest.OctezClient("transfer", "100", "from", "alice", "to", tz2alias, "--burn-cap", "0.06425")
-	// assert.NoError(t, err)
-	// require.Contains(t, string(out), "Operation successfully injected in the node")
+	out, err = integrationtest.OctezClient("transfer", "100", "from", "alice", "to", tz2alias, "--burn-cap", "0.06425")
+	assert.NoError(t, err)
+	require.Contains(t, string(out), "Operation successfully injected in the node")
 
 	out, err = integrationtest.OctezClient("transfer", "100", "from", "alice", "to", tz3alias, "--burn-cap", "0.06425")
 	assert.NoError(t, err)
 	require.Contains(t, string(out), "Operation successfully injected in the node")
 
 	//test
-	//TODO: resolve issue #364 and enable the tz2 test
-	//out, err = OctezClient("transfer", "1", "from", tz2alias, "to", "alice", "--burn-cap", "0.06425")
-	//assert.NoError(t, err)
-	//require.Contains(t, string(out), "Operation successfully injected in the node")
+	for range 5 {
+		out, err = integrationtest.OctezClient("transfer", "1", "from", tz2alias, "to", "alice", "--burn-cap", "0.06425")
+		assert.NoError(t, err)
+		require.Contains(t, string(out), "Operation successfully injected in the node")
+	}
 
-	out, err = integrationtest.OctezClient("transfer", "1", "from", tz3alias, "to", "alice", "--burn-cap", "0.06425")
-	assert.NoError(t, err)
-	require.Contains(t, string(out), "Operation successfully injected in the node")
+	for range 5 {
+		out, err = integrationtest.OctezClient("transfer", "1", "from", tz3alias, "to", "alice", "--burn-cap", "0.06425")
+		assert.NoError(t, err)
+		require.Contains(t, string(out), "Operation successfully injected in the node")
+	}
 
 	require.Equal(t, tz3pk, integrationtest.GetPublicKey(tz3))
 }
