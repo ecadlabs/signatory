@@ -17,8 +17,6 @@ const (
 	alias1        = integrationtest.Opstest1Alias
 	aliasbaker1   = integrationtest.Baker1Alias
 	accountbaker1 = integrationtest.Baker1PKH
-	aliastz1      = integrationtest.Tz1Alias
-	accounttz1    = integrationtest.Tz1AliasPKH
 	contract      = "contract.event.tz"
 	contractAlias = "emit_event"
 	vault         = "File"
@@ -153,8 +151,8 @@ var testcases = []testCase{
 		kind:           "pack",
 		op:             "pack",
 		testSetupOps:   nil,
-		testOp:         []string{"sign", "bytes", "0x050000000a68656c6c6f", "for", aliastz1}, // 0x05 magic byte + packed nat 42
-		account:        accounttz1,
+		testOp:         []string{"sign", "bytes", "0x050000000a68656c6c6f", "for", alias}, // 0x05 magic byte + packed nat 42
+		account:        account,
 		allowPolicy:    map[string][]string{"pack": {}},
 		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "preattestation": {}, "block": {}},
 		successMessage: "Signature:",
