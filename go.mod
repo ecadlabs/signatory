@@ -16,7 +16,7 @@ require (
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.1.0
-	github.com/ecadlabs/gotez/v2 v2.3.14
+	github.com/ecadlabs/gotez/v2 v2.3.15
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/google/tink/go v1.7.0
@@ -116,7 +116,7 @@ require (
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.40.0
 	golang.org/x/term v0.38.0
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/grpc v1.78.0
