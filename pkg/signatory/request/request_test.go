@@ -121,7 +121,7 @@ func TestSignRequest(t *testing.T) {
 					0xeb, 0xa4, 0xcb, 0xf2, 0x92, 0x78, 0xc2, 0xc1, 0x4, 0x47, 0xa6, 0x84, 0xe3, 0xaa,
 					0x14, 0x36, 0x85,
 				},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Transaction{
 						ManagerOperation: latest.ManagerOperation{
 							Source: &tz.Ed25519PublicKeyHash{
@@ -165,7 +165,7 @@ func TestSignRequest(t *testing.T) {
 					0xeb, 0xa4, 0xcb, 0xf2, 0x92, 0x78, 0xc2, 0xc1, 0x4, 0x47, 0xa6, 0x84, 0xe3, 0xaa,
 					0x14, 0x36, 0x85,
 				},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Transaction{
 						ManagerOperation: latest.ManagerOperation{
 							Source: &tz.Ed25519PublicKeyHash{
