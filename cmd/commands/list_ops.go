@@ -46,6 +46,9 @@ func NewListOps(c *Context) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ops := proto.ListOperations()
 			ops = append(ops, proto.ListPseudoOperations()...)
+			ops = slices.DeleteFunc(ops, func(s string) bool {
+				return s == "InlinedConsensusOperationContent"
+			})
 			slices.Sort(ops)
 			return listOpsTpl.Execute(os.Stdout, ops)
 		},
