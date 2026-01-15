@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // AuthGen is an interface that generates token authenticates the same
@@ -166,8 +166,13 @@ func (j *JWT) Authenticate(user string, token string) (string, error) {
 				tok, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 					return []byte(ud.NewData.Secret), nil
 				})
+				if err != nil {
+					return "", err
+				}
+				// Continue with tok from successful fallback parse
+			} else {
+				return "", err
 			}
-			return "", err
 		}
 		if tu := tok.Claims.(jwt.MapClaims)["user"]; tu != nil {
 			if tu.(string) != user {
