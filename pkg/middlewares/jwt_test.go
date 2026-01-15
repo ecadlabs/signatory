@@ -272,7 +272,7 @@ func TestAuthHandlerInValidToken(t *testing.T) {
 
 	handler.ServeHTTP(recorder, req)
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
-	require.Equal(t, "token contains an invalid number of segments", recorder.Body.String())
+	require.Contains(t, recorder.Body.String(), "token contains an invalid number of segments")
 }
 
 func TestAuthHandlerEmptyToken(t *testing.T) {
@@ -304,6 +304,135 @@ func TestAuthHandlerEmptyToken(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 	require.Equal(t, "token required", recorder.Body.String())
+}
+
+// TestAuthenticateWithCredentialRotation tests that authentication succeeds
+// when a token is signed with the new secret during credential rotation.
+// This is a regression test for GitHub issue #711.
+func TestAuthenticateWithCredentialRotation(t *testing.T) {
+	const (
+		user       = "testuser"
+		oldSecret  = "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#ZO'old"
+		newSecret  = "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#ZO'new"
+	)
+
+	t.Run("authenticate with old secret when NewData is present", func(t *testing.T) {
+		jwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "oldpassword12345!A",
+					Secret:   oldSecret,
+					Exp:      60,
+					NewData: &UserData{
+						Password: "newpassword12345!A",
+						Secret:   newSecret,
+						Exp:      60,
+					},
+				},
+			},
+		}
+
+		// Generate token with old secret (primary credentials)
+		token, err := jwt.GenerateToken(user, "oldpassword12345!A")
+		require.NoError(t, err)
+
+		// Authenticate should succeed with old secret
+		authenticatedUser, err := jwt.Authenticate(user, token)
+		require.NoError(t, err)
+		require.Equal(t, user, authenticatedUser)
+	})
+
+	t.Run("authenticate with new secret when NewData is present (issue 711 fix)", func(t *testing.T) {
+		jwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "oldpassword12345!A",
+					Secret:   oldSecret,
+					Exp:      60,
+					NewData: &UserData{
+						Password: "newpassword12345!A",
+						Secret:   newSecret,
+						Exp:      60,
+					},
+				},
+			},
+		}
+
+		// Generate token with new secret (NewData credentials)
+		token, err := jwt.GenerateToken(user, "newpassword12345!A")
+		require.NoError(t, err)
+
+		// Authenticate should succeed by falling back to NewData.Secret
+		// Before fix for issue 711, this would fail because the error from
+		// first parse was returned even when second parse succeeded
+		authenticatedUser, err := jwt.Authenticate(user, token)
+		require.NoError(t, err, "authentication should succeed with NewData secret during credential rotation")
+		require.Equal(t, user, authenticatedUser)
+	})
+
+	t.Run("authenticate fails with invalid secret", func(t *testing.T) {
+		jwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "oldpassword12345!A",
+					Secret:   oldSecret,
+					Exp:      60,
+					NewData: &UserData{
+						Password: "newpassword12345!A",
+						Secret:   newSecret,
+						Exp:      60,
+					},
+				},
+			},
+		}
+
+		// Generate token with a completely different secret (neither old nor new)
+		wrongSecretJwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "wrongpassword12345!A",
+					Secret:   "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#WRONG",
+					Exp:      60,
+				},
+			},
+		}
+		token, err := wrongSecretJwt.GenerateToken(user, "wrongpassword12345!A")
+		require.NoError(t, err)
+
+		// Authenticate should fail - token was signed with wrong secret
+		_, err = jwt.Authenticate(user, token)
+		require.Error(t, err)
+	})
+
+	t.Run("authenticate fails without NewData when primary secret is wrong", func(t *testing.T) {
+		jwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "oldpassword12345!A",
+					Secret:   oldSecret,
+					Exp:      60,
+					// No NewData - no fallback available
+				},
+			},
+		}
+
+		// Generate token with a different secret
+		wrongSecretJwt := &JWT{
+			Users: map[string]UserData{
+				user: {
+					Password: "wrongpassword12345!A",
+					Secret:   "!_?z$Tf$o}iDcJQ4Yk|&H87dm5#WRONG",
+					Exp:      60,
+				},
+			},
+		}
+		token, err := wrongSecretJwt.GenerateToken(user, "wrongpassword12345!A")
+		require.NoError(t, err)
+
+		// Authenticate should fail - no fallback since NewData is nil
+		_, err = jwt.Authenticate(user, token)
+		require.Error(t, err)
+	})
 }
 
 func getToken(user string, au *JWTMiddleware) (string, error) {

@@ -248,7 +248,7 @@ func TestJWTExpiry(t *testing.T) {
 	endpoint := baseURL + "keys/" + pkh1
 	code, bytes := requestSignature(t, endpoint, message, username1, token)
 	require.Equal(t, statusUnauthorized, code)
-	require.Equal(t, "Token is expired", string(bytes))
+	require.Contains(t, string(bytes), "token is expired")
 }
 
 func TestAlgNoneAttack(t *testing.T) {
@@ -265,7 +265,7 @@ func TestAlgNoneAttack(t *testing.T) {
 	endpoint := baseURL + "keys/" + pkh1
 	code, bytes := requestSignature(t, endpoint, message, username1, token)
 	require.Equal(t, statusUnauthorized, code)
-	require.Equal(t, "'none' signature type is not allowed", string(bytes))
+	require.Contains(t, string(bytes), "'none' signature type is not allowed")
 }
 
 func TestSignatureIsVerified(t *testing.T) {
