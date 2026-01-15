@@ -698,7 +698,7 @@ func checkRequestKind(allowedKinds []string) error {
 }
 
 func checkOperationKind(allowedKinds []string) error {
-	avilKinds := append(proto.ListOperations(), proto.ListPseudoOperations()...)
+	avilKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
 	for _, kind := range allowedKinds {
 		if !slices.Contains(avilKinds, kind) {
 			return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
