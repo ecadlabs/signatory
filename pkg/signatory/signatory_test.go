@@ -323,7 +323,7 @@ func TestPolicy(t *testing.T) {
 			title: "Stake allowed",
 			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Transaction{
 						ManagerOperation: latest.ManagerOperation{
 							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
@@ -351,7 +351,7 @@ func TestPolicy(t *testing.T) {
 			title: "ballot allowed",
 			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Ballot{
 						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
 						Period:   0,
@@ -370,7 +370,7 @@ func TestPolicy(t *testing.T) {
 			title: "ballot nay allowed",
 			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Ballot{
 						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
 						Period:   0,
@@ -389,7 +389,7 @@ func TestPolicy(t *testing.T) {
 			title: "ballot yay not allowed",
 			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
-				Contents: []latest.OperationContents{
+				Contents: []latest.GenericOperationSignRequestOperationContents{
 					&latest.Ballot{
 						Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
 						Period:   0,

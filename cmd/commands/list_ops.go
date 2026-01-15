@@ -44,7 +44,7 @@ func NewListOps(c *Context) *cobra.Command {
 		Use:   "list-ops",
 		Short: "Print possible operation types inside the `generic` request",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ops := proto.ListOperations()
+			ops := proto.ListGenericOperations()
 			ops = append(ops, proto.ListPseudoOperations()...)
 			slices.Sort(ops)
 			return listOpsTpl.Execute(os.Stdout, ops)
