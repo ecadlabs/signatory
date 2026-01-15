@@ -147,6 +147,16 @@ var testcases = []testCase{
 		successMessage:      "Operation successfully injected in the node",
 		validateOctezReturn: true,
 	},
+	{
+		kind:           "pack",
+		op:             "pack",
+		testSetupOps:   nil,
+		testOp:         []string{"sign", "bytes", "0x050000000a68656c6c6f", "for", alias}, // 0x05 magic byte + packed nat 42
+		account:        account,
+		allowPolicy:    map[string][]string{"pack": {}},
+		notAllowPolicy: map[string][]string{"generic": getAllOps(), "attestation": {}, "preattestation": {}, "block": {}},
+		successMessage: "Signature:",
+	},
 	// {
 	// 	kind:           "increase_paid_storage",
 	// 	op:             "generic",

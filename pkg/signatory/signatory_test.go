@@ -311,6 +311,15 @@ func TestPolicy(t *testing.T) {
 			expected: "operation `update_consensus_key' is not allowed",
 		},
 		{
+			title: "PACK data is allowed",
+			msg:   []byte{0x05, 0x0a, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x32, 0x04, 0x1d, 0xca, 0x76, 0xba, 0xc9, 0x40, 0xb4, 0x78, 0xaa, 0xe6, 0x73, 0xe3, 0x62, 0xbd, 0x15, 0x84, 0x7e, 0xd8},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"pack"},
+				AllowedOps:      []string{},
+				LogPayloads:     true,
+			},
+		},
+		{
 			title: "Stake allowed",
 			req: &latest.GenericOperationSignRequest{
 				Branch: &tz.BlockHash{},
