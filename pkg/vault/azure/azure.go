@@ -101,11 +101,11 @@ func (key *azureKey) Sign(ctx context.Context, message []byte, opt *vault.SignOp
 	if len(sig) != byteLen*2 {
 		return nil, fmt.Errorf("(Azure/%s): invalid signature size %d", key.v.config.Vault, len(sig))
 	}
-	return &crypt.ECDSASignature{
-		R:     new(big.Int).SetBytes(sig[:byteLen]),
-		S:     new(big.Int).SetBytes(sig[byteLen:]),
-		Curve: key.pub.Curve,
-	}, nil
+	return crypt.NewECDSASignature(
+		new(big.Int).SetBytes(sig[:byteLen]),
+		new(big.Int).SetBytes(sig[byteLen:]),
+		key.pub.Curve,
+	), nil
 }
 
 // New creates new Azure KeyVault backend
