@@ -161,11 +161,16 @@ else
     echo "  $0 down           # Stop the stack"
 fi
 
-# Optionally stop the stack
-read -p "Stop the test stack? [Y/n] " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-    docker compose down
+# Optionally stop the stack (only prompt if interactive)
+if [[ -t 0 ]]; then
+    read -p "Stop the test stack? [Y/n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        docker compose down
+    fi
+else
+    # Non-interactive: leave stack running for debugging
+    echo "Non-interactive mode: stack left running. Run '$0 down' to stop."
 fi
 
 exit $TEST_EXIT
