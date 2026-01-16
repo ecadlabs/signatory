@@ -32,6 +32,23 @@ usage() {
     exit 1
 }
 
+# Setup environment for docker compose commands
+setup_env() {
+    source .env.current
+    export IMAGE=ecadlabs/signatory:integration-test
+    export ARCH
+    # Create required placeholder files if they don't exist
+    [[ -f gcp-token.json ]] || echo '{}' > gcp-token.json
+    [[ -f service-principal.key ]] || touch service-principal.key
+    # Create .env file for docker compose (used by tests that restart containers)
+    cat > .env << EOF
+ARCH=$ARCH
+IMAGE=$IMAGE
+OCTEZ_VERSION=$OCTEZ_VERSION
+PROTOCOL=$PROTOCOL
+EOF
+}
+
 # Handle special commands
 case "$1" in
     -h|--help|help) usage ;;
@@ -47,23 +64,17 @@ case "$1" in
         exit 0
         ;;
     up)
-        source .env.current
-        export IMAGE=ecadlabs/signatory:integration-test
-        export ARCH
+        setup_env
         docker compose up -d --wait
         exit 0
         ;;
     down)
-        source .env.current
-        export IMAGE=ecadlabs/signatory:integration-test
-        export ARCH
+        setup_env
         docker compose down
         exit 0
         ;;
     logs)
-        source .env.current
-        export IMAGE=ecadlabs/signatory:integration-test
-        export ARCH
+        setup_env
         docker compose logs signatory -f
         exit 0
         ;;
