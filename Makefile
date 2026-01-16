@@ -77,3 +77,18 @@ release:
 update-deps:
 	go get -u ./...
 	go mod tidy
+
+# Integration test targets
+.PHONY: integration-test integration-test-build integration-test-up integration-test-down
+
+integration-test:
+	cd integration_test && ./run-tests.sh
+
+integration-test-build:
+	cd integration_test && ./run-tests.sh build
+
+integration-test-up:
+	cd integration_test && ./run-tests.sh up
+
+integration-test-down:
+	cd integration_test && ./run-tests.sh down

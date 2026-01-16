@@ -1,5 +1,53 @@
 ## Signatory Integration Test
-Folder Organization:
+
+### Quick Start
+
+Run integration tests with a single command:
+
+```sh
+# From repo root
+make integration-test
+
+# Or from this directory
+./run-tests.sh
+```
+
+The script automatically:
+- Detects your architecture (amd64/arm64)
+- Builds the signatory image with your local changes
+- Creates required placeholder config files
+- Starts the test stack
+- Runs the tests
+- Offers to stop the stack when done
+
+#### Other useful commands
+
+```sh
+# Build only (no tests)
+./run-tests.sh build
+
+# Start stack only
+./run-tests.sh up
+
+# Stop stack
+./run-tests.sh down
+
+# View logs
+./run-tests.sh logs
+
+# Open shell in container
+./run-tests.sh shell
+
+# Run specific test
+./run-tests.sh .env.current TestMetrics
+
+# Use next protocol
+./run-tests.sh .env.next
+```
+
+---
+
+### Folder Organization
 
 - **cli/**: Tests for the signatory CLI commands (list, help, version, etc.)
 - **server/**: Tests for server-side functionality like authorized keys
