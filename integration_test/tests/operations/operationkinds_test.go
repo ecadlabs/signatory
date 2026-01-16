@@ -213,7 +213,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 			assert.NoError(t, err)
 			require.Contains(t, string(out), test.successMessage)
 			metrics2 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault)
-			integrationtest.AssertMetricsSuccessIncremented(t, metrics1, metrics2, test.op)
+			integrationtest.AssertMetricsSuccessIncremented(t, metrics1, metrics2)
 		})
 	}
 }

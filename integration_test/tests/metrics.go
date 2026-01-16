@@ -56,13 +56,10 @@ func GetMetrics(address string, kind string, operation string, vault string) Met
 	return metrics
 }
 
-func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics, op string) {
+func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics) {
 	assert.Greater(t, after.Count, before.Count)
 	assert.Greater(t, after.Sum, before.Sum)
-	// because Issue #376
-	if op == "generic" {
-		assert.Greater(t, after.SigningOpsTotal, before.SigningOpsTotal)
-	}
+	assert.Greater(t, after.SigningOpsTotal, before.SigningOpsTotal)
 	assert.Equal(t, after.Error, before.Error)
 }
 
