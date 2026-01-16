@@ -13,5 +13,5 @@ func TestMetrics(t *testing.T) {
 	_, err := integrationtest.OctezClient("transfer", "1", "from", "alice", "to", "bob")
 	require.Nil(t, err)
 	metrics1 := integrationtest.GetMetrics(integrationtest.AlicePKH, "transaction", "generic", "File")
-	integrationtest.AssertMetricsSuccessIncremented(t, metrics0, metrics1, "generic")
+	integrationtest.AssertMetricsSuccessIncremented(t, metrics0, metrics1)
 }
