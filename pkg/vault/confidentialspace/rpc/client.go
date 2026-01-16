@@ -2,11 +2,13 @@ package rpc
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/binary"
 	"io"
 	"net"
 	"time"
 
+	"github.com/ecadlabs/signatory/pkg/utils/secureconn"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/kr/pretty"
@@ -19,6 +21,14 @@ type Client[C any] struct {
 
 func NewClient[C any](conn net.Conn) *Client[C] {
 	return &Client[C]{conn: conn}
+}
+
+func NewSecureClient[C any](conn net.Conn, serverPublicKey ed25519.PublicKey, clientPrivateKey ed25519.PrivateKey) (*Client[C], error) {
+	secureConn, err := secureconn.WrapConnection(conn, serverPublicKey, clientPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return &Client[C]{conn: secureConn}, nil
 }
 
 func (c *Client[C]) Close() error {
@@ -71,22 +81,38 @@ func RoundTripRaw[T, C any](ctx context.Context, conn net.Conn, req *Request[C],
 		conn.SetDeadline(time.Time{})
 	}()
 
-	wrBuf := make([]byte, len(reqBuf)+4)
-	binary.BigEndian.PutUint32(wrBuf, uint32(len(reqBuf)))
-	copy(wrBuf[4:], reqBuf)
-	if _, err := conn.Write(wrBuf); err != nil {
-		return res, err
+	_, isSecureConn := conn.(*secureconn.SecureConn)
+
+	if isSecureConn {
+		if _, err := conn.Write(reqBuf); err != nil {
+			return res, err
+		}
+
+		rBuf := make([]byte, 65536)
+		n, readErr := conn.Read(rBuf)
+		if readErr != nil {
+			return res, readErr
+		}
+		err = cbor.Unmarshal(rBuf[:n], &res)
+	} else {
+		wrBuf := make([]byte, len(reqBuf)+4)
+		binary.BigEndian.PutUint32(wrBuf, uint32(len(reqBuf)))
+		copy(wrBuf[4:], reqBuf)
+		if _, err := conn.Write(wrBuf); err != nil {
+			return res, err
+		}
+
+		var lenBuf [4]byte
+		if _, err := io.ReadFull(conn, lenBuf[:]); err != nil {
+			return res, err
+		}
+		rBuf := make([]byte, int(binary.BigEndian.Uint32(lenBuf[:])))
+		if _, err := io.ReadFull(conn, rBuf); err != nil {
+			return res, err
+		}
+		err = cbor.Unmarshal(rBuf, &res)
 	}
 
-	var lenBuf [4]byte
-	if _, err := io.ReadFull(conn, lenBuf[:]); err != nil {
-		return res, err
-	}
-	rBuf := make([]byte, int(binary.BigEndian.Uint32(lenBuf[:])))
-	if _, err := io.ReadFull(conn, rBuf); err != nil {
-		return res, err
-	}
-	err = cbor.Unmarshal(rBuf, &res)
 	if err == nil {
 		debugLog(">>> %# v\n", pretty.Formatter(&res))
 	}
