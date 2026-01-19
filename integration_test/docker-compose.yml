@@ -92,6 +92,7 @@ services:
     container_name: signatory
     hostname: signatory
     image: $IMAGE
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "6732:6732"
       - "9583:9583"
