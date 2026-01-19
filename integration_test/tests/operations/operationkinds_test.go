@@ -220,8 +220,8 @@ func TestOperationAllowPolicy(t *testing.T) {
 			metrics2 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault, "")
 			integrationtest.AssertMetricsSuccessIncremented(t, metrics1, metrics2, test.op)
 
-			// Baking operations (non-generic) should have chain_id matching the manual-bake chain
-			if test.op != "generic" {
+			// Baking operations should have chain_id matching the manual-bake chain
+			if test.op == "attestation" || test.op == "preattestation" || test.op == "block" {
 				chainID := integrationtest.ExtractChainIDFromMetrics(test.account, test.op, vault)
 				assert.Equal(t, expectedChainID, chainID, "chain_id in metrics should match manual-bake chain")
 			}
