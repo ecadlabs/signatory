@@ -4,12 +4,9 @@ import (
 	"strconv"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
+	"github.com/ecadlabs/signatory/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-type HttpError interface {
-	Code() int
-}
 
 // SignInterceptorOptions contains SignInterceptor arguments to avoid confusion
 type SignInterceptorOptions struct {
@@ -51,17 +48,18 @@ var (
 					}))
 		},
 		func(opt *SignInterceptorOptions, state *prometheus.Timer, err error) {
-			if state != nil {
-				state.ObserveDuration()
-			}
 			if err != nil {
 				var code string
-				if val, ok := err.(HttpError); ok {
-					code = strconv.FormatInt(int64(val.Code()), 10)
+				if val, ok := err.(errors.HTTPError); ok {
+					code = strconv.FormatInt(int64(val.HTTPStatus()), 10)
 				} else {
 					code = "n/a"
 				}
 				vaultErrorCounter.WithLabelValues(opt.Vault, code, opt.ChainID).Inc()
+				return // Don't record duration or increment ops counter on error
+			}
+			if state != nil {
+				state.ObserveDuration()
 			}
 			for op, cnt := range opt.Stat {
 				signingOpCount.WithLabelValues(string(opt.Address.ToBase58()), opt.Vault, opt.Req, op, opt.ChainID).Add(float64(cnt))
