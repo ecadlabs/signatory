@@ -1,0 +1,123 @@
+name: Check Octez Version
+
+on:
+  schedule:
+    # Run daily at 8am UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current versions
+        id: current
+        run: |
+          source integration_test/.env.current
+          echo "current_version=$OCTEZ_VERSION" >> $GITHUB_OUTPUT
+          source integration_test/.env.next
+          echo "next_version=$OCTEZ_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check Docker Hub for latest Octez versions
+        id: latest
+        run: |
+          # Fetch tags from Docker Hub
+          TAGS=$(curl -s "https://hub.docker.com/v2/repositories/tezos/tezos/tags?page_size=100" | jq -r '.results[].name')
+
+          # Find latest stable version (octez-vX.Y.Z or octez-vX.Y)
+          LATEST_STABLE=$(echo "$TAGS" | grep -E '^octez-v[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)
+          echo "latest_stable=$LATEST_STABLE" >> $GITHUB_OUTPUT
+
+          # Find latest RC version
+          LATEST_RC=$(echo "$TAGS" | grep -E '^octez-v[0-9]+\.[0-9]+(\.[0-9]+)?-rc[0-9]+$' | sort -V | tail -1)
+          echo "latest_rc=$LATEST_RC" >> $GITHUB_OUTPUT
+
+          echo "Latest stable: $LATEST_STABLE"
+          echo "Latest RC: $LATEST_RC"
+
+      - name: Compare versions
+        id: compare
+        env:
+          CURRENT: ${{ steps.current.outputs.current_version }}
+          NEXT: ${{ steps.current.outputs.next_version }}
+          LATEST_STABLE: ${{ steps.latest.outputs.latest_stable }}
+          LATEST_RC: ${{ steps.latest.outputs.latest_rc }}
+        run: |
+          UPDATE_NEEDED="false"
+          BODY=""
+
+          # Check if stable version is outdated
+          if [ "$CURRENT" != "$LATEST_STABLE" ] && [ -n "$LATEST_STABLE" ]; then
+            UPDATE_NEEDED="true"
+            BODY="${BODY}## Stable Version Update Available\n\n"
+            BODY="${BODY}Current: \`$CURRENT\`\n"
+            BODY="${BODY}Latest: \`$LATEST_STABLE\`\n\n"
+          fi
+
+          # Check if there's a newer RC than what we're tracking
+          if [ -n "$LATEST_RC" ]; then
+            if [ "$NEXT" != "$LATEST_RC" ]; then
+              UPDATE_NEEDED="true"
+              BODY="${BODY}## Release Candidate Available\n\n"
+              BODY="${BODY}Currently tracking: \`$NEXT\`\n"
+              BODY="${BODY}Latest RC: \`$LATEST_RC\`\n\n"
+            fi
+          fi
+
+          echo "update_needed=$UPDATE_NEEDED" >> $GITHUB_OUTPUT
+
+          # Write body to file to handle multiline
+          echo -e "$BODY" > /tmp/issue_body.md
+
+          if [ "$UPDATE_NEEDED" = "true" ]; then
+            echo "Updates available!"
+            cat /tmp/issue_body.md
+          else
+            echo "All versions are up to date"
+          fi
+
+      - name: Check for existing issue
+        id: existing
+        if: steps.compare.outputs.update_needed == 'true'
+        run: |
+          EXISTING=$(gh issue list --label "octez-update" --state open --json number --jq '.[0].number // empty')
+          echo "existing_issue=$EXISTING" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or update issue
+        if: steps.compare.outputs.update_needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXISTING_ISSUE: ${{ steps.existing.outputs.existing_issue }}
+        run: |
+          TITLE="New Octez version available"
+          LABELS="octez-update,dependencies"
+
+          # Build issue body from the comparison results
+          {
+            cat /tmp/issue_body.md
+            echo "## Update Instructions"
+            echo ""
+            echo "See [MAINTENANCE.md](integration_test/MAINTENANCE.md) for the update playbook."
+            echo ""
+            echo "### Quick Steps"
+            echo ""
+            echo "1. Update \`integration_test/.env.current\` and/or \`integration_test/.env.next\`"
+            echo "2. Run \`make integration-test\` locally"
+            echo "3. Check release notes for breaking changes"
+            echo ""
+            echo "---"
+            echo "*This issue was automatically created by the nightly version check.*"
+          } > /tmp/full_issue_body.md
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Updating existing issue #$EXISTING_ISSUE"
+            gh issue edit "$EXISTING_ISSUE" --body-file /tmp/full_issue_body.md
+          else
+            echo "Creating new issue"
+            gh issue create --title "$TITLE" --label "$LABELS" --body-file /tmp/full_issue_body.md
+          fi
