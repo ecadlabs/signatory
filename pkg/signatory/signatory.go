@@ -404,11 +404,17 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		return key.Sign(ctx, message, &req.SignOptions)
 	}
 
+	var chainID string
+	if m, ok := msg.(request.WithWatermark); ok {
+		chainID = m.GetChainID().String()
+	}
+
 	var sig crypt.Signature
 	interceptor_options := metrics.SignInterceptorOptions{
 		Address: req.PublicKeyHash,
 		Vault:   p.key.Vault().Name(),
 		Req:     msg.SignRequestKind(),
+		ChainID: chainID,
 		Stat:    opStat,
 		TargetFunc: func() (crypt.Signature, error) {
 			return signFunc(ctx, req.Message, p.key)

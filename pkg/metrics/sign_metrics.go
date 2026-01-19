@@ -16,6 +16,7 @@ type SignInterceptorOptions struct {
 	Address    crypt.PublicKeyHash
 	Vault      string
 	Req        string
+	ChainID    string
 	Stat       map[string]int
 	TargetFunc func() (crypt.Signature, error)
 }
@@ -28,25 +29,25 @@ var (
 	signingOpCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "signing_ops_total",
 		Help: "Total number of signing operations completed.",
-	}, []string{"address", "vault", "op", "kind"})
+	}, []string{"address", "vault", "op", "kind", "chain_id"})
 
 	vaultSigningHist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "vault_sign_request_duration_milliseconds",
 		Help:    "Vaults signing requests latencies in milliseconds",
 		Buckets: prometheus.ExponentialBuckets(10, 10, 5),
-	}, []string{"vault", "address", "op"})
+	}, []string{"vault", "address", "op", "chain_id"})
 
 	vaultErrorCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "vault_sign_request_error_total",
 		Help: "Vaults signing requests error count",
-	}, []string{"vault", "code"})
+	}, []string{"vault", "code", "chain_id"})
 
 	SignInterceptor = InterceptorFactory(
 		func(opt *SignInterceptorOptions) *prometheus.Timer {
 			return prometheus.NewTimer(
 				prometheus.ObserverFunc(
 					func(seconds float64) {
-						vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.ToBase58()), opt.Req).Observe(seconds * 1000)
+						vaultSigningHist.WithLabelValues(opt.Vault, string(opt.Address.ToBase58()), opt.Req, opt.ChainID).Observe(seconds * 1000)
 					}))
 		},
 		func(opt *SignInterceptorOptions, state *prometheus.Timer, err error) {
@@ -60,10 +61,10 @@ var (
 				} else {
 					code = "n/a"
 				}
-				vaultErrorCounter.WithLabelValues(opt.Vault, code).Inc()
+				vaultErrorCounter.WithLabelValues(opt.Vault, code, opt.ChainID).Inc()
 			}
 			for op, cnt := range opt.Stat {
-				signingOpCount.WithLabelValues(string(opt.Address.ToBase58()), opt.Vault, opt.Req, op).Add(float64(cnt))
+				signingOpCount.WithLabelValues(string(opt.Address.ToBase58()), opt.Vault, opt.Req, op, opt.ChainID).Add(float64(cnt))
 			}
 		},
 	)

@@ -171,6 +171,11 @@ var testcases = []testCase{
 
 func TestOperationAllowPolicy(t *testing.T) {
 	defer integrationtest.Clean_tezos_folder()
+
+	// Get chain_id once for the manual-bake chain
+	expectedChainID, err := integrationtest.GetChainID("-d", "/home/tezos/manual-bake-client")
+	require.NoError(t, err, "should be able to get chain_id from manual-bake node")
+
 	for _, test := range testcases {
 		t.Run(test.kind, func(t *testing.T) {
 			//first, do any setup steps that have to happen before the operation to be tested
@@ -180,7 +185,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 				require.Contains(t, string(out), "Operation successfully injected in the node")
 			}
 
-			metrics0 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault)
+			metrics0 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault, "")
 
 			//next, configure every operation allowed except for the one tested, to test it will be denied
 			var c integrationtest.Config
@@ -197,7 +202,7 @@ func TestOperationAllowPolicy(t *testing.T) {
 			}
 			assert.Contains(t, string(out), "`"+test.kind+"' is not allowed")
 
-			metrics1 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault)
+			metrics1 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault, "")
 			//this should be changed to AssertMetricsFailure
 			integrationtest.AssertMetricsSuccessUnchanged(t, metrics0, metrics1)
 
@@ -212,8 +217,14 @@ func TestOperationAllowPolicy(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			require.Contains(t, string(out), test.successMessage)
-			metrics2 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault)
+			metrics2 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault, "")
 			integrationtest.AssertMetricsSuccessIncremented(t, metrics1, metrics2, test.op)
+
+			// Baking operations (non-generic) should have chain_id matching the manual-bake chain
+			if test.op != "generic" {
+				chainID := integrationtest.ExtractChainIDFromMetrics(test.account, test.op, vault)
+				assert.Equal(t, expectedChainID, chainID, "chain_id in metrics should match manual-bake chain")
+			}
 		})
 	}
 }

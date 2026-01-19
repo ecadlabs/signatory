@@ -76,3 +76,23 @@ func GetCurrentProtocol() (string, error) {
 
 	return metadata.Protocol, nil
 }
+
+func GetChainID(args ...string) (string, error) {
+	commandArgs := append(args, "rpc", "get", "/chains/main/chain_id")
+	out, err := OctezClient(commandArgs...)
+	if err != nil {
+		return "", err
+	}
+	lines := bytes.Split(out, []byte("\n"))
+	for _, line := range lines {
+		line = bytes.TrimSpace(line)
+		if len(line) > 0 && line[0] == '"' {
+			var chainID string
+			if err := json.Unmarshal(line, &chainID); err != nil {
+				return "", err
+			}
+			return chainID, nil
+		}
+	}
+	return "", fmt.Errorf("no chain_id found in output: %s", string(out))
+}
