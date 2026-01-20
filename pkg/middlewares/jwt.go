@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+func constantTimeCompare(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
 
 // AuthGen is an interface that generates token authenticates the same
 type AuthGen interface {
@@ -43,9 +48,9 @@ func (m *JWTMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Access denied"))
 		return
 	}
-	if ud.Password != pass {
+	if !constantTimeCompare(ud.Password, pass) {
 		if ud.NewData != nil {
-			if ud.NewData.Password != pass {
+			if !constantTimeCompare(ud.NewData.Password, pass) {
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("Access denied"))
 				return
@@ -137,7 +142,7 @@ func (j *JWT) GenerateToken(user string, pass string) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
 	ud, ok := j.GetUserData(user)
-	if pass != ud.Password {
+	if !constantTimeCompare(pass, ud.Password) {
 		ud = ud.NewData
 	}
 	if ok {
@@ -194,7 +199,7 @@ func (j *JWT) Authenticate(user string, token string) (string, error) {
 func (j *JWT) CheckUpdateNewCred() error {
 	for user, data := range j.Users {
 		if data.NewData != nil {
-			if data.NewData.Password == data.Password || data.NewData.Secret == data.Secret {
+			if constantTimeCompare(data.NewData.Password, data.Password) || constantTimeCompare(data.NewData.Secret, data.Secret) {
 				return fmt.Errorf("JWT: new credentials are same as old for user %s", user)
 			}
 			if e := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); e != nil {
