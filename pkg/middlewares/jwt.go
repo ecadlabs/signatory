@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	log "github.com/sirupsen/logrus"
 )
 
 func constantTimeCompare(a, b string) bool {
@@ -181,7 +182,7 @@ func (j *JWT) Authenticate(user string, token string) (string, error) {
 		}
 		if tu := tok.Claims.(jwt.MapClaims)["user"]; tu != nil {
 			if tu.(string) != user {
-				fmt.Println("JWT_Warning: Suspicious activity detected, token user is not the same as the user in the request")
+				log.Warnln("JWT: Suspicious activity detected, token user does not match request user")
 				return "", fmt.Errorf("JWT: invalid token")
 			}
 		} else {
