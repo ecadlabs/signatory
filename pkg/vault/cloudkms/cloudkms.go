@@ -55,7 +55,7 @@ func (c *Config) getTimeout() time.Duration {
 }
 
 func (c *Config) getMaxRetries() int {
-	if c.MaxRetries != nil {
+	if c.MaxRetries != nil && *c.MaxRetries >= 0 {
 		return *c.MaxRetries
 	}
 	return defaultMaxRetries

@@ -42,7 +42,7 @@ Below are the configuration fields which are required for Signatory.
 |location|string|✅|Location|
 |key_ring|string|✅|Key ring name|
 |timeout|duration|OPTIONAL|Per-request timeout for signing operations (default: 10s). Example: "15s", "1m"|
-|max_retries|int|OPTIONAL|Maximum retry attempts for transient errors like deadline exceeded (default: 3)|
+|max_retries|int|OPTIONAL|Maximum retry attempts after the initial try for transient errors like deadline exceeded (default: 3, set to 0 to disable retries).|
 
 ## **Key Management**
 
