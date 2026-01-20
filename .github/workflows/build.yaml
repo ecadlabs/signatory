@@ -209,7 +209,8 @@ jobs:
          . ./.env.${{ matrix.testenvs }};
          envsubst < gcp-token-template.json > gcp-token.json;
          echo $VAULT_AZ_SP_KEY |base64 -d >service-principal.key;
-         chmod 777 ./hashicerts;
+         mkdir -p ./.watermarks ./coverage;
+         chmod 777 ./.watermarks ./coverage ./hashicerts;
          docker compose up -d --wait --pull always;
          cd tests;
          go test -p 1 ./...;
