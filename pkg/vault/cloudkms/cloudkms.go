@@ -144,13 +144,11 @@ func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.
 
 		// Log and wait before retry (not on last attempt)
 		if attempt < maxAttempts-1 {
-			// Calculate backoff with overflow protection
-			backoff := baseBackoff
-			if attempt < 30 { // Prevent overflow: 1<<30 is safe, larger may overflow
-				backoff = baseBackoff * time.Duration(1<<attempt) // exponential: 100ms, 200ms, 400ms...
-			}
-			if backoff > maxBackoff {
-				backoff = maxBackoff
+			// Exponential backoff: 100ms, 200ms, 400ms... capped at maxBackoff
+			// Guard against overflow: 1<<30 is safe, larger may overflow on 64-bit
+			backoff := maxBackoff
+			if attempt < 30 {
+				backoff = min(baseBackoff*time.Duration(1<<attempt), maxBackoff)
 			}
 
 			log.WithFields(log.Fields{
