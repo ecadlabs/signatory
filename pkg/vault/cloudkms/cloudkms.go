@@ -34,6 +34,7 @@ const (
 	defaultTimeout    = 10 * time.Second
 	defaultMaxRetries = 3
 	baseBackoff       = 100 * time.Millisecond
+	maxBackoff        = 10 * time.Second // Cap to prevent overflow issues
 )
 
 // Config contains Google Cloud KMS backend configuration
@@ -43,7 +44,7 @@ type Config struct {
 	Location   string        `yaml:"location" validate:"required"`
 	KeyRing    string        `yaml:"key_ring" validate:"required"`
 	Timeout    time.Duration `yaml:"timeout"`     // Per-request timeout (default: 10s)
-	MaxRetries int           `yaml:"max_retries"` // Max retry attempts for transient errors (default: 3)
+	MaxRetries *int          `yaml:"max_retries"` // Max retry attempts after initial try (default: 3, set to 0 to disable retries)
 }
 
 func (c *Config) getTimeout() time.Duration {
@@ -54,8 +55,8 @@ func (c *Config) getTimeout() time.Duration {
 }
 
 func (c *Config) getMaxRetries() int {
-	if c.MaxRetries > 0 {
-		return c.MaxRetries
+	if c.MaxRetries != nil {
+		return *c.MaxRetries
 	}
 	return defaultMaxRetries
 }
@@ -111,9 +112,10 @@ func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.
 
 	timeout := kmsKey.v.config.getTimeout()
 	maxRetries := kmsKey.v.config.getMaxRetries()
+	maxAttempts := 1 + maxRetries
 
 	var lastErr error
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := 0; attempt < maxAttempts; attempt++ {
 		// Apply per-attempt timeout
 		attemptCtx, cancel := context.WithTimeout(ctx, timeout)
 
@@ -140,9 +142,17 @@ func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.
 			break
 		}
 
-		// Log retry attempt
-		if attempt < maxRetries-1 {
-			backoff := baseBackoff * time.Duration(1<<attempt) // exponential: 100ms, 200ms, 400ms...
+		// Log and wait before retry (not on last attempt)
+		if attempt < maxAttempts-1 {
+			// Calculate backoff with overflow protection
+			backoff := baseBackoff
+			if attempt < 30 { // Prevent overflow: 1<<30 is safe, larger may overflow
+				backoff = baseBackoff * time.Duration(1<<attempt) // exponential: 100ms, 200ms, 400ms...
+			}
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+
 			log.WithFields(log.Fields{
 				"key_ring": kmsKey.v.config.keyRingName(),
 				"attempt":  attempt + 1,
