@@ -8,6 +8,7 @@ import (
 	"crypto/sha1"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	kms "cloud.google.com/go/kms/apiv1"
 	kmspb "cloud.google.com/go/kms/apiv1/kmspb"
@@ -21,16 +22,42 @@ import (
 	"github.com/ecadlabs/signatory/pkg/vault"
 	kwp "github.com/google/tink/go/kwp/subtle"
 	"github.com/segmentio/ksuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
+)
+
+// Default values for timeout and retry configuration
+const (
+	defaultTimeout    = 10 * time.Second
+	defaultMaxRetries = 3
+	baseBackoff       = 100 * time.Millisecond
 )
 
 // Config contains Google Cloud KMS backend configuration
 type Config struct {
 	gcp.Config `yaml:",inline"`
-	Project    string `yaml:"project" validate:"required"`
-	Location   string `yaml:"location" validate:"required"`
-	KeyRing    string `yaml:"key_ring" validate:"required"`
+	Project    string        `yaml:"project" validate:"required"`
+	Location   string        `yaml:"location" validate:"required"`
+	KeyRing    string        `yaml:"key_ring" validate:"required"`
+	Timeout    time.Duration `yaml:"timeout"`     // Per-request timeout (default: 10s)
+	MaxRetries int           `yaml:"max_retries"` // Max retry attempts for transient errors (default: 3)
+}
+
+func (c *Config) getTimeout() time.Duration {
+	if c.Timeout > 0 {
+		return c.Timeout
+	}
+	return defaultTimeout
+}
+
+func (c *Config) getMaxRetries() int {
+	if c.MaxRetries > 0 {
+		return c.MaxRetries
+	}
+	return defaultMaxRetries
 }
 
 // keyRingName returns full Google Cloud KMS key ring path
@@ -55,6 +82,22 @@ func (k *cloudKMSKey) PublicKey() crypt.PublicKey { return k.pub }      // Publi
 func (k *cloudKMSKey) ID() string                 { return k.key.Name } // ID returnd a unique key ID
 func (k *cloudKMSKey) Vault() vault.Vault         { return k.v }
 
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		return false
+	}
+	switch st.Code() {
+	case codes.DeadlineExceeded, codes.Unavailable, codes.ResourceExhausted:
+		return true
+	default:
+		return false
+	}
+}
+
 func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	req := kmspb.AsymmetricSignRequest{
@@ -66,16 +109,56 @@ func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.
 		},
 	}
 
-	resp, err := kmsKey.v.client.AsymmetricSign(ctx, &req)
-	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %w", kmsKey.v.config.keyRingName(), err)
+	timeout := kmsKey.v.config.getTimeout()
+	maxRetries := kmsKey.v.config.getMaxRetries()
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Apply per-attempt timeout
+		attemptCtx, cancel := context.WithTimeout(ctx, timeout)
+
+		resp, err := kmsKey.v.client.AsymmetricSign(attemptCtx, &req)
+		cancel()
+
+		if err == nil {
+			sig, err := crypt.NewSignatureFromBytes(resp.Signature, kmsKey.pub)
+			if err != nil {
+				return nil, fmt.Errorf("(CloudKMS/%s): %w", kmsKey.v.config.keyRingName(), err)
+			}
+			return sig, nil
+		}
+
+		lastErr = err
+
+		// Check if we should retry
+		if !isRetryableError(err) {
+			break
+		}
+
+		// Check if parent context is cancelled
+		if ctx.Err() != nil {
+			break
+		}
+
+		// Log retry attempt
+		if attempt < maxRetries-1 {
+			backoff := baseBackoff * time.Duration(1<<attempt) // exponential: 100ms, 200ms, 400ms...
+			log.WithFields(log.Fields{
+				"key_ring": kmsKey.v.config.keyRingName(),
+				"attempt":  attempt + 1,
+				"backoff":  backoff,
+				"error":    err.Error(),
+			}).Warn("CloudKMS AsymmetricSign failed, retrying")
+
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %w", kmsKey.v.config.keyRingName(), ctx.Err())
+			}
+		}
 	}
 
-	sig, err := crypt.NewSignatureFromBytes(resp.Signature, kmsKey.pub)
-	if err != nil {
-		return nil, fmt.Errorf("(CloudKMS/%s): %w", kmsKey.v.config.keyRingName(), err)
-	}
-	return sig, nil
+	return nil, fmt.Errorf("(CloudKMS/%s) AsymmetricSign: %w", kmsKey.v.config.keyRingName(), lastErr)
 }
 
 func getAlgorithm(curve elliptic.Curve) kmspb.CryptoKeyVersion_CryptoKeyVersionAlgorithm {
