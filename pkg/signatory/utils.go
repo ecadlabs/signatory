@@ -43,7 +43,10 @@ func getOperationsStat(req *SignRequest, msg core.SignRequest) (operationsStat, 
 			return ops, true
 		}
 	}
-	return nil, false
+	// For non-generic operations (block, attestation, preattestation, etc.),
+	// use SignRequestKind as the operation kind with count of 1
+	ops[msg.SignRequestKind()] = 1
+	return ops, true
 }
 
 func getSignRequest(req *SignRequest) (core.SignRequest, error) {
