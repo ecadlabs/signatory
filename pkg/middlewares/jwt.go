@@ -199,51 +199,58 @@ func (j *JWT) Authenticate(user string, token string) (string, error) {
 
 func (j *JWT) CheckUpdateNewCred() error {
 	for user, data := range j.Users {
-		if data.NewData != nil {
-			if constantTimeCompare(data.NewData.Password, data.Password) || constantTimeCompare(data.NewData.Secret, data.Secret) {
-				return fmt.Errorf("JWT: new credentials are same as old for user %s", user)
-			}
-			if e := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); e != nil {
-				return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
-			}
-			go func(u string, exp string) error {
-				if exp == "" {
-					err := j.SetNewCred(u)
-					if err != nil {
-						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
-					}
-					return nil
-				}
-
-				layout := "2006-01-02 15:04:05"
-				t, err := time.Parse(layout, exp)
-				if err != nil {
-					e := j.SetNewCred(u)
-					if e != nil {
-						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, e)
-					}
-					return fmt.Errorf("JWT: Failed to parse time for user %s: %e", u, err)
-				}
-
-				duration := t.UTC().Unix() - time.Now().Unix()
-				if duration < 0 {
-					err := j.SetNewCred(u)
-					if err != nil {
-						return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
-					}
-					return nil
-				}
-				time.Sleep(1 * time.Second * time.Duration(duration))
-				err = j.SetNewCred(u)
-				if err != nil {
-					return fmt.Errorf("JWT: Failed to set new user config for %s: %e", u, err)
-				}
-				return nil
-			}(user, data.OldCredExp)
+		// Validate current credentials first
+		if err := validateSecretAndPass([]string{data.Password, data.Secret}); err != nil {
+			return fmt.Errorf("JWT: config validation failed for user %s: %w", user, err)
 		}
-		if e := validateSecretAndPass([]string{data.Password, data.Secret}); e != nil {
-			return fmt.Errorf("JWT:config validation failed for user %s: %e", user, e)
+
+		if data.NewData == nil {
+			continue
 		}
+
+		// Validate new credentials
+		if constantTimeCompare(data.NewData.Password, data.Password) || constantTimeCompare(data.NewData.Secret, data.Secret) {
+			return fmt.Errorf("JWT: new credentials are same as old for user %s", user)
+		}
+		if err := validateSecretAndPass([]string{data.NewData.Password, data.NewData.Secret}); err != nil {
+			return fmt.Errorf("JWT: config validation failed for new credentials of user %s: %w", user, err)
+		}
+
+		// Immediate update (no expiry set)
+		if data.OldCredExp == "" {
+			if err := j.SetNewCred(user); err != nil {
+				return fmt.Errorf("JWT: failed to set new credentials for %s: %w", user, err)
+			}
+			log.Infof("JWT: Applied new credentials for user %s", user)
+			continue
+		}
+
+		// Parse and validate expiry time
+		t, err := time.Parse("2006-01-02 15:04:05", data.OldCredExp)
+		if err != nil {
+			return fmt.Errorf("JWT: invalid old_cred_exp format for user %s: %w", user, err)
+		}
+
+		duration := time.Until(t)
+		if duration <= 0 {
+			// Already expired - apply immediately
+			if err := j.SetNewCred(user); err != nil {
+				return fmt.Errorf("JWT: failed to set new credentials for %s: %w", user, err)
+			}
+			log.Infof("JWT: Applied new credentials for user %s (expiry passed)", user)
+			continue
+		}
+
+		// Future expiry - schedule async (only case needing goroutine)
+		log.Infof("JWT: Scheduled credential rotation for user %s in %v", user, duration)
+		go func(u string, d time.Duration) {
+			time.Sleep(d)
+			if err := j.SetNewCred(u); err != nil {
+				log.Errorf("JWT: Failed to rotate credentials for %s: %v", u, err)
+			} else {
+				log.Infof("JWT: Rotated credentials for user %s", u)
+			}
+		}(user, duration)
 	}
 	return nil
 }
