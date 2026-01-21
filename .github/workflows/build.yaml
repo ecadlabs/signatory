@@ -14,6 +14,8 @@ permissions:
   deployments: write
   issues: write
   packages: write
+  id-token: write
+  actions: read
 
 env:
   GO_VERSION: '1.21'
@@ -43,6 +45,11 @@ jobs:
     name: Goreleaser
     runs-on: ubuntu-latest
     needs: test
+    outputs:
+      version: ${{ steps.hash.outputs.version }}
+      digest-amd64: ${{ steps.hash.outputs.digest-amd64 }}
+      digest-arm64: ${{ steps.hash.outputs.digest-arm64 }}
+      digest-armv7: ${{ steps.hash.outputs.digest-armv7 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -105,6 +112,112 @@ jobs:
       - name: goreleaser release
         run: make release
         if: startsWith(github.ref, 'refs/tags/v')
+      
+      - name: Generate outputs for SLSA provenance from Docker images
+        id: hash
+        run: |
+          set -euo pipefail
+          
+          # Get version string
+          VERSION="${{ steps.replaceslash.outputs.value }}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          
+          # Get image digests from local Docker after push (with sha256: prefix for container generator)
+          AMD64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-amd64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+          ARM64_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-arm64 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+          ARMV7_DIGEST=$(docker inspect ghcr.io/ecadlabs/signatory:${VERSION}-armv7 --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+
+          # Output individual digests for each architecture
+          echo "digest-amd64=${AMD64_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "digest-arm64=${ARM64_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "digest-armv7=${ARMV7_DIGEST}" >> "$GITHUB_OUTPUT"
+          
+          # Write all digests to file for verification
+          DIGESTS_FILE="/tmp/image-digests.txt"
+          echo "${AMD64_DIGEST#sha256:} ghcr.io/ecadlabs/signatory:${VERSION}-amd64" >> "$DIGESTS_FILE"
+          echo "${ARM64_DIGEST#sha256:} ghcr.io/ecadlabs/signatory:${VERSION}-arm64" >> "$DIGESTS_FILE"
+          echo "${ARMV7_DIGEST#sha256:} ghcr.io/ecadlabs/signatory:${VERSION}-armv7" >> "$DIGESTS_FILE"
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+      
+      - name: Upload digests as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-digests
+          path: /tmp/image-digests.txt
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+
+  generate-provenance-amd64:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for amd64 image
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ghcr.io/ecadlabs/signatory
+      digest: "${{ needs.publish.outputs.digest-amd64 }}"
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-provenance-arm64:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for arm64 image
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ghcr.io/ecadlabs/signatory
+      digest: "${{ needs.publish.outputs.digest-arm64 }}"
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-provenance-armv7:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    name: Generate SLSA provenance for armv7 image
+    needs: [publish]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ghcr.io/ecadlabs/signatory
+      digest: "${{ needs.publish.outputs.digest-armv7 }}"
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  verify-slsa:
+    name: Verify SLSA provenance for Docker images
+    runs-on: ubuntu-latest
+    needs: [publish, generate-provenance-amd64, generate-provenance-arm64, generate-provenance-armv7]
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install SLSA verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@v2.5.1
+
+      - name: Verify amd64 image attestation
+        run: |
+          echo "Verifying amd64 image..."
+          slsa-verifier verify-image \
+            --source-uri github.com/${{ github.repository }} \
+            ghcr.io/ecadlabs/signatory@${{ needs.publish.outputs.digest-amd64 }}
+
+      - name: Verify arm64 image attestation
+        run: |
+          echo "Verifying arm64 image..."
+          slsa-verifier verify-image \
+            --source-uri github.com/${{ github.repository }} \
+            ghcr.io/ecadlabs/signatory@${{ needs.publish.outputs.digest-arm64 }}
+
+      - name: Verify armv7 image attestation
+        run: |
+          echo "Verifying armv7 image..."
+          slsa-verifier verify-image \
+            --source-uri github.com/${{ github.repository }} \
+            ghcr.io/ecadlabs/signatory@${{ needs.publish.outputs.digest-armv7 }}
 
   deploy-ec2:
     if: "!startsWith(github.ref, 'refs/tags/v')"
