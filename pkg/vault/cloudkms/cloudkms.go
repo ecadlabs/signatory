@@ -33,8 +33,9 @@ import (
 const (
 	defaultTimeout    = 10 * time.Second
 	defaultMaxRetries = 3
+	maxAllowedRetries = 100 // Cap to prevent integer overflow in 1 + maxRetries
 	baseBackoff       = 100 * time.Millisecond
-	maxBackoff        = 10 * time.Second // Cap to prevent overflow issues
+	maxBackoff        = 10 * time.Second
 )
 
 // Config contains Google Cloud KMS backend configuration
@@ -56,7 +57,7 @@ func (c *Config) getTimeout() time.Duration {
 
 func (c *Config) getMaxRetries() int {
 	if c.MaxRetries != nil && *c.MaxRetries >= 0 {
-		return *c.MaxRetries
+		return min(*c.MaxRetries, maxAllowedRetries)
 	}
 	return defaultMaxRetries
 }
