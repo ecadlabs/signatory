@@ -122,7 +122,7 @@ services:
       start_period: 1s
     depends_on:
       speculos:
-        condition: service_healthy      
+        condition: service_healthy
 
   hashi:
     container_name: hashi
