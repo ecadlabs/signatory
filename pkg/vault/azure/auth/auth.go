@@ -12,7 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -85,7 +85,7 @@ func (c *Config) parseEnv() *Config {
 }
 
 func parsePKCS12Certificate(name, password string) (pk interface{}, thumbprint []byte, err error) {
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -100,7 +100,7 @@ func parsePKCS12Certificate(name, password string) (pk interface{}, thumbprint [
 }
 
 func parsePrivateKey(name, password string) (pk interface{}, err error) {
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func parsePrivateKey(name, password string) (pk interface{}, err error) {
 }
 
 func getThumbprint(name string) ([]byte, error) {
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func fetchToken(ctx context.Context, url string, v url.Values) (*oauth2.Token, e
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("auth: cannot fetch token: %w", err)
 	}

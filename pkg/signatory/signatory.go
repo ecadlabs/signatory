@@ -216,10 +216,8 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 }
 
 func jwtVerifyUser(user string, policy *PublicKeyPolicy, req *SignRequest) error {
-	fmt.Println("jwtVerifyUser", user, policy.AuthorizedJwtUsers)
 	authorized := false
 	if policy.AuthorizedJwtUsers != nil {
-		fmt.Println("AuthorizedJwtUsers", policy.AuthorizedJwtUsers)
 		for _, u := range policy.AuthorizedJwtUsers {
 			if u == user {
 				authorized = true
@@ -230,7 +228,6 @@ func jwtVerifyUser(user string, policy *PublicKeyPolicy, req *SignRequest) error
 			return fmt.Errorf("user `%s' is not authorized to access %s", user, req.PublicKeyHash)
 		}
 	}
-	fmt.Println("AuthorizedJwtUsers nil: ", authorized)
 	return nil
 }
 

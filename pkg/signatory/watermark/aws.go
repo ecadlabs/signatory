@@ -100,7 +100,7 @@ func (a *AWS) maybeCreateTable(ctx context.Context) error {
 	}
 	log.Infof("DynamoDB watermark backend created table '%s'", a.cfg.table())
 	waiter := dynamodb.NewTableExistsWaiter(a.client)
-	return waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
+	return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(a.cfg.table()),
 	}, time.Minute*5) // give excess time
 }

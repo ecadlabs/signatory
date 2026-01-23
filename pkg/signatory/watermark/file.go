@@ -61,10 +61,13 @@ func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer fd.Close()
 		var delegates delegateMap
-		if err = json.NewDecoder(fd).Decode(&delegates); err != nil {
-			return nil, err
+		decodeErr := json.NewDecoder(fd).Decode(&delegates)
+		if closeErr := fd.Close(); closeErr != nil && decodeErr == nil {
+			return nil, closeErr
+		}
+		if decodeErr != nil {
+			return nil, decodeErr
 		}
 		out[*chainID] = delegates
 	}
@@ -133,7 +136,7 @@ func writeAll(baseDir string, chains map[tz.ChainID]delegateMap) error {
 
 func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) error {
 	dir := filepath.Join(baseDir, watermarkDir)
-	if err := os.MkdirAll(dir, 0770); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
 
