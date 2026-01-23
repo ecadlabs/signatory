@@ -491,7 +491,7 @@ func TestProofOfPossession(t *testing.T) {
 				Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
 				Watermark: watermark.Ignore{},
 				VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
-					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: priv.String()}}, "Mock"), nil
+					return memory.NewUnparsed([]*memory.UnparsedKey{{Data: c.privKey}}, "Mock"), nil
 				}),
 				Policy: hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*signatory.PublicKeyPolicy]{{Key: pk.Hash(), Val: &signatory.PublicKeyPolicy{
 					AllowedRequests:        []string{},
