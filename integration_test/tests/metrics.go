@@ -67,15 +67,11 @@ func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics
 	assert.Equal(t, after.Error, before.Error)
 }
 
-func AssertMetricsFailure(t *testing.T, before Metrics, after Metrics) {
-	AssertMetricsSuccessUnchanged(t, before, after)
-	assert.Greater(t, after.Error, before.Error)
-}
-
-func AssertMetricsSuccessUnchanged(t *testing.T, before Metrics, after Metrics) {
+func AssertMetricsUnchanged(t *testing.T, before Metrics, after Metrics) {
 	assert.Equal(t, after.Count, before.Count)
 	assert.Equal(t, after.Sum, before.Sum)
 	assert.Equal(t, after.SigningOpsTotal, before.SigningOpsTotal)
+	assert.Equal(t, after.Error, before.Error)
 }
 
 func parseValue(line string) string {

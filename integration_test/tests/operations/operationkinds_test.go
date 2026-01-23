@@ -203,8 +203,8 @@ func TestOperationAllowPolicy(t *testing.T) {
 			assert.Contains(t, string(out), "`"+test.kind+"' is not allowed")
 
 			metrics1 := integrationtest.GetMetrics(test.account, test.kind, test.op, vault, "")
-			//this should be changed to AssertMetricsFailure
-			integrationtest.AssertMetricsSuccessUnchanged(t, metrics0, metrics1)
+			// Policy denials happen before vault is called, so error counter doesn't increment
+			integrationtest.AssertMetricsUnchanged(t, metrics0, metrics1)
 
 			//finally, configure the operation being tested as the only one allowed and test it is successful
 			c.Read()
