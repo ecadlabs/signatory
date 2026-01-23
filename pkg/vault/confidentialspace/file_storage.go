@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"iter"
 	"os"
 	"slices"
@@ -19,6 +20,10 @@ type fileStorage struct {
 }
 
 func newFileStorage(path string) (*fileStorage, error) {
+	if err := utils.CheckFileWritable(path); err != nil {
+		return nil, fmt.Errorf("(ConfidentialSpace/file storage): %w", err)
+	}
+
 	buf, err := os.ReadFile(path)
 	if err != nil || len(buf) == 0 {
 		if err != nil && !errors.Is(err, os.ErrNotExist) {

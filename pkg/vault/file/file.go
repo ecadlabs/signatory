@@ -9,6 +9,7 @@ import (
 
 	config "github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/errors"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/ecadlabs/signatory/pkg/vault/memory"
 	"gopkg.in/yaml.v3"
@@ -51,6 +52,10 @@ func init() {
 			return nil, errors.New("(File): config is missing")
 		}
 		path = os.ExpandEnv(path)
+
+		if err := utils.CheckFileReadable(path); err != nil {
+			return nil, fmt.Errorf("(File): %w", err)
+		}
 
 		content, err := os.ReadFile(path)
 		if err != nil {

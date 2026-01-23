@@ -10,6 +10,7 @@ import (
 
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	"github.com/hashicorp/vault/api"
 	auth "github.com/hashicorp/vault/api/auth/approle"
@@ -71,6 +72,23 @@ func New(ctx context.Context, cfg *Config) (*Vault, error) {
 		return nil, fmt.Errorf("unable to parse vault address: %w", err)
 	}
 	if parsedurl.Scheme == "https" {
+		// Check TLS certificate files are readable before configuring TLS
+		if cfg.TLSCaCert != "" {
+			if err := utils.CheckFileReadable(cfg.TLSCaCert); err != nil {
+				return nil, fmt.Errorf("(HashicorpVault): TLS CA certificate file: %w", err)
+			}
+		}
+		if cfg.TLSClientCert != "" {
+			if err := utils.CheckFileReadable(cfg.TLSClientCert); err != nil {
+				return nil, fmt.Errorf("(HashicorpVault): TLS client certificate file: %w", err)
+			}
+		}
+		if cfg.TLSClientKey != "" {
+			if err := utils.CheckFileReadable(cfg.TLSClientKey); err != nil {
+				return nil, fmt.Errorf("(HashicorpVault): TLS client key file: %w", err)
+			}
+		}
+
 		tlsCfg := api.TLSConfig{
 			CACert:     cfg.TLSCaCert,
 			ClientCert: cfg.TLSClientCert,
