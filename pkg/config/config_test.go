@@ -175,7 +175,7 @@ vaults:
 tezos:
   edpkv45regue1bWtuHnCgLU8xWKLwa9qRqv4gimgJKro4LSc3C5VjV:
 `,
-		expectParseError: "gotez: unknown public key prefix",
+		expectParseError: "gotez: invalid public key hash payload length",
 	},
 	{
 		title: "NoBaseDir",
