@@ -41,16 +41,16 @@ const (
 // Config contains Google Cloud KMS backend configuration
 type Config struct {
 	gcp.Config `yaml:",inline"`
-	Project    string        `yaml:"project" validate:"required"`
-	Location   string        `yaml:"location" validate:"required"`
-	KeyRing    string        `yaml:"key_ring" validate:"required"`
-	Timeout    time.Duration `yaml:"timeout"`     // Per-request timeout (default: 10s)
-	MaxRetries *int          `yaml:"max_retries"` // Max retry attempts after initial try (default: 3, set to 0 to disable retries)
+	Project    string `yaml:"project" validate:"required"`
+	Location   string `yaml:"location" validate:"required"`
+	KeyRing    string `yaml:"key_ring" validate:"required"`
+	Timeout    int    `yaml:"timeout"`     // Per-request timeout in seconds (default: 10s)
+	MaxRetries *int   `yaml:"max_retries"` // Max retry attempts after initial try (default: 3, set to 0 to disable retries)
 }
 
 func (c *Config) getTimeout() time.Duration {
 	if c.Timeout > 0 {
-		return c.Timeout
+		return time.Duration(c.Timeout) * time.Second
 	}
 	return defaultTimeout
 }
