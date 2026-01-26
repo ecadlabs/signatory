@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/signatory"
 	"github.com/ecadlabs/signatory/pkg/signatory/watermark"
+	"github.com/ecadlabs/signatory/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +46,9 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 			// cmd always points to the top level command!!!
 			conf := config.Default()
 			if configFile != "" {
+				if err := utils.CheckFileReadable(configFile); err != nil {
+					return fmt.Errorf("CRITICAL: Config file permission error: %w", err)
+				}
 				if err := conf.Read(configFile); err != nil {
 					return err
 				}
@@ -53,8 +58,9 @@ func NewRootCommand(c *Context, name string) *cobra.Command {
 				conf.BaseDir = baseDir
 			}
 			conf.BaseDir = os.ExpandEnv(conf.BaseDir)
-			if err := os.MkdirAll(conf.BaseDir, 0770); err != nil {
-				return err
+			// Check BaseDir is writable (required for watermark files)
+			if err := utils.CheckDirWritable(conf.BaseDir); err != nil {
+				return fmt.Errorf("CRITICAL: Base directory permission error: %w", err)
 			}
 
 			validate := config.Validator()

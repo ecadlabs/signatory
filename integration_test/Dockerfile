@@ -24,6 +24,16 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     rm cloudhsm-pkcs11_latest_u22.04_arm64.deb; \
     fi
 ENV PATH="/opt/cloudhsm/bin:${PATH}"
+
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} signatory && \
+    useradd -u ${UID} -g signatory -m signatory && \
+    mkdir -p /var/lib/signatory /etc/signatory && \
+    chown -R signatory:signatory /var/lib/signatory /etc/signatory
+
 COPY --from=builder /signatory /bin/signatory
 COPY --from=builder /signatory-cli /bin/signatory-cli
+
+USER signatory
 ENTRYPOINT ["/bin/signatory"]

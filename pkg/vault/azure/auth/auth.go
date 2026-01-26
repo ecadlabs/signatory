@@ -22,6 +22,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/pkcs12"
 	"golang.org/x/oauth2"
+
+	"github.com/ecadlabs/signatory/pkg/utils"
 )
 
 const (
@@ -163,18 +165,27 @@ func (c *Config) jwtTokenSource(ctx context.Context, scopes []string) (oauth2.To
 	)
 
 	if c.ClientPKCS12Certificate != "" {
+		if err := utils.CheckFileReadable(c.ClientPKCS12Certificate); err != nil {
+			return nil, fmt.Errorf("(Azure): PKCS12 certificate file: %w", err)
+		}
 		pk, thumbprint, err = parsePKCS12Certificate(c.ClientPKCS12Certificate, c.PrivateKeyPassword)
 		if err != nil {
 			return nil, err
 		}
 
 	} else {
+		if err := utils.CheckFileReadable(c.PrivateKey); err != nil {
+			return nil, fmt.Errorf("(Azure): private key file: %w", err)
+		}
 		pk, err = parsePrivateKey(c.PrivateKey, c.PrivateKeyPassword)
 		if err != nil {
 			return nil, err
 		}
 
 		if c.ClientCertificate != "" {
+			if err := utils.CheckFileReadable(c.ClientCertificate); err != nil {
+				return nil, fmt.Errorf("(Azure): certificate file: %w", err)
+			}
 			thumbprint, err = getThumbprint(c.ClientCertificate)
 			if err != nil {
 				return nil, err

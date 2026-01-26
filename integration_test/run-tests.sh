@@ -132,6 +132,11 @@ docker build \
 echo ""
 echo "=== Starting test stack ==="
 docker compose down 2>/dev/null || true
+
+# Clean watermarks from previous runs
+echo "Cleaning watermarks from previous runs..."
+rm -rf .watermarks/watermark_v2 2>/dev/null || true
+
 docker compose up -d --wait
 
 # Run the tests

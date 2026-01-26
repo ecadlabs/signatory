@@ -17,7 +17,16 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
 # Add CloudHSM to PATH
 ENV PATH="/opt/cloudhsm/bin:${PATH}"
 
+# Create non-root user with configurable UID/GID
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} signatory && \
+    useradd -u ${UID} -g signatory -m signatory && \
+    mkdir -p /var/lib/signatory /etc/signatory && \
+    chown -R signatory:signatory /var/lib/signatory /etc/signatory
+
 COPY ./signatory /bin
 COPY ./signatory-cli /bin
 
+USER signatory
 ENTRYPOINT ["/bin/signatory"]
