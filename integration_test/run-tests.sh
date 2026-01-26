@@ -139,6 +139,13 @@ rm -rf .watermarks/watermark_v2 2>/dev/null || true
 
 docker compose up -d --wait
 
+# Wait for tezos-client init.sh to complete
+echo "Waiting for tezos-client initialization..."
+until docker logs tezos-client 2>&1 | grep -q "All keys imported successfully!"; do
+    sleep 2
+done
+echo "tezos-client initialized"
+
 # Run the tests
 echo ""
 echo "=== Running tests ==="
