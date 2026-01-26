@@ -41,6 +41,8 @@ Below are the configuration fields which are required for Signatory.
 |project|string|✅|Project name|
 |location|string|✅|Location|
 |key_ring|string|✅|Key ring name|
+|timeout|int|OPTIONAL|Per-request timeout in seconds for signing operations (default: 10). Example: 15, 60|
+|max_retries|int|OPTIONAL|Maximum retry attempts after the initial try for transient errors like deadline exceeded (default: 3, set to 0 to disable retries).|
 
 ## **Key Management**
 
@@ -131,8 +133,8 @@ Users can generate a private key in an air gap environment and then import it in
 % ./signatory-cli import -c signatory.yaml --vault kms
 
 INFO[0000] Initializing vault                            vault=cloudkms vault_name=kms
-Enter secret key: 
-Enter Password: 
+Enter secret key:
+Enter Password:
 Enter Password: INFO[0002] Requesting import operation                   pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
 INFO[0008] Successfully imported                         key_id=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring/cryptoKeys/signatory-imported-215FwcXxhLdlr9IYwzA31vwANmy/cryptoKeyVersions/1 pkh=tz3be5v4ZWL3zQYUZoLWJQy8P3H6RJryVVXn vault=CloudKMS vault_name=projects/signatory-testing/locations/europe-north1/keyRings/sign-ring
 ```
