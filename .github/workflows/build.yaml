@@ -132,7 +132,7 @@ jobs:
         run: >
          docker pull $IMAGE;
          docker rm -f signatory || true;
-         docker run -d --name signatory --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
+         docker run -d --name signatory --device /dev/vsock --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   integration-tests:
