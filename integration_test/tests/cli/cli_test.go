@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"regexp"
 	"testing"
 
 	integrationtest "github.com/ecadlabs/signatory/integration_test/tests"
@@ -11,9 +12,32 @@ import (
 func TestCliList(t *testing.T) {
 	out, err := integrationtest.SignatoryCli("list")
 	assert.Nil(t, err)
-	for _, pkh := range integrationtest.GetAllTestPKHs() {
-		require.Contains(t, string(out), pkh)
+
+	pkhPattern := regexp.MustCompile(`Public Key Hash: +(tz\w+)`)
+	pkhMatches := pkhPattern.FindAllStringSubmatch(string(out), -1)
+	require.NotEmpty(t, pkhMatches, "output should contain 'Public Key Hash:' entries")
+
+	extractedPKHs := make(map[string]bool)
+	for _, match := range pkhMatches {
+		extractedPKHs[match[1]] = true
 	}
+	for _, pkh := range integrationtest.GetAllTestPKHs() {
+		require.True(t, extractedPKHs[pkh], "expected PKH %s not found in output", pkh)
+	}
+
+	pkPattern := regexp.MustCompile(`Public Key: +(\w+)`)
+	pkMatches := pkPattern.FindAllStringSubmatch(string(out), -1)
+	require.NotEmpty(t, pkMatches, "output should contain 'Public Key:' entries")
+
+	extractedPKs := make(map[string]bool)
+	for _, match := range pkMatches {
+		extractedPKs[match[1]] = true
+	}
+	for _, pk := range integrationtest.GetAllTestPKs() {
+		require.True(t, extractedPKs[pk], "expected PK %s not found in output", pk)
+	}
+
+	require.Equal(t, len(pkhMatches), len(pkMatches), "number of PKH entries should match PK entries")
 }
 
 func TestCliUsage(t *testing.T) {

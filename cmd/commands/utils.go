@@ -11,6 +11,7 @@ import (
 
 const listTemplateSrc = `{{range . -}}
 Public Key Hash:           {{.Hash}}
+Public Key:                {{pubKey .KeyReference}}
 Reference:                 {{keyRef .KeyReference}}
 Vault:                     {{.Vault.Name}}
 Active:                    {{.Active}}
@@ -24,6 +25,9 @@ Allow Proof of Possession: {{.AllowProofOfPossession}}
 
 var (
 	listTpl = template.Must(template.New("list").Funcs(template.FuncMap{
+		"pubKey": func(ref vault.KeyReference) string {
+			return ref.PublicKey().String()
+		},
 		"keyRef": func(ref vault.KeyReference) string {
 			if withID, ok := ref.(vault.WithID); ok {
 				return withID.ID()
