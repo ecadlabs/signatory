@@ -107,7 +107,7 @@ tezos:
     allow:
       generic:
         - update_consensus_key
-  
+
   # New tz4 consensus key
   tz4NewConsensusKeyHash:
     allow_proof_of_possession: true
@@ -176,7 +176,7 @@ tezos:
     allow:
       generic:
         - transaction  # multisig operations
-  
+
   # Multisig participant 2
   tz4Participant2Hash:
     allow_proof_of_possession: true
@@ -200,14 +200,14 @@ tezos:
       block:
       attestation:
       preattestation:
-  
+
   # Production baker - tz1 key (POP not applicable)
   tz1ProductionBaker2:
     allow:
       block:
       attestation:
       preattestation:
-  
+
   # New key being set up - temporary POP enabled
   tz4NewKeyBeingSetup:
     allow_proof_of_possession: true  # Temporary - will disable after reveal
@@ -280,8 +280,8 @@ Signatory implements per-key POP control rather than global control because:
 
 **Symptom:**
 ```
-ERROR Proof of possession is not allowed. Proof of possession is required for key reveals, 
-consensus key updates, and companion key registration. To enable, set 
+ERROR Proof of possession is not allowed. Proof of possession is required for key reveals,
+consensus key updates, and companion key registration. To enable, set
 'allow_proof_of_possession: true' in the config for this key.
 ```
 
@@ -317,7 +317,7 @@ WARN proof of possession is not supported for tz1YourKeyHash
 
 POP is only supported for BLS keys (tz4). If you're seeing this error/warning with a tz1, tz2, or tz3 key, POP is not applicable for that key type.
 
-**Solution:** 
+**Solution:**
 Remove `allow_proof_of_possession` from the configuration for non-tz4 keys:
 
 ```yaml
@@ -401,11 +401,10 @@ tezos:
       block:
       attestation:
       preattestation:
-      attestation_with_dal:
       generic:
         - transaction
         - delegation
-  
+
   # New tz4 key being set up (POP temporarily enabled)
   tz4NewKey:
     allow_proof_of_possession: true
@@ -413,7 +412,7 @@ tezos:
     allow:
       generic:
         - reveal
-  
+
   # Regular tz1 key (POP not applicable)
   tz1RegularKey:
     log_payloads: true
