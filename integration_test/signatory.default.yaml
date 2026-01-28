@@ -56,8 +56,8 @@ tezos:
     log_payloads: true
     allow:
       block:
-      endorsement:
-      preendorsement:
+      attestation:
+      preattestation:
 
   #used for authorized_key tests
   tz1QgHGuotVTCmYtA2Mr83FdiWLbwKqUvdnp:
@@ -69,8 +69,8 @@ tezos:
         - delegation
         - transaction
       block:
-      endorsement:
-      preendorsement:
+      attestation:
+      preattestation:
 
   #tz1
   tz1dSrM2D7XcWPhdZpDxzNkmVLvdWSxApXaR:
