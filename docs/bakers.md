@@ -148,19 +148,22 @@ vaults:
     driver: file
     config:
       file: /etc/secret.json
-      
+
   tezos:
   tz1YourBakerAddress:
     log_payloads: true
     allow:
       block:
-      attestation:        # Modern terminology (was "endorsement") 
+      attestation:        # Modern terminology (was "endorsement")
       preattestation:     # Modern terminology (was "preendorsement")
       generic:
         - reveal
         - delegation
         - transaction
         - stake
+        - unstake
+        - finalize_unstake
+        - set_delegate_parameters
 ```
 
 Start Signatory:
@@ -249,7 +252,7 @@ tezos:
       attestation:       # Tag 41 - all attestations
       preattestation:    # Tag 40
 
-  # Companion key (tz4) 
+  # Companion key (tz4)
   tz4YourCompanionKey:
     log_payloads: true
     allow:
@@ -282,7 +285,7 @@ octez-baker run with local node ~/.tezos-node \
 
 ### What to Expect
 
-**Consensus key** signs whenever baker has attestation rights (regardless of DAL).  
+**Consensus key** signs whenever baker has attestation rights (regardless of DAL).
 **Companion key** signs only when baker has attestation rights **AND** DAL content is available.
 
 Both keys receive **identical tag 41 bytes** and decode to `request=attestation` in Signatory logs. DAL participation happens through weighted BLS aggregation after signing, not through different operation types.
@@ -328,7 +331,7 @@ octez-baker run with local node ~/.tezos-node \
 **Agnostic Accuser:**
 
 ```bash
-# Use the agnostic accuser 
+# Use the agnostic accuser
 octez-accuser run
 
 # No need for protocol-specific accusers anymore
