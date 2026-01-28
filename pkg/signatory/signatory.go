@@ -392,8 +392,18 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	digest := crypt.DigestFunc(req.Message)
 
 	signFunc := func(ctx context.Context, message []byte, key vault.KeyReference) (crypt.Signature, error) {
-		if err = s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest); err != nil {
-			err = errors.Wrap(err, http.StatusConflict)
+		wmOpts := metrics.WatermarkInterceptorOptions{
+			Backend:     s.config.Watermark.Backend(),
+			RequestType: msg.SignRequestKind(),
+			TargetFunc: func() (bool, error) {
+				err := s.config.Watermark.IsSafeToSign(ctx, req.PublicKeyHash, msg, &digest)
+				return err == nil, err
+			},
+		}
+		_, wmErr := metrics.WatermarkInterceptor(&wmOpts)
+
+		if wmErr != nil {
+			err = errors.Wrap(wmErr, http.StatusConflict)
 			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), msg.(request.WithWatermark).GetChainID().String(), err.Error())
 			l.Error(err)
 			return nil, err

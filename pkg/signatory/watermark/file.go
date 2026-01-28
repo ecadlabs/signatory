@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/ecadlabs/signatory/pkg/utils"
 	log "github.com/sirupsen/logrus"
@@ -39,10 +40,10 @@ func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
 	dir := filepath.Join(baseDir, watermarkDir)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, err
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil // Not an error, just no data
 		}
-		return nil, nil
+		return nil, err
 	}
 
 	out := make(map[tz.ChainID]delegateMap)
@@ -76,16 +77,24 @@ func tryLoad(baseDir string) (map[tz.ChainID]delegateMap, error) {
 }
 
 func NewFileWatermark(baseDir string) (*File, error) {
-
 	wm := File{
 		baseDir: baseDir,
 	}
+
 	var err error
-	if wm.mem.chains, err = tryLoad(baseDir); err != nil {
+	opts := metrics.FileOperationInterceptorOptions[map[tz.ChainID]delegateMap]{
+		Operation: "read",
+		TargetFunc: func() (map[tz.ChainID]delegateMap, error) {
+			return tryLoad(baseDir)
+		},
+	}
+	wm.mem.chains, err = metrics.FileOperationInterceptor(&opts)
+	if err != nil {
 		return nil, err
 	}
+
 	if wm.mem.chains != nil {
-		// load ok, give a warning if legasy data still exist
+		// load ok, give a warning if legacy data still exist
 		if ok, err := checkV0exist(baseDir); err == nil {
 			if ok {
 				log.Warnf("Watermark storage directory %s is deprecated and must be removed manually", v0WatermarkDir)
@@ -125,16 +134,7 @@ func NewFileWatermark(baseDir string) (*File, error) {
 	return &wm, nil
 }
 
-func writeAll(baseDir string, chains map[tz.ChainID]delegateMap) error {
-	for chain, data := range chains {
-		if err := writeWatermarkData(baseDir, data, &chain); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) error {
+func write(baseDir string, data delegateMap, chain *tz.ChainID) error {
 	dir := filepath.Join(baseDir, watermarkDir)
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
@@ -147,6 +147,27 @@ func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) err
 
 	path := filepath.Join(dir, fmt.Sprintf("%s.json", chain.String()))
 	return utils.WriteRename(path, "watermark", buf)
+}
+
+func writeAll(baseDir string, chains map[tz.ChainID]delegateMap) error {
+	for chain, data := range chains {
+		if err := writeWatermarkData(baseDir, data, &chain); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) error {
+	opts := metrics.FileOperationInterceptorOptions[bool]{
+		Operation: "write",
+		TargetFunc: func() (bool, error) {
+			err := write(baseDir, data, chain)
+			return err == nil, err
+		},
+	}
+	_, err := metrics.FileOperationInterceptor(&opts)
+	return err
 }
 
 func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
@@ -166,7 +187,7 @@ func (f *File) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req co
 }
 
 func init() {
-	RegisterWatermark("file", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+	RegisterWatermark("file", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (watermarkImpl, error) {
 		return NewFileWatermark(global.GetBaseDir())
 	})
 }

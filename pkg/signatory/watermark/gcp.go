@@ -121,7 +121,7 @@ func (f *GCP) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 }
 
 func init() {
-	RegisterWatermark("gcp", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+	RegisterWatermark("gcp", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (watermarkImpl, error) {
 		var config GCPConfig
 		if node != nil {
 			if err := node.Decode(&config); err != nil {

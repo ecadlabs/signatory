@@ -49,7 +49,7 @@ Signatory supports three watermark backend types, each suited for different depl
 
 ### AWS DynamoDB (`aws`)
 - **Best for**: Production environments, especially cloud-based or high-availability setups
-- **Pros**: 
+- **Pros**:
   - Persistent storage independent of the Signatory instance
   - Supports concurrent access with strong consistency
   - Enables multiple Signatory instances to safely share signing keys
@@ -57,7 +57,7 @@ Signatory supports three watermark backend types, each suited for different depl
 
 ### Google Firestore (`gcp`)
 - **Best for**: Production environments, especially cloud-based or high-availability setups
-- **Pros**: 
+- **Pros**:
   - Persistent storage independent of the Signatory instance
   - Supports concurrent access with strong consistency
   - Enables multiple Signatory instances to safely share signing keys
@@ -137,4 +137,62 @@ signatory serve --log debug -c /path/to/config.yaml
 
 Valid log levels are: `error`, `warn`, `info`, `debug`, `trace`
 
-In debug mode, Signatory logs each watermark check and update, making it easier to diagnose potential issues. 
+In debug mode, Signatory logs each watermark check and update, making it easier to diagnose potential issues.
+
+## Prometheus Metrics
+
+Signatory exposes Prometheus metrics for monitoring watermark operations. These metrics help operators track performance, detect issues, and analyze behavior across different backend implementations.
+
+### Core Metrics (All Backends)
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `watermark_operations_total` | Counter | `result`, `backend`, `request_type` | Total number of watermark operations |
+| `watermark_operation_duration_seconds` | Histogram | `backend` | Watermark operation duration in seconds |
+| `watermark_rejection_total` | Counter | `address`, `operation_type`, `chain_id`, `reason` | Total count of operations rejected due to watermark protection |
+
+**Label values:**
+- `result`: `success`, `rejected`
+- `backend`: `file`, `mem`, `aws`, `gcp`, `ignore`
+- `request_type`: The type of signing request (e.g., `block`, `attestation`, `preendorsement`)
+
+### File Backend Metrics
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `watermark_file_operations_total` | Counter | `operation`, `result` | Total number of file I/O operations |
+| `watermark_file_latency_seconds` | Histogram | `operation` | File I/O latency in seconds |
+
+**Label values:**
+- `operation`: `read`, `write`
+- `result`: `success`, `error`
+
+### AWS DynamoDB Backend Metrics
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `watermark_aws_dynamodb_operations_total` | Counter | `operation`, `table_name`, `result` | Total number of DynamoDB operations |
+| `watermark_aws_dynamodb_latency_seconds` | Histogram | `operation`, `table_name` | DynamoDB operation latency in seconds |
+| `watermark_aws_dynamodb_errors_total` | Counter | `error_type`, `table_name`, `operation` | Total number of DynamoDB errors |
+
+**Label values:**
+- `operation`: `put`, `create_table`
+- `result`: `success`, `error`
+- `error_type`: AWS error code (e.g., `ConditionalCheckFailedException`)
+
+### Example Prometheus Queries
+
+**Watermark rejection rate:**
+```promql
+rate(watermark_operations_total{result="rejected"}[5m])
+```
+
+**Average watermark operation duration by backend:**
+```promql
+histogram_quantile(0.95, rate(watermark_operation_duration_seconds_bucket[5m]))
+```
+
+**DynamoDB error rate:**
+```promql
+rate(watermark_aws_dynamodb_errors_total[5m])
+```
