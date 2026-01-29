@@ -14,22 +14,14 @@ func (o WatermarkInterceptorOptions) GetTargetFunc() func() (bool, error) {
 	return o.TargetFunc
 }
 
-type FileOperationInterceptorOptions[R any] struct {
-	Operation  string
+type IOInterceptorOptions[R any] struct {
+	Backend    string
+	Operation  string // "read", "write", "create"
+	TableName  string // table/collection name for databases, "" for file backend
 	TargetFunc func() (R, error)
 }
 
-func (o FileOperationInterceptorOptions[R]) GetTargetFunc() func() (R, error) {
-	return o.TargetFunc
-}
-
-type DynamoDBInterceptorOptions struct {
-	Operation  string
-	TableName  string
-	TargetFunc func() (bool, error)
-}
-
-func (o DynamoDBInterceptorOptions) GetTargetFunc() func() (bool, error) {
+func (o IOInterceptorOptions[R]) GetTargetFunc() func() (R, error) {
 	return o.TargetFunc
 }
 
@@ -46,34 +38,21 @@ var (
 		Buckets: prometheus.ExponentialBuckets(0.001, 2, 10), // 1ms to ~1s
 	}, []string{"backend"})
 
-	// File backend specific metrics
-	watermarkFileOpsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "watermark_file_operations_total",
-		Help: "Total number of file watermark backend I/O operations",
-	}, []string{"operation", "result"})
+	watermarkIOOpsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "watermark_io_operations_total",
+		Help: "Total number of watermark backend I/O operations",
+	}, []string{"backend", "operation", "table_name", "result"})
 
-	watermarkFileLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "watermark_file_latency_seconds",
-		Help:    "File watermark backend I/O latency in seconds",
-		Buckets: prometheus.ExponentialBuckets(0.0001, 2, 12), // 0.1ms to ~0.4s
-	}, []string{"operation"})
+	watermarkIOLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "watermark_io_latency_seconds",
+		Help:    "Watermark backend I/O latency in seconds",
+		Buckets: prometheus.ExponentialBuckets(0.0001, 2, 14), // 0.1ms to ~1.6s
+	}, []string{"backend", "operation", "table_name"})
 
-	// AWS DynamoDB specific metrics
-	watermarkDynamoDBOpsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "watermark_aws_dynamodb_operations_total",
-		Help: "Total number of AWS DynamoDB watermark operations",
-	}, []string{"operation", "table_name", "result"})
-
-	watermarkDynamoDBLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "watermark_aws_dynamodb_latency_seconds",
-		Help:    "AWS DynamoDB watermark operation latency in seconds",
-		Buckets: prometheus.ExponentialBuckets(0.001, 2, 12), // 1ms to ~4s
-	}, []string{"operation", "table_name"})
-
-	watermarkDynamoDBErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "watermark_aws_dynamodb_errors_total",
-		Help: "Total number of AWS DynamoDB watermark errors",
-	}, []string{"error_type", "table_name", "operation"})
+	watermarkIOErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "watermark_io_errors_total",
+		Help: "Total number of watermark backend I/O errors",
+	}, []string{"backend", "error_type", "table_name", "operation"})
 
 	WatermarkInterceptor = InterceptorFactory(
 		func(opt *WatermarkInterceptorOptions) *prometheus.Timer {
@@ -92,12 +71,12 @@ var (
 	)
 )
 
-func DynamoDBInterceptor(opt *DynamoDBInterceptorOptions) (bool, error) {
+func IOInterceptor[R any](opt *IOInterceptorOptions[R]) (R, error) {
 	interceptor := InterceptorFactory(
-		func(opt *DynamoDBInterceptorOptions) *prometheus.Timer {
-			return prometheus.NewTimer(watermarkDynamoDBLatency.WithLabelValues(opt.Operation, opt.TableName))
+		func(opt *IOInterceptorOptions[R]) *prometheus.Timer {
+			return prometheus.NewTimer(watermarkIOLatency.WithLabelValues(opt.Backend, opt.Operation, opt.TableName))
 		},
-		func(opt *DynamoDBInterceptorOptions, state *prometheus.Timer, err error) {
+		func(opt *IOInterceptorOptions[R], state *prometheus.Timer, err error) {
 			if state != nil {
 				state.ObserveDuration()
 			}
@@ -105,42 +84,20 @@ func DynamoDBInterceptor(opt *DynamoDBInterceptorOptions) (bool, error) {
 			if err != nil {
 				result = "error"
 			}
-			watermarkDynamoDBOpsTotal.WithLabelValues(opt.Operation, opt.TableName, result).Inc()
+			watermarkIOOpsTotal.WithLabelValues(opt.Backend, opt.Operation, opt.TableName, result).Inc()
 		},
 	)
 	return interceptor(opt)
 }
 
-func FileOperationInterceptor[R any](opt *FileOperationInterceptorOptions[R]) (R, error) {
-	interceptor := InterceptorFactory(
-		func(opt *FileOperationInterceptorOptions[R]) *prometheus.Timer {
-			return prometheus.NewTimer(watermarkFileLatency.WithLabelValues(opt.Operation))
-		},
-		func(opt *FileOperationInterceptorOptions[R], state *prometheus.Timer, err error) {
-			if state != nil {
-				state.ObserveDuration()
-			}
-			result := "success"
-			if err != nil {
-				result = "error"
-			}
-			watermarkFileOpsTotal.WithLabelValues(opt.Operation, result).Inc()
-		},
-	)
-	return interceptor(opt)
+func RecordIOError(backend, errorType, tableName, operation string) {
+	watermarkIOErrors.WithLabelValues(backend, errorType, tableName, operation).Inc()
 }
 
-func RecordDynamoDBError(errorType, tableName, operation string) {
-	watermarkDynamoDBErrors.WithLabelValues(errorType, tableName, operation).Inc()
-}
-
-// RegisterHandler register metrics handler
 func init() {
 	prometheus.MustRegister(watermarkOpsTotal)
 	prometheus.MustRegister(watermarkOpDuration)
-	prometheus.MustRegister(watermarkFileOpsTotal)
-	prometheus.MustRegister(watermarkFileLatency)
-	prometheus.MustRegister(watermarkDynamoDBOpsTotal)
-	prometheus.MustRegister(watermarkDynamoDBLatency)
-	prometheus.MustRegister(watermarkDynamoDBErrors)
+	prometheus.MustRegister(watermarkIOOpsTotal)
+	prometheus.MustRegister(watermarkIOLatency)
+	prometheus.MustRegister(watermarkIOErrors)
 }

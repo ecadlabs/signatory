@@ -98,7 +98,7 @@ func (a *AWS) createTable(ctx context.Context) (bool, error) {
 			log.Infof("DynamoDB watermark backend using existing table '%s'", tableName)
 			return true, nil
 		}
-		metrics.RecordDynamoDBError(serr.ErrorCode(), tableName, "create_table")
+		metrics.RecordIOError("aws", serr.ErrorCode(), tableName, "create")
 		return false, err
 	}
 	log.Infof("DynamoDB watermark backend created table '%s'", tableName)
@@ -114,12 +114,13 @@ func (a *AWS) createTable(ctx context.Context) (bool, error) {
 
 func (a *AWS) maybeCreateTable(ctx context.Context) error {
 	tableName := a.cfg.table()
-	opts := metrics.DynamoDBInterceptorOptions{
-		Operation:  "create_table",
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:    "aws",
+		Operation:  "create",
 		TableName:  tableName,
 		TargetFunc: func() (bool, error) { return a.createTable(ctx) },
 	}
-	_, err := metrics.DynamoDBInterceptor(&opts)
+	_, err := metrics.IOInterceptor(&opts)
 	return err
 }
 
@@ -156,9 +157,9 @@ func (a *AWS) putItem(ctx context.Context, input *dynamodb.PutItemInput) (bool, 
 				log.Error(err)
 				return false, ErrWatermark
 			}
-			metrics.RecordDynamoDBError(serr.ErrorCode(), tableName, "put")
+			metrics.RecordIOError("aws", serr.ErrorCode(), tableName, "write")
 		} else {
-			metrics.RecordDynamoDBError("unknown", tableName, "put")
+			metrics.RecordIOError("aws", "unknown", tableName, "write")
 		}
 		log.Error(err)
 		return false, ErrWatermark
@@ -196,12 +197,13 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 		},
 	}
 
-	opts := metrics.DynamoDBInterceptorOptions{
-		Operation:  "put",
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:    "aws",
+		Operation:  "write",
 		TableName:  tableName,
 		TargetFunc: func() (bool, error) { return a.putItem(ctx, putItemInput) },
 	}
-	_, err = metrics.DynamoDBInterceptor(&opts)
+	_, err = metrics.IOInterceptor(&opts)
 	return err
 }
 

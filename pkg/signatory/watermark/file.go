@@ -82,13 +82,15 @@ func NewFileWatermark(baseDir string) (*File, error) {
 	}
 
 	var err error
-	opts := metrics.FileOperationInterceptorOptions[map[tz.ChainID]delegateMap]{
+	opts := metrics.IOInterceptorOptions[map[tz.ChainID]delegateMap]{
+		Backend:   "file",
 		Operation: "read",
+		TableName: "",
 		TargetFunc: func() (map[tz.ChainID]delegateMap, error) {
 			return tryLoad(baseDir)
 		},
 	}
-	wm.mem.chains, err = metrics.FileOperationInterceptor(&opts)
+	wm.mem.chains, err = metrics.IOInterceptor(&opts)
 	if err != nil {
 		return nil, err
 	}
@@ -159,14 +161,16 @@ func writeAll(baseDir string, chains map[tz.ChainID]delegateMap) error {
 }
 
 func writeWatermarkData(baseDir string, data delegateMap, chain *tz.ChainID) error {
-	opts := metrics.FileOperationInterceptorOptions[bool]{
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:   "file",
 		Operation: "write",
+		TableName: "",
 		TargetFunc: func() (bool, error) {
 			err := write(baseDir, data, chain)
 			return err == nil, err
 		},
 	}
-	_, err := metrics.FileOperationInterceptor(&opts)
+	_, err := metrics.IOInterceptor(&opts)
 	return err
 }
 
