@@ -39,7 +39,7 @@ If you import an encrypted key, the `signatory-cli` command will prompt you for 
 ```bash
 % ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
-Enter secret key: 
+Enter secret key:
 Enter Password:
 INFO[0002] Requesting import operation                   pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0007] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/signatory-imported-2CsWhgGqeRdkEiA0LFm3WyN5DxS/9d2266b388734ef0b14203e0943465d7" pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
@@ -54,8 +54,8 @@ Name of the key can also be provided with the import command.
 ```bash
 % ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure -o "name":test-name
 INFO[0000] Initializing vault                            vault=azure vault_name=azure
-Enter secret key: 
-Enter Password: 
+Enter secret key:
+Enter Password:
 INFO[0003] Requesting import operation                   pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 INFO[0009] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/test-name/f503f20b309e4c8ea57982bd9736c412" pkh=tz2PpBJj8utBU3Nxu7vexbdJVTcRxYfkfqcV vault=Azure vault_name="https://forimport.vault.azure.net/"
 
@@ -66,6 +66,48 @@ Vault:              Azure
 ID:                 https://forimport.vault.azure.net/keys/test-name/f503f20b309e4c8ea57982bd9736c412
 Active:             false
 ```
+
+## Security Best Practices
+
+**Important:** When importing private keys, avoid exposing them in your shell history. Private keys passed as command-line arguments may be stored in your shell history file, which poses a security risk.
+
+### Recommended: Import from a File
+
+The safest method is to use the `-f/--from` flag to import keys from a PEM file. This avoids exposing the key in shell history entirely.
+
+```bash
+% ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure -f /path/to/key.pem
+INFO[0000] Initializing vault                            vault=azure vault_name=azure
+Enter Password:
+INFO[0002] Requesting import operation                   pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
+INFO[0007] Successfully imported                         key_id="https://forimport.vault.azure.net/keys/signatory-imported-2CsWhgGqeRdkEiA0LFm3WyN5DxS/9d2266b388734ef0b14203e0943465d7" pkh=tz3gxd1y7FdVJ81vzvuACcVjAc4ewXARQkLo vault=Azure vault_name="https://forimport.vault.azure.net/"
+```
+
+**Note:** Ensure the PEM file has appropriate file permissions (e.g., `chmod 600 /path/to/key.pem`) to restrict access.
+
+### Alternative: Prevent History Logging
+
+If you must use interactive prompts or pass keys directly, you can prevent the command from being saved to history by prefixing it with a space (requires `HISTCONTROL=ignoreboth` in your shell configuration):
+
+```bash
+%  ./signatory-cli import -c ./azure.yaml --base-dir ./ --vault azure edsk...
+```
+
+Note the leading space before the command. This is a shell-level workaround and requires your shell to be configured with `HISTCONTROL=ignoreboth`.
+
+### Cleanup: Remove from History
+
+If you accidentally entered a private key directly as a command-line argument, you should immediately remove it from your shell history:
+
+```bash
+# Remove the last command from history
+% history -d $(history 1)
+
+# Or using fc command
+% fc -d -1
+```
+
+**Warning:** This only removes the command from the current session's history. If your shell has already written to the history file, you may need to manually edit `~/.bash_history` or `~/.zsh_history` to fully remove the entry.
 
 ## Verifying the import operation using the list command
 

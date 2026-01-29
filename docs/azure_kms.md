@@ -266,7 +266,7 @@ client_certificate_thumbprint: 6B7DDE60582104C37600BB337555E7517F5B834C
 ## **Create EC-HSM key**
 
 ```sh
-az keyvault key create --curve {P-256, P-256K, P-384, P-521}                                     
+az keyvault key create --curve {P-256, P-256K, P-384, P-521}
                        --kty {EC, EC-HSM, RSA, RSA-HSM, oct, oct-HSM}]
                        --name
                        --vault-name
@@ -286,8 +286,8 @@ Public Key Hash:    tz3d6nYmR1LmSDsgJ463Kgd8EbH53pYnuv8S
 Vault:              Azure
 ID:                 https://sigy.vault.azure.net/keys/sigy-EC-HSM/77154e5846b4sdajbf78fs876dfse963b0b4bec
 Status:             ACTIVE
-Allowed Operations: [block endorsement generic]
-Allowed Kinds:      [endorsement transaction]
+Allowed Operations: [block attestation generic]
+Allowed Kinds:      [attestation transaction]
 ```
 
 **Update signatory.yaml config with PKH:**

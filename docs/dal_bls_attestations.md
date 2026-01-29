@@ -19,7 +19,7 @@ sidebar_label: DAL & BLS Attestations
 With **tz4 consensus + tz4 companion keys** and DAL enabled, when your baker has attestation rights AND DAL content is available:
 
 - **Request 1**: Consensus key receives tag 41 bytes (magic byte `0x13`, operation tag `0x29`)
-- **Request 2**: Companion key receives **identical** tag 41 bytes  
+- **Request 2**: Companion key receives **identical** tag 41 bytes
 - Baker performs weighted BLS aggregation using DAL content (outside the signed bytes)
 - Result sent to network
 
@@ -29,7 +29,7 @@ With **tz4 consensus + tz4 companion keys** and DAL enabled, when your baker has
 
 BLS keys use a **simplified attestation encoding** that contains only:
 - Level
-- Round  
+- Round
 - Block payload hash
 
 **The DAL content (`dal_content` bitset) is NOT included in the signed bytes.** It's used separately in the weighted BLS aggregation formula after both signatures are produced.
@@ -44,7 +44,7 @@ This is why both consensus and companion keys sign identical bytes - the DAL par
 
 **How it works:**
 
-1. **Individual baker level**: 
+1. **Individual baker level**:
    - Both consensus and companion keys sign **identical bytes** (tag 41: level + round + block_payload_hash)
    - DAL bitset is NOT in the signed bytes
 
@@ -52,7 +52,7 @@ This is why both consensus and companion keys sign identical bytes - the DAL par
    - **Consensus signatures**: Standard BLS aggregation (all sign same data)
    - **Companion signatures**: Weighted BLS aggregation where DAL bitset is the weight
    - Uses the formula: `aggregate_weighted(signature, dal_bitset)` for each baker
-   
+
 This allows each baker to attest different DAL slots while maintaining BLS signature efficiency.
 
 :::info BLS Mode Encoding
@@ -74,6 +74,9 @@ tezos:
         - delegation
         - transaction
         - stake
+        - unstake
+        - finalize_unstake
+        - set_delegate_parameters
 
   # Consensus key (tz4)
   tz4YourConsensusKey:
