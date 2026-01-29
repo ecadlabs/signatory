@@ -111,6 +111,11 @@ jobs:
     needs: publish
     runs-on: ec2
     steps:
+      - name: Checkout seccomp profile
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github/seccomp-vsock.json
+          sparse-checkout-cone-mode: false
       - name: Login to DockerHub
         uses: docker/login-action@v3
         if: "!startsWith(github.ref, 'refs/tags/v')"
@@ -130,11 +135,9 @@ jobs:
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
         run: >
-          curl -o seccomp.json https://raw.githubusercontent.com/moby/profiles/refs/heads/main/seccomp/default.json;
-          jq '(.syscalls[] | select(.names[0] == "socket" and .args[0].value == 40)) |= del(.args)' seccomp.json > seccomp-vsock.json;
           docker pull $IMAGE;
           docker rm -f signatory || true;
-          docker run -d --name signatory --device /dev/vsock --security-opt seccomp=seccomp-vsock.json --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
+          docker run -d --name signatory --device /dev/vsock --security-opt seccomp=.github/seccomp-vsock.json --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   integration-tests:
