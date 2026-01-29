@@ -217,19 +217,19 @@ jobs:
          mkdir -p ./.watermarks ./coverage;
          chmod 777 ./.watermarks ./coverage ./hashicerts;
          docker compose up -d --wait --pull always;
-         echo "Waiting for tezos-client initialization...";
+         echo "Waiting for account setup...";
          TIMEOUT=120;
          ELAPSED=0;
          until docker logs tezos-client 2>&1 | grep -q "All keys imported successfully!"; do
            if [ $ELAPSED -ge $TIMEOUT ]; then
-             echo "Timeout waiting for tezos-client initialization";
+             echo "Timeout waiting for account setup";
              docker logs tezos-client;
              exit 1;
            fi;
            sleep 2;
            ELAPSED=$((ELAPSED + 2));
          done;
-         echo "tezos-client initialized after ${ELAPSED}s";
+         echo "Account setup completed after ${ELAPSED}s";
          cd tests;
          go test -p 1 ./...;
          cd ..;
