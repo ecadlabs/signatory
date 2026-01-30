@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/errors"
@@ -39,6 +40,17 @@ var (
 		Help: "Vaults signing requests error count",
 	}, []string{"vault", "code", "chain_id"})
 
+	signHandlerDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "sign_handler_request_duration_milliseconds",
+		Help:    "Total processing time for sign handler requests in milliseconds",
+		Buckets: prometheus.ExponentialBuckets(10, 10, 5),
+	}, []string{"address", "status"})
+
+	signHandlerRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "sign_handler_requests_total",
+		Help: "Total number of sign handler requests",
+	}, []string{"result", "address", "request_type"})
+
 	SignInterceptor = InterceptorFactory(
 		func(opt *SignInterceptorOptions) *prometheus.Timer {
 			return prometheus.NewTimer(
@@ -68,9 +80,17 @@ var (
 	)
 )
 
+func RecordSignHandlerRequest(startTime time.Time, address, status, requestType string) {
+	duration := time.Since(startTime)
+	signHandlerDuration.WithLabelValues(address, status).Observe(float64(duration.Milliseconds()))
+	signHandlerRequestsTotal.WithLabelValues(status, address, requestType).Inc()
+}
+
 // RegisterHandler register metrics handler
 func init() {
 	prometheus.MustRegister(signingOpCount)
 	prometheus.MustRegister(vaultSigningHist)
 	prometheus.MustRegister(vaultErrorCounter)
+	prometheus.MustRegister(signHandlerDuration)
+	prometheus.MustRegister(signHandlerRequestsTotal)
 }
