@@ -132,3 +132,55 @@ func getBytes() (int, []byte) {
 	}
 	return resp.StatusCode, bytes
 }
+
+// WatermarkMetrics holds watermark-specific Prometheus metrics
+type WatermarkMetrics struct {
+	OpsTotal        int // watermark_operations_total
+	OpDurationCount int // watermark_operation_duration_seconds_count
+	IOOpsTotal      int // watermark_io_operations_total
+	IOLatencyCount  int // watermark_io_latency_seconds_count
+}
+
+// GetWatermarkMetrics retrieves watermark metrics filtered by backend and result
+func GetWatermarkMetrics(backend, result, requestType string) WatermarkMetrics {
+	metrics := WatermarkMetrics{}
+	_, b := getBytes()
+	lines := bytes.Split(b, []byte("\n"))
+	for _, line := range lines {
+		s := string(line)
+
+		// watermark_operations_total{backend="file",request_type="block",result="success"} 1
+		if strings.HasPrefix(s, "watermark_operations_total") {
+			if strings.Contains(s, "backend=\""+backend) &&
+				strings.Contains(s, "result=\""+result) &&
+				(requestType == "" || strings.Contains(s, "request_type=\""+requestType)) {
+				metrics.OpsTotal, _ = strconv.Atoi(parseValue(s))
+			}
+		}
+
+		// watermark_operation_duration_seconds_count{backend="file"} 1
+		if strings.HasPrefix(s, "watermark_operation_duration_seconds_count") {
+			if strings.Contains(s, "backend=\""+backend) {
+				metrics.OpDurationCount, _ = strconv.Atoi(parseValue(s))
+			}
+		}
+
+		// watermark_io_operations_total{backend="file",operation="write",result="success",table_name=""} 1
+		if strings.HasPrefix(s, "watermark_io_operations_total") {
+			if strings.Contains(s, "backend=\""+backend) &&
+				strings.Contains(s, "result=\""+result) {
+				v, _ := strconv.Atoi(parseValue(s))
+				metrics.IOOpsTotal += v
+			}
+		}
+
+		// watermark_io_latency_seconds_count{backend="file",operation="write",table_name=""} 1
+		if strings.HasPrefix(s, "watermark_io_latency_seconds_count") {
+			if strings.Contains(s, "backend=\""+backend) {
+				v, _ := strconv.Atoi(parseValue(s))
+				metrics.IOLatencyCount += v
+			}
+		}
+	}
+	return metrics
+}
