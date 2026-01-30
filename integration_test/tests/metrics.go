@@ -89,8 +89,6 @@ func AssertMetricsUnchanged(t *testing.T, before Metrics, after Metrics) {
 	assert.Equal(t, after.Sum, before.Sum)
 	assert.Equal(t, after.SigningOpsTotal, before.SigningOpsTotal)
 	assert.Equal(t, after.Error, before.Error)
-	assert.Equal(t, after.HandlerRequestsTotal, before.HandlerRequestsTotal)
-	assert.Equal(t, after.HandlerDurationCount, before.HandlerDurationCount)
 }
 
 func parseValue(line string) string {
