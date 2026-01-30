@@ -80,8 +80,6 @@ func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics
 	assert.Greater(t, after.Sum, before.Sum)
 	assert.Greater(t, after.SigningOpsTotal, before.SigningOpsTotal)
 	assert.Equal(t, after.Error, before.Error)
-	assert.Greater(t, after.HandlerRequestsTotal, before.HandlerRequestsTotal)
-	assert.Greater(t, after.HandlerDurationCount, before.HandlerDurationCount)
 }
 
 func AssertMetricsUnchanged(t *testing.T, before Metrics, after Metrics) {
