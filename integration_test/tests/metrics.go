@@ -12,14 +12,16 @@ import (
 )
 
 type Metrics struct {
-	SigningOpsTotal int
-	Sum             float64
-	Count           int
-	Error           int
+	SigningOpsTotal      int
+	Sum                  float64
+	Count                int
+	Error                int
+	HandlerRequestsTotal int
+	HandlerDurationCount int
 }
 
 func GetMetrics(address string, kind string, operation string, vault string, chainID string) Metrics {
-	metrics := Metrics{SigningOpsTotal: 0, Sum: 0, Count: 0, Error: 0}
+	metrics := Metrics{}
 	_, b := getBytes()
 	lines := bytes.Split(b, []byte("\n"))
 	for _, line := range lines {
@@ -56,6 +58,19 @@ func GetMetrics(address string, kind string, operation string, vault string, cha
 				metrics.Sum, _ = strconv.ParseFloat(parseValue(s), 64)
 			}
 		}
+		// Sign handler level metrics
+		if strings.HasPrefix(s, "sign_handler_requests_total") {
+			if strings.Contains(s, "address=\""+address) &&
+				strings.Contains(s, "result=\"200\"") {
+				metrics.HandlerRequestsTotal, _ = strconv.Atoi(parseValue(s))
+			}
+		}
+		if strings.HasPrefix(s, "sign_handler_request_duration_milliseconds_count") {
+			if strings.Contains(s, "address=\""+address) &&
+				strings.Contains(s, "status=\"200\"") {
+				metrics.HandlerDurationCount, _ = strconv.Atoi(parseValue(s))
+			}
+		}
 	}
 	return metrics
 }
@@ -65,6 +80,8 @@ func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics
 	assert.Greater(t, after.Sum, before.Sum)
 	assert.Greater(t, after.SigningOpsTotal, before.SigningOpsTotal)
 	assert.Equal(t, after.Error, before.Error)
+	assert.Greater(t, after.HandlerRequestsTotal, before.HandlerRequestsTotal)
+	assert.Greater(t, after.HandlerDurationCount, before.HandlerDurationCount)
 }
 
 func AssertMetricsUnchanged(t *testing.T, before Metrics, after Metrics) {
@@ -72,6 +89,8 @@ func AssertMetricsUnchanged(t *testing.T, before Metrics, after Metrics) {
 	assert.Equal(t, after.Sum, before.Sum)
 	assert.Equal(t, after.SigningOpsTotal, before.SigningOpsTotal)
 	assert.Equal(t, after.Error, before.Error)
+	assert.Equal(t, after.HandlerRequestsTotal, before.HandlerRequestsTotal)
+	assert.Equal(t, after.HandlerDurationCount, before.HandlerDurationCount)
 }
 
 func parseValue(line string) string {
