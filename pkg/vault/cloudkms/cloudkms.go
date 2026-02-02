@@ -102,6 +102,17 @@ func isRetryableError(err error) bool {
 	}
 }
 
+func isErrorSkippable(code codes.Code) bool {
+	switch code {
+	case codes.PermissionDenied, // No permission to access key
+		codes.NotFound,           // Key/version was destroyed
+		codes.FailedPrecondition: // Key version disabled or in invalid state
+		return true
+	default:
+		return false
+	}
+}
+
 func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(message)
 	req := kmspb.AsymmetricSignRequest{
@@ -212,7 +223,7 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 			ver, err = c.verIter.Next()
 			if err != nil && err != iterator.Done {
 				var apiErr *apierror.APIError
-				if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+				if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
 					continue
 				}
 				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
@@ -232,7 +243,7 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 						return nil, vault.ErrDone
 					} else {
 						var apiErr *apierror.APIError
-						if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+						if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
 							continue
 						}
 						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
@@ -250,7 +261,7 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
 				if err != nil {
 					var apiErr *apierror.APIError
-					if stderr.As(err, &apiErr) && apiErr.GRPCStatus().Code() == codes.PermissionDenied {
+					if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
 						continue
 					}
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)

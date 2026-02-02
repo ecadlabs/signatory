@@ -89,7 +89,15 @@ func (i *awsKMSIterator) Next() (key vault.KeyReference, err error) {
 		if err == nil {
 			return key, nil
 		} else if errors.As(err, &kmserr) {
-			if kmserr.ErrorCode() != "AccessDeniedException" {
+			switch kmserr.ErrorCode() {
+			case "AccessDeniedException", // No permission to key
+				"UnsupportedOperationException", // Symmetric key (no public key)
+				"DisabledException",             // Key is disabled
+				"KMSInvalidStateException",      // Key pending deletion/import
+				"NotFoundException",             // Key was deleted
+				"InvalidKeyUsageException":      // Wrong key usage
+				continue
+			default:
 				return nil, err
 			}
 		} else if err != crypt.ErrUnsupportedKeyType {
