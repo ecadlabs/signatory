@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -97,7 +97,7 @@ func parsePKCS12Certificate(name, password string) (pk interface{}, thumbprint [
 		return nil, nil, err
 	}
 
-	sum := sha1.Sum(cert.Raw)
+	sum := sha256.Sum256(cert.Raw)
 	return pk, sum[:], nil
 }
 
@@ -145,7 +145,7 @@ func getThumbprint(name string) ([]byte, error) {
 		return nil, err
 	}
 
-	sum := sha1.Sum(cert.Raw)
+	sum := sha256.Sum256(cert.Raw)
 	return sum[:], nil
 }
 
@@ -193,9 +193,9 @@ func (c *Config) jwtTokenSource(ctx context.Context, scopes []string) (oauth2.To
 
 		} else {
 			thumbprint, err = hex.DecodeString(c.ClientCertificateThumbprint)
-			if err != nil || len(thumbprint) != sha1.Size {
+			if err != nil || len(thumbprint) != sha256.Size {
 				thumbprint, err = base64.URLEncoding.DecodeString(c.ClientCertificateThumbprint)
-				if err != nil || len(thumbprint) != sha1.Size {
+				if err != nil || len(thumbprint) != sha256.Size {
 					return nil, errors.New("failed to decode thumbprint string")
 				}
 			}
@@ -292,7 +292,7 @@ func (j *jwtTokenSource) Token() (*oauth2.Token, error) {
 
 	kid := base64.RawURLEncoding.EncodeToString(j.certThumbprint)
 	assertionToken.Header["kid"] = kid
-	assertionToken.Header["x5t"] = kid
+	assertionToken.Header["x5t#S256"] = kid
 
 	assertion, err := assertionToken.SignedString(j.key)
 	if err != nil {
