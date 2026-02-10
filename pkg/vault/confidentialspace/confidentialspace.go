@@ -2,6 +2,9 @@ package confidentialspace
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	tz "github.com/ecadlabs/gotez/v2"
@@ -72,11 +76,57 @@ func (e *encryptedKey) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func parseEd25519PublicKey(keyStr string) (ed25519.PublicKey, error) {
+	if keyStr == "" {
+		return nil, errors.New("empty public key")
+	}
+	data, err := hex.DecodeString(keyStr)
+	if err != nil {
+		data, err = base64.StdEncoding.DecodeString(keyStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode public key as hex or base64: %w", err)
+		}
+	}
+	if len(data) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("invalid public key size: expected %d, got %d", ed25519.PublicKeySize, len(data))
+	}
+	return ed25519.PublicKey(data), nil
+}
+
+func loadClientPrivateKeyFromFile(path string) (ed25519.PrivateKey, error) {
+	if path == "" {
+		return nil, errors.New("empty identity file path")
+	}
+	path = os.ExpandEnv(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read identity file: %w", err)
+	}
+	hexStr := string(data)
+	hexStr = strings.TrimSpace(hexStr)
+	if hexStr == "" {
+		return nil, errors.New("identity file is empty")
+	}
+	keyData, err := hex.DecodeString(hexStr)
+	if err != nil {
+		keyData, err = base64.StdEncoding.DecodeString(hexStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode private key as hex or base64: %w", err)
+		}
+	}
+	if len(keyData) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("invalid private key size: expected %d, got %d", ed25519.PrivateKeySize, len(keyData))
+	}
+	return ed25519.PrivateKey(keyData), nil
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 type Config struct {
 	ConfidentialSpaceHost string         `yaml:"host"`
 	ConfidentialSpacePort string         `yaml:"port"`
+	ServerPublicKey       string         `yaml:"server_public_key"`       // Ed25519 public key (hex or base64)
+	ClientPrivateKeyPath  string         `yaml:"client_private_key_path"` // Path to identity file containing Ed25519 private key
 	WipProviderPath       string         `yaml:"wip_provider_path"`
 	EncryptionKeyPath     string         `yaml:"encryption_key_path"`
 	Storage               *StorageConfig `yaml:"storage"`
@@ -103,6 +153,8 @@ func populateConfig(c *Config) *Config {
 	return &Config{
 		ConfidentialSpaceHost: resolve(c.ConfidentialSpaceHost, "CONFIDENTIAL_SPACE_HOST"),
 		ConfidentialSpacePort: resolve(c.ConfidentialSpacePort, "CONFIDENTIAL_SPACE_PORT"),
+		ServerPublicKey:       resolve(c.ServerPublicKey, "CONFIDENTIAL_SPACE_SERVER_PUBLIC_KEY"),
+		ClientPrivateKeyPath:  resolve(c.ClientPrivateKeyPath, "CONFIDENTIAL_SPACE_CLIENT_PRIVATE_KEY_PATH"),
 		WipProviderPath:       resolve(c.WipProviderPath, "GCP_WIP_PROVIDER_PATH"),
 		EncryptionKeyPath:     resolve(c.EncryptionKeyPath, "GCP_KMS_ENCRYPTION_KEY_PATH"),
 		Storage:               c.Storage,
@@ -337,6 +389,25 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 		return nil, errors.New("(ConfidentialSpace): missing encryption key path")
 	}
 
+	var serverPublicKey ed25519.PublicKey
+	var clientPrivateKey ed25519.PrivateKey
+	var err error
+	if conf.ServerPublicKey != "" {
+		serverPublicKey, err = parseEd25519PublicKey(conf.ServerPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("(ConfidentialSpace): invalid server public key: %w", err)
+		}
+
+		if conf.ClientPrivateKeyPath == "" {
+			return nil, errors.New("(ConfidentialSpace): client private key file path required when server public key is provided")
+		}
+
+		clientPrivateKey, err = loadClientPrivateKeyFromFile(conf.ClientPrivateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("(ConfidentialSpace): failed to load client private key from file: %w", err)
+		}
+	}
+
 	rpcCred := rpc.ConfidentialSpaceCredentials{
 		WipProviderPath:   conf.WipProviderPath,
 		EncryptionKeyPath: conf.EncryptionKeyPath,
@@ -352,15 +423,27 @@ func newWithStorage(ctx context.Context, config *Config, storage keyBlobStorage)
 		return nil, fmt.Errorf("(ConfidentialSpace): %w", err)
 	}
 
-	v, err := newWithConn(ctx, conn, &rpcCred, storage)
+	v, err := newWithConn(ctx, conn, &rpcCred, storage, serverPublicKey, clientPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 	return v, nil
 }
 
-func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage) (*ConfidentialSpaceVault[C], error) {
-	client := rpc.NewClient[C](conn)
+func newWithConn[C any](ctx context.Context, conn net.Conn, credentials *C, storage keyBlobStorage, serverPublicKey ed25519.PublicKey, clientPrivateKey ed25519.PrivateKey) (*ConfidentialSpaceVault[C], error) {
+	var client *rpc.Client[C]
+	var err error
+
+	if serverPublicKey != nil {
+		client, err = rpc.NewSecureClient[C](conn, serverPublicKey, clientPrivateKey)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("(ConfidentialSpace): failed to establish secure connection: %w", err)
+		}
+	} else {
+		client = rpc.NewClient[C](conn)
+	}
+
 	client.Logger = log.StandardLogger()
 
 	if err := client.Initialize(ctx, credentials); err != nil {
