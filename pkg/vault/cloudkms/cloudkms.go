@@ -224,6 +224,7 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 			if err != nil && err != iterator.Done {
 				var apiErr *apierror.APIError
 				if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
+					c.verIter = nil
 					continue
 				}
 				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
@@ -244,7 +245,8 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 					} else {
 						var apiErr *apierror.APIError
 						if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
-							continue
+							c.keyIter = nil
+							return nil, vault.ErrDone
 						}
 						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 					}
