@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.49.5
 	github.com/aws/smithy-go v1.24.0
 	github.com/certusone/yubihsm-go v0.3.0
-	github.com/ecadlabs/go-pkcs11 v0.3.0
+	github.com/ecadlabs/go-pkcs11 v1.0.0
 	github.com/ecadlabs/goblst v1.1.0
 	github.com/ecadlabs/gotez/v2 v2.3.21
 	github.com/fxamacker/cbor/v2 v2.9.0
