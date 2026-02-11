@@ -8,6 +8,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core" // Import config directly
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"google.golang.org/grpc/codes"
@@ -36,8 +37,9 @@ func (c *GCPConfig) collection() string {
 }
 
 type GCP struct {
-	client *firestore.Client
-	col    *firestore.CollectionRef
+	client  *firestore.Client
+	col     *firestore.CollectionRef
+	colName string
 }
 
 func NewGCPWatermark(ctx context.Context, config *GCPConfig) (*GCP, error) {
@@ -58,11 +60,13 @@ func NewGCPWatermark(ctx context.Context, config *GCPConfig) (*GCP, error) {
 		return nil, fmt.Errorf("(GCPWatermark) NewGCPWatermark: %w", err)
 	}
 
-	col := client.Collection(config.collection())
+	colName := config.collection()
+	col := client.Collection(colName)
 
 	inst := GCP{
-		client: client,
-		col:    col,
+		client:  client,
+		col:     col,
+		colName: colName,
 	}
 
 	return &inst, nil
@@ -93,35 +97,47 @@ func (f *GCP) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 		Digest:  wm.Hash.UnwrapPtr(),
 	}
 
-	return f.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-		docSnap, err := tx.Get(docRef) // Read document
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:   "gcp",
+		Operation: "write",
+		TableName: f.colName,
+		TargetFunc: func() (bool, error) {
+			err := f.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+				docSnap, err := tx.Get(docRef) // Read document
 
-		if err != nil {
-			if status.Code(err) == codes.NotFound {
-				// Document doesn't exist, safe to create
+				if err != nil {
+					if status.Code(err) == codes.NotFound {
+						// Document doesn't exist, safe to create
+						tx.Set(docRef, newWm)
+						return nil
+					}
+					metrics.RecordIOError("gcp", status.Code(err).String(), f.colName, "write")
+					return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
+				}
+
+				// Document exists, check watermark
+				var oldWm GCPWatermark
+				if err := docSnap.DataTo(&oldWm); err != nil {
+					metrics.RecordIOError("gcp", "decode_error", f.colName, "write")
+					return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
+				}
+
+				if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
+					return ErrWatermark
+				}
+
 				tx.Set(docRef, newWm)
 				return nil
-			}
-			return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
-		}
-
-		// Document exists, check watermark
-		var oldWm GCPWatermark
-		if err := docSnap.DataTo(&oldWm); err != nil {
-			return fmt.Errorf("(GCPWatermark) IsSafeToSign: %w", err)
-		}
-
-		if oldWm.Level >= newWm.Level && (oldWm.Level != newWm.Level || oldWm.Round >= newWm.Round) {
-			return ErrWatermark
-		}
-
-		tx.Set(docRef, newWm)
-		return nil
-	})
+			})
+			return err == nil, err
+		},
+	}
+	_, err := metrics.IOInterceptor(&opts)
+	return err
 }
 
 func init() {
-	RegisterWatermark("gcp", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+	RegisterWatermark("gcp", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (watermarkImpl, error) {
 		var config GCPConfig
 		if node != nil {
 			if err := node.Decode(&config); err != nil {

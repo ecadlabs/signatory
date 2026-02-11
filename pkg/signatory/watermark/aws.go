@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/signatory/pkg/config"
+	"github.com/ecadlabs/signatory/pkg/metrics"
 	"github.com/ecadlabs/signatory/pkg/signatory/request"
 	awsutils "github.com/ecadlabs/signatory/pkg/utils/aws"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +63,8 @@ func NewAWSWatermark(ctx context.Context, config *AWSConfig) (*AWS, error) {
 	return &a, nil
 }
 
-func (a *AWS) maybeCreateTable(ctx context.Context) error {
+func (a *AWS) createTable(ctx context.Context) (bool, error) {
+	tableName := a.cfg.table()
 	_, err := a.client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
@@ -88,21 +90,38 @@ func (a *AWS) maybeCreateTable(ctx context.Context) error {
 			ReadCapacityUnits:  aws.Int64(readCapacityUnits),
 			WriteCapacityUnits: aws.Int64(writeCapacityUnits),
 		},
-		TableName: aws.String(a.cfg.table()),
+		TableName: aws.String(tableName),
 	})
 	if err != nil {
 		var serr smithy.APIError
 		if errors.As(err, &serr) && serr.ErrorCode() == "ResourceInUseException" {
-			log.Infof("DynamoDB watermark backend using existing table '%s'", a.cfg.table())
-			return nil
+			log.Infof("DynamoDB watermark backend using existing table '%s'", tableName)
+			return true, nil
 		}
-		return err
+		metrics.RecordIOError("aws", serr.ErrorCode(), tableName, "create")
+		return false, err
 	}
-	log.Infof("DynamoDB watermark backend created table '%s'", a.cfg.table())
+	log.Infof("DynamoDB watermark backend created table '%s'", tableName)
+
 	waiter := dynamodb.NewTableExistsWaiter(a.client)
-	return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
-		TableName: aws.String(a.cfg.table()),
-	}, time.Minute*5) // give excess time
+	if waitErr := waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+		TableName: aws.String(tableName),
+	}, time.Minute*5); waitErr != nil {
+		return false, waitErr
+	}
+	return true, nil
+}
+
+func (a *AWS) maybeCreateTable(ctx context.Context) error {
+	tableName := a.cfg.table()
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:    "aws",
+		Operation:  "create",
+		TableName:  tableName,
+		TargetFunc: func() (bool, error) { return a.createTable(ctx) },
+	}
+	_, err := metrics.IOInterceptor(&opts)
+	return err
 }
 
 type AWSWatermark struct {
@@ -128,6 +147,26 @@ func (w *AWSWatermark) watermark() *request.Watermark {
 	}
 }
 
+func (a *AWS) putItem(ctx context.Context, input *dynamodb.PutItemInput) (bool, error) {
+	tableName := a.cfg.table()
+	_, err := a.client.PutItem(ctx, input)
+	if err != nil {
+		var serr smithy.APIError
+		if errors.As(err, &serr) {
+			if serr.ErrorCode() == "ConditionalCheckFailedException" {
+				log.Error(err)
+				return false, ErrWatermark
+			}
+			metrics.RecordIOError("aws", serr.ErrorCode(), tableName, "write")
+		} else {
+			metrics.RecordIOError("aws", "unknown", tableName, "write")
+		}
+		log.Error(err)
+		return false, ErrWatermark
+	}
+	return true, nil
+}
+
 func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req core.SignRequest, digest *crypt.Digest) error {
 	m, ok := req.(request.WithWatermark)
 	if !ok {
@@ -135,6 +174,7 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 		return nil
 	}
 	wm := request.NewWatermark(m, digest)
+	tableName := a.cfg.table()
 
 	wmData := AWSWatermark{
 		Idx:     strings.Join([]string{m.GetChainID().String(), pkh.String()}, "/"),
@@ -147,8 +187,8 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 	if err != nil {
 		return fmt.Errorf("(AWSWatermark) IsSafeToSign: %w", err)
 	}
-	putItemInput := dynamodb.PutItemInput{
-		TableName:           aws.String(a.cfg.table()),
+	putItemInput := &dynamodb.PutItemInput{
+		TableName:           aws.String(tableName),
 		Item:                item,
 		ConditionExpression: aws.String("attribute_not_exists(idx) or lvl < :new_lvl or (lvl = :new_lvl and round < :new_round)"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
@@ -156,16 +196,19 @@ func (a *AWS) IsSafeToSign(ctx context.Context, pkh crypt.PublicKeyHash, req cor
 			":new_round": item["round"],
 		},
 	}
-	_, err = a.client.PutItem((ctx), &putItemInput)
-	if err != nil {
-		log.Error(err)
-		return ErrWatermark
+
+	opts := metrics.IOInterceptorOptions[bool]{
+		Backend:    "aws",
+		Operation:  "write",
+		TableName:  tableName,
+		TargetFunc: func() (bool, error) { return a.putItem(ctx, putItemInput) },
 	}
-	return nil
+	_, err = metrics.IOInterceptor(&opts)
+	return err
 }
 
 func init() {
-	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (Watermark, error) {
+	RegisterWatermark("aws", func(ctx context.Context, node *yaml.Node, global config.GlobalContext) (watermarkImpl, error) {
 		var conf AWSConfig
 		if node != nil {
 			if err := node.Decode(&conf); err != nil {

@@ -111,6 +111,11 @@ jobs:
     needs: publish
     runs-on: ec2
     steps:
+      - name: Checkout seccomp profile
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github/seccomp-vsock.json
+          sparse-checkout-cone-mode: false
       - name: Login to DockerHub
         uses: docker/login-action@v3
         if: "!startsWith(github.ref, 'refs/tags/v')"
@@ -130,9 +135,9 @@ jobs:
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
         run: >
-         docker pull $IMAGE;
-         docker rm -f signatory || true;
-         docker run -d --name signatory --privileged --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
+          docker pull $IMAGE;
+          docker rm -f signatory || true;
+          docker run -d --name signatory --device /dev/vsock --security-opt seccomp=.github/seccomp-vsock.json --mount type=bind,src=/etc/signatory,dst=/etc/signatory --mount type=bind,src=/var/lib/signatory,dst=/var/lib/signatory -p 6732:6732 -p 9583:9583 --entrypoint "/bin/signatory" $IMAGE -c /etc/signatory/config.yml serve
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
   integration-tests:
@@ -212,6 +217,19 @@ jobs:
          mkdir -p ./.watermarks ./coverage;
          chmod 777 ./.watermarks ./coverage ./hashicerts;
          docker compose up -d --wait --pull always;
+         echo "Waiting for account setup...";
+         TIMEOUT=120;
+         ELAPSED=0;
+         until docker logs tezos-client 2>&1 | grep -q "All keys imported successfully!"; do
+           if [ $ELAPSED -ge $TIMEOUT ]; then
+             echo "Timeout waiting for account setup";
+             docker logs tezos-client;
+             exit 1;
+           fi;
+           sleep 2;
+           ELAPSED=$((ELAPSED + 2));
+         done;
+         echo "Account setup completed after ${ELAPSED}s";
          cd tests;
          go test -p 1 ./...;
          cd ..;

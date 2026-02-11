@@ -39,7 +39,7 @@ const (
 	// Address type test accounts public keys
 	Tz1AliasPK = "edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn"
 	Tz2AliasPK = "sppk7cvVVMRRtYTdriTB6KQqpXZt9TUwSTcpMWq4FwpvG2eVZ56UuHP"
-	Tz3AliasPK = "p2pk67wmwXhknDMAtjFJCh1Z65wCemXchB3KYQfDFp2HvDT1S2Z" // Placeholder - needs actual value
+	Tz3AliasPK = "p2pk65pxFqFj1N66zRRQtdbEJWHMH5hRv4WsRkaGWQJtZ5bv8nVx6Dg"
 	Tz4AliasPK = "BLpk1nRV5SBB2QCxsiem5Neoywcizr3mkdp167HL1iKFgFvzPhKo4RSy7J8JBh2BgGgVYjNsRGwU"
 
 	Tz4PopPK = "BLpk1w7hcraa8qBo8f7sNBteUVoSejrS779YUra1deGqZgWSw8xUVYrNSMkxWrDAAwTtFtJxvMbK"
@@ -259,6 +259,21 @@ func GetAllTestPKHs() []string {
 		Tz3AliasPKH,
 		Tz4AliasPKH,
 		Tz4PopPKH,
+	}
+}
+
+// GetAllTestPKs returns all public keys used in tests
+func GetAllTestPKs() []string {
+	return []string{
+		AlicePK,
+		BobPK,
+		OpstestPK,
+		Opstest1PK,
+		Tz1AliasPK,
+		Tz2AliasPK,
+		Tz3AliasPK,
+		Tz4AliasPK,
+		Tz4PopPK,
 	}
 }
 
