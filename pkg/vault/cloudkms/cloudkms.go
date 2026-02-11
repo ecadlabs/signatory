@@ -90,11 +90,11 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	st, ok := status.FromError(err)
+	code, ok := grpcCodeFromError(err)
 	if !ok {
 		return false
 	}
-	switch st.Code() {
+	switch code {
 	case codes.DeadlineExceeded, codes.Unavailable, codes.ResourceExhausted:
 		return true
 	default:
@@ -111,6 +111,17 @@ func isErrorSkippable(code codes.Code) bool {
 	default:
 		return false
 	}
+}
+
+func grpcCodeFromError(err error) (codes.Code, bool) {
+	var apiErr *apierror.APIError
+	if stderr.As(err, &apiErr) {
+		return apiErr.GRPCStatus().Code(), true
+	}
+	if st, ok := status.FromError(err); ok {
+		return st.Code(), true
+	}
+	return codes.OK, false
 }
 
 func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
@@ -222,8 +233,8 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 		if c.verIter != nil {
 			ver, err = c.verIter.Next()
 			if err != nil && err != iterator.Done {
-				var apiErr *apierror.APIError
-				if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
+				if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
+					log.WithField("error", err).Warn("CloudKMS: skipping crypto key versions due to error")
 					c.verIter = nil
 					continue
 				}
@@ -243,8 +254,8 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 						c.keyIter = nil
 						return nil, vault.ErrDone
 					} else {
-						var apiErr *apierror.APIError
-						if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
+						if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
+							log.WithField("error", err).Warn("CloudKMS: aborting key listing due to non-retryable error")
 							c.keyIter = nil
 							return nil, vault.ErrDone
 						}
@@ -262,8 +273,7 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 			if ver.State == kmspb.CryptoKeyVersion_ENABLED {
 				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
 				if err != nil {
-					var apiErr *apierror.APIError
-					if stderr.As(err, &apiErr) && isErrorSkippable(apiErr.GRPCStatus().Code()) {
+					if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
 						continue
 					}
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
