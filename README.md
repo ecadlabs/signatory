@@ -153,6 +153,22 @@ For a contribution to be merged, it is required to have complete documentation a
 
 ---
 
+## Licensing
+
+This repository contains materials under two separate licenses:
+
+### Source Code — Apache License 2.0
+
+The Signatory source code (all directories and files in this repository **except** the `website/` and `docs/` directories) is licensed under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and distribute the source code in accordance with the terms of that license.
+
+### Website & Documentation — Proprietary
+
+The contents of the [`website/`](website/) and [`docs/`](docs/) directories — including all documentation, written content, tutorials, guides, images, graphics, logos, design assets, and website source code — are the **exclusive property of ECAD Labs Inc.** and are **NOT** licensed under Apache 2.0 or any other open-source license. All rights are reserved. See [`website/LICENSE`](website/LICENSE) and [`docs/LICENSE`](docs/LICENSE) for details.
+
+For permissions or licensing inquiries regarding the website and documentation, please contact [info@ecadlabs.com](mailto:info@ecadlabs.com).
+
+---
+
 ## Alternative Remote Signers
 
 At least three other remote signers are available to use with Tezos. Tezos also provides native support for baking with a Ledger Nano. We encourage bakers to, at a minimum, review these projects. We are eager to collaborate and be peers with these great projects.
