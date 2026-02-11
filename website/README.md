@@ -1,33 +1,34 @@
-# Website
+# Signatory Website
 
-This website is built using [Docusaurus 2](https://v2.docusaurus.io/), a modern static website generator.
+This directory contains the source code and content for the [Signatory website](https://signatory.io), built with [Docusaurus](https://docusaurus.io/).
 
-### Installation
+## License
 
-```
-$ yarn
-```
+**This directory is NOT covered by the Apache License, Version 2.0.**
 
-### Local Development
+All content in this directory and its subdirectories — including documentation, written content, tutorials, guides, images, graphics, logos, design assets, and website source code — is the exclusive property of **ECAD Labs Inc.** All rights reserved.
 
-```
-$ yarn start
-```
+See [LICENSE](LICENSE) in this directory for the full proprietary license terms.
 
-This command starts a local development server and open up a browser window. Most changes are reflected live without having to restart the server.
+## Running Locally
 
-### Build
+To run the website locally for development purposes:
 
 ```
-$ yarn build
+yarn install
+yarn start
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+This command starts a local development server and opens a browser window. Most changes are reflected live without having to restart the server.
 
-### Deployment
+## Build
 
 ```
-$ GIT_USER=<Your GitHub username> USE_SSH=true yarn deploy
+yarn build
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+This command generates static content into the `build` directory.
+
+## Contact
+
+For permissions or licensing inquiries, contact [info@ecadlabs.com](mailto:info@ecadlabs.com).

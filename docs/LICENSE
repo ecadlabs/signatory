@@ -1,0 +1,35 @@
+Copyright (c) 2018-2026 ECAD Labs Inc. All rights reserved.
+
+PROPRIETARY LICENSE — SIGNATORY DOCUMENTATION
+
+The contents of this directory ("docs/") and all subdirectories thereof,
+including but not limited to all documentation, written content, tutorials,
+guides, images, graphics, and any other materials contained herein
+(collectively, the "Documentation Content"), are the exclusive property of
+ECAD Labs Inc.
+
+NO LICENSE IS GRANTED. The Documentation Content is NOT licensed under the
+Apache License, Version 2.0, or any other open-source license. The Apache
+License, Version 2.0, which applies to the Signatory source code in this
+repository, expressly does NOT apply to the Documentation Content.
+
+You may NOT, without the prior written permission of ECAD Labs Inc.:
+
+  - Copy, reproduce, or duplicate the Documentation Content;
+  - Distribute, publish, or transmit the Documentation Content;
+  - Create derivative works based on the Documentation Content;
+  - Use the Documentation Content for any commercial or non-commercial purpose;
+  - Sublicense or transfer any rights in the Documentation Content.
+
+The above restrictions apply to all forms of the Documentation Content,
+whether in source form (as contained in this repository) or in
+compiled/published form (as available at https://signatory.io/docs or any
+successor URL).
+
+For permissions, licensing inquiries, or questions, please contact:
+
+  ECAD Labs Inc.
+  info@ecadlabs.com
+
+This notice must be retained in all copies or substantial portions of this
+directory.
