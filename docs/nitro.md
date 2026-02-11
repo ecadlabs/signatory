@@ -115,3 +115,57 @@ signatory-cli generate -v nitro
 ## VSock Proxy
 
 All requests to KMS from a signer are getting  tunneled over VSock link to the parent instance which forwards them to the cloud. The recommended way of doing so is to use [vsock_proxy](https://github.com/aws/aws-nitro-enclaves-cli/tree/main/vsock_proxy) supplied with `nitro-cli`. The alternative way is to employ a built in proxy which is getting enabled by setting `proxy_remote_address` configuration option (or alternatively `PROXY_REMOTE_ADDRESS` environment variable) which usually takes form of `kms.REGION.amazonaws.com:443`
+
+## Running in Docker
+
+When running Signatory with Nitro vault inside a Docker container, special configuration is required for VSock communication to work.
+
+### Requirements
+
+1. **Device access**: The container needs access to `/dev/vsock`
+2. **Seccomp profile**: Docker's default seccomp profile blocks `AF_VSOCK` (address family 40) socket syscalls
+
+### Option 1: Custom Seccomp Profile (Recommended)
+
+Create a modified seccomp profile that allows VSock socket calls:
+
+```bash
+# Download Docker's default seccomp profile
+curl -o seccomp.json https://raw.githubusercontent.com/moby/profiles/refs/heads/main/seccomp/default.json
+
+# Modify it to allow AF_VSOCK (address family 40)
+jq '(.syscalls[] | select(.names[0] == "socket" and .args[0].value == 40)) |= del(.args)' seccomp.json > seccomp-vsock.json
+```
+
+Run the container with the custom profile:
+
+```bash
+docker run -d \
+  --name signatory \
+  --device /dev/vsock \
+  --security-opt seccomp=seccomp-vsock.json \
+  -v /etc/signatory:/etc/signatory \
+  -v /var/lib/signatory:/var/lib/signatory \
+  -p 6732:6732 \
+  -p 9583:9583 \
+  ecadlabs/signatory serve
+```
+
+### Option 2: Privileged Mode
+
+Alternatively, run the container in privileged mode which disables seccomp filtering entirely:
+
+```bash
+docker run -d \
+  --name signatory \
+  --privileged \
+  -v /etc/signatory:/etc/signatory \
+  -v /var/lib/signatory:/var/lib/signatory \
+  -p 6732:6732 \
+  -p 9583:9583 \
+  ecadlabs/signatory serve
+```
+
+:::warning
+Running with `--privileged` grants the container full access to the host. Use the custom seccomp profile approach in production environments for better security isolation.
+:::
