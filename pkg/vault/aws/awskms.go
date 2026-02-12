@@ -17,6 +17,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ErrUnsupportedKeyUsage is returned when the key is not for signing
+var ErrUnsupportedKeyUsage = errors.New("key usage must be SIGN_VERIFY")
+
 type Vault struct {
 	client *kms.Client
 	config awsutils.Config
@@ -89,10 +92,18 @@ func (i *awsKMSIterator) Next() (key vault.KeyReference, err error) {
 		if err == nil {
 			return key, nil
 		} else if errors.As(err, &kmserr) {
-			if kmserr.ErrorCode() != "AccessDeniedException" {
+			switch kmserr.ErrorCode() {
+			case "AccessDeniedException", // No permission to key
+				"UnsupportedOperationException", // Symmetric key (no public key)
+				"DisabledException",             // Key is disabled
+				"KMSInvalidStateException",      // Key pending deletion/import
+				"NotFoundException",             // Key was deleted
+				"InvalidKeyUsageException":      // Wrong key usage
+				continue
+			default:
 				return nil, err
 			}
-		} else if err != crypt.ErrUnsupportedKeyType {
+		} else if err != crypt.ErrUnsupportedKeyType && err != ErrUnsupportedKeyUsage {
 			return nil, err
 		}
 	}
@@ -107,7 +118,7 @@ func (v *Vault) getPublicKey(ctx context.Context, keyID *string) (*awsKMSKey, er
 	}
 
 	if pkresp.KeyUsage != types.KeyUsageTypeSignVerify {
-		return nil, errors.New("key usage must be SIGN_VERIFY")
+		return nil, ErrUnsupportedKeyUsage
 	}
 
 	pub, err := cryptoutils.ParsePKIXPublicKey(pkresp.PublicKey)

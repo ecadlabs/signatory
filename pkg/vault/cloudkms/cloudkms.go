@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/pem"
+	stderr "errors"
 	"fmt"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"github.com/ecadlabs/signatory/pkg/vault"
 	kwp "github.com/google/tink/go/kwp/subtle"
+	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
@@ -88,16 +90,38 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	st, ok := status.FromError(err)
+	code, ok := grpcCodeFromError(err)
 	if !ok {
 		return false
 	}
-	switch st.Code() {
+	switch code {
 	case codes.DeadlineExceeded, codes.Unavailable, codes.ResourceExhausted:
 		return true
 	default:
 		return false
 	}
+}
+
+func isErrorSkippable(code codes.Code) bool {
+	switch code {
+	case codes.PermissionDenied, // No permission to access key
+		codes.NotFound,           // Key/version was destroyed
+		codes.FailedPrecondition: // Key version disabled or in invalid state
+		return true
+	default:
+		return false
+	}
+}
+
+func grpcCodeFromError(err error) (codes.Code, bool) {
+	var apiErr *apierror.APIError
+	if stderr.As(err, &apiErr) {
+		return apiErr.GRPCStatus().Code(), true
+	}
+	if st, ok := status.FromError(err); ok {
+		return st.Code(), true
+	}
+	return codes.OK, false
 }
 
 func (kmsKey *cloudKMSKey) Sign(ctx context.Context, message []byte, opt *vault.SignOptions) (crypt.Signature, error) {
@@ -209,6 +233,11 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 		if c.verIter != nil {
 			ver, err = c.verIter.Next()
 			if err != nil && err != iterator.Done {
+				if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
+					log.WithField("error", err).Warn("CloudKMS: skipping crypto key versions due to error")
+					c.verIter = nil
+					continue
+				}
 				return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 			}
 		}
@@ -225,6 +254,11 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 						c.keyIter = nil
 						return nil, vault.ErrDone
 					} else {
+						if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
+							log.WithField("error", err).Warn("CloudKMS: aborting key listing due to non-retryable error")
+							c.keyIter = nil
+							return nil, vault.ErrDone
+						}
 						return nil, fmt.Errorf("(CloudKMS/%s) ListCryptoKeys: %w", c.vault.config.keyRingName(), err)
 					}
 				}
@@ -239,6 +273,9 @@ func (c *cloudKMSIterator) Next() (vault.KeyReference, error) {
 			if ver.State == kmspb.CryptoKeyVersion_ENABLED {
 				pub, err := c.vault.getPublicKey(c.ctx, ver.Name)
 				if err != nil {
+					if code, ok := grpcCodeFromError(err); ok && isErrorSkippable(code) {
+						continue
+					}
 					return nil, fmt.Errorf("(CloudKMS/%s) getPublicKey: %w", c.vault.config.keyRingName(), err)
 				} else {
 					return &cloudKMSKey{
