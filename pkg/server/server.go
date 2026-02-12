@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
@@ -84,11 +85,22 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 }
 
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+	address := "unknown"
+	status := "500"
+	requestType := "sign"
+
+	defer func() {
+		metrics.RecordSignHandlerRequest(startTime, address, status, requestType)
+	}()
+
 	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
 	if err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
+	address = string(pkh.ToBase58())
 
 	versionStr := r.URL.Query().Get("version")
 	version := utils.ParseVersionString(versionStr)
@@ -109,6 +121,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		status = "500"
 		s.logger().Errorf("Error reading POST content: %v", err)
 		tezosJSONError(w, err)
 		return
@@ -116,23 +129,24 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req string
 	if err := json.Unmarshal(body, &req); err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
 	signRequest.Message, err = hex.DecodeString(req)
 	if err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
-			var status string
 			if val, ok := err.(errors.HTTPError); ok {
 				status = strconv.Itoa(val.HTTPStatus())
 			} else {
-				status = "n/a"
+				status = "500"
 			}
 			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
@@ -143,11 +157,17 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signature, err := s.Signer.Sign(r.Context(), &signRequest)
 	if err != nil {
+		if val, ok := err.(errors.HTTPError); ok {
+			status = strconv.Itoa(val.HTTPStatus())
+		} else {
+			status = "500"
+		}
 		s.logger().Errorf("Error signing request: %v", err)
 		tezosJSONError(w, err)
 		return
 	}
 
+	status = "200"
 	resp := struct {
 		Signature crypt.Signature `json:"signature"`
 	}{
