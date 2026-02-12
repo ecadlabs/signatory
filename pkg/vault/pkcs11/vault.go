@@ -251,7 +251,9 @@ func (v *PKCS11Vault) enumKeys() error {
 		}
 		p, err := crypt.NewPublicKeyFrom(pub.Public())
 		if err != nil {
-			return v.formatError(err)
+			// parsed public key is unsupported by crypt package
+			log.WithField("handle", obj.Handle()).Error(err)
+			continue
 		}
 		kp := keyPair{
 			priv: priv,
