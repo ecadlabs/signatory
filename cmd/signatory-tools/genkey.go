@@ -9,6 +9,7 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/ecadlabs/goblst/minpk"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/spf13/cobra"
@@ -65,6 +66,10 @@ func NewGenKeyCommand() *cobra.Command {
 					var k *minpk.PrivateKey
 					k, err = minpk.GenerateKey(rand.Reader)
 					priv = (*crypt.BLSPrivateKey)(k)
+				case "mldsa44":
+					var k *mldsa44.PrivateKey
+					_, k, err = mldsa44.GenerateKey(rand.Reader)
+					priv = (*crypt.MLDSA44PrivateKey)(k)
 				default:
 					err = fmt.Errorf("unknown key type: %s", keyType)
 				}
@@ -88,7 +93,7 @@ func NewGenKeyCommand() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&num, "num", "n", 1, "Number of key pairs to generate")
-	cmd.Flags().StringVarP(&keyType, "type", "t", "ed25519", "Key type [ed25519, secp256k1, p256, bls]")
+	cmd.Flags().StringVarP(&keyType, "type", "t", "ed25519", "Key type [ed25519, secp256k1, p256, bls, mldsa44]")
 
 	return cmd
 }
