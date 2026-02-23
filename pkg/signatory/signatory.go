@@ -713,6 +713,30 @@ func checkRequestKind(allowedKinds []string) error {
 func checkOperationKind(allowedKinds []string) error {
 	avilKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
 	for _, kind := range allowedKinds {
+		// Handle ballot sub-kinds (ballot:yay, ballot:nay, ballot:pass)
+		if strings.Contains(kind, ":") {
+			parts := strings.SplitN(kind, ":", 2)
+			base := parts[0]
+			subKind := parts[1]
+			
+			// Only ballot operations support sub-kind syntax
+			if base != "ballot" {
+				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
+			}
+			
+			// Validate the ballot sub-kind
+			validBallotKinds := []string{"yay", "nay", "pass"}
+			if !slices.Contains(validBallotKinds, subKind) {
+				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
+			}
+			
+			// Ensure base "ballot" is in the valid operations list
+			if !slices.Contains(avilKinds, base) {
+				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
+			}
+			continue
+		}
+		
 		if !slices.Contains(avilKinds, kind) {
 			return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 		}
