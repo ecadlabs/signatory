@@ -5,7 +5,7 @@ CONTAINER_TAG ?= $(shell git branch --show-current)
 COLLECTOR_PKG = github.com/ecadlabs/signatory/pkg/metrics
 
 PACKAGE_NAME          := github.com/ecadlabs/signatory
-GOLANG_CROSS_VERSION  ?= v1.21.0
+GOLANG_CROSS_VERSION  ?= v1.25.5
 
 all: signatory signatory-cli
 
@@ -35,7 +35,7 @@ release-dry-run:
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release \
-		--rm-dist \
+		--clean \
 		--snapshot
 
 .PHONY: release-preview
@@ -50,7 +50,7 @@ release-preview:
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release \
-		--rm-dist \
+		--clean \
 		--snapshot
 
 .PHONY: release
@@ -70,8 +70,8 @@ release:
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release \
-		--rm-dist \
-		--skip-validate
+		--clean \
+		--skip=validate
 
 .PHONY: update-deps
 update-deps:

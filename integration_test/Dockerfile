@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for building signatory for integration tests
 # This builds inside the container, avoiding cross-compilation issues on macOS
 
-FROM golang:1.24-bookworm AS builder
+FROM golang:1.25-bookworm AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download

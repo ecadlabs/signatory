@@ -1,3 +1,5 @@
+version: 2
+
 builds:
 # LINUX
   - id: signatory-linux-amd
@@ -298,7 +300,7 @@ docker_manifests:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: 'SNAPSHOT-{{.ShortCommit}}'
+  version_template: 'SNAPSHOT-{{.ShortCommit}}'
 changelog:
   sort: asc
   filters:
