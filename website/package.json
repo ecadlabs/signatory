@@ -13,7 +13,6 @@
 		"@docusaurus/preset-classic": "^3.9.2",
 		"@docusaurus/theme-mermaid": "^3.9.2",
 		"@mdx-js/react": "^3.1.1",
-		"classnames": "^2.5.1",
 		"clsx": "^2.1.1",
 		"docusaurus-plugin-sass": "^0.2.6",
 		"html-react-parser": "^5.2.11",
@@ -21,6 +20,9 @@
 		"react": "^19.2.3",
 		"react-dom": "^19.2.3",
 		"react-use-mailchimp-signup": "^2.0.2"
+	},
+	"overrides": {
+		"serialize-javascript": ">=7.0.4"
 	},
 	"browserslist": {
 		"production": [
