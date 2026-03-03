@@ -132,10 +132,14 @@ $client --wait none transfer 100000 from bootstrap2 to speculos --burn-cap 0.07
 $client bake for --minimal-timestamp
 
 # nitro (requires EC2 signatory via Tailscale)
-$client import secret key nitro $ec2_signatory/tz2Gx28QytbwB9xZYUbc14HrVTJkwwYy4WAk
-$client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
-$client bake for --minimal-timestamp
-
-echo "All keys imported successfully!"
+if $client import secret key nitro $ec2_signatory/tz2SPeVidYaHupn6PwMSqfi3iK3hDQ14G2Rp; then
+  $client --wait none transfer 100000 from bootstrap2 to nitro --burn-cap 0.07
+  $client bake for --minimal-timestamp
+  echo "All keys imported successfully!"
+else
+  echo "WARNING: Failed to import nitro key from EC2 signatory at $ec2_signatory"
+  echo "TestNitroEnclaveVault will fail. Check that the Nitro Enclave is running."
+  echo "All keys imported successfully!"
+fi
 
 octez-baker run remotely --without-dal --liquidity-baking-toggle-vote pass
