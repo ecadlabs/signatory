@@ -9,14 +9,21 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"golang.org/x/crypto/cryptobyte"
 	"golang.org/x/crypto/cryptobyte/asn1"
 )
 
 var (
-	oidPublicKeyECDSA   = encoding_asn1.ObjectIdentifier{1, 2, 840, 10045, 2, 1}
-	oidPublicKeyEd25519 = encoding_asn1.ObjectIdentifier{1, 3, 101, 112}
+	oidECDSA   = encoding_asn1.ObjectIdentifier{1, 2, 840, 10045, 2, 1}
+	oidEd25519 = encoding_asn1.ObjectIdentifier{1, 3, 101, 112}
+
+	oidMLDSA44 = encoding_asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 17}
+	oidMLDSA65 = encoding_asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 18}
+	oidMLDSA87 = encoding_asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 19}
 
 	oidNamedCurveP224 = encoding_asn1.ObjectIdentifier{1, 3, 132, 0, 33}
 	oidNamedCurveP256 = encoding_asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7}
@@ -111,6 +118,34 @@ func parseECDSAPrivateKey(curveOid encoding_asn1.ObjectIdentifier, data []byte) 
 	return &out, nil
 }
 
+func parseMLDSA44PrivateKey(obj cryptobyte.String, seedSize, privateSize int, newFromSeed func(seed []byte) any, newFromExpanded func(expanded []byte) any) (key any, err error) {
+	var inner cryptobyte.String
+	if obj.PeekASN1Tag(asn1.Tag(0).ContextSpecific()) && obj.ReadASN1(&inner, asn1.Tag(0).ContextSpecific()) {
+		if len(inner) != seedSize {
+			return nil, fmt.Errorf("x509: invalid MLDSA private key length: %d", len(inner))
+		}
+		return newFromSeed(inner), nil
+	}
+	if obj.PeekASN1Tag(asn1.OCTET_STRING) &&
+		obj.ReadASN1(&inner, asn1.OCTET_STRING) {
+		// expanded
+		if len(inner) != privateSize {
+			return nil, fmt.Errorf("x509: invalid MLDSA private key length: %d", len(inner))
+		}
+		return newFromExpanded(inner), nil
+	}
+	var seed cryptobyte.String
+	if obj.PeekASN1Tag(asn1.SEQUENCE) &&
+		obj.ReadASN1(&inner, asn1.SEQUENCE) &&
+		inner.ReadASN1(&seed, asn1.OCTET_STRING) {
+		if len(seed) != seedSize {
+			return nil, fmt.Errorf("x509: invalid MLDSA private key length: %d", len(inner))
+		}
+		return newFromSeed(seed), nil
+	}
+	return nil, errors.New("x509: invalid MLDSA44 private key format")
+}
+
 func ParsePKCS8PrivateKey(der []byte) (key any, err error) {
 	src := cryptobyte.String(der)
 	var (
@@ -128,7 +163,7 @@ func ParsePKCS8PrivateKey(der []byte) (key any, err error) {
 	}
 
 	switch {
-	case algoOid.Equal(oidPublicKeyECDSA):
+	case algoOid.Equal(oidECDSA):
 		var curve encoding_asn1.ObjectIdentifier
 		if algo.PeekASN1Tag(asn1.OBJECT_IDENTIFIER) {
 			if !algo.ReadASN1ObjectIdentifier(&curve) {
@@ -137,7 +172,7 @@ func ParsePKCS8PrivateKey(der []byte) (key any, err error) {
 		}
 		return parseECDSAPrivateKey(curve, keyData)
 
-	case algoOid.Equal(oidPublicKeyEd25519):
+	case algoOid.Equal(oidEd25519):
 		der := cryptobyte.String(keyData)
 		var priv cryptobyte.String
 		if !der.ReadASN1(&priv, asn1.OCTET_STRING) {
@@ -148,6 +183,53 @@ func ParsePKCS8PrivateKey(der []byte) (key any, err error) {
 		}
 		return ed25519.NewKeyFromSeed(priv), nil
 
+	case algoOid.Equal(oidMLDSA44):
+		return parseMLDSA44PrivateKey(keyData, mldsa44.SeedSize, mldsa44.PrivateKeySize, func(seed []byte) any {
+			var tmp [mldsa44.SeedSize]byte
+			copy(tmp[:], seed)
+			_, priv := mldsa44.NewKeyFromSeed(&tmp)
+			return priv
+		}, func(expanded []byte) any {
+			var (
+				tmp  [mldsa44.PrivateKeySize]byte
+				priv mldsa44.PrivateKey
+			)
+			copy(tmp[:], expanded)
+			priv.Unpack(&tmp)
+			return &priv
+		})
+
+	case algoOid.Equal(oidMLDSA65):
+		return parseMLDSA44PrivateKey(keyData, mldsa65.SeedSize, mldsa65.PrivateKeySize, func(seed []byte) any {
+			var tmp [mldsa65.SeedSize]byte
+			copy(tmp[:], seed)
+			_, priv := mldsa65.NewKeyFromSeed(&tmp)
+			return priv
+		}, func(expanded []byte) any {
+			var (
+				tmp  [mldsa65.PrivateKeySize]byte
+				priv mldsa65.PrivateKey
+			)
+			copy(tmp[:], expanded)
+			priv.Unpack(&tmp)
+			return &priv
+		})
+
+	case algoOid.Equal(oidMLDSA87):
+		return parseMLDSA44PrivateKey(keyData, mldsa87.SeedSize, mldsa87.PrivateKeySize, func(seed []byte) any {
+			var tmp [mldsa87.SeedSize]byte
+			copy(tmp[:], seed)
+			_, priv := mldsa87.NewKeyFromSeed(&tmp)
+			return priv
+		}, func(expanded []byte) any {
+			var (
+				tmp  [mldsa87.PrivateKeySize]byte
+				priv mldsa87.PrivateKey
+			)
+			copy(tmp[:], expanded)
+			priv.Unpack(&tmp)
+			return &priv
+		})
 	default:
 		return nil, fmt.Errorf("x509: unsupported algorithm: %v", algo)
 	}
@@ -170,7 +252,7 @@ func ParsePKIXPublicKey(der []byte) (pub any, err error) {
 
 	keyBytes := keyData.RightAlign()
 	switch {
-	case algoOid.Equal(oidPublicKeyECDSA):
+	case algoOid.Equal(oidECDSA):
 		var curveOid encoding_asn1.ObjectIdentifier
 		if algo.PeekASN1Tag(asn1.OBJECT_IDENTIFIER) {
 			if !algo.ReadASN1ObjectIdentifier(&curveOid) {
@@ -191,14 +273,63 @@ func ParsePKIXPublicKey(der []byte) (pub any, err error) {
 			Y:     y,
 		}, nil
 
-	case algoOid.Equal(oidPublicKeyEd25519):
+	case algoOid.Equal(oidEd25519):
 		if len(keyBytes) != ed25519.PublicKeySize {
 			return nil, fmt.Errorf("x509: invalid Ed25519 public key length: %d", len(keyBytes))
 		}
 		return ed25519.PublicKey(keyBytes), nil
 
+	case algoOid.Equal(oidMLDSA44):
+		if len(keyBytes) != mldsa44.PublicKeySize {
+			return nil, fmt.Errorf("x509: invalid MLDSA44 public key length: %d", len(keyBytes))
+		}
+		var (
+			out mldsa44.PublicKey
+			buf [mldsa44.PublicKeySize]byte
+		)
+		copy(buf[:], keyBytes)
+		out.Unpack(&buf)
+		return &out, nil
+
+	case algoOid.Equal(oidMLDSA65):
+		if len(keyBytes) != mldsa65.PublicKeySize {
+			return nil, fmt.Errorf("x509: invalid MLDSA65 public key length: %d", len(keyBytes))
+		}
+		var (
+			out mldsa65.PublicKey
+			buf [mldsa65.PublicKeySize]byte
+		)
+		copy(buf[:], keyBytes)
+		out.Unpack(&buf)
+		return &out, nil
+
+	case algoOid.Equal(oidMLDSA87):
+		if len(keyBytes) != mldsa87.PublicKeySize {
+			return nil, fmt.Errorf("x509: invalid MLDSA87 public key length: %d", len(keyBytes))
+		}
+		var (
+			out mldsa87.PublicKey
+			buf [mldsa87.PublicKeySize]byte
+		)
+		copy(buf[:], keyBytes)
+		out.Unpack(&buf)
+		return &out, nil
+
 	default:
 		return nil, fmt.Errorf("x509: unsupported algorithm: %v", algo)
+	}
+}
+
+type mldsaPrivateKey interface {
+	Bytes() []byte
+	Seed() []byte
+}
+
+func marshalMLDSAPrivateKey(key mldsaPrivateKey, b *cryptobyte.Builder) {
+	if seed := key.Seed(); seed != nil {
+		b.AddASN1(asn1.Tag(0).ContextSpecific(), func(child *cryptobyte.Builder) { child.AddBytes(seed) })
+	} else {
+		b.AddASN1OctetString(key.Bytes())
 	}
 }
 
@@ -212,7 +343,7 @@ func MarshalPKCS8PrivateKey(key any) (res []byte, err error) {
 		b.AddASN1(asn1.SEQUENCE, func(b *cryptobyte.Builder) {
 			switch k := key.(type) {
 			case *ecdsa.PrivateKey:
-				b.AddASN1ObjectIdentifier(oidPublicKeyECDSA)
+				b.AddASN1ObjectIdentifier(oidECDSA)
 				if curveOid = oidFromNamedCurve(k.Curve); curveOid == nil {
 					b.SetError(fmt.Errorf("x509: unknown curve: %T", k.Curve))
 					return
@@ -220,7 +351,16 @@ func MarshalPKCS8PrivateKey(key any) (res []byte, err error) {
 				b.AddASN1ObjectIdentifier(curveOid)
 
 			case ed25519.PrivateKey:
-				b.AddASN1ObjectIdentifier(oidPublicKeyEd25519)
+				b.AddASN1ObjectIdentifier(oidEd25519)
+
+			case *mldsa44.PrivateKey:
+				b.AddASN1ObjectIdentifier(oidMLDSA44)
+
+			case *mldsa65.PrivateKey:
+				b.AddASN1ObjectIdentifier(oidMLDSA65)
+
+			case *mldsa87.PrivateKey:
+				b.AddASN1ObjectIdentifier(oidMLDSA87)
 
 			default:
 				b.SetError(fmt.Errorf("x509: unsupported private key type %T", k))
@@ -245,6 +385,9 @@ func MarshalPKCS8PrivateKey(key any) (res []byte, err error) {
 			})
 		case ed25519.PrivateKey:
 			keyData.AddASN1OctetString(k.Seed())
+
+		case *mldsa44.PrivateKey, *mldsa65.PrivateKey, *mldsa87.PrivateKey:
+			marshalMLDSAPrivateKey(k.(mldsaPrivateKey), &keyData)
 
 		default:
 			b.SetError(fmt.Errorf("x509: unsupported private key type %T", k))
