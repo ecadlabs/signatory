@@ -153,10 +153,10 @@ go clean -testcache
 
 TEST_EXIT=0
 if [[ -n "$TEST_PATTERN" ]]; then
-    go test -v -run "$TEST_PATTERN" ./tests/... || TEST_EXIT=$?
+    go test -p 1 -v -run "$TEST_PATTERN" ./tests/... || TEST_EXIT=$?
 else
     # Run tests that don't require vault credentials
-    go test -v ./tests/cli/... ./tests/metrics/... ./tests/operations/... || TEST_EXIT=$?
+    go test -p 1 -v ./tests/cli/... ./tests/metrics/... ./tests/operations/... || TEST_EXIT=$?
 fi
 
 # Show summary
