@@ -14,7 +14,7 @@ require (
 	github.com/certusone/yubihsm-go v0.3.0
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.1.0
-	github.com/ecadlabs/gotez/v2 v2.3.21
+	github.com/ecadlabs/gotez/v2 v2.4.3
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/google/tink/go v1.7.0
@@ -58,6 +58,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.7 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
