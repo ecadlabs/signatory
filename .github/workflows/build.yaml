@@ -169,15 +169,28 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
       - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
         name: Tailscale
-        uses: tailscale/github-action@v1
+        uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: 1.92.3
       - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
-        name: Test EC2 signatory connectivity
+        name: Accept Tailscale subnet routes
+        run: sudo tailscale set --accept-routes
+      - if: ${{ !github.event.pull_request.head.repo.fork && !startsWith(github.ref, 'refs/tags/v')}}
+        name: Verify EC2 signatory is ready
         run: |
-          echo "Testing connectivity to EC2 signatory..."
+          echo "Checking EC2 signatory health..."
           curl -s --fail http://10.0.3.122:9583/healthz | jq -e '.ready == true'
+          echo "Checking nitro key is available..."
+          RESP=$(curl -s http://10.0.3.122:6732/keys/tz2SPeVidYaHupn6PwMSqfi3iK3hDQ14G2Rp)
+          echo "$RESP"
+          echo "$RESP" | jq -e '.public_key' > /dev/null 2>&1 || {
+            echo "FATAL: Nitro key tz2SPeVidYaHupn6PwMSqfi3iK3hDQ14G2Rp not found."
+            echo "Check the EC2 Nitro Enclave at 10.0.3.122:"
+            echo "  - Is the enclave running? (nitro-cli describe-enclaves)"
+            echo "  - Does the CID in /etc/signatory/config.yml match the enclave CID?"
+            echo "  - Is the key in /etc/signatory/enclave_keys.json?"
+            exit 1
+          }
       - name: Run tests
         env:
           IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
