@@ -1,21 +1,20 @@
 FROM golang:1.25-bookworm AS builder
-RUN apt-get update && apt-get install
 ADD . /signatory
 WORKDIR /signatory
 RUN make
 
-FROM debian:buster-slim
+FROM ubuntu:24.04
 WORKDIR /signatory
-RUN apt update -y \
-    && apt install -y curl apt-transport-https\
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /signatory/signatory.yaml /signatory/signatory.yaml
 COPY --from=builder /signatory/signatory /usr/bin/signatory
 COPY --from=builder /signatory/signatory-cli /usr/bin/signatory-cli
 
 # Create non-root user with configurable UID/GID
-ARG UID=1000
-ARG GID=1000
+ARG UID=10000
+ARG GID=10000
 RUN groupadd -g ${GID} signatory && \
     useradd -u ${UID} -g signatory -m signatory && \
     mkdir -p /var/lib/signatory /etc/signatory && \
