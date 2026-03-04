@@ -716,6 +716,8 @@ func checkRequestKind(allowedKinds []string) error {
 	return nil
 }
 
+var yamlMarshal = yaml.Marshal
+
 func checkOperationKind(allowedKinds []string) error {
 	availKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
 	for _, kind := range allowedKinds {
@@ -811,13 +813,14 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			if pol.AllowedOps != nil {
 				e.Allow["generic"] = pol.AllowedOps
 			}
-			out, err := yaml.Marshal(&e)
+			out, err := yamlMarshal(&e)
 			if err != nil {
-				panic(err)
+				log.Warnf("failed to format deprecation example: %v", err)
+			} else {
+				pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
+				pipe.Write(out)
+				pipe.Close()
 			}
-			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
-			pipe.Write(out)
-			pipe.Close()
 		}
 
 		fixupOperations(pol.AllowedOps)
