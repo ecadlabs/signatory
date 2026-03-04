@@ -686,24 +686,30 @@ func fixupRequests(req []string) {
 
 func fixupOperations(ops []string) {
 	for i, o := range ops {
-		switch o {
+		base, subKind, hasSubKind := strings.Cut(o, ":")
+		switch base {
 		case "endorsement":
-			ops[i] = "attestation"
+			base = "attestation"
 		case "preendorsement":
-			ops[i] = "preattestation"
+			base = "preattestation"
 		case "double_endorsement_evidence":
-			ops[i] = "double_attestation_evidence"
+			base = "double_attestation_evidence"
 		case "double_preendorsement_evidence":
-			ops[i] = "double_preattestation_evidence"
+			base = "double_preattestation_evidence"
+		}
+		if hasSubKind {
+			ops[i] = base + ":" + subKind
+		} else {
+			ops[i] = base
 		}
 	}
 	sort.Strings(ops)
 }
 
 func checkRequestKind(allowedKinds []string) error {
-	avilKinds := proto.ListSignRequests()
+	availKinds := proto.ListSignRequests()
 	for _, kind := range allowedKinds {
-		if !slices.Contains(avilKinds, kind) {
+		if !slices.Contains(availKinds, kind) {
 			return fmt.Errorf("invalid request kind `%s` in `allow` list", kind)
 		}
 	}
@@ -711,33 +717,37 @@ func checkRequestKind(allowedKinds []string) error {
 }
 
 func checkOperationKind(allowedKinds []string) error {
-	avilKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
+	availKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
 	for _, kind := range allowedKinds {
 		// Handle ballot sub-kinds (ballot:yay, ballot:nay, ballot:pass)
 		if strings.Contains(kind, ":") {
 			parts := strings.SplitN(kind, ":", 2)
 			base := parts[0]
 			subKind := parts[1]
-			
+
 			// Only ballot operations support sub-kind syntax
 			if base != "ballot" {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
-			
+
 			// Validate the ballot sub-kind
-			validBallotKinds := []string{"yay", "nay", "pass"}
+			validBallotKinds := []string{
+				core.BallotYay.String(),
+				core.BallotNay.String(),
+				core.BallotPass.String(),
+			}
 			if !slices.Contains(validBallotKinds, subKind) {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
-			
+
 			// Ensure base "ballot" is in the valid operations list
-			if !slices.Contains(avilKinds, base) {
+			if !slices.Contains(availKinds, base) {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
 			continue
 		}
-		
-		if !slices.Contains(avilKinds, kind) {
+
+		if !slices.Contains(availKinds, kind) {
 			return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 		}
 	}
