@@ -49,7 +49,7 @@ var (
 	signHandlerRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "sign_handler_requests_total",
 		Help: "Total number of sign handler requests",
-	}, []string{"result", "address", "request_type"})
+	}, []string{"address", "status"})
 
 	SignInterceptor = InterceptorFactory(
 		func(opt *SignInterceptorOptions) *prometheus.Timer {
@@ -80,10 +80,10 @@ var (
 	)
 )
 
-func RecordSignHandlerRequest(startTime time.Time, address, status, requestType string) {
+func RecordSignHandlerRequest(startTime time.Time, address, status string) {
 	duration := time.Since(startTime)
 	signHandlerDuration.WithLabelValues(address, status).Observe(float64(duration.Milliseconds()))
-	signHandlerRequestsTotal.WithLabelValues(status, address, requestType).Inc()
+	signHandlerRequestsTotal.WithLabelValues(address, status).Inc()
 }
 
 // RegisterHandler register metrics handler

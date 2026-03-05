@@ -88,10 +88,9 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	address := "unknown"
 	status := "500"
-	requestType := "sign"
 
 	defer func() {
-		metrics.RecordSignHandlerRequest(startTime, address, status, requestType)
+		metrics.RecordSignHandlerRequest(startTime, address, status)
 	}()
 
 	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
@@ -121,7 +120,6 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		status = "500"
 		s.logger().Errorf("Error reading POST content: %v", err)
 		tezosJSONError(w, err)
 		return

@@ -38,27 +38,30 @@ func TestMetricsChainIDLabel(t *testing.T) {
 
 func TestSignHandlerMetrics(t *testing.T) {
 	t.Run("increments on success", func(t *testing.T) {
-		metrics0 := integrationtest.GetMetrics(integrationtest.AlicePKH, "transaction", "generic", "File", "")
+		before := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
 		_, err := integrationtest.OctezClient("transfer", "1", "from", "alice", "to", "bob")
 		require.Nil(t, err)
-		metrics1 := integrationtest.GetMetrics(integrationtest.AlicePKH, "transaction", "generic", "File", "")
+		after := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
 
-		assert.Greater(t, metrics1.HandlerRequestsTotal, metrics0.HandlerRequestsTotal,
-			"sign_handler_requests_total should increment after successful sign")
-		assert.Greater(t, metrics1.HandlerDurationCount, metrics0.HandlerDurationCount,
-			"sign_handler_request_duration_milliseconds count should increment")
+		assert.Greater(t, after.RequestsTotal, before.RequestsTotal,
+			"sign_handler_requests_total{status=200} should increment after successful sign")
+		assert.Greater(t, after.DurationCount, before.DurationCount,
+			"sign_handler_request_duration_milliseconds_count{status=200} should increment")
 	})
 
-	t.Run("unchanged on policy rejection", func(t *testing.T) {
-		// Alice only allows transaction and reveal, not delegation
-		metrics0 := integrationtest.GetMetrics(integrationtest.AlicePKH, "delegation", "generic", "File", "")
-		// Try delegation which is not allowed for alice - expect rejection
+	t.Run("records rejection with error status", func(t *testing.T) {
+		ok200 := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+		err403 := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "403")
+		// Delegation is not in alice's allow policy, signatory returns 403
 		_, _ = integrationtest.OctezClient("register", "key", "alice", "as", "delegate")
-		metrics1 := integrationtest.GetMetrics(integrationtest.AlicePKH, "delegation", "generic", "File", "")
+		ok200After := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+		err403After := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "403")
 
-		assert.Equal(t, metrics1.HandlerRequestsTotal, metrics0.HandlerRequestsTotal,
-			"sign_handler_requests_total (200) should not increment on rejection")
-		assert.Equal(t, metrics1.HandlerDurationCount, metrics0.HandlerDurationCount,
-			"sign_handler_request_duration_milliseconds (200) should not increment on rejection")
+		assert.Equal(t, ok200.RequestsTotal, ok200After.RequestsTotal,
+			"sign_handler_requests_total{status=200} should not increment on rejection")
+		assert.Greater(t, err403After.RequestsTotal, err403.RequestsTotal,
+			"sign_handler_requests_total{status=403} should increment on policy rejection")
+		assert.Greater(t, err403After.DurationCount, err403.DurationCount,
+			"sign_handler_request_duration_milliseconds_count{status=403} should increment on policy rejection")
 	})
 }

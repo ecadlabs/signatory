@@ -12,12 +12,15 @@ import (
 )
 
 type Metrics struct {
-	SigningOpsTotal      int
-	Sum                  float64
-	Count                int
-	Error                int
-	HandlerRequestsTotal int
-	HandlerDurationCount int
+	SigningOpsTotal int
+	Sum             float64
+	Count           int
+	Error           int
+}
+
+type HandlerMetrics struct {
+	RequestsTotal int
+	DurationCount int
 }
 
 func GetMetrics(address string, kind string, operation string, vault string, chainID string) Metrics {
@@ -58,21 +61,28 @@ func GetMetrics(address string, kind string, operation string, vault string, cha
 				metrics.Sum, _ = strconv.ParseFloat(parseValue(s), 64)
 			}
 		}
-		// Sign handler level metrics
-		if strings.HasPrefix(s, "sign_handler_requests_total") {
-			if strings.Contains(s, "address=\""+address) &&
-				strings.Contains(s, "result=\"200\"") {
-				metrics.HandlerRequestsTotal, _ = strconv.Atoi(parseValue(s))
-			}
-		}
-		if strings.HasPrefix(s, "sign_handler_request_duration_milliseconds_count") {
-			if strings.Contains(s, "address=\""+address) &&
-				strings.Contains(s, "status=\"200\"") {
-				metrics.HandlerDurationCount, _ = strconv.Atoi(parseValue(s))
-			}
-		}
 	}
 	return metrics
+}
+
+func GetHandlerMetrics(address, status string) HandlerMetrics {
+	m := HandlerMetrics{}
+	_, b := getBytes()
+	lines := bytes.Split(b, []byte("\n"))
+	for _, line := range lines {
+		s := string(line)
+		if strings.HasPrefix(s, "sign_handler_requests_total") &&
+			strings.Contains(s, "address=\""+address) &&
+			strings.Contains(s, "status=\""+status) {
+			m.RequestsTotal, _ = strconv.Atoi(parseValue(s))
+		}
+		if strings.HasPrefix(s, "sign_handler_request_duration_milliseconds_count") &&
+			strings.Contains(s, "address=\""+address) &&
+			strings.Contains(s, "status=\""+status) {
+			m.DurationCount, _ = strconv.Atoi(parseValue(s))
+		}
+	}
+	return m
 }
 
 func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics) {
