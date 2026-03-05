@@ -556,6 +556,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			expectedPassword := tt.fields.Users["user"].Password
 			a := &JWT{
 				Users: tt.fields.Users,
 			}
@@ -563,7 +564,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 			require.NoError(t, err)
 			d, ret := a.GetUserData("user")
 			require.True(t, ret)
-			require.Equal(t, tt.fields.Users["user"].Password, d.Password)
+			require.Equal(t, expectedPassword, d.Password)
 			require.Equal(t, secret, d.Secret)
 
 			time.Sleep(time.Minute + time.Second)

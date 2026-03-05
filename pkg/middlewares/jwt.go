@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -106,6 +107,7 @@ func (m *JWTMiddleware) AuthHandler(next http.Handler) http.Handler {
 // JWT contains the configuration for JWT tokens
 type JWT struct {
 	Users map[string]UserData `yaml:"users"`
+	mu    sync.RWMutex        `yaml:"-"`
 }
 
 type UserData struct {
@@ -117,6 +119,8 @@ type UserData struct {
 }
 
 func (j *JWT) SetNewCred(user string) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
 	if u, ok := j.Users[user]; ok {
 		if u.NewData != nil {
 			u.Password = u.NewData.Password
@@ -131,6 +135,8 @@ func (j *JWT) SetNewCred(user string) error {
 }
 
 func (j *JWT) GetUserData(user string) (*UserData, bool) {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
 	if u, ok := j.Users[user]; ok {
 		return &u, true
 	}
@@ -198,7 +204,14 @@ func (j *JWT) Authenticate(user string, token string) (string, error) {
 }
 
 func (j *JWT) CheckUpdateNewCred() error {
-	for user, data := range j.Users {
+	j.mu.RLock()
+	snapshot := make(map[string]UserData, len(j.Users))
+	for k, v := range j.Users {
+		snapshot[k] = v
+	}
+	j.mu.RUnlock()
+
+	for user, data := range snapshot {
 		// Validate current credentials first
 		if err := validateSecretAndPass([]string{data.Password, data.Secret}); err != nil {
 			return fmt.Errorf("JWT: config validation failed for user %s: %w", user, err)
