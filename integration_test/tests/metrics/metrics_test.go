@@ -35,3 +35,33 @@ func TestMetricsChainIDLabel(t *testing.T) {
 		assert.Empty(t, chainID, "generic operations should have empty chain_id")
 	})
 }
+
+func TestSignHandlerMetrics(t *testing.T) {
+	t.Run("increments on success", func(t *testing.T) {
+		before := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+		_, err := integrationtest.OctezClient("transfer", "1", "from", "alice", "to", "bob")
+		require.Nil(t, err)
+		after := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+
+		assert.Greater(t, after.RequestsTotal, before.RequestsTotal,
+			"sign_handler_requests_total{status=200} should increment after successful sign")
+		assert.Greater(t, after.DurationCount, before.DurationCount,
+			"sign_handler_request_duration_milliseconds_count{status=200} should increment")
+	})
+
+	t.Run("records rejection with error status", func(t *testing.T) {
+		ok200 := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+		err403 := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "403")
+		// Delegation is not in alice's allow policy, signatory returns 403
+		_, _ = integrationtest.OctezClient("register", "key", "alice", "as", "delegate")
+		ok200After := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "200")
+		err403After := integrationtest.GetHandlerMetrics(integrationtest.AlicePKH, "403")
+
+		assert.Equal(t, ok200.RequestsTotal, ok200After.RequestsTotal,
+			"sign_handler_requests_total{status=200} should not increment on rejection")
+		assert.Greater(t, err403After.RequestsTotal, err403.RequestsTotal,
+			"sign_handler_requests_total{status=403} should increment on policy rejection")
+		assert.Greater(t, err403After.DurationCount, err403.DurationCount,
+			"sign_handler_request_duration_milliseconds_count{status=403} should increment on policy rejection")
+	})
+}
