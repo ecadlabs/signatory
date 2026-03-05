@@ -17,7 +17,6 @@ require (
 	github.com/ecadlabs/gotez/v2 v2.4.3
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.1
-	github.com/google/tink/go v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/vault/api v1.22.0

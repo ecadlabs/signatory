@@ -31,3 +31,14 @@ All rights in the website and documentation content are reserved by
 ECAD Labs Inc. No permission is granted to reproduce, distribute, or
 create derivative works of the website and documentation content without
 the prior written consent of ECAD Labs Inc.
+
+============================================================================
+THIRD-PARTY CODE NOTICES
+============================================================================
+
+pkg/crypto/kwp/
+  AES Key Wrap with Padding (KWP) implementation
+  Copyright 2020 Google LLC
+  Licensed under the Apache License, Version 2.0
+  Source: github.com/tink-crypto/tink (go/kwp/subtle/kwp.go)
+  See pkg/crypto/kwp/LICENSE for the full license text.
