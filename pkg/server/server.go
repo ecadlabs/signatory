@@ -102,7 +102,8 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		panic(err) // shouldn't happen with Go standard library
+		tezosJSONError(w, err)
+		return
 	}
 	signRequest.Source = net.ParseIP(source)
 
@@ -186,9 +187,9 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
 		if err != nil {
-			source, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				panic(err) // shouldn't happen with Go standard library
+			source, _, splitErr := net.SplitHostPort(r.RemoteAddr)
+			if splitErr != nil {
+				s.logger().Errorf("Error parsing remote address: %v", splitErr)
 			}
 			metrics.AuthenticationFailure(
 				"n/a",
@@ -214,7 +215,8 @@ func (s *Server) blsProveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		panic(err) // shouldn't happen with Go standard library
+		tezosJSONError(w, err)
+		return
 	}
 	signRequest.Source = net.ParseIP(source)
 
