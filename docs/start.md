@@ -226,7 +226,7 @@ Signatory exposes Prometheus metrics and health status on the address specified 
 
 #### Prometheus metrics
 
-Metrics include counters and histograms that track signing operations and errors.
+Metrics include counters and histograms that track signing operations and errors. For a full list of available metrics, see the [Prometheus Metrics Documentation](./metrics.md).
 
 The metrics are intended to be scraped using the Prometheus time series database.
 
