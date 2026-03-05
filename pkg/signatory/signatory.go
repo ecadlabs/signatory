@@ -282,11 +282,11 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		}
 		pkh, err := b58.ParsePublicKeyHash([]byte(pl.PublicKeyHash))
 		if err != nil {
-			errors.Wrap(err, http.StatusForbidden)
+			return errors.Wrap(err, http.StatusForbidden)
 		}
 		pub, err := s.config.PolicyHook.Auth.GetPublicKey(ctx, pkh)
 		if err != nil {
-			errors.Wrap(err, http.StatusForbidden)
+			return errors.Wrap(err, http.StatusForbidden)
 		}
 		sig, err := crypt.ParseSignature([]byte(reply.Signature))
 		if err != nil {
