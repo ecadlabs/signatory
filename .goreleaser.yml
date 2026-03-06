@@ -1,7 +1,7 @@
 version: 2
 
 builds:
-# LINUX
+# Dynamic builds (for Docker images, supports dlopen/PKCS11)
   - id: signatory-linux-amd
     binary: signatory
     env:
@@ -108,64 +108,205 @@ builds:
     flags:
       - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
-dockers:
-  - ids:
-      - signatory
-      - signatory-cli
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-amd64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-amd64{{ end }}'
-    dockerfile: goreleaser.dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/amd64"
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-arm64'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-arm64{{ end }}'
-    dockerfile: goreleaser.dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm64"
-    goarch: arm64
-  - image_templates:
-    - '{{ if .IsSnapshot }}ghcr.io/{{ end }}ecadlabs/signatory:{{ if .IsSnapshot }}{{ .FullCommit }}{{ else }}{{ .Tag }}{{ end }}-armv7'
-    - '{{ if not .IsSnapshot }}ecadlabs/signatory:latest-armv7{{ end }}'
-    dockerfile: goreleaser.dockerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/arm/v7"
-    goarch: arm
-    goarm: '7'
+# Static builds (for standalone archives, no glibc dependency)
+# Skipped during snapshot/PR builds to save CI time.
+# Uses the same glibc cross-compilers as dynamic builds but with static
+# linking flags. dlopen won't work (PKCS11 users should use Docker).
+  - id: signatory-linux-amd-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+    main: ./cmd/signatory/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -v
 
-docker_manifests:
-  - name_template: 'ecadlabs/signatory:latest'
-    image_templates:
-      - 'ecadlabs/signatory:latest-amd64'
-      - 'ecadlabs/signatory:latest-arm64'
-      - 'ecadlabs/signatory:latest-armv7'
-  - name_template: 'ecadlabs/signatory:{{ .Tag }}'
-    image_templates:
-      - 'ecadlabs/signatory:{{ .Tag }}-amd64'
-      - 'ecadlabs/signatory:{{ .Tag }}-arm64'
-      - 'ecadlabs/signatory:{{ .Tag }}-armv7'
+  - id: signatory-cli-linux-amd-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+    main: ./cmd/signatory-cli/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -v
+
+  - id: signatory-linux-arm64-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    main: ./cmd/signatory/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - arm64
+    flags:
+      - -v
+
+  - id: signatory-cli-linux-arm64-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    main: ./cmd/signatory-cli/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - arm64
+    flags:
+      - -v
+
+  - id: signatory-linux-arm-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+    main: ./cmd/signatory/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - '7'
+    flags:
+      - -v
+
+  - id: signatory-cli-linux-arm-static
+    skip: '{{ .IsSnapshot }}'
+    binary: signatory-cli
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabihf-gcc
+    main: ./cmd/signatory-cli/main.go
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
+      - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
+      - '-linkmode external'
+      - '-extldflags "-static"'
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - '7'
+    flags:
+      - -v
+
+archives:
+  - ids:
+      - signatory-linux-amd-static
+      - signatory-cli-linux-amd-static
+      - signatory-linux-arm64-static
+      - signatory-cli-linux-arm64-static
+      - signatory-linux-arm-static
+      - signatory-cli-linux-arm-static
+
+dockers_v2:
+  - id: release
+    ids:
+      - signatory-linux-amd
+      - signatory-cli-linux-amd
+      - signatory-linux-arm64
+      - signatory-cli-linux-arm64
+      - signatory-linux-arm
+      - signatory-cli-linux-arm
+    images:
+      - ecadlabs/signatory
+    tags:
+      - '{{ .Tag }}'
+      - latest
+    dockerfile: goreleaser.dockerfile
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+    labels:
+      org.opencontainers.image.created: '{{.Date}}'
+      org.opencontainers.image.name: '{{.ProjectName}}'
+      org.opencontainers.image.revision: '{{.FullCommit}}'
+      org.opencontainers.image.version: '{{.Version}}'
+      org.opencontainers.image.source: '{{.GitURL}}'
+    disable: '{{ .IsSnapshot }}'
+  - id: snapshot
+    ids:
+      - signatory-linux-amd
+      - signatory-cli-linux-amd
+      - signatory-linux-arm64
+      - signatory-cli-linux-arm64
+      - signatory-linux-arm
+      - signatory-cli-linux-arm
+    images:
+      - ghcr.io/ecadlabs/signatory
+    tags:
+      - '{{ .FullCommit }}'
+    dockerfile: goreleaser.dockerfile
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+    labels:
+      org.opencontainers.image.created: '{{.Date}}'
+      org.opencontainers.image.name: '{{.ProjectName}}'
+      org.opencontainers.image.revision: '{{.FullCommit}}'
+      org.opencontainers.image.version: '{{.Version}}'
+      org.opencontainers.image.source: '{{.GitURL}}'
+    disable: '{{ not .IsSnapshot }}'
 
 checksum:
   name_template: checksums.txt

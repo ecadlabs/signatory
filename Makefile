@@ -29,6 +29,7 @@ release-dry-run:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
@@ -43,6 +44,7 @@ release-preview:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.docker:/root/.docker \
@@ -62,6 +64,7 @@ release:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		--env-file .env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
