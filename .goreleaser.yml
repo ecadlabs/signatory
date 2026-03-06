@@ -2,8 +2,8 @@ version: 2
 
 before:
   hooks:
-    - sh -c 'curl -sSL https://ziglang.org/download/0.14.1/zig-linux-x86_64-0.14.1.tar.xz | tar xJ -C /usr/local && ln -sf /usr/local/zig-linux-x86_64-0.14.1/zig /usr/local/bin/zig'
-    - sh -c 'chmod +x .goreleaser/zig-cc-*'
+    - cmd: sh -c "curl -sSL https://ziglang.org/download/0.14.1/zig-linux-x86_64-0.14.1.tar.xz | tar xJ -C /usr/local && ln -sf /usr/local/zig-linux-x86_64-0.14.1/zig /usr/local/bin/zig"
+    - cmd: chmod +x .goreleaser/zig-cc-*
 
 builds:
 # Dynamic builds (for Docker images, supports dlopen/PKCS11)
