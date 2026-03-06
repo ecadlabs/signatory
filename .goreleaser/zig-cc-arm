@@ -1,0 +1,2 @@
+#!/bin/sh
+exec zig cc -target arm-linux-gnueabihf.2.17 "$@"
