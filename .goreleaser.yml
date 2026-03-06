@@ -1,10 +1,5 @@
 version: 2
 
-before:
-  hooks:
-    - "sh -c \"curl -sSL https://ziglang.org/download/0.14.1/zig-linux-x86_64-0.14.1.tar.xz | tar xJ -C /usr/local && ln -sf /usr/local/zig-linux-x86_64-0.14.1/zig /usr/local/bin/zig\""
-    - "chmod +x .goreleaser/zig-cc-*"
-
 builds:
 # Dynamic builds (for Docker images, supports dlopen/PKCS11)
   - id: signatory-linux-amd
@@ -121,7 +116,7 @@ builds:
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-x86_64
+      - CC=zig-cc-x86_64
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -138,7 +133,7 @@ builds:
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-x86_64
+      - CC=zig-cc-x86_64
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -155,7 +150,7 @@ builds:
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-aarch64
+      - CC=zig-cc-aarch64
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -172,7 +167,7 @@ builds:
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-aarch64
+      - CC=zig-cc-aarch64
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -189,7 +184,7 @@ builds:
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-arm
+      - CC=zig-cc-arm
     main: ./cmd/signatory/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
@@ -208,7 +203,7 @@ builds:
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=./.goreleaser/zig-cc-arm
+      - CC=zig-cc-arm
     main: ./cmd/signatory-cli/main.go
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
