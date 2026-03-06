@@ -54,8 +54,6 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -92,18 +90,11 @@ jobs:
           REF: ${{ github.head_ref || github.ref_name }}
         run: echo "value=${REF//\//-}" >> "$GITHUB_OUTPUT"
 
-      - name: Tag Docker images appropriately
+      - name: Tag and push preview images
         run: >
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-amd64 ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64;
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-arm64 ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64;
-          docker tag ghcr.io/ecadlabs/signatory:${{ github.sha }}-armv7 ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7;
-        if: "!startsWith(github.ref, 'refs/tags/v')"
-
-      - name: Push Signatory preview images to GH Container Registry
-        run: >
-         docker push ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64;
-         docker push ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-arm64;
-         docker push ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-armv7;
+          docker buildx imagetools create
+          --tag ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}
+          ghcr.io/ecadlabs/signatory:${{ github.sha }}
         if: "!startsWith(github.ref, 'refs/tags/v')"
 
       - name: goreleaser release
@@ -136,7 +127,7 @@ jobs:
         run: echo "value=${REF//\//-}" >> "$GITHUB_OUTPUT"
       - name: pull and start the Signatory image under test
         env:
-          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}
         run: >
           docker pull $IMAGE;
           docker rm -f signatory || true;
@@ -194,7 +185,7 @@ jobs:
           }
       - name: Run tests
         env:
-          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}-amd64
+          IMAGE: ghcr.io/ecadlabs/signatory:${{ steps.replaceslash.outputs.value }}
           VAULT_AWS_USER: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_USER }}
           VAULT_AWS_KEY: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_KEY }}
           VAULT_AWS_SECRET: ${{ secrets.INTEGRATIONTEST_VAULT_AWS_SECRET }}
