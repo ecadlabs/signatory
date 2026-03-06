@@ -6,8 +6,8 @@ sidebar_label: Nitro Enclave Signer
 
 # Nitro Enclave Signer
 
-:::info Beta
-This backend is in beta and is expected to ship in Signatory v1.3.0 prior to the Tezos Seoul protocol activation. See [Protocol Seoul](https://octez.tezos.com/docs/protocols/023_seoul.html).
+:::info
+The Nitro Enclave backend was introduced in Signatory v1.3.0. It requires tee-signer from [signatory-io/tee-signer](https://github.com/signatory-io/tee-signer).
 :::
 
 Nitro backend is used in conjunction with [signatory-io/tee-signer](https://github.com/signatory-io/tee-signer), its counterpart running inside [AWS Nitro Enclave](https://aws.amazon.com/ec2/nitro/nitro-enclaves/), a fortified container with no persistent storage and no connection to the outside world other than bidirectional hypervisor-local [VSock](https://man7.org/linux/man-pages/man7/vsock.7.html) link to its parent instance.
