@@ -108,25 +108,19 @@ builds:
     flags:
       - '{{ if .IsSnapshot }}-cover{{ else }}-v{{ end }}'
 
-# Static builds (for standalone archives, no glibc dependency)
+# Portable builds (for standalone archives, targets glibc 2.17+ via zig cc)
 # Skipped during snapshot/PR builds to save CI time.
-# Uses the same glibc cross-compilers as dynamic builds but with static
-# linking flags. dlopen won't work (PKCS11 users should use Docker).
-  - id: signatory-linux-amd-static
+# Dynamically linked against old glibc so dlopen/PKCS11 works everywhere.
+  - id: signatory-linux-amd-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=gcc
+      - CC=zig-cc-x86_64
     main: ./cmd/signatory/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -134,21 +128,16 @@ builds:
     flags:
       - -v
 
-  - id: signatory-cli-linux-amd-static
+  - id: signatory-cli-linux-amd-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=gcc
+      - CC=zig-cc-x86_64
     main: ./cmd/signatory-cli/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -156,21 +145,16 @@ builds:
     flags:
       - -v
 
-  - id: signatory-linux-arm64-static
+  - id: signatory-linux-arm64-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
+      - CC=zig-cc-aarch64
     main: ./cmd/signatory/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -178,21 +162,16 @@ builds:
     flags:
       - -v
 
-  - id: signatory-cli-linux-arm64-static
+  - id: signatory-cli-linux-arm64-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
+      - CC=zig-cc-aarch64
     main: ./cmd/signatory-cli/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -200,21 +179,16 @@ builds:
     flags:
       - -v
 
-  - id: signatory-linux-arm-static
+  - id: signatory-linux-arm-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory
     env:
       - CGO_ENABLED=1
-      - CC=arm-linux-gnueabihf-gcc
+      - CC=zig-cc-arm
     main: ./cmd/signatory/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -224,21 +198,16 @@ builds:
     flags:
       - -v
 
-  - id: signatory-cli-linux-arm-static
+  - id: signatory-cli-linux-arm-portable
     skip: '{{ .IsSnapshot }}'
     binary: signatory-cli
     env:
       - CGO_ENABLED=1
-      - CC=arm-linux-gnueabihf-gcc
+      - CC=zig-cc-arm
     main: ./cmd/signatory-cli/main.go
-    tags:
-      - netgo
-      - osusergo
     ldflags:
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitRevision={{.Version}}'
       - '-X github.com/ecadlabs/signatory/pkg/metrics.GitBranch={{.Version}}'
-      - '-linkmode external'
-      - '-extldflags "-static"'
     goos:
       - linux
     goarch:
@@ -250,12 +219,12 @@ builds:
 
 archives:
   - ids:
-      - signatory-linux-amd-static
-      - signatory-cli-linux-amd-static
-      - signatory-linux-arm64-static
-      - signatory-cli-linux-arm64-static
-      - signatory-linux-arm-static
-      - signatory-cli-linux-arm-static
+      - signatory-linux-amd-portable
+      - signatory-cli-linux-amd-portable
+      - signatory-linux-arm64-portable
+      - signatory-cli-linux-arm64-portable
+      - signatory-linux-arm-portable
+      - signatory-cli-linux-arm-portable
 
 dockers_v2:
   - id: release
@@ -282,6 +251,9 @@ dockers_v2:
       org.opencontainers.image.revision: '{{.FullCommit}}'
       org.opencontainers.image.version: '{{.Version}}'
       org.opencontainers.image.source: '{{.GitURL}}'
+    sbom: false
+    flags:
+      - --provenance=false
     disable: '{{ .IsSnapshot }}'
   - id: snapshot
     ids:
@@ -306,6 +278,9 @@ dockers_v2:
       org.opencontainers.image.revision: '{{.FullCommit}}'
       org.opencontainers.image.version: '{{.Version}}'
       org.opencontainers.image.source: '{{.GitURL}}'
+    sbom: false
+    flags:
+      - --provenance=false
     disable: '{{ not .IsSnapshot }}'
 
 checksum:

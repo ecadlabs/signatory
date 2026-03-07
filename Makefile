@@ -34,7 +34,7 @@ release-dry-run:
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--snapshot
@@ -50,7 +50,7 @@ release-preview:
 		-v $(HOME)/.docker:/root/.docker \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--snapshot
@@ -71,7 +71,7 @@ release:
 		-v $(HOME)/.docker:/root/.docker \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--skip=validate
