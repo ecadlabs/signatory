@@ -251,9 +251,6 @@ dockers_v2:
       org.opencontainers.image.revision: '{{.FullCommit}}'
       org.opencontainers.image.version: '{{.Version}}'
       org.opencontainers.image.source: '{{.GitURL}}'
-    sbom: false
-    flags:
-      - --provenance=false
     disable: '{{ .IsSnapshot }}'
   - id: snapshot
     ids:
