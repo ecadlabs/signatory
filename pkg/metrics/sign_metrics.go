@@ -15,6 +15,7 @@ type SignInterceptorOptions struct {
 	Vault      string
 	Req        string
 	ChainID    string
+	Round      string
 	Stat       map[string]int
 	TargetFunc func() (crypt.Signature, error)
 }
@@ -51,6 +52,11 @@ var (
 		Help: "Total number of sign handler requests",
 	}, []string{"address", "status"})
 
+	consensusRoundTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "consensus_round_total",
+		Help: "Total consensus signing operations by round",
+	}, []string{"address", "operation_type", "chain_id", "round"})
+
 	SignInterceptor = InterceptorFactory(
 		func(opt *SignInterceptorOptions) *prometheus.Timer {
 			return prometheus.NewTimer(
@@ -76,6 +82,9 @@ var (
 			for op, cnt := range opt.Stat {
 				signingOpCount.WithLabelValues(string(opt.Address.ToBase58()), opt.Vault, opt.Req, op, opt.ChainID).Add(float64(cnt))
 			}
+			if opt.Round != "" {
+				consensusRoundTotal.WithLabelValues(string(opt.Address.ToBase58()), opt.Req, opt.ChainID, opt.Round).Inc()
+			}
 		},
 	)
 )
@@ -93,4 +102,5 @@ func init() {
 	prometheus.MustRegister(vaultErrorCounter)
 	prometheus.MustRegister(signHandlerDuration)
 	prometheus.MustRegister(signHandlerRequestsTotal)
+	prometheus.MustRegister(consensusRoundTotal)
 }

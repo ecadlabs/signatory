@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -49,6 +50,7 @@ const (
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
+	logRound     = "round"
 	logClient    = "client_pkh"
 	logRaw       = "raw"
 )
@@ -355,7 +357,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l = l.WithField(logReq, msg.SignRequestKind())
 
 	if m, ok := msg.(request.WithWatermark); ok {
-		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel()})
+		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel(), logRound: m.GetRound()})
 	}
 
 	var opStat operationsStat
@@ -412,8 +414,10 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var chainID string
+	var round string
 	if m, ok := msg.(request.WithWatermark); ok {
 		chainID = m.GetChainID().String()
+		round = strconv.FormatInt(int64(m.GetRound()), 10)
 	}
 
 	var sig crypt.Signature
@@ -422,6 +426,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		Vault:   p.key.Vault().Name(),
 		Req:     msg.SignRequestKind(),
 		ChainID: chainID,
+		Round:   round,
 		Stat:    opStat,
 		TargetFunc: func() (crypt.Signature, error) {
 			return signFunc(ctx, req.Message, p.key)
