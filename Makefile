@@ -29,11 +29,12 @@ release-dry-run:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--snapshot
@@ -43,12 +44,13 @@ release-preview:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.docker:/root/.docker \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--snapshot
@@ -62,13 +64,14 @@ release:
 	docker run \
 		--rm \
 		--privileged \
+		--platform linux/amd64 \
 		-e CGO_ENABLED=1 \
 		--env-file .env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.docker:/root/.docker \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/ecadlabs/goreleaser-cross-zig:${GOLANG_CROSS_VERSION} \
 		release \
 		--clean \
 		--skip=validate

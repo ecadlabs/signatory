@@ -24,8 +24,9 @@ RUN groupadd -g ${GID} signatory && \
     mkdir -p /var/lib/signatory /etc/signatory && \
     chown -R signatory:signatory /var/lib/signatory /etc/signatory
 
-COPY ./signatory /bin
-COPY ./signatory-cli /bin
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/signatory /bin/signatory
+COPY ${TARGETPLATFORM}/signatory-cli /bin/signatory-cli
 
 USER signatory
 ENTRYPOINT ["/bin/signatory"]
