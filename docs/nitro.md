@@ -315,6 +315,7 @@ The enclave's Context ID (`enclave_cid`) changes on every restart. Hardcoding it
 # start-signatory.sh - Wrapper to set ENCLAVE_CID dynamically
 set -euo pipefail
 
+CID=""
 # Wait for enclave to be running (up to 60 seconds)
 for i in {1..30}; do
     CID=$(nitro-cli describe-enclaves | jq -r '.[0].EnclaveCID // empty')
@@ -413,6 +414,8 @@ For production deployments, use systemd to manage the enclave and Signatory life
 
 ### Nitro Enclave Service
 
+Save as `/etc/systemd/system/nitro-enclave.service`:
+
 ```ini
 [Unit]
 Description=Nitro Enclave tee-signer
@@ -420,15 +423,13 @@ After=nitro-enclaves-allocator.service
 Requires=nitro-enclaves-allocator.service
 
 [Service]
-Type=simple
+Type=oneshot
+RemainAfterExit=yes
 ExecStart=/usr/bin/nitro-cli run-enclave \
   --eif-path /opt/nitro-signer/nitro-signer.eif \
   --memory 1024 \
   --cpu-count 2
-ExecStop=/usr/bin/nitro-cli terminate-enclave --all
-Restart=always
-RestartSec=10
-# Give enclave time to initialize before dependents start
+ExecStop=/usr/bin/nitro-cli terminate-enclave --enclave-name tee-signer
 ExecStartPost=/bin/sleep 5
 
 [Install]
@@ -467,49 +468,6 @@ WantedBy=multi-user.target
 
 The `Requires=nitro-enclave.service` directive ensures the enclave starts first. The `start-signatory.sh` wrapper (see [Handling Dynamic CID](#handling-dynamic-cid)) polls for the enclave CID before launching Signatory.
 
-## Connecting a Remote Baker
-
-When the baker runs on a different machine than Signatory (common when using cloud-hosted Nitro Enclaves), the baker needs network access to the Signatory HTTP API.
-
-### SSH Tunnel (Recommended for Simple Setups)
-
-Create a persistent SSH tunnel from the baker machine to the Signatory host:
-
-```ini
-# /etc/systemd/system/ssh-tunnel-signatory.service
-[Unit]
-Description=SSH Tunnel to Signatory
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/ssh -N -L 6732:localhost:6732 \
-  -o ServerAliveInterval=30 \
-  -o ServerAliveCountMax=3 \
-  -o ExitOnForwardFailure=yes \
-  -i /home/baker/.ssh/signatory_key \
-  signatory-user@SIGNATORY_HOST
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Then configure octez-client on the baker to use the local tunnel endpoint:
-
-```bash
-octez-client import secret key my_key http://localhost:6732/tz4YourKey
-```
-
-### VPN / Private Network
-
-For environments with VPN or private networking (e.g., Tailscale, AWS VPC peering), Signatory can be accessed directly. Restrict access using:
-
-- **AWS Security Groups**: Allow the Signatory port only from the baker's IP
-- **Signatory authorized_keys**: Restrict which keys can be used by which clients (see [Authorized Keys](authorized_keys.md))
-
 ## Debugging
 
 The tee-signer EIF is built `FROM scratch` (minimal image) and contains no shell. You cannot `docker exec` or SSH into the enclave.
@@ -537,8 +495,7 @@ After completing your setup, verify each of the following:
 2. **Signatory process healthy**: `systemctl status signatory` or `docker ps`
 3. **Keys accessible**: `curl http://localhost:6732/keys/tz4YourKey` returns the public key
 4. **Signing works**: Baker can sign through the Signatory endpoint
-5. **No plaintext keys on disk**: `grep -r "edsk\|spsk\|p2sk\|BLsk" /var/lib/signatory/ /etc/signatory/ /tmp/` returns nothing
+5. **No plaintext keys on disk**: `grep -rE "edsk|spsk|p2sk|BLsk" /var/lib/signatory/ /etc/signatory/ /tmp/` returns nothing
 6. **No hardcoded credentials**: Config files use IAM roles or environment variables, not embedded AWS keys
 7. **KMS attestation active**: KMS key policy includes PCR0 condition (not zero placeholder)
-8. **Tunnel or network path stable**: If using SSH tunnel, `systemctl status ssh-tunnel-signatory` shows active
-9. **Services enabled for reboot**: `systemctl enable nitro-enclave.service signatory.service`
+8. **Services enabled for reboot**: `systemctl enable nitro-enclave.service signatory.service`
