@@ -435,6 +435,20 @@ func TestAuthenticateWithCredentialRotation(t *testing.T) {
 	})
 }
 
+func TestGenerateTokenNonexistentUser(t *testing.T) {
+	j := &JWT{
+		Users: map[string]UserData{
+			"user": {
+				Password: "pass",
+				Secret:   secret,
+			},
+		},
+	}
+	_, err := j.GenerateToken("ghost", "pass")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "user not found")
+}
+
 func getToken(user string, au *JWTMiddleware) (string, error) {
 
 	req, err := http.NewRequest("GET", "/login", nil)

@@ -406,7 +406,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 
 		if wmErr != nil {
 			err = errors.Wrap(wmErr, http.StatusConflict)
-			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), msg.(request.WithWatermark).GetChainID().String(), err.Error())
+			chainIDStr := ""
+			if m, ok := msg.(request.WithWatermark); ok {
+				chainIDStr = m.GetChainID().String()
+			}
+			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), chainIDStr, wmErr.Error())
 			l.Error(err)
 			return nil, err
 		}
