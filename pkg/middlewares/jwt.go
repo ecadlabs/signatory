@@ -149,17 +149,19 @@ func (j *JWT) GenerateToken(user string, pass string) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user"] = user
 	ud, ok := j.GetUserData(user)
+	if !ok {
+		return "", fmt.Errorf("JWT: user not found")
+	}
 	if !constantTimeCompare(pass, ud.Password) {
 		ud = ud.NewData
 	}
-	if ok {
-		if ud.Exp == 0 {
-			ud.Exp = 60
-		}
-		claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
-	} else {
-		return "", fmt.Errorf("JWT: user not found")
+	if ud == nil {
+		return "", fmt.Errorf("JWT: invalid credentials")
 	}
+	if ud.Exp == 0 {
+		ud.Exp = 60
+	}
+	claims["exp"] = time.Now().Add(time.Minute * time.Duration(ud.Exp)).Unix()
 	token.Claims = claims
 	return token.SignedString([]byte(ud.Secret))
 }
