@@ -128,3 +128,82 @@ func TestSignInterceptor_FailureDoesNotIncrementSuccessMetrics(t *testing.T) {
 	assert.Equal(t, opsCountBefore, opsCountAfter,
 		"Signing ops counter should NOT be updated on failure")
 }
+
+func TestSignInterceptor_ConsensusRoundTotal(t *testing.T) {
+	addr, _ := b58.ParsePublicKeyHash([]byte("tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"))
+
+	t.Run("increments on success with round 0", func(t *testing.T) {
+		before := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "block", "round-chain-0", "0"))
+		opt := &SignInterceptorOptions{
+			Address: addr,
+			Vault:   "TestVault",
+			ChainID: "round-chain-0",
+			Round:   "0",
+			Req:     "block",
+			Stat:    map[string]int{"block": 1},
+			TargetFunc: func() (crypt.Signature, error) {
+				return nil, nil
+			},
+		}
+		_, err := SignInterceptor(opt)
+		require.NoError(t, err)
+		after := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "block", "round-chain-0", "0"))
+		assert.Equal(t, before+1, after, "consensus_round_total should increment for round 0")
+	})
+
+	t.Run("increments on success with round 2", func(t *testing.T) {
+		before := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "attestation", "round-chain-2", "2"))
+		opt := &SignInterceptorOptions{
+			Address: addr,
+			Vault:   "TestVault",
+			ChainID: "round-chain-2",
+			Round:   "2",
+			Req:     "attestation",
+			Stat:    map[string]int{"attestation": 1},
+			TargetFunc: func() (crypt.Signature, error) {
+				return nil, nil
+			},
+		}
+		_, err := SignInterceptor(opt)
+		require.NoError(t, err)
+		after := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "attestation", "round-chain-2", "2"))
+		assert.Equal(t, before+1, after, "consensus_round_total should increment for round 2")
+	})
+
+	t.Run("does not increment on error", func(t *testing.T) {
+		before := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "block", "round-chain-err", "0"))
+		opt := &SignInterceptorOptions{
+			Address: addr,
+			Vault:   "TestVault",
+			ChainID: "round-chain-err",
+			Round:   "0",
+			Req:     "block",
+			Stat:    map[string]int{"block": 1},
+			TargetFunc: func() (crypt.Signature, error) {
+				return nil, errors.Wrap(fmt.Errorf("test error"), 500)
+			},
+		}
+		_, err := SignInterceptor(opt)
+		require.Error(t, err)
+		after := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "block", "round-chain-err", "0"))
+		assert.Equal(t, before, after, "consensus_round_total should NOT increment on error")
+	})
+
+	t.Run("does not increment when round is empty", func(t *testing.T) {
+		opt := &SignInterceptorOptions{
+			Address: addr,
+			Vault:   "TestVault",
+			ChainID: "round-chain-empty",
+			Round:   "",
+			Req:     "generic",
+			Stat:    map[string]int{"tx": 1},
+			TargetFunc: func() (crypt.Signature, error) {
+				return nil, nil
+			},
+		}
+		_, err := SignInterceptor(opt)
+		require.NoError(t, err)
+		after := testutil.ToFloat64(consensusRoundTotal.WithLabelValues(string(addr.ToBase58()), "generic", "round-chain-empty", ""))
+		assert.Equal(t, float64(0), after, "consensus_round_total should not increment when round is empty")
+	})
+}

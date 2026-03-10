@@ -30,6 +30,26 @@ These metrics track interactions with the underlying cryptographic vaults (e.g.,
 - `kind`: The operation kind extracted from request contents (e.g., `transaction`, `delegation`, `reveal`). For non-generic requests, this usually matches `op`.
 - `chain_id`: The Tezos chain identifier.
 
+## Consensus Metrics
+
+Metrics for monitoring Tezos consensus round behavior. Round 0 is normal; round > 0 signals consensus delays.
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `consensus_round_total` | Counter | `address`, `operation_type`, `chain_id`, `round` | Total consensus signing operations by round |
+
+**Example queries:**
+
+Non-zero round rate (indicates consensus delays):
+```promql
+rate(consensus_round_total{round!="0"}[5m])
+```
+
+Round distribution by address:
+```promql
+sum by (address, round)(rate(consensus_round_total[5m]))
+```
+
 ## Policy and Security Metrics
 
 Metrics related to authorization and policy enforcement.
