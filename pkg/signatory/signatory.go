@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	stderr "errors"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"slices"
@@ -216,15 +217,16 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 		}
 
 		if policy.MaxFee != nil {
-			var totalFee int64
+			totalFee := new(big.Int)
 			for _, op := range ops {
 				if m, ok := op.(core.ManagerOperation); ok {
-					totalFee += m.GetFee().Int().Int64()
+					totalFee.Add(totalFee, m.GetFee().Int())
 				}
 			}
-			if totalFee > *policy.MaxFee {
+			maxFee := big.NewInt(*policy.MaxFee)
+			if totalFee.Cmp(maxFee) > 0 {
 				metrics.PolicyViolation("max_fee", req.PublicKeyHash.String(), "request")
-				return fmt.Errorf("total fee %d exceeds max allowed %d mutez", totalFee, *policy.MaxFee)
+				return fmt.Errorf("total fee %s exceeds max allowed %s mutez", totalFee, maxFee)
 			}
 		}
 	}
