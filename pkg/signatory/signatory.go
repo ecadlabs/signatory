@@ -64,6 +64,7 @@ type PublicKeyPolicy struct {
 	LogPayloads            bool
 	AuthorizedKeyHashes    []crypt.PublicKeyHash
 	AuthorizedJwtUsers     []string
+	MaxFee                 *int64
 }
 
 // PublicKey contains public key with its hash
@@ -211,6 +212,19 @@ func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest
 			if !allowed {
 				metrics.PolicyViolation(opKind, req.PublicKeyHash.String(), "request")
 				return fmt.Errorf("operation `%s' is not allowed", opKind)
+			}
+		}
+
+		if policy.MaxFee != nil {
+			var totalFee int64
+			for _, op := range ops {
+				if m, ok := op.(core.ManagerOperation); ok {
+					totalFee += m.GetFee().Int().Int64()
+				}
+			}
+			if totalFee > *policy.MaxFee {
+				metrics.PolicyViolation("max_fee", req.PublicKeyHash.String(), "request")
+				return fmt.Errorf("total fee %d exceeds max allowed %d mutez", totalFee, *policy.MaxFee)
 			}
 		}
 	}
@@ -778,6 +792,7 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			LogPayloads:            v.LogPayloads,
 			AllowedChains:          v.AllowedChains,
 			AllowProofOfPossession: false,
+			MaxFee:                 v.MaxFee,
 		}
 
 		if v.Allow != nil {

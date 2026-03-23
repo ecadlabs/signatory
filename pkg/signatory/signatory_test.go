@@ -63,6 +63,8 @@ func mustHex(s string) []byte {
 	return buf
 }
 
+func int64Ptr(v int64) *int64 { return &v }
+
 func TestPolicy(t *testing.T) {
 	type testCase struct {
 		title    string
@@ -404,6 +406,113 @@ func TestPolicy(t *testing.T) {
 				LogPayloads:     true,
 			},
 			expected: "operation `ballot:yay' is not allowed",
+		},
+		{
+			title: "max fee ok",
+			req: &latest.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.GenericOperationSignRequestOperationContents{
+					&latest.Transaction{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x90, 0x4e}, // 10000 mutez
+							Counter:      tz.BigUint{0x01},
+							GasLimit:     tz.BigUint{0x01},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Amount:      tz.BigUint{0x00},
+						Destination: core.ImplicitContract{PublicKeyHash: &tz.Ed25519PublicKeyHash{4, 5, 6}},
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"transaction"},
+				MaxFee:          int64Ptr(20000),
+			},
+		},
+		{
+			title: "max fee exceeded",
+			req: &latest.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.GenericOperationSignRequestOperationContents{
+					&latest.Transaction{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x90, 0x4e}, // 10000 mutez
+							Counter:      tz.BigUint{0x01},
+							GasLimit:     tz.BigUint{0x01},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Amount:      tz.BigUint{0x00},
+						Destination: core.ImplicitContract{PublicKeyHash: &tz.Ed25519PublicKeyHash{4, 5, 6}},
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"transaction"},
+				MaxFee:          int64Ptr(5000),
+			},
+			expected: "total fee 10000 exceeds max allowed 5000 mutez",
+		},
+		{
+			title: "max fee nil allows any fee",
+			req: &latest.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.GenericOperationSignRequestOperationContents{
+					&latest.Transaction{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x90, 0x4e}, // 10000 mutez
+							Counter:      tz.BigUint{0x01},
+							GasLimit:     tz.BigUint{0x01},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Amount:      tz.BigUint{0x00},
+						Destination: core.ImplicitContract{PublicKeyHash: &tz.Ed25519PublicKeyHash{4, 5, 6}},
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"transaction"},
+			},
+		},
+		{
+			title: "max fee batch sum exceeded",
+			req: &latest.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.GenericOperationSignRequestOperationContents{
+					&latest.Transaction{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x90, 0x4e}, // 10000 mutez
+							Counter:      tz.BigUint{0x01},
+							GasLimit:     tz.BigUint{0x01},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Amount:      tz.BigUint{0x00},
+						Destination: core.ImplicitContract{PublicKeyHash: &tz.Ed25519PublicKeyHash{4, 5, 6}},
+					},
+					&latest.Delegation{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0x90, 0x4e}, // 10000 mutez
+							Counter:      tz.BigUint{0x02},
+							GasLimit:     tz.BigUint{0x01},
+							StorageLimit: tz.BigUint{0x00},
+						},
+						Delegate: tz.None[crypt.PublicKeyHash](),
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{"generic"},
+				AllowedOps:      []string{"transaction", "delegation"},
+				MaxFee:          int64Ptr(15000),
+			},
+			expected: "total fee 20000 exceeds max allowed 15000 mutez",
 		},
 	}
 

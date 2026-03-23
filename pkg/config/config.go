@@ -42,6 +42,7 @@ type TezosPolicy struct {
 	LogPayloads            bool                `yaml:"log_payloads"`
 	AuthorizedKeys         *AuthorizedKeys     `yaml:"authorized_keys"`
 	JwtUsers               []string            `yaml:"jwt_users"`
+	MaxFee                 *int64              `yaml:"max_fee"`
 }
 
 // VaultConfig represents single vault instance
