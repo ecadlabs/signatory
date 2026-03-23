@@ -18,6 +18,8 @@ type testCase struct {
 	expectValidateError string
 }
 
+func int64Ptr(v int64) *int64 { return &v }
+
 func mustPKH(src string) crypt.PublicKeyHash {
 	pkh, err := b58.ParsePublicKeyHash([]byte(src))
 	if err != nil {
@@ -48,6 +50,7 @@ tezos:
 
   tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N:
     log_payloads: true
+    max_fee: 50000
     allow:
       generic:
         - transaction
@@ -125,6 +128,7 @@ tezos:
 					Key: mustPKH("tz3MhmeqpudUqEX8PYTbNDF3CVcnnjNQoo8N"),
 					Val: &TezosPolicy{
 						LogPayloads: true,
+						MaxFee:      int64Ptr(50000),
 						Allow: map[string][]string{
 							"generic":     {"transaction", "endorsement"},
 							"block":       nil,

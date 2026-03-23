@@ -42,7 +42,7 @@ type TezosPolicy struct {
 	LogPayloads            bool                `yaml:"log_payloads"`
 	AuthorizedKeys         *AuthorizedKeys     `yaml:"authorized_keys"`
 	JwtUsers               []string            `yaml:"jwt_users"`
-	MaxFee                 *int64              `yaml:"max_fee"`
+	MaxFee                 *int64              `yaml:"max_fee"` // max total fee per request in mutez; nil = unlimited
 }
 
 // VaultConfig represents single vault instance
