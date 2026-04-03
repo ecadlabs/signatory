@@ -21,7 +21,7 @@ import (
 	"github.com/ecadlabs/signatory/pkg/utils"
 	"github.com/ecadlabs/signatory/pkg/utils/gcp"
 	"github.com/ecadlabs/signatory/pkg/vault"
-	kwp "github.com/google/tink/go/kwp/subtle"
+	"github.com/ecadlabs/signatory/pkg/crypto/kwp"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"

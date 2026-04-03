@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/ecadlabs/gotez/v2/b58"
 	"github.com/ecadlabs/gotez/v2/crypt"
@@ -84,11 +85,21 @@ func (s *Server) authenticateSignRequest(req *signatory.SignRequest, r *http.Req
 }
 
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+	address := "unknown"
+	status := "500"
+
+	defer func() {
+		metrics.RecordSignHandlerRequest(startTime, address, status)
+	}()
+
 	pkh, err := b58.ParsePublicKeyHash([]byte(mux.Vars(r)["key"]))
 	if err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
+	address = string(pkh.ToBase58())
 
 	versionStr := r.URL.Query().Get("version")
 	version := utils.ParseVersionString(versionStr)
@@ -102,7 +113,8 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		panic(err) // shouldn't happen with Go standard library
+		tezosJSONError(w, err)
+		return
 	}
 	signRequest.Source = net.ParseIP(source)
 
@@ -116,23 +128,24 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req string
 	if err := json.Unmarshal(body, &req); err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
 	signRequest.Message, err = hex.DecodeString(req)
 	if err != nil {
+		status = strconv.Itoa(http.StatusBadRequest)
 		tezosJSONError(w, errors.Wrap(err, http.StatusBadRequest))
 		return
 	}
 
 	if s.Auth != nil {
 		if err = s.authenticateSignRequest(&signRequest, r); err != nil {
-			var status string
 			if val, ok := err.(errors.HTTPError); ok {
 				status = strconv.Itoa(val.HTTPStatus())
 			} else {
-				status = "n/a"
+				status = "500"
 			}
 			metrics.AuthenticationFailure(status, "authentication", signRequest.Source.String())
 			s.logger().Error(err)
@@ -143,11 +156,17 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 
 	signature, err := s.Signer.Sign(r.Context(), &signRequest)
 	if err != nil {
+		if val, ok := err.(errors.HTTPError); ok {
+			status = strconv.Itoa(val.HTTPStatus())
+		} else {
+			status = "500"
+		}
 		s.logger().Errorf("Error signing request: %v", err)
 		tezosJSONError(w, err)
 		return
 	}
 
+	status = "200"
 	resp := struct {
 		Signature crypt.Signature `json:"signature"`
 	}{
@@ -186,9 +205,9 @@ func (s *Server) authorizedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resp.AuthorizedKeys, err = s.Auth.ListPublicKeys(r.Context())
 		if err != nil {
-			source, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				panic(err) // shouldn't happen with Go standard library
+			source, _, splitErr := net.SplitHostPort(r.RemoteAddr)
+			if splitErr != nil {
+				s.logger().Errorf("Error parsing remote address: %v", splitErr)
 			}
 			metrics.AuthenticationFailure(
 				"n/a",
@@ -214,7 +233,8 @@ func (s *Server) blsProveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	source, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		panic(err) // shouldn't happen with Go standard library
+		tezosJSONError(w, err)
+		return
 	}
 	signRequest.Source = net.ParseIP(source)
 
@@ -262,9 +282,8 @@ func (s *Server) Handler() (http.Handler, error) {
 	r.Use((&middlewares.Logging{}).Handler)
 	if s.MidWare != nil {
 		r.Use(s.MidWare.AuthHandler)
+		r.Methods("POST").Path("/login").HandlerFunc(s.MidWare.LoginHandler)
 	}
-
-	r.Methods("POST").Path("/login").HandlerFunc(s.MidWare.LoginHandler)
 	r.Methods("POST").Path("/keys/{key}").HandlerFunc(s.signHandler)
 	r.Methods("GET").Path("/keys/{key}").HandlerFunc(s.getKeyHandler)
 	r.Methods("GET").Path("/bls_prove_possession/{key}").HandlerFunc(s.blsProveHandler)

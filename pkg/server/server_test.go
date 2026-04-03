@@ -39,6 +39,25 @@ func (c *signerMock) GetPublicKey(ctx context.Context, keyHash crypt.PublicKeyHa
 	return c.PublicKeyResponse, c.PublicKeyError
 }
 
+type authorizedKeysStorageMock struct {
+	list      []crypt.PublicKeyHash
+	err       error
+	listCalls int
+	failAfter int
+}
+
+func (m *authorizedKeysStorageMock) GetPublicKey(context.Context, tz.PublicKeyHash) (crypt.PublicKey, error) {
+	return nil, m.err
+}
+
+func (m *authorizedKeysStorageMock) ListPublicKeys(context.Context) ([]crypt.PublicKeyHash, error) {
+	m.listCalls++
+	if m.err != nil && (m.failAfter == 0 || m.listCalls >= m.failAfter) {
+		return nil, m.err
+	}
+	return m.list, nil
+}
+
 func TestSign(t *testing.T) {
 	type testCase struct {
 		Name       string
@@ -133,6 +152,26 @@ func TestSign(t *testing.T) {
 			require.Equal(t, c.Expected, string(b))
 		})
 	}
+}
+
+func TestSignMalformedRemoteAddrDoesNotPanic(t *testing.T) {
+	srv := &server.Server{
+		Signer: &signerMock{
+			SignError: errors.New("signing failed"),
+		},
+	}
+
+	handler, err := srv.Handler()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/keys/"+tz.Ed25519PublicKeyHash{}.String(), strings.NewReader("\"03123453\""))
+	req.RemoteAddr = "malformed-remote-addr"
+	w := httptest.NewRecorder()
+
+	require.NotPanics(t, func() {
+		handler.ServeHTTP(w, req)
+	})
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 type mockRef struct {
@@ -287,4 +326,46 @@ func TestProvePossession(t *testing.T) {
 			require.Equal(t, c.Expected, string(b))
 		})
 	}
+}
+
+func TestProvePossessionMalformedRemoteAddrDoesNotPanic(t *testing.T) {
+	srv := &server.Server{
+		Signer: &signerMock{
+			SignError: errors.New("prove failed"),
+		},
+	}
+
+	handler, err := srv.Handler()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodGet, "/bls_prove_possession/"+tz.Ed25519PublicKeyHash{}.String(), nil)
+	req.RemoteAddr = "malformed-remote-addr"
+	w := httptest.NewRecorder()
+
+	require.NotPanics(t, func() {
+		handler.ServeHTTP(w, req)
+	})
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestAuthorizedKeysMalformedRemoteAddrPreservesOriginalError(t *testing.T) {
+	srv := &server.Server{
+		Auth: &authorizedKeysStorageMock{
+			err:       errors.New("auth backend unavailable"),
+			failAfter: 2,
+		},
+	}
+
+	handler, err := srv.Handler()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodGet, "/authorized_keys", nil)
+	req.RemoteAddr = "malformed-remote-addr"
+	w := httptest.NewRecorder()
+
+	require.NotPanics(t, func() {
+		handler.ServeHTTP(w, req)
+	})
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	require.Contains(t, w.Body.String(), "auth backend unavailable")
 }

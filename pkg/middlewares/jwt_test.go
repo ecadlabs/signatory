@@ -435,6 +435,20 @@ func TestAuthenticateWithCredentialRotation(t *testing.T) {
 	})
 }
 
+func TestGenerateTokenNonexistentUser(t *testing.T) {
+	j := &JWT{
+		Users: map[string]UserData{
+			"user": {
+				Password: "pass",
+				Secret:   secret,
+			},
+		},
+	}
+	_, err := j.GenerateToken("ghost", "pass")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "user not found")
+}
+
 func getToken(user string, au *JWTMiddleware) (string, error) {
 
 	req, err := http.NewRequest("GET", "/login", nil)
@@ -556,6 +570,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			expectedPassword := tt.fields.Users["user"].Password
 			a := &JWT{
 				Users: tt.fields.Users,
 			}
@@ -563,7 +578,7 @@ func TestJWT_CheckUpdatenewCred(t *testing.T) {
 			require.NoError(t, err)
 			d, ret := a.GetUserData("user")
 			require.True(t, ret)
-			require.Equal(t, tt.fields.Users["user"].Password, d.Password)
+			require.Equal(t, expectedPassword, d.Password)
 			require.Equal(t, secret, d.Secret)
 
 			time.Sleep(time.Minute + time.Second)

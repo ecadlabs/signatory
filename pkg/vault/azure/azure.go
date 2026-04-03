@@ -37,6 +37,7 @@ const (
 var (
 	vaultScopes      = []string{"https://vault.azure.net/.default"}
 	managementScopes = []string{managementURL + ".default"}
+	newPublicKeyFrom = crypt.NewPublicKeyFrom
 )
 
 // Config contains Azure KeyVault backend configuration
@@ -273,7 +274,7 @@ func (a *azureIterator) Next() (key vault.KeyReference, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("(Azure/%s): %w", a.v.config.Vault, err)
 		}
-		if p, err := crypt.NewPublicKeyFrom(jwKey); err == nil {
+		if p, err := newPublicKeyFrom(jwKey); err == nil {
 			if pub, ok := p.(*crypt.ECDSAPublicKey); ok {
 				return &azureKey{
 					bundle: &bundle,
@@ -281,7 +282,7 @@ func (a *azureIterator) Next() (key vault.KeyReference, err error) {
 					v:      a.v,
 				}, nil
 			} else {
-				panic(fmt.Sprintf("unsupported key type: %T", p)) // unlikely
+				return nil, fmt.Errorf("(Azure/%s) %w: %T", a.v.config.Vault, vault.ErrKey, p)
 			}
 		} else if err != crypt.ErrUnsupportedKeyType {
 			return nil, fmt.Errorf("(Azure/%s): %w", a.v.config.Vault, err)
@@ -351,7 +352,7 @@ func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Opt
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
 
-	pub, err := crypt.NewPublicKeyFrom(jwKey)
+	pub, err := newPublicKeyFrom(jwKey)
 	if err != nil {
 		return nil, fmt.Errorf("(Azure/%s): %w", v.config.Vault, err)
 	}
@@ -362,7 +363,7 @@ func (v *Vault) Import(ctx context.Context, priv crypt.PrivateKey, opt utils.Opt
 			v:      v,
 		}, nil
 	} else {
-		panic(fmt.Sprintf("unsupported key type: %T", pub)) // unlikely
+		return nil, fmt.Errorf("(Azure/%s): unsupported key type: %T", v.config.Vault, pub)
 	}
 }
 

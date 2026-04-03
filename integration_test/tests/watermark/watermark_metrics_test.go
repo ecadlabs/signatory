@@ -12,11 +12,11 @@ const (
 	// Baker PKH for watermark tests
 	bakerPKH = "tz1WGcYos3hL7GXYXjKrMnSFdkT7FyXnFBvf"
 
-	// Block sign request at level 2, round 0
-	blockSignRequest = "\"11b3d79f99000000020130c1cb51f36daebee85fe99c04800a38e8133ffd2fa329cd4db35f32fe5bf5e30000000064277aa504683625c2445a4e9564bf710c5528fd99a7d150d2a2a323bc22ff9e2710da4f6d00000021000000010200000004000000020000000000000004ffffffff0000000400000000080966c1f5a955161345bc7d81ac205ebafc89f5977a5bc88e47ab1b6f8d791e5ae8b92d9bc0523b3e07848458e66dc4265e29f3c5d8007447862e2483fdad1200000000a40d1a28000000000002\""
+	// Block sign request at level 2, fitness_round 0 (fields from mainnet 12180922)
+	blockSignRequest = "\"11b3d79f990000000218954ac461a1b7642a78880e485b1db8da1e96f6cac6ee7dae541c7b6a8e66840b0000000069a8c3a3043c218c11c12df01faa1113bb827d7de00cc6f95993e220901ca35ff0cec5954000000021000000010200000004000000020000000000000004ffffffff0000000400000000ecbf5c99c96392b252bb846394c12c422e0cb2e050aa018dcc2a880f9c9c636858335430566f4b95401c110f33e74d3a324f83ad6003ed9d5e93ce617fa11e4400000000d7d4b0aea9d000000000\""
 
-	// Same level different round (double-sign attempt)
-	doubleSignRequest = "\"11b3d79f99000000020130c1cb51f36daebee85fe99c04800a38e8133ffd2fa329cd4db35f32fe5bf5e30000000064277ae404b7528bb55c532567eb5a866e2a9e7d4e120d2627b4cfb58061756071d6f4a5630000002500000001020000000400000002000000040000000000000004ffffffff0000000400000006080966c1f5a955161345bc7d81ac205ebafc89f5977a5bc88e47ab1b6f8d791e5ae8b92d9bc0523b3e07848458e66dc4265e29f3c5d8007447862e2483fdad12000000003e9dad7a000000000002\""
+	// Same level and fitness round, different content (double-bake attempt; fields from mainnet 12180921)
+	doubleSignRequest = "\"11b3d79f990000000218e790bc8332da94dfdf97b041d5fb918500d56e3647125732b737da8dcf1aa4040000000069a8c39d0429599f0c1222b23808083de0b51e47ea45f2cd3e916dcdd5bd5fdbc7ef5c2c3b00000021000000010200000004000000020000000000000004ffffffff00000004000000007cf2ed78325f41df290d68f691c691c976107148beae12495d946a419750ab7b03f9321cbf1a85d7701522fae4938181944dc8b746ef4e8f85260f528bfa1a2c000000005a3ca147d36b02000000\""
 
 	backend = "file"
 )
@@ -56,7 +56,7 @@ func TestWatermarkMetricsOnRejection(t *testing.T) {
 	// Get metrics before double-sign attempt
 	metricsBeforeReject := integrationtest.GetWatermarkMetrics(backend, "rejected", "block")
 
-	// Attempt double-sign (same level, different round) - should be rejected
+	// Attempt double-bake (same level and round, different content) - should be rejected
 	code, _ = integrationtest.RequestSignature(bakerPKH, doubleSignRequest)
 	require.Equal(t, 409, code, "Double-sign attempt should be rejected with 409")
 

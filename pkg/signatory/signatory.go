@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -49,6 +50,7 @@ const (
 	logKeyID     = "key_id"
 	logChainID   = "chain_id"
 	logLevel     = "lvl"
+	logRound     = "round"
 	logClient    = "client_pkh"
 	logRaw       = "raw"
 )
@@ -282,11 +284,11 @@ func (s *Signatory) callPolicyHook(ctx context.Context, req *SignRequest) error 
 		}
 		pkh, err := b58.ParsePublicKeyHash([]byte(pl.PublicKeyHash))
 		if err != nil {
-			errors.Wrap(err, http.StatusForbidden)
+			return errors.Wrap(err, http.StatusForbidden)
 		}
 		pub, err := s.config.PolicyHook.Auth.GetPublicKey(ctx, pkh)
 		if err != nil {
-			errors.Wrap(err, http.StatusForbidden)
+			return errors.Wrap(err, http.StatusForbidden)
 		}
 		sig, err := crypt.ParseSignature([]byte(reply.Signature))
 		if err != nil {
@@ -355,7 +357,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	l = l.WithField(logReq, msg.SignRequestKind())
 
 	if m, ok := msg.(request.WithWatermark); ok {
-		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel()})
+		l = l.WithFields(log.Fields{logChainID: string(m.GetChainID().ToBase58()), logLevel: m.GetLevel(), logRound: m.GetRound()})
 	}
 
 	var opStat operationsStat
@@ -404,7 +406,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 
 		if wmErr != nil {
 			err = errors.Wrap(wmErr, http.StatusConflict)
-			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), msg.(request.WithWatermark).GetChainID().String(), err.Error())
+			chainIDStr := ""
+			if m, ok := msg.(request.WithWatermark); ok {
+				chainIDStr = m.GetChainID().String()
+			}
+			metrics.WatermarkRejection(req.PublicKeyHash.String(), msg.SignRequestKind(), chainIDStr, wmErr.Error())
 			l.Error(err)
 			return nil, err
 		}
@@ -412,8 +418,10 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 	}
 
 	var chainID string
+	var round string
 	if m, ok := msg.(request.WithWatermark); ok {
 		chainID = m.GetChainID().String()
+		round = strconv.FormatInt(int64(m.GetRound()), 10)
 	}
 
 	var sig crypt.Signature
@@ -422,6 +430,7 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		Vault:   p.key.Vault().Name(),
 		Req:     msg.SignRequestKind(),
 		ChainID: chainID,
+		Round:   round,
 		Stat:    opStat,
 		TargetFunc: func() (crypt.Signature, error) {
 			return signFunc(ctx, req.Message, p.key)
@@ -686,58 +695,70 @@ func fixupRequests(req []string) {
 
 func fixupOperations(ops []string) {
 	for i, o := range ops {
-		switch o {
+		base, subKind, hasSubKind := strings.Cut(o, ":")
+		switch base {
 		case "endorsement":
-			ops[i] = "attestation"
+			base = "attestation"
 		case "preendorsement":
-			ops[i] = "preattestation"
+			base = "preattestation"
 		case "double_endorsement_evidence":
-			ops[i] = "double_attestation_evidence"
+			base = "double_attestation_evidence"
 		case "double_preendorsement_evidence":
-			ops[i] = "double_preattestation_evidence"
+			base = "double_preattestation_evidence"
+		}
+		if hasSubKind {
+			ops[i] = base + ":" + subKind
+		} else {
+			ops[i] = base
 		}
 	}
 	sort.Strings(ops)
 }
 
 func checkRequestKind(allowedKinds []string) error {
-	avilKinds := proto.ListSignRequests()
+	availKinds := proto.ListSignRequests()
 	for _, kind := range allowedKinds {
-		if !slices.Contains(avilKinds, kind) {
+		if !slices.Contains(availKinds, kind) {
 			return fmt.Errorf("invalid request kind `%s` in `allow` list", kind)
 		}
 	}
 	return nil
 }
 
+var yamlMarshal = yaml.Marshal
+
 func checkOperationKind(allowedKinds []string) error {
-	avilKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
+	availKinds := append(proto.ListGenericOperations(), proto.ListPseudoOperations()...)
 	for _, kind := range allowedKinds {
 		// Handle ballot sub-kinds (ballot:yay, ballot:nay, ballot:pass)
 		if strings.Contains(kind, ":") {
 			parts := strings.SplitN(kind, ":", 2)
 			base := parts[0]
 			subKind := parts[1]
-			
+
 			// Only ballot operations support sub-kind syntax
 			if base != "ballot" {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
-			
+
 			// Validate the ballot sub-kind
-			validBallotKinds := []string{"yay", "nay", "pass"}
+			validBallotKinds := []string{
+				core.BallotYay.String(),
+				core.BallotNay.String(),
+				core.BallotPass.String(),
+			}
 			if !slices.Contains(validBallotKinds, subKind) {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
-			
+
 			// Ensure base "ballot" is in the valid operations list
-			if !slices.Contains(avilKinds, base) {
+			if !slices.Contains(availKinds, base) {
 				return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 			}
 			continue
 		}
-		
-		if !slices.Contains(avilKinds, kind) {
+
+		if !slices.Contains(availKinds, kind) {
 			return fmt.Errorf("invalid operation kind `%s` in `allow.generic` list", kind)
 		}
 	}
@@ -801,13 +822,14 @@ func PreparePolicy(src config.TezosConfig) (out Policy, err error) {
 			if pol.AllowedOps != nil {
 				e.Allow["generic"] = pol.AllowedOps
 			}
-			out, err := yaml.Marshal(&e)
+			out, err := yamlMarshal(&e)
 			if err != nil {
-				panic(err)
+				log.Warnf("failed to format deprecation example: %v", err)
+			} else {
+				pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
+				pipe.Write(out)
+				pipe.Close()
 			}
-			pipe := log.StandardLogger().WriterLevel(log.WarnLevel)
-			pipe.Write(out)
-			pipe.Close()
 		}
 
 		fixupOperations(pol.AllowedOps)

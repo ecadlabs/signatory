@@ -445,6 +445,94 @@ func TestPolicy(t *testing.T) {
 	}
 }
 
+func TestBallotSubkindPolicy_EndToEnd(t *testing.T) {
+	priv, err := crypt.ParsePrivateKey([]byte(privateKey))
+	require.NoError(t, err)
+	pk := priv.Public()
+
+	// Build config with ballot:nay and ballot:pass sub-kind policy
+	cfg := hashmap.NewPublicKeyHashMap([]hashmap.PublicKeyKV[*config.TezosPolicy]{
+		{
+			Key: pk.Hash(),
+			Val: &config.TezosPolicy{
+				Allow:       map[string][]string{"generic": {"ballot:nay", "ballot:pass"}},
+				LogPayloads: true,
+			},
+		},
+	})
+
+	// PreparePolicy must accept sub-kind syntax (this is where PR 657 broke)
+	policy, err := signatory.PreparePolicy(cfg)
+	require.NoError(t, err)
+
+	conf := signatory.Config{
+		Vaults:    map[string]*config.VaultConfig{"mock": {Driver: "mock"}},
+		Watermark: watermark.Ignore{},
+		VaultFactory: vault.FactoryFunc(func(context.Context, string, *yaml.Node, config.GlobalContext) (vault.Vault, error) {
+			return memory.NewUnparsed([]*memory.UnparsedKey{{Data: privateKey}}, "Mock"), nil
+		}),
+		Policy: policy,
+	}
+
+	s, err := signatory.New(context.Background(), &conf)
+	require.NoError(t, err)
+	require.NoError(t, s.Unlock(context.Background()))
+
+	t.Run("ballot:nay accepted", func(t *testing.T) {
+		var buf bytes.Buffer
+		var req latest.SignRequest = &latest.GenericOperationSignRequest{
+			Branch: &tz.BlockHash{},
+			Contents: []latest.GenericOperationSignRequestOperationContents{
+				&latest.Ballot{
+					Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+					Period:   0,
+					Proposal: &tz.ProtocolHash{},
+					Ballot:   core.BallotNay,
+				},
+			},
+		}
+		require.NoError(t, encoding.Encode(&buf, &req))
+		_, err := s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: buf.Bytes()})
+		require.NoError(t, err)
+	})
+
+	t.Run("ballot:pass accepted", func(t *testing.T) {
+		var buf bytes.Buffer
+		var req latest.SignRequest = &latest.GenericOperationSignRequest{
+			Branch: &tz.BlockHash{},
+			Contents: []latest.GenericOperationSignRequestOperationContents{
+				&latest.Ballot{
+					Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+					Period:   0,
+					Proposal: &tz.ProtocolHash{},
+					Ballot:   core.BallotPass,
+				},
+			},
+		}
+		require.NoError(t, encoding.Encode(&buf, &req))
+		_, err := s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: buf.Bytes()})
+		require.NoError(t, err)
+	})
+
+	t.Run("ballot:yay rejected", func(t *testing.T) {
+		var buf bytes.Buffer
+		var req latest.SignRequest = &latest.GenericOperationSignRequest{
+			Branch: &tz.BlockHash{},
+			Contents: []latest.GenericOperationSignRequestOperationContents{
+				&latest.Ballot{
+					Source:   &tz.Ed25519PublicKeyHash{1, 2, 3},
+					Period:   0,
+					Proposal: &tz.ProtocolHash{},
+					Ballot:   core.BallotYay,
+				},
+			},
+		}
+		require.NoError(t, encoding.Encode(&buf, &req))
+		_, err := s.Sign(context.Background(), &signatory.SignRequest{PublicKeyHash: pk.Hash(), Message: buf.Bytes()})
+		require.EqualError(t, err, "operation `ballot:yay' is not allowed")
+	})
+}
+
 func TestProofOfPossession(t *testing.T) {
 	type testCase struct {
 		title    string
@@ -838,6 +926,18 @@ func TestOperationKindCheck(t *testing.T) {
 			name:    "transaction:foo rejected",
 			ops:     []string{"transaction:foo"},
 			wantErr: "invalid operation kind `transaction:foo` in `allow.generic` list",
+		},
+		// Deprecated aliases with sub-kind syntax: fixup normalizes the base
+		// before validation, so errors report the canonical name.
+		{
+			name:    "endorsement:foo normalized to attestation:foo then rejected",
+			ops:     []string{"endorsement:foo"},
+			wantErr: "invalid operation kind `attestation:foo` in `allow.generic` list",
+		},
+		{
+			name:    "preendorsement:foo normalized to preattestation:foo then rejected",
+			ops:     []string{"preendorsement:foo"},
+			wantErr: "invalid operation kind `preattestation:foo` in `allow.generic` list",
 		},
 	}
 

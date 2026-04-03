@@ -18,8 +18,13 @@ type Metrics struct {
 	Error           int
 }
 
+type HandlerMetrics struct {
+	RequestsTotal int
+	DurationCount int
+}
+
 func GetMetrics(address string, kind string, operation string, vault string, chainID string) Metrics {
-	metrics := Metrics{SigningOpsTotal: 0, Sum: 0, Count: 0, Error: 0}
+	metrics := Metrics{}
 	_, b := getBytes()
 	lines := bytes.Split(b, []byte("\n"))
 	for _, line := range lines {
@@ -58,6 +63,26 @@ func GetMetrics(address string, kind string, operation string, vault string, cha
 		}
 	}
 	return metrics
+}
+
+func GetHandlerMetrics(address, status string) HandlerMetrics {
+	m := HandlerMetrics{}
+	_, b := getBytes()
+	lines := bytes.Split(b, []byte("\n"))
+	for _, line := range lines {
+		s := string(line)
+		if strings.HasPrefix(s, "sign_handler_requests_total") &&
+			strings.Contains(s, "address=\""+address) &&
+			strings.Contains(s, "status=\""+status) {
+			m.RequestsTotal, _ = strconv.Atoi(parseValue(s))
+		}
+		if strings.HasPrefix(s, "sign_handler_request_duration_milliseconds_count") &&
+			strings.Contains(s, "address=\""+address) &&
+			strings.Contains(s, "status=\""+status) {
+			m.DurationCount, _ = strconv.Atoi(parseValue(s))
+		}
+	}
+	return m
 }
 
 func AssertMetricsSuccessIncremented(t *testing.T, before Metrics, after Metrics) {

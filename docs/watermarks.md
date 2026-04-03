@@ -154,31 +154,21 @@ Signatory exposes Prometheus metrics for monitoring watermark operations. These 
 **Label values:**
 - `result`: `success`, `rejected`
 - `backend`: `file`, `mem`, `aws`, `gcp`, `ignore`
-- `request_type`: The type of signing request (e.g., `block`, `attestation`, `preendorsement`)
+- `request_type`: The type of signing request (e.g., `block`, `attestation`, `preattestation`)
 
-### File Backend Metrics
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|-------------|
-| `watermark_file_operations_total` | Counter | `operation`, `result` | Total number of file I/O operations |
-| `watermark_file_latency_seconds` | Histogram | `operation` | File I/O latency in seconds |
-
-**Label values:**
-- `operation`: `read`, `write`
-- `result`: `success`, `error`
-
-### AWS DynamoDB Backend Metrics
+### Backend I/O Metrics
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
-| `watermark_aws_dynamodb_operations_total` | Counter | `operation`, `table_name`, `result` | Total number of DynamoDB operations |
-| `watermark_aws_dynamodb_latency_seconds` | Histogram | `operation`, `table_name` | DynamoDB operation latency in seconds |
-| `watermark_aws_dynamodb_errors_total` | Counter | `error_type`, `table_name`, `operation` | Total number of DynamoDB errors |
+| `watermark_io_operations_total` | Counter | `backend`, `operation`, `table_name`, `result` | Total number of backend I/O operations |
+| `watermark_io_latency_seconds` | Histogram | `backend`, `operation`, `table_name` | Backend I/O latency in seconds |
+| `watermark_io_errors_total` | Counter | `backend`, `error_type`, `table_name`, `operation` | Total number of backend I/O errors |
 
 **Label values:**
-- `operation`: `put`, `create_table`
+- `operation`: backend-specific operations such as `read`, `write`, `put`, `create_table`
+- `table_name`: storage identifier for database-backed providers, empty for file backend
 - `result`: `success`, `error`
-- `error_type`: AWS error code (e.g., `ConditionalCheckFailedException`)
+- `error_type`: backend/provider error code or classification
 
 ### Example Prometheus Queries
 
@@ -192,7 +182,7 @@ rate(watermark_operations_total{result="rejected"}[5m])
 histogram_quantile(0.95, rate(watermark_operation_duration_seconds_bucket[5m]))
 ```
 
-**DynamoDB error rate:**
+**Backend I/O error rate (AWS example):**
 ```promql
-rate(watermark_aws_dynamodb_errors_total[5m])
+rate(watermark_io_errors_total{backend="aws"}[5m])
 ```

@@ -72,7 +72,7 @@ OC-- "Get Post <br>[HTTP]"-->SL
 ML-- "Get<br>[HTTP]" -->P
 
 subgraph Signatory[Signatory]
-SIG--"exposes metrics to<br>[JSON]" -->ML
+SIG--"exposes metrics to<br>[PROMETHEUS TEXT]" -->ML
 CFG-- "governs<br>[CODE]"-->SIG
 SL-- "informs<br>[CODE]" -->SIG
 end
