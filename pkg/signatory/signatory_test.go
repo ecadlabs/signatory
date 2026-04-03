@@ -817,6 +817,28 @@ func TestOperationKindCheck(t *testing.T) {
 				"ballot",
 			},
 		},
+		{
+			name: "ballot:yay accepted",
+			ops:  []string{"ballot:yay"},
+		},
+		{
+			name: "ballot:nay accepted",
+			ops:  []string{"ballot:nay"},
+		},
+		{
+			name: "ballot:pass accepted",
+			ops:  []string{"ballot:pass"},
+		},
+		{
+			name:    "ballot:invalid rejected",
+			ops:     []string{"ballot:invalid"},
+			wantErr: "invalid operation kind `ballot:invalid` in `allow.generic` list",
+		},
+		{
+			name:    "transaction:foo rejected",
+			ops:     []string{"transaction:foo"},
+			wantErr: "invalid operation kind `transaction:foo` in `allow.generic` list",
+		},
 	}
 
 	invalidOps := []string{"attestation", "attestation_with_dal", "preattestation"}
