@@ -159,6 +159,19 @@ func strInSlice(slice []string, s string) bool {
 	return false
 }
 
+func validateOperations(req *SignRequest, msg core.SignRequest) error {
+	if ops, ok := getOperations(req, msg); ok {
+		for _, op := range ops {
+			if validator, ok := op.(core.Validator); ok {
+				if err := validator.Validate(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func matchFilter(policy *PublicKeyPolicy, req *SignRequest, msg core.SignRequest) error {
 	if policy.AllowedChains != nil {
 		if m, ok := msg.(request.WithWatermark); ok {
@@ -371,8 +384,11 @@ func (s *Signatory) Sign(ctx context.Context, req *SignRequest) (crypt.Signature
 		l.Error(err)
 		return nil, err
 	}
-
 	l = l.WithField(logVault, p.key.Vault().Name())
+	if err = validateOperations(req, msg); err != nil {
+		l.Error(err)
+		return nil, errors.Wrap(err, http.StatusBadRequest)
+	}
 	if err = matchFilter(policy, req, msg); err != nil {
 		l.Error(err)
 		return nil, errors.Wrap(err, http.StatusForbidden)
