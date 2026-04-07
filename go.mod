@@ -1,6 +1,6 @@
 module github.com/ecadlabs/signatory
 
-go 1.25.0
+go 1.26
 
 require (
 	cloud.google.com/go/firestore v1.21.0
@@ -12,9 +12,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.50.1
 	github.com/aws/smithy-go v1.24.2
 	github.com/certusone/yubihsm-go v0.3.0
+	github.com/cloudflare/circl v1.6.3
 	github.com/ecadlabs/go-pkcs11 v0.3.0
-	github.com/ecadlabs/goblst v1.1.0
-	github.com/ecadlabs/gotez/v2 v2.4.3
+	github.com/ecadlabs/goblst v1.1.1
+	github.com/ecadlabs/gotez/v2 v2.4.7
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/google/uuid v1.6.0
@@ -28,7 +29,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.49.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.270.0
@@ -57,7 +58,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.7 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/ecadlabs/pretty v0.0.0-20230412124801-f948fc689a04 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -91,7 +91,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57 // indirect
@@ -115,8 +115,8 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.42.0
-	golang.org/x/term v0.40.0
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/term v0.41.0
+	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11 // indirect
 )

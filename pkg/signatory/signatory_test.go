@@ -16,6 +16,7 @@ import (
 	"github.com/ecadlabs/gotez/v2/protocol/core"
 	"github.com/ecadlabs/gotez/v2/protocol/core/expression"
 	"github.com/ecadlabs/gotez/v2/protocol/latest"
+	"github.com/ecadlabs/gotez/v2/protocol/proto_023_PtSeouLo"
 	"github.com/ecadlabs/signatory/pkg/config"
 	"github.com/ecadlabs/signatory/pkg/hashmap"
 	"github.com/ecadlabs/signatory/pkg/signatory"
@@ -404,6 +405,31 @@ func TestPolicy(t *testing.T) {
 				LogPayloads:     true,
 			},
 			expected: "operation `ballot:yay' is not allowed",
+		},
+		{
+			title: "Non BLS companion keys are not allowed",
+			req: &latest.GenericOperationSignRequest{
+				Branch: &tz.BlockHash{},
+				Contents: []latest.GenericOperationSignRequestOperationContents{
+					&latest.UpdateCompanionKey{
+						ManagerOperation: latest.ManagerOperation{
+							Source:       &tz.Ed25519PublicKeyHash{1, 2, 3},
+							Fee:          tz.BigUint{0},
+							Counter:      tz.BigUint{0},
+							GasLimit:     tz.BigUint{0},
+							StorageLimit: tz.BigUint{0},
+						},
+						PublicKey: &tz.Ed25519PublicKey{1, 2, 3},
+						Proof:     tz.None[proto_023_PtSeouLo.Proof](),
+					},
+				},
+			},
+			policy: signatory.PublicKeyPolicy{
+				AllowedRequests: []string{},
+				AllowedOps:      []string{},
+				LogPayloads:     true,
+			},
+			expected: "companion key is not a BLS key",
 		},
 	}
 
