@@ -8,7 +8,7 @@ This directory contains the documentation for [Signatory](https://signatory.io),
 
 All content in this directory and its subdirectories — including documentation, written content, tutorials, guides, and images — is the exclusive property of **ECAD Labs Inc.** All rights reserved.
 
-See [LICENSE](LICENSE) in this directory for the full proprietary license terms.
+See [LICENSE](https://github.com/ecadlabs/signatory/blob/main/docs/LICENSE) in this directory for the full proprietary license terms.
 
 ## Contact
 
