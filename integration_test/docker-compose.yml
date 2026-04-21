@@ -30,6 +30,7 @@ services:
       - PROTOCOL=$PROTOCOL
       - CHAIN_NAME=default-chain
       - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisDefaultChai
+      - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
     healthcheck:
       test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
       interval: 1s
@@ -57,6 +58,7 @@ services:
       - PROTOCOL=$PROTOCOL
       - CHAIN_NAME=manual-bake-chain
       - GENESIS_BLOCK=BLockGenesisGenesisGenesisGenesisGenesisNoBakingChain
+      - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
     healthcheck:
       test: "curl -s http://localhost:18731/health/ready | jq -e .ready || exit 1"
       interval: 1s
@@ -79,6 +81,7 @@ services:
       - ./contract.event.tz:/home/tezos/contract.event.tz
     environment:
       - PROTOCOL=$PROTOCOL
+      - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
     command: -c "sudo apk add --no-cache bash && bash /home/tezos/tezos_scripts/init.sh $PROTOCOL"
     depends_on:
       signatory:
