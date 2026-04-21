@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/ecadlabs/go-pkcs11/pkcs11"
+	"github.com/ecadlabs/go-pkcs11/pkcs11/attr"
 	"github.com/ecadlabs/gotez/v2"
 	"github.com/ecadlabs/gotez/v2/crypt"
 	"github.com/ecadlabs/signatory/pkg/config"
@@ -31,10 +32,9 @@ type KeyConfig struct {
 }
 
 type KeyPair struct {
-	Private         *KeyConfig      `yaml:"private"`
-	ExtendedPrivate bool            `yaml:"extended_private"` // Specific to AWS CloudHSM: set to true if the private key has a public key value as an attribute
-	Public          *KeyConfig      `yaml:"public"`
-	PublicValue     gotez.PublicKey `yaml:"public_value"`
+	Private     *KeyConfig      `yaml:"private"`
+	Public      *KeyConfig      `yaml:"public"`
+	PublicValue gotez.PublicKey `yaml:"public_value"`
 }
 
 type Config struct {
@@ -46,9 +46,8 @@ type Config struct {
 }
 
 type PublicKeysSearchOptions struct {
-	MatchLabel      bool `yaml:"match_label"`
-	MatchID         bool `yaml:"match_id"`
-	ExtendedPrivate bool `yaml:"extended_private"` // Specific to AWS CloudHSM: set to true if the private key has a public key value as an attribute
+	MatchLabel bool `yaml:"match_label"`
+	MatchID    bool `yaml:"match_id"`
 }
 
 func (o *PublicKeysSearchOptions) flags() (flags pkcs11.MatchFlags) {
@@ -58,9 +57,6 @@ func (o *PublicKeysSearchOptions) flags() (flags pkcs11.MatchFlags) {
 	if o.MatchID {
 		flags |= pkcs11.MatchID
 	}
-	if o.ExtendedPrivate {
-		flags |= pkcs11.ExtendedPrivate
-	}
 	return
 }
 
@@ -68,33 +64,34 @@ func (c *Config) searchOptions() *PublicKeysSearchOptions {
 	if c.PublicKeysSearchOptions != nil {
 		return c.PublicKeysSearchOptions
 	}
-	return &PublicKeysSearchOptions{MatchLabel: true, MatchID: true, ExtendedPrivate: true}
+	return &PublicKeysSearchOptions{MatchLabel: true, MatchID: true}
 }
 
 type keyPair struct {
-	kp pkcs11.KeyPair
+	priv pkcs11.PrivateKey
+	pub  crypt.PublicKey
+}
+
+type keyRef struct {
+	kp *keyPair
 	v  *PKCS11Vault
 }
 
-func (p *keyPair) PublicKey() crypt.PublicKey {
-	pub, err := crypt.NewPublicKeyFrom(p.kp.Public())
-	if err != nil {
-		panic(err) // shouldn't happen
-	}
-	return pub
+func (r *keyRef) PublicKey() crypt.PublicKey {
+	return r.kp.pub
 }
 
-func (p *keyPair) Vault() vault.Vault { return p.v }
+func (r *keyRef) Vault() vault.Vault { return r.v }
 
-func (kp *keyPair) Sign(ctx context.Context, msg []byte, opt *vault.SignOptions) (crypt.Signature, error) {
+func (r *keyRef) Sign(ctx context.Context, msg []byte, opt *vault.SignOptions) (crypt.Signature, error) {
 	digest := crypt.DigestFunc(msg)
-	sig, err := kp.kp.Sign(nil, digest[:], nil)
+	sig, err := r.kp.priv.Sign(nil, digest[:], nil)
 	if err != nil {
-		return nil, kp.v.formatError(err)
+		return nil, r.v.formatError(err)
 	}
-	ret, err := crypt.NewSignatureFromBytes(sig, kp.PublicKey())
+	ret, err := crypt.NewSignatureFromBytes(sig, r.PublicKey())
 	if err != nil {
-		return nil, kp.v.formatError(err)
+		return nil, r.v.formatError(err)
 	}
 	return ret, nil
 }
@@ -102,7 +99,7 @@ func (kp *keyPair) Sign(ctx context.Context, msg []byte, opt *vault.SignOptions)
 type PKCS11Vault struct {
 	mod     *pkcs11.Module
 	session *pkcs11.Session
-	keys    []pkcs11.KeyPair
+	keys    []keyPair
 	conf    *Config
 }
 
@@ -117,8 +114,8 @@ func (v *PKCS11Vault) List(ctx context.Context) vault.KeyIterator {
 		if i >= len(v.keys) {
 			return nil, vault.ErrDone
 		}
-		kp := &keyPair{
-			kp: v.keys[i],
+		kp := &keyRef{
+			kp: &v.keys[i],
 			v:  v,
 		}
 		i++
@@ -145,7 +142,6 @@ func findSlot(mod *pkcs11.Module) (uint, error) {
 		if err != nil {
 			return 0, formatError(mod, err)
 		}
-
 		if si.Token != nil && si.Token.Flags&pkcs11.TokenTokenInitialized != 0 {
 			return s, nil
 		}
@@ -153,20 +149,21 @@ func findSlot(mod *pkcs11.Module) (uint, error) {
 	return 0, formatError(mod, errors.New("token not found"))
 }
 
-func (v *PKCS11Vault) getKeyObject(conf *KeyConfig, class pkcs11.Class) (*pkcs11.Object, error) {
+func (v *PKCS11Vault) getKeyObject(conf *KeyConfig, class attr.ObjectClass) (*pkcs11.Object, error) {
 	// find by label or id
-	filter := []pkcs11.Value{pkcs11.NewScalarV(pkcs11.AttributeClass, class)}
+	filter := []attr.Attribute{
+		attr.Class(class),
+	}
 	if conf.Label != "" {
-		filter = append(filter, pkcs11.NewString(pkcs11.AttributeLabel, conf.Label))
+		filter = append(filter, attr.Label(attr.String(conf.Label)))
 	}
 	if conf.ID != "" {
 		id, err := hex.DecodeString(conf.ID)
 		if err != nil {
 			return nil, err
 		}
-		filter = append(filter, pkcs11.NewBytes(pkcs11.AttributeID, id))
+		filter = append(filter, attr.ID(id))
 	}
-
 	objects, err := v.session.Objects(filter...)
 	if err != nil {
 		return nil, v.formatError(err)
@@ -182,84 +179,88 @@ func (v *PKCS11Vault) getKeyObject(conf *KeyConfig, class pkcs11.Class) (*pkcs11
 
 func (v *PKCS11Vault) initStatic() error {
 	for _, kpConf := range v.conf.Keys {
-		privObj, err := v.getKeyObject(kpConf.Private, pkcs11.ClassPrivateKey)
+		privObj, err := v.getKeyObject(kpConf.Private, attr.ClassPrivateKey)
 		if err != nil {
 			return err
 		}
 
-		priv, err := privObj.PrivateKey()
+		priv, err := pkcs11.NewPrivateKey(privObj)
 		if err != nil {
 			return v.formatError(err)
 		}
 
-		var kp pkcs11.KeyPair
+		var pub crypt.PublicKey
 		if kpConf.PublicValue != nil {
-			p, err := crypt.NewPublicKey(kpConf.PublicValue)
-			if err != nil {
+			if pub, err = crypt.NewPublicKey(kpConf.PublicValue); err != nil {
 				return v.formatError(err)
 			}
-			kp, err = priv.AddPublic(p.Unwrap())
-			if err != nil {
-				return v.formatError(err)
-			}
-			log.WithField("handle", fmt.Sprintf("%#016x", priv.Handle())).Debug("Private key object")
-		} else if kpConf.ExtendedPrivate {
+			log.WithField("handle", fmt.Sprintf("%#016x", priv.Object().Handle())).Debug("Private key object")
+		} else if p, ok := priv.(pkcs11.PublicKey); ok {
 			// CloudHSM case
-			var err error
-			kp, err = priv.KeyPair(pkcs11.ExtendedPrivate)
-			if err != nil {
+			if pub, err = crypt.NewPublicKeyFrom(p.Public()); err != nil {
 				return v.formatError(err)
 			}
-			log.WithField("handle", fmt.Sprintf("%#016x", priv.Handle())).Debug("Extended private key object")
+			log.WithField("handle", fmt.Sprintf("%#016x", priv.Object().Handle())).Debug("Extended private key object")
 		} else {
 			pubConf := kpConf.Public
 			if pubConf == nil {
 				pubConf = kpConf.Private
 			}
-
-			pubObj, err := v.getKeyObject(pubConf, pkcs11.ClassPublicKey)
+			pubObj, err := v.getKeyObject(pubConf, attr.ClassPublicKey)
 			if err != nil {
 				return err
 			}
-			pub, err := pubObj.PublicKey()
+			p, err := pkcs11.NewPublicKey(pubObj)
 			if err != nil {
 				return v.formatError(err)
 			}
-			kp, err = priv.AddPublic(pub)
-			if err != nil {
+			if pub, err = crypt.NewPublicKeyFrom(p.Public()); err != nil {
 				return v.formatError(err)
 			}
 			log.WithFields(log.Fields{
-				"private_handle": fmt.Sprintf("%#016x", priv.Handle()),
+				"private_handle": fmt.Sprintf("%#016x", priv.Object().Handle()),
 				"public_handle":  fmt.Sprintf("%#016x", pubObj.Handle()),
 			}).Debug("Key pair")
 		}
-		v.keys = append(v.keys, kp)
+		v.keys = append(v.keys, keyPair{
+			priv: priv,
+			pub:  pub,
+		})
 	}
 	return nil
 }
 
 func (v *PKCS11Vault) enumKeys() error {
-	filter := []pkcs11.Value{pkcs11.NewScalarV(pkcs11.AttributeClass, pkcs11.ClassPrivateKey)}
-	objects, err := v.session.Objects(filter...)
+	objects, err := v.session.Objects(attr.Class(attr.ClassPrivateKey))
 	if err != nil {
 		return v.formatError(err)
 	}
-
 	searchOpt := v.conf.searchOptions()
 	for _, obj := range objects {
-		priv, err := obj.PrivateKey()
+		priv, err := pkcs11.NewPrivateKey(obj)
 		if err != nil {
 			log.WithField("handle", obj.Handle()).Error(err)
 			continue
 		}
-		kp, err := priv.KeyPair(searchOpt.flags())
+		pub, ok := priv.(pkcs11.PublicKey)
+		if !ok {
+			if pub, err = pkcs11.FindMatchingPublicKey(priv, searchOpt.flags()); err != nil {
+				log.WithField("handle", obj.Handle()).Error(err)
+				continue
+			}
+		}
+		p, err := crypt.NewPublicKeyFrom(pub.Public())
 		if err != nil {
+			// parsed public key is unsupported by crypt package
 			log.WithField("handle", obj.Handle()).Error(err)
 			continue
+		}
+		kp := keyPair{
+			priv: priv,
+			pub:  p,
 		}
 		log.WithFields(log.Fields{
-			"private_handle": fmt.Sprintf("%#016x", priv.Handle()),
+			"private_handle": fmt.Sprintf("%#016x", priv.Object().Handle()),
 		}).Debug("Key pair discovered")
 		v.keys = append(v.keys, kp)
 	}
@@ -312,7 +313,7 @@ func New(config *Config) (*PKCS11Vault, error) {
 		mod:     mod,
 		session: session,
 		conf:    config,
-		keys:    make([]pkcs11.KeyPair, 0),
+		keys:    make([]keyPair, 0),
 	}
 	return &v, v.initKeys()
 }
