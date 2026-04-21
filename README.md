@@ -18,6 +18,12 @@ The goal of the Signatory service is to make key management as secure as possibl
 
 Security and convenience are typically at odds with each other. Signatory makes it easier for Tezos teams to manage their keys securely by offering several well-tested & supported signing options for cloud-based or hardware-based HSMs, as well as Trusted Execution Environments (TEEs).
 
+## BLS (tz4) Support
+
+Tezos consensus supports BLS12-381 via tz4 keys, introduced in the Seoul protocol. Signatory signs tz4 consensus and DAL companion keys from AWS Nitro Enclaves and Google Confidential Space, the only production-grade cloud backends that handle BLS12-381 today.
+
+See [Signatory for Tezos BLS](https://signatory.io/tezos-bls) for the migration story, deployment patterns, and backend support.
+
 ## Quick Start
 
 [See docs](https://signatory.io/docs/start/)
@@ -38,9 +44,9 @@ Explore detailed documentation for various components of Signatory:
 ### Vault Backends
 - [Azure KMS](https://signatory.io/docs/azure_kms)
 - [AWS KMS](https://signatory.io/docs/aws_kms)
-- [AWS Nitro Enclave](https://signatory.io/docs/nitro) (in progress; coming in v1.3.0)
+- [AWS Nitro Enclave](https://signatory.io/docs/nitro)
 - [Google Cloud KMS](https://signatory.io/docs/gcp_kms)
-- [Google Confidential Space](https://signatory.io/docs/confidential_space) (in progress)
+- [Google Confidential Space](https://signatory.io/docs/confidential_space)
 - [Hashicorp Vault](https://signatory.io/docs/hashicorp_vault)
 - [Ledger Integration](https://signatory.io/docs/ledger)
 - [Local Secret Storage](https://signatory.io/docs/file_based)
@@ -51,7 +57,7 @@ Explore detailed documentation for various components of Signatory:
 - Memory
 - File
 - [AWS DynamoDB](https://signatory.io/docs/aws_dynamodb)
-- [Google Cloud Firestore](https://signatory.io/docs/gcp_firestore) (in progress; expected in v1.3.0)
+- [Google Cloud Firestore](https://signatory.io/docs/gcp_firestore)
 
 ### Other
 - [JWT Authentication](https://signatory.io/docs/jwt)
@@ -110,7 +116,6 @@ In the first year of the Tezos network operation, there was anecdotal evidence t
 | [PKCS#11](https://signatory.io/docs/pkcs11) | ✅     |
 | [AWS Nitro Enclave](https://signatory.io/docs/nitro) | ✅     |
 | [Google Confidential Space](https://signatory.io/docs/confidential_space) | ✅     |
-| Intel SGX | 🚧 In progress |
 
 ### Tezos Address Types
 
@@ -132,6 +137,7 @@ In Tezos, you can infer the signing algorithm from the first three characters of
 | [YubiHSM2](https://signatory.io/docs/yubihsm)         | ✅   | ✅   | ✅   | ❌   |
 | [PKCS#11](https://signatory.io/docs/pkcs11)          | ✅   | ✅   | ✅   | ❌   |
 | [AWS Nitro Enclave](https://signatory.io/docs/nitro)            | ✅   | ✅   | ✅   | ✅   |
+| [Google Confidential Space](https://signatory.io/docs/confidential_space) | ✅   | ✅   | ✅   | ✅   |
 
 ---
 
@@ -168,14 +174,6 @@ The contents of the [`website/`](website/) and [`docs/`](docs/) directories — 
 For permissions or licensing inquiries regarding the website and documentation, please contact [info@ecadlabs.com](mailto:info@ecadlabs.com).
 
 ---
-
-## Alternative Remote Signers
-
-At least three other remote signers are available to use with Tezos. Tezos also provides native support for baking with a Ledger Nano. We encourage bakers to, at a minimum, review these projects. We are eager to collaborate and be peers with these great projects.
-
-* [Tezzigator's Azure remote signer](https://github.com/tezzigator/azure-tezos-signer)
-* [Tacoinfra's remote signer](https://github.com/tacoinfra/remote-signer)
-* [Polychain Labs' remote signer](https://gitlab.com/polychainlabs/tezos-hsm-signer)
 
 ## Disclaimer
 
