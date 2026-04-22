@@ -86,6 +86,12 @@ __docusaurus {
 	z-index: -1;
 }
 
+// Standalone markdown pages (src/pages/*.md) have no sidebar to push content
+// down, so the fixed navbar overlaps the H1. Offset the content by navbar height.
+.mdx-page .main-wrapper {
+	padding-top: var(--ifm-navbar-height);
+}
+
 .navbar .navbar--fixed-top {
 	background: rgb(72, 77, 91);
 }
