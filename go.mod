@@ -15,7 +15,7 @@ require (
 	github.com/ecadlabs/go-pkcs11 v0.3.0
 	github.com/ecadlabs/goblst v1.1.1
 	github.com/ecadlabs/gotez/v2 v2.4.7
-	github.com/fxamacker/cbor/v2 v2.9.1
+	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
