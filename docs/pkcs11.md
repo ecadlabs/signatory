@@ -44,10 +44,10 @@ sudo /opt/cloudhsm/bin/configure-pkcs11 -a <HSM IP addresses>
 | private          | `Key Config` (see below) |          | Private key locator.                                         |
 | public           | `Key Config`             |          | Public key locator.                                          |
 | public_value     | Base58 string            |          | Public key value.                                            |
-| extended_private | boolean                  |          | Try to read the public key data from the PKCS#11 object representing the private key. The private key material itself remains secure within the HSM, but in some implementations (like AWS CloudHSM), the object referencing a private key contains an `EC_POINT` attribute with the corresponding public key data. |
 
 :::info
 `public_value` takes precedence over `public`. If none of `public` and `public_value` fields are present then the private key locator `Key Config` will be reused.
+With some implementations (AWS CloudHSM) object referencing a private key contains an `EC_POINT` attribute with the corresponding public key data. In this case manual public key configuration will be ignored.
 :::
 
 ### Key Config
@@ -63,7 +63,6 @@ sudo /opt/cloudhsm/bin/configure-pkcs11 -a <HSM IP addresses>
 | ---------------- | ------- | -------- | ------------------------------------------------------------ |
 | match_label      | boolean |          | Find the corresponding public key by matching label.         |
 | match_id         | boolean |          | Find the corresponding public key by matching ID.            |
-| extended_private | boolean |          | Retrieve public key data from the PKCS#11 object that represents the private key. This is critical for AWS CloudHSM which stores the EC_POINT attribute (public key data) as an attribute of the private key object handle. The private key material itself always remains secure within the HSM. |
 
 :::info
 If the whole object is missing then all options will be assumed as **true**
