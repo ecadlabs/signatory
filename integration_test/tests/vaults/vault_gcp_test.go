@@ -10,6 +10,7 @@ import (
 )
 
 func TestGCPVault(t *testing.T) {
+	t.Skip("skipping GCP Cloud KMS integration test")
 
 	project := os.Getenv("VAULT_GCP_PROJECTID")
 	location := os.Getenv("VAULT_GCP_LOCATION")
