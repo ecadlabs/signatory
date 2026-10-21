@@ -5,6 +5,12 @@ description: Signatory is a protocol-aware Tezos remote signer with first-class 
 
 # Signatory for Tezos BLS
 
+:::caution Maintenance Status
+Following the Tezos Foundation's decision to end funding for Signatory in January 2026 (and decline a minimal maintenance-only proposal), ECAD Labs has wound down active Tezos protocol maintenance. Four months after our [June 2026 announcement](https://forum.tezosagora.org/t/signatory-remote-signer-end-of-ecad-labs-maintenance/7093), there remains no transition plan or alternative from the core teams for institutional HSM, Cloud KMS, or TEE (`tz4`/BLS) custody.
+
+To avoid leaving production operators exposed to recent Go stdlib and network vulnerabilities, ECAD Labs published [**`v1.4.1`**](https://github.com/ecadlabs/signatory/releases/tag/v1.4.1) (October 2026) at our own expense. However, we do not ship untested security claims: **`v1.4.1` is validated through `PtTALLiN` (`octez-v24.4`) and has not been tested by ECAD Labs against the Ushuaia (`PsUshuai`) protocol.** See the [Agora thread](https://forum.tezosagora.org/t/signatory-remote-signer-end-of-ecad-labs-maintenance/7093) for context and migration options, or contact [info@ecadlabs.com](mailto:info@ecadlabs.com) for commercial support.
+:::
+
 **The remote signer for tz4 keys that need to live in a cloud-grade trusted execution environment, with policy, watermarks, and audit built in.**
 
 Tezos consensus supports BLS12-381 via tz4 keys, introduced in the Seoul protocol and carried forward in every protocol since. Bakers opt in by registering a tz4 consensus key; the active committee runs mixed, with tz1 / tz2 / tz3 and tz4 delegates side by side while the ecosystem migrates. If you're planning that migration and your keys belong in cloud infrastructure, Signatory is built for it.
@@ -106,7 +112,7 @@ For home bakers, the new generation of Raspberry Pi signers is a reasonable answ
 
 Signatory is built and continuously maintained by [ECAD Labs](https://ecadlabs.com/), and has been the remote signer of record for institutional Tezos deployments across exchanges, custodians, and validators-at-scale for years. The same team also maintains [Taquito](https://taquito.io/), the Tezos TypeScript SDK; [go-pkcs11](https://github.com/ecadlabs/go-pkcs11), the Go PKCS#11 bindings used across the ecosystem; and [goblst](https://github.com/ecadlabs/goblst), the Go BLS12-381 bindings. The BLS expertise behind this page isn't incidental; it's the curve we've been shipping production code against for years.
 
-Active release cadence, shipping against each Tezos protocol as it lands. Commercial support, managed deployments, and custom backend integrations available on request.
+Commercial support, protocol validation, managed deployments, and custom backend integrations are available on request.
 
 ---
 

@@ -8,6 +8,11 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/test_coverage)](https://codeclimate.com/github/ecadlabs/signatory/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ecadlabs/signatory)](https://goreportcard.com/report/github.com/ecadlabs/signatory)
 
+> [!WARNING]
+> **Maintenance Status:** Following the Tezos Foundation's decision to end funding for Signatory in January 2026 (and decline a minimal maintenance-only proposal), ECAD Labs has wound down active Tezos protocol maintenance. Four months after our [June 2026 announcement](https://forum.tezosagora.org/t/signatory-remote-signer-end-of-ecad-labs-maintenance/7093), there remains no transition plan or alternative from the core teams for institutional HSM, Cloud KMS, or TEE (`tz4`/BLS) custody.
+>
+> To avoid leaving production operators exposed to recent Go stdlib and network vulnerabilities, ECAD Labs published [**`v1.4.1`**](https://github.com/ecadlabs/signatory/releases/tag/v1.4.1) (October 2026) at our own expense. However, we do not ship untested security claims: **`v1.4.1` is validated through `PtTALLiN` (`octez-v24.4`) and has not been tested by ECAD Labs against the Ushuaia (`PsUshuai`) protocol.** See the [Agora thread](https://forum.tezosagora.org/t/signatory-remote-signer-end-of-ecad-labs-maintenance/7093) for context and migration options, or contact [info@ecadlabs.com](mailto:info@ecadlabs.com) for commercial support.
+
 ## What is Signatory?
 
 Signatory is a remote signing daemon that allows Tezos bakers and Tezos Application teams to protect their private keys.

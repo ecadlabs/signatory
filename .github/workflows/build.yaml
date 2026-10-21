@@ -7,9 +7,15 @@ on:
       - "rc*"
     paths-ignore:
       - 'website/**'
+      - 'docs/**'
+      - '*.md'
+      - '.github/dependabot.yml'
   pull_request:
     paths-ignore:
       - 'website/**'
+      - 'docs/**'
+      - '*.md'
+      - '.github/dependabot.yml'
 
 name: Test and publish
 
