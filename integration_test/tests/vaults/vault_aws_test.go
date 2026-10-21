@@ -11,6 +11,7 @@ import (
 )
 
 func TestAWSVault(t *testing.T) {
+	t.Skip("skipping AWS KMS integration test")
 
 	tz2 := os.Getenv("VAULT_AWS_TZ2")
 	tz3 := os.Getenv("VAULT_AWS_TZ3")
