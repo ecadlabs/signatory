@@ -6,6 +6,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "19:00"
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "*"
     pull-request-branch-name:
       separator: "-"
   - package-ecosystem: "npm"
