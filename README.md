@@ -3,10 +3,6 @@
 #### A Tezos Remote Signer
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2778/badge)](https://bestpractices.coreinfrastructure.org/projects/2778)
-[![GitHub Actions](https://github.com/ecadlabs/signatory/workflows/Test%20and%20publish/badge.svg)](https://github.com/ecadlabs/signatory/actions)
-[![Maintainability](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/maintainability)](https://codeclimate.com/github/ecadlabs/signatory/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/c1304869331b687e0aba/test_coverage)](https://codeclimate.com/github/ecadlabs/signatory/test_coverage)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ecadlabs/signatory)](https://goreportcard.com/report/github.com/ecadlabs/signatory)
 
 > [!WARNING]
 > **Maintenance Status:** Following the Tezos Foundation's decision to end funding for Signatory in January 2026 (and decline a minimal maintenance-only proposal), ECAD Labs has wound down active Tezos protocol maintenance. Four months after our [June 2026 announcement](https://forum.tezosagora.org/t/signatory-remote-signer-end-of-ecad-labs-maintenance/7093), there remains no transition plan or alternative from the core teams for institutional HSM, Cloud KMS, or TEE (`tz4`/BLS) custody.
